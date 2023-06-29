@@ -8,9 +8,9 @@
 <script>
 function showBrowserInfo() {
   var browserInfo = "";
-  browserInfo += "Browser Version: " + navigator.appVersion + "<br>";
-  browserInfo += "User Agent: " + navigator.userAgent + "<br>";
-  browserInfo += "Platform: " + navigator.platform + "<br>";
+  browserInfo += "Browser Version: " + navigator.appVersion + "<br><br>";
+  browserInfo += "User Agent: " + navigator.userAgent + "<br><br>";
+  browserInfo += "Platform: " + navigator.platform + "<br><br>";
   
   document.getElementById("browser-info").innerHTML = browserInfo;
 }
@@ -56,7 +56,7 @@ paragraphElement.textContent = saysWho;
   </script>
 </head>
 
-<body onload="showBrowserInfo()">
+<body>
 
 <h2>Browser Information</h2>
 <p id="browser-check"></p>
@@ -66,22 +66,29 @@ paragraphElement.textContent = saysWho;
 <p id="voicesList"></p>
 
 <script>
+window.onload = function() {
+  populateVoices();
+  showBrowserInfo();
+};
 
+function populateVoices() {
   window.speechSynthesis.onvoiceschanged = function () {
-	var voices = window.speechSynthesis.getVoices();
-	var voicesList = document.getElementById("voicesList");
+    var voices = window.speechSynthesis.getVoices();
+    var voicesList = document.getElementById("voicesList");
 
-	// Create a string to store the voice names
-	var voiceNames = "";
+    // Create a string to store the voice names
+    var voiceNames = "";
 
-	// Loop through the available voices and append their names
-	for (var i = 0; i < voices.length; i++) {
-	  voiceNames += voices[i].name + "<br>";
-	}
+    // Loop through the available voices and append their names
+    for (var i = 0; i < voices.length; i++) {
+      voiceNames += voices[i].name + "<br>";
+    }
 
-	// Set the paragraph's innerHTML to display the voice names
-	voicesList.innerHTML = voiceNames;
+    // Set the paragraph's innerHTML to display the voice names
+    voicesList.innerHTML = voiceNames;
   };
+}
+
 </script>
 	
 	
