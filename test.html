@@ -2,93 +2,52 @@
 <html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3pro.css">
-
 <head>
-<title>Test</title>
+<title>Test 1.1</title>
 <script>
 function showBrowserInfo() {
-  var browserInfo = "";
-  browserInfo += "Browser Version: " + navigator.appVersion + "<br><br>";
-  browserInfo += "User Agent: " + navigator.userAgent + "<br><br>";
-  browserInfo += "Platform: " + navigator.platform + "<br><br>";
-  
-  document.getElementById("browser-info").innerHTML = browserInfo;
+	var browserInfo = "";
+	browserInfo += "Browser Version: " + navigator.appVersion + "<br><br>";
+	browserInfo += "User Agent: " + navigator.userAgent + "<br><br>";
+	browserInfo += "Platform: " + navigator.platform + "<br><br>";
+	document.getElementById("browser-info").innerHTML = browserInfo;
 }
-
-window.addEventListener('DOMContentLoaded', () => {
-const paragraphElement = document.getElementById('browser-check');
-const saysWho = (() => {
-const { userAgent } = navigator;
-let match = userAgent.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || [];
-let temp;
-
-if (/trident/i.test(match[1])) {
-  temp = /\brv[ :]+(\d+)/g.exec(userAgent) || [];
-  return `IE ${temp[1] || ''}`;
-}
-
-if (match[1] === 'Chrome') {
-  temp = userAgent.match(/\b(OPR|Edge)\/(\d+)/);
-
-  if (temp !== null) {
-	return temp.slice(1).join(' ').replace('OPR', 'Opera');
-  }
-
-  temp = userAgent.match(/\b(Edg)\/(\d+)/);
-
-  if (temp !== null) {
-	return temp.slice(1).join(' ').replace('Edg', 'Edge (Chromium)');
-  }
-}
-
-match = match[2] ? [match[1], match[2]] : [navigator.appName, navigator.appVersion, '-?'];
-temp = userAgent.match(/version\/(\d+)/i);
-
-if (temp !== null) {
-  match.splice(1, 1, temp[1]);
-}
-
-return match.join(' ');
-})();
-
-paragraphElement.textContent = saysWho;
-});
-  </script>
+ </script>
 </head>
-
 <body>
-
 <h2>Browser Information</h2>
 <p id="browser-check"></p>
 <p id="browser-info"></p>
-
 <h2>Available Speech Synthesis API Voices</h2>
 <p id="voicesList"></p>
-
 <script>
 window.onload = function() {
   populateVoices();
   showBrowserInfo();
+  if ('speechSynthesis' in window) {
+  alert('OK - speechSynthesis was found in window');
+  } else {
+   alert('ERROR - speechSynthesis was NOT FOUND in window');
+  };
 };
 
 function populateVoices() {
-  window.speechSynthesis.onvoiceschanged = function () {
-    var voices = window.speechSynthesis.getVoices();
-    var voicesList = document.getElementById("voicesList");
+	window.speechSynthesis.onvoiceschanged = function () {
+	var voices = window.speechSynthesis.getVoices();
+	var voicesList = document.getElementById("voicesList");
 
-    // Create a string to store the voice names
-    var voiceNames = "";
+	// Create a string to store the voice names
+	var voiceNames = "";
 
-    // Loop through the available voices and append their names
-    for (var i = 0; i < voices.length; i++) {
-      voiceNames += voices[i].name + "<br>";
-    }
+	// Loop through the available voices and append their names
+	for (var i = 0; i < voices.length; i++) {
+	voiceNames += voices[i].name + "<br>";
+	}
 
-    // Set the paragraph's innerHTML to display the voice names
-    voicesList.innerHTML = voiceNames;
-  };
+	// Set the paragraph's innerHTML to display the voice names
+	voicesList.innerHTML = voiceNames;
+	};
 }
-
 </script>
 	
 	
