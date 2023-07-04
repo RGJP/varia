@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3pro.css">
 <head>
-<title>Test 1.1</title>
+<title>Test 1.3</title>
 <script>
 function showBrowserInfo() {
 	var browserInfo = "";
@@ -22,18 +22,27 @@ function showBrowserInfo() {
 <p id="voicesList"></p>
 <script>
 window.onload = function() {
-  populateVoices();
   showBrowserInfo();
   if ('speechSynthesis' in window) {
-  alert('OK - speechSynthesis was found in window');
+    alert('OK - speechSynthesis was found in window');
   } else {
-   alert('ERROR - speechSynthesis was NOT FOUND in window');
-  };
+    alert('ERROR - speechSynthesis was NOT FOUND in window');
+  }
+
+  // Periodically check for available voices every 500 milliseconds
+  var checkVoicesInterval = setInterval(function() {
+    var voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      // Voices are available, so populate the list and clear the interval
+      populateVoices();
+      clearInterval(checkVoicesInterval);
+    }
+  }, 500);
 };
 
+
 function populateVoices() {
-	window.speechSynthesis.onvoiceschanged = function () {
-	alert('onvoiceschanged event has been triggered');
+	alert('populatevoices function is now running');
 	var voices = window.speechSynthesis.getVoices();
 	var voicesList = document.getElementById("voicesList");
 
@@ -47,7 +56,6 @@ function populateVoices() {
 
 	// Set the paragraph's innerHTML to display the voice names
 	voicesList.innerHTML = voiceNames;
-	};
 }
 </script>
 	
