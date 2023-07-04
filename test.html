@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3pro.css">
 
 <head>
-  <title>Test 1.8</title>
+  <title>Test 1.9</title>
   <script>
     function showBrowserInfo() {
       var browserInfo = "";
@@ -15,18 +15,22 @@
     }
 
     function populateVoices() {
-      var voices = window.speechSynthesis.getVoices();
+      var voices = speechSynthesis.getVoices();
       var voicesList = document.getElementById("voicesList");
 
-      // Create a string to store the voice names
-      var voiceNames = "";
+      if (voices.length === 0) {
+        // Voices are not yet loaded, try again after a delay
+        setTimeout(function() {
+          populateVoices();
+        }, 100);
+        return;
+      }
 
-      // Loop through the available voices and append their names
+      var voiceNames = "";
       for (var i = 0; i < voices.length; i++) {
         voiceNames += voices[i].name + "<br>";
       }
 
-      // Set the paragraph's innerHTML to display the voice names
       voicesList.innerHTML = voiceNames;
     }
 
@@ -38,9 +42,12 @@
         alert('ERROR - speechSynthesis was NOT FOUND in window');
       }
 
-      setTimeout(function() {
+      if ('onvoiceschanged' in speechSynthesis) {
+        speechSynthesis.onvoiceschanged = populateVoices;
+      } else {
+        // Fallback for browsers that don't support onvoiceschanged event
         populateVoices();
-      }, 7000); // Delay the execution of populateVoices
+      }
     };
   </script>
 </head>
