@@ -34,10 +34,12 @@
     };
 
     function populateVoices() {
+      alert('function populateVoices now running');
       window.speechSynthesis.onvoiceschanged = function() {
         // THIS onvoiceschanged event fires on WINDOWS browser but doesn't on ANDROID, which seems  to be the possible cause of the issue.
         alert('onvoiceschanged event has been triggered');
         var voices = window.speechSynthesis.getVoices();
+        alert('Number of voices found (voices var): ' + voices.length);
         var voicesList = document.getElementById("voicesList");
 
         // Create a string to store the voice names
