@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3pro.css">
 
 <head>
-  <title>Test 1.4</title>
+  <title>Test 1.5</title>
   <script>
     function showBrowserInfo() {
       var browserInfo = "";
@@ -24,13 +24,14 @@
   <p id="voicesList"></p>
   <script>
     window.onload = function() {
-      populateVoices();
-      showBrowserInfo();
       if ('speechSynthesis' in window) {
         alert('OK - speechSynthesis was found in window');
       } else {
         alert('ERROR - speechSynthesis was NOT FOUND in window');
       };
+      
+      showBrowserInfo();
+      setTimeout(populateVoices, 5000); // Delay for 5 seconds (5000 milliseconds)
     };
 
     function populateVoices() {
