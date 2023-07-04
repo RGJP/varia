@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3pro.css">
 
 <head>
-  <title>Test 1.5</title>
+  <title>Test 1.6</title>
   <script>
     function showBrowserInfo() {
       var browserInfo = "";
@@ -36,30 +36,20 @@
 
     function populateVoices() {
       alert('function populateVoices now running');
-      window.speechSynthesis.onvoiceschanged = function() {
-        // THIS onvoiceschanged event fires on WINDOWS browser but doesn't on ANDROID, which seems  to be the possible cause of the issue.
-        alert('onvoiceschanged event has been triggered');
         var voices = window.speechSynthesis.getVoices();
         alert('Number of voices found (voices var): ' + voices.length);
         var voicesList = document.getElementById("voicesList");
-
         // Create a string to store the voice names
         var voiceNames = "";
-
         // Loop through the available voices and append their names
         for (var i = 0; i < voices.length; i++) {
           voiceNames += voices[i].name + "<br>";
         }
-
         // Set the paragraph's innerHTML to display the voice names
         voicesList.innerHTML = voiceNames;
-      };
     }
   </script>
 
-
-
 </body>
-
 
 </html>
