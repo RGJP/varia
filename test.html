@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3pro.css">
 
 <head>
-  <title>Test 1.7</title>
+  <title>Test 1.8</title>
   <script>
     function showBrowserInfo() {
       var browserInfo = "";
@@ -13,6 +13,35 @@
       browserInfo += "Platform: " + navigator.platform + "<br><br>";
       document.getElementById("browser-info").innerHTML = browserInfo;
     }
+
+    function populateVoices() {
+      var voices = window.speechSynthesis.getVoices();
+      var voicesList = document.getElementById("voicesList");
+
+      // Create a string to store the voice names
+      var voiceNames = "";
+
+      // Loop through the available voices and append their names
+      for (var i = 0; i < voices.length; i++) {
+        voiceNames += voices[i].name + "<br>";
+      }
+
+      // Set the paragraph's innerHTML to display the voice names
+      voicesList.innerHTML = voiceNames;
+    }
+
+    window.onload = function() {
+      showBrowserInfo();
+      if ('speechSynthesis' in window) {
+        alert('OK - speechSynthesis was found in window');
+      } else {
+        alert('ERROR - speechSynthesis was NOT FOUND in window');
+      }
+
+      setTimeout(function() {
+        populateVoices();
+      }, 7000); // Delay the execution of populateVoices
+    };
   </script>
 </head>
 
@@ -22,34 +51,6 @@
   <p id="browser-info"></p>
   <h2>Available Speech Synthesis API Voices</h2>
   <p id="voicesList"></p>
-  <script>
-    window.onload = function() {
-      if ('speechSynthesis' in window) {
-        alert('OK - speechSynthesis was found in window');
-      } else {
-        alert('ERROR - speechSynthesis was NOT FOUND in window');
-      };
-      
-      showBrowserInfo();
-      setTimeout(populateVoices, 11000);
-    };
-
-    function populateVoices() {
-      alert('function populateVoices now running');
-        var voices = window.speechSynthesis.getVoices();
-        alert('Number of voices found (voices var): ' + voices.length);
-        var voicesList = document.getElementById("voicesList");
-        // Create a string to store the voice names
-        var voiceNames = "";
-        // Loop through the available voices and append their names
-        for (var i = 0; i < voices.length; i++) {
-          voiceNames += voices[i].name + "<br>";
-        }
-        // Set the paragraph's innerHTML to display the voice names
-        voicesList.innerHTML = voiceNames;
-    }
-  </script>
-
 </body>
 
 </html>
