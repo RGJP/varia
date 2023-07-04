@@ -33,6 +33,7 @@ window.onload = function() {
 
 function populateVoices() {
 	window.speechSynthesis.onvoiceschanged = function () {
+	alert('onvoiceschanged event has been triggered');
 	var voices = window.speechSynthesis.getVoices();
 	var voicesList = document.getElementById("voicesList");
 
