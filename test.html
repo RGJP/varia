@@ -2,65 +2,60 @@
 <html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3pro.css">
+
 <head>
-<title>Test 1.3</title>
-<script>
-function showBrowserInfo() {
-	var browserInfo = "";
-	browserInfo += "Browser Version: " + navigator.appVersion + "<br><br>";
-	browserInfo += "User Agent: " + navigator.userAgent + "<br><br>";
-	browserInfo += "Platform: " + navigator.platform + "<br><br>";
-	document.getElementById("browser-info").innerHTML = browserInfo;
-}
- </script>
-</head>
-<body>
-<h2>Browser Information</h2>
-<p id="browser-check"></p>
-<p id="browser-info"></p>
-<h2>Available Speech Synthesis API Voices</h2>
-<p id="voicesList"></p>
-<script>
-window.onload = function() {
-  showBrowserInfo();
-  if ('speechSynthesis' in window) {
-    alert('OK - speechSynthesis was found in window');
-  } else {
-    alert('ERROR - speechSynthesis was NOT FOUND in window');
-  }
-
-  // Periodically check for available voices every 500 milliseconds
-  var checkVoicesInterval = setInterval(function() {
-    var voices = window.speechSynthesis.getVoices();
-    if (voices.length > 0) {
-      // Voices are available, so populate the list and clear the interval
-      populateVoices();
-      clearInterval(checkVoicesInterval);
+  <title>Test 1.4</title>
+  <script>
+    function showBrowserInfo() {
+      var browserInfo = "";
+      browserInfo += "Browser Version: " + navigator.appVersion + "<br><br>";
+      browserInfo += "User Agent: " + navigator.userAgent + "<br><br>";
+      browserInfo += "Platform: " + navigator.platform + "<br><br>";
+      document.getElementById("browser-info").innerHTML = browserInfo;
     }
-  }, 500);
-};
+  </script>
+</head>
+
+<body>
+  <h2>Browser Information</h2>
+  <p id="browser-check"></p>
+  <p id="browser-info"></p>
+  <h2>Available Speech Synthesis API Voices</h2>
+  <p id="voicesList"></p>
+  <script>
+    window.onload = function() {
+      populateVoices();
+      showBrowserInfo();
+      if ('speechSynthesis' in window) {
+        alert('OK - speechSynthesis was found in window');
+      } else {
+        alert('ERROR - speechSynthesis was NOT FOUND in window');
+      };
+    };
+
+    function populateVoices() {
+      window.speechSynthesis.onvoiceschanged = function() {
+        // THIS onvoiceschanged event fires on WINDOWS browser but doesn't on ANDROID, which seems  to be the possible cause of the issue.
+        alert('onvoiceschanged event has been triggered');
+        var voices = window.speechSynthesis.getVoices();
+        var voicesList = document.getElementById("voicesList");
+
+        // Create a string to store the voice names
+        var voiceNames = "";
+
+        // Loop through the available voices and append their names
+        for (var i = 0; i < voices.length; i++) {
+          voiceNames += voices[i].name + "<br>";
+        }
+
+        // Set the paragraph's innerHTML to display the voice names
+        voicesList.innerHTML = voiceNames;
+      };
+    }
+  </script>
 
 
-function populateVoices() {
-	alert('populatevoices function is now running');
-	var voices = window.speechSynthesis.getVoices();
-	var voicesList = document.getElementById("voicesList");
 
-	// Create a string to store the voice names
-	var voiceNames = "";
-
-	// Loop through the available voices and append their names
-	for (var i = 0; i < voices.length; i++) {
-	voiceNames += voices[i].name + "<br>";
-	}
-
-	// Set the paragraph's innerHTML to display the voice names
-	voicesList.innerHTML = voiceNames;
-}
-</script>
-	
-	
-	
 </body>
 
 
