@@ -101,7 +101,7 @@ let food = {x: Math.floor(Math.random() * 21) * box, y: Math.floor(Math.random()
             } else {
                 snake.pop();
             }
-            if (snakeX < 0 || snakeY < 0 || snakeX >= canvas.width || snakeY >= canvas.height || collision(newHead, snake)) {
+            if (snakeX < -30 || snakeY < -30 || snakeX >= canvas.width +30 || snakeY >= canvas.height +30 || collision(newHead, snake)) {
                 clearInterval(game);
                 alert('RIP. Score: ' + score);
                 location.reload();
