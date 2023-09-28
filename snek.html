@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SNEK</title>
+    <title>SNEK 🐍</title>
     <style>
 	
         body {
-            background-color: darkgreen;
+            background-color: #003300;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -22,20 +22,49 @@
         canvas {
             background-image: url('backgroundtxt.jpg');
             background-size: stretch;
-            border: 3px solid black;
+            border: 2px solid darkred;
+        }
+		 .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: arial;
+            font-size: 24px;
+            display: none; /* Hide the overlay initially */
         }
     </style>
 </head>
 <body>
     <center>
-        <h1>🐍</h1>
+        <h1></h1>
 		 <br>
 	
         <canvas id="gameCanvas" width="690" height="690"></canvas>
 		<br>
         <div id="score" style="color: white; font-family: arial; font-size: 24px;"></div>
-		<p>1.2<p/>
+		<p style="color: black; font-family: arial; font-size: 15px">1.5<p/>
+		
+	
+    <div class="overlay" id="overlay">
+        <div>RIP</div>
+		<br>
+		<div>💀</div>
+		<br>
+        <div id="finalScore"></div>
+		<br>
+       <button id="riseButton" onclick="replay()" style="font-size: 20px; padding: 10px 20px;">RISE !</button>
+
+    </div>
     </center>
+	
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -49,7 +78,34 @@ let food = {x: Math.floor(Math.random() * 21) * box, y: Math.floor(Math.random()
 
         document.addEventListener('keydown', direction);
 
-        function direction(event) {
+document.addEventListener('keydown', function(event) {
+    if (event.keyCode === 13) {
+        document.getElementById('riseButton').click(); // Simulate a click on the "RISE" button
+    }
+});
+
+function replay() {
+    clearInterval(game);
+    location.reload();
+}
+ 
+        function replay() {
+            clearInterval(game);
+            location.reload();
+        }
+		
+		
+		let lastKeyPressTime = 0;
+
+
+        function direction(event) {	
+		  const now = Date.now();
+    if (now - lastKeyPressTime < 25) {
+        return;
+    }
+
+    lastKeyPressTime = now;
+	
             if (event.keyCode == 37 && d != 'RIGHT') {
                 d = 'LEFT';
             } else if (event.keyCode == 38 && d != 'DOWN') {
@@ -78,8 +134,10 @@ let food = {x: Math.floor(Math.random() * 21) * box, y: Math.floor(Math.random()
                     snakeHeadImage.src = 'snakehead.jpg';
                     ctx.drawImage(snakeHeadImage, snake[i].x, snake[i].y, box, box);
                 } else {
-                    ctx.fillStyle = 'lightgreen';
-                    ctx.fillRect(snake[i].x, snake[i].y, box, box);
+				let snakeBodyImage = new Image();
+				 snakeBodyImage.src = 'snakebody.jpg';
+				
+                    ctx.drawImage(snakeBodyImage, snake[i].x, snake[i].y, box, box);
                 }
                 ctx.strokeStyle = 'black';
                 ctx.strokeRect(snake[i].x, snake[i].y, box, box);
@@ -96,17 +154,30 @@ let food = {x: Math.floor(Math.random() * 21) * box, y: Math.floor(Math.random()
             if (d === 'RIGHT') snakeX += box;
             if (d === 'DOWN') snakeY += box;
             let newHead = {x: snakeX, y: snakeY};
+			
             if (snakeX === food.x && snakeY === food.y) {
                 food = {x: Math.floor(Math.random() * 20) * box, y: Math.floor(Math.random() * 20) * box};
                 score++; 
             } else {
                 snake.pop();
             }
-            if (snakeX < -30 || snakeY < -30 || snakeX >= canvas.width +30 || snakeY >= canvas.height +30 || collision(newHead, snake)) {
-                clearInterval(game);
-                alert('RIP. Score: ' + score);
-                location.reload();
-            }
+      
+
+
+
+        if (
+            snakeX < 0 || snakeY < 0 || 
+            snakeX >= canvas.width || snakeY >= canvas.height || 
+            collision(newHead, snake)
+        ) {
+            clearInterval(game);
+            document.getElementById('finalScore').innerText = 'Score: ' + score;
+            document.getElementById('overlay').style.display = 'flex'; 
+        }
+
+
+
+	  
             snake.unshift(newHead);
             scoreElement.innerText = 'Score: ' + score; 
         }
