@@ -68,7 +68,7 @@
         let lastKeyPressTime = 0;
         function direction(event) {	
             const now = Date.now();
-            if (now - lastKeyPressTime < 25) return;
+            if (now - lastKeyPressTime < 50) return;
             lastKeyPressTime = now;
 
             if (event.keyCode == 37 && d != 'RIGHT') d = 'LEFT';
