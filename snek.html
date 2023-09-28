@@ -1,57 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🐍</title>
-<style>
-    body {
-        background-color: #003300;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
-    }
-
-    h1 {
-        margin: 0;
-    }
-
-    canvas {
-        background-image: url('backgroundtxt.jpg');
-        background-size: stretch;
-        border: 2px solid darkred;
-    }
-
-    .overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        color: white;
-        font-family: arial;
-        font-size: 24px;
-        display: none;
-    }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐍</title>
+    <style>
+        body {
+            background-color: #003300;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            margin: 0;
+        }
+        canvas {
+            background-image: url('backgroundtxt.jpg');
+            background-size: stretch;
+            border: 3px solid darkred;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: arial;
+            font-size: 24px;
+            display: none;
+        }
+    </style>
 </head>
 <body>
     <center>
-	<p style="color: lightgreen; font-family: arial; font-size: 20px">[← ↑ ↓ →] = Move, [Enter] = Reset<p/>
-	<canvas id="gameCanvas" width="690" height="690"></canvas>
-	<br><div id="score" style="color: lightgreen; font-family: arial; font-size: 24px;"></div>
-	<p style="color: black; font-family: arial; font-size: 15px">1.7<p/>
-    <div class="overlay" id="overlay">
-        <div>RIP</div><br><div>💀</div><br><div id="finalScore"></div><br><button id="riseButton" onclick="replay()" style="font-size: 40px; padding: 10px 20px;">↻</button>
-    </div>
-	</center>
+        <p style="color: lightgreen; font-family: arial; font-size: 20px">[← ↑ ↓ →] = Move, [Enter] = Reset</p>
+        <canvas id="gameCanvas" width="690" height="690"></canvas>
+        <br>
+        <div id="score" style="color: lightgreen; font-family: arial; font-size: 24px;"></div>
+        <p style="color: black; font-family: arial; font-size: 15px">1.8</p>
+        <div class="overlay" id="overlay">
+            <div>RIP SNEK</div><br>
+            <div>💀</div><br>
+            <div id="finalScore"></div><br>
+            <button id="riseButton" onclick="replay()" style="font-size: 40px; padding: 10px 20px;">↻</button>
+        </div>
+    </center>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -68,7 +69,7 @@
         let lastKeyPressTime = 0;
         function direction(event) {	
             const now = Date.now();
-            if (now - lastKeyPressTime < 50) return;
+            if (now - lastKeyPressTime < 70) return;
             lastKeyPressTime = now;
 
             if (event.keyCode == 37 && d != 'RIGHT') d = 'LEFT';
@@ -82,16 +83,33 @@
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             for (let i = 0; i < snake.length; i++) {
+                ctx.save(); 
+                ctx.beginPath(); 
+
+                let snakeX = snake[i].x + box / 2;
+                let snakeY = snake[i].y + box / 2;
+
+                ctx.arc(snakeX, snakeY, box / 2, 0, 2 * Math.PI); 
+                ctx.clip(); 
+
                 let snakeImage = new Image();
                 snakeImage.src = i === 0 ? 'snakehead.jpg' : 'snakebody.jpg';
                 ctx.drawImage(snakeImage, snake[i].x, snake[i].y, box, box);
-                ctx.strokeStyle = 'black';
-                ctx.strokeRect(snake[i].x, snake[i].y, box, box);
+
+                ctx.restore(); 
             }
 
             let foodImage = new Image();
             foodImage.src = 'food.jpg';
+            
+            ctx.save(); 
+            ctx.beginPath(); 
+            ctx.arc(food.x + box/2, food.y + box/2, box/2, 0, 2 * Math.PI); 
+            ctx.clip();
+
             ctx.drawImage(foodImage, food.x, food.y, box, box);
+
+            ctx.restore();
 
             let snakeX = snake[0].x, snakeY = snake[0].y;
             if (d === 'LEFT') snakeX -= box;
