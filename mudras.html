@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mudras</title>
+    <style>
+        /* Basic page styling */
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #062200; /* Dark green background */
+        }
+        #content {
+            text-align: center;
+        }
+        #mudraImage {
+            max-width: 100%;
+            max-height: 70vh; /* Ensure the image scales properly */
+            margin-bottom: 20px;
+            border: 2px solid #fff;
+        }
+        #randomButton {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: white;
+            color: darkgreen;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        #randomButton:hover {
+            background-color: lightgray;
+        }
+    </style>
+</head>
+<body>
+    <div id="content">
+        <!-- Image placeholder -->
+        <img id="mudraImage" src="" alt="Mudra Image">
+        <!-- Button to change image -->
+        <br>
+        <button id="randomButton">Mudra 🎲</button>
+    </div>
+
+    <script>
+        // Array to hold image paths (assuming images are in a 'mudras' folder)
+        const imageArray = [
+            'mudras/1.jfif',
+            'mudras/2.jfif',
+            'mudras/3.jfif'
+        ];
+
+        // Function to load a random image from the array
+        function loadRandomImage() {
+            const randomIndex = Math.floor(Math.random() * imageArray.length);
+            const selectedImage = imageArray[randomIndex];
+            document.getElementById('mudraImage').src = selectedImage;
+        }
+
+        // Load a random image when the page loads
+        window.onload = loadRandomImage;
+
+        // Event listener for the button to change the image
+        document.getElementById('randomButton').addEventListener('click', loadRandomImage);
+    </script>
+</body>
+</html>
