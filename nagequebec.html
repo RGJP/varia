@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Où nager aujourd'hui à Québec ?</title>
+    <style>
+        body {
+            background-color: #002244;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            text-align: center;
+            padding: 100px; /* Allow scrolling */
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: #0077cc;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #005599;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        h1 {
+            position: relative;
+            z-index: 1;
+            display: block !important;
+            visibility: visible !important;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="main-title"></h1>
+    <button onclick="fetchSchedules()">Où nager aujourd'hui à Québec?</button>
+    <div id="result"></div>
+    
+    <script>
+        async function fetchWithRetry(url, retries = 3, delay = 1000) {
+            for (let attempt = 1; attempt <= retries; attempt++) {
+                try {
+                    const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+                    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                    
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    console.warn(`Attempt ${attempt} failed for URL: ${url}`, error);
+                    if (attempt < retries) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    } else {
+                        console.error(`Failed to fetch after ${retries} attempts:`, url);
+                        return null;
+                    }
+                }
+            }
+        }
+    
+        async function fetchSchedules() {
+            const resultDiv = document.getElementById("result");
+            const title = document.getElementById("main-title");
+    
+            // Ensure title is always visible
+            title.style.display = "block";
+    
+            resultDiv.innerHTML = "<p>Chargement... 0%</p>";
+    
+            const urls = [
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=177",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=173",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=320",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=165",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=179",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=172",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=175",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=167",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=178",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=174",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=176",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=171",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=170",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=169",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=168",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=166",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=164",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=163",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=162",
+                "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=160"
+            ];
+    
+           
+            today = new Date().toLocaleDateString('fr-FR', { 
+    weekday: 'long', 
+    day: 'numeric', 
+    month: 'long', 
+    year: 'numeric' 
+});
+
+let results = `<p>Aujourd'hui c'est <strong>${today}</strong>, voici les bains disponibles:</p>`;
+
+
+today = new Date().toLocaleDateString('fr-FR', { weekday: 'long' });
+
+            const seenResults = new Set();
+    
+            for (let i = 0; i < urls.length; i++) {
+                const url = urls[i];
+                const data = await fetchWithRetry(url);
+                if (!data) continue; // Skip to next URL if fetching failed
+    
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, "text/html");
+                const rows = doc.querySelectorAll(".tableau_horaire_loisirs tr");
+    
+                rows.forEach(row => {
+                    const day = row.querySelector("th")?.innerText.trim();
+                    if (day && day.toLowerCase() === today.toLowerCase()) {
+                        const hours = row.querySelector("td")?.innerText.trim().replace(/<[^>]*>/g, ' ');
+                        if (hours) {
+                            const poolName = doc.title.trim();
+                            const scheduleEntry = `${poolName}: ${hours}`;
+    
+                            if (!seenResults.has(scheduleEntry)) {
+                                seenResults.add(scheduleEntry);
+                                results += `<p><a href="${url}" target="_blank" style="color: #00bfff; text-decoration: none;"><strong>${poolName}</strong></a>: ${hours}</p>`;
+                            }
+                        }
+                    }
+                });
+    
+                let percentage = Math.round(((i + 1) / urls.length) * 100);
+                resultDiv.innerHTML = `<p>Chargement... ${percentage}%</p>`;
+            }
+    
+            resultDiv.innerHTML = results || "<p>Aucune information trouvée pour aujourd'hui.</p>";
+    
+            // Ensure the h1 is visible even after fetching
+            title.style.display = "block";
+        }
+    </script>
+    
+</body>
+</html>
