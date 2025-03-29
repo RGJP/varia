@@ -118,14 +118,26 @@ const poolAddress = poolAddressRaw.replace(/<br\s*\/?>/gi, ", ").trim();
             
             doc.querySelectorAll(".tableau_horaire_loisirs tr").forEach(row => {
                 const day = row.querySelector("th")?.innerText.trim();
-                const hours = row.querySelector("td")?.innerText.trim().replace(/<[^>]*>/g, ' ');
+                let hours = row.querySelector("td")?.innerText.trim().replace(/<[^>]*>/g, ' ') || '';
+
+// Add trailing space to specific words if not already present
+const keywords = ['Aînés', 'Adultes', 'Longueurs', 'Tous'];
+keywords.forEach(word => {
+    const regex = new RegExp(`\\b${word}(?!\\s)`, 'gi');
+    hours = hours.replace(regex, `${word} `);
+});
                 
                 if (day?.toLowerCase() === today.toLowerCase() && hours) {
                     const scheduleEntry = `${poolName}: ${hours}`;
                     
                     if (!seenResults.has(scheduleEntry)) {
                         seenResults.add(scheduleEntry);
-                        results += `<p><a href="${url}" target="_blank" style="color: #00bfff; text-decoration: none;"><strong>${poolName}</strong></a><br><em>${poolAddress}</em><br>${hours}</p>`;
+                        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poolAddress)}`;
+results += `<p>
+    <a href="${url}" target="_blank" style="color: #00bfff; text-decoration: none;"><strong>${poolName}</strong></a><br>
+    <a href="${mapsUrl}" target="_blank" style="color: #00ffcc; text-decoration: underline;"><em>${poolAddress}</em></a><br>
+    ${hours}
+</p>`;
                     }
                 }
             });
