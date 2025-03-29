@@ -92,7 +92,7 @@ const myCustomDate = new Date();
     resultDiv.innerHTML = "<p>Chargement des données...</p>";
 
     const baseUrl = "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=";
-    const poolIds = [177, 173, 320, 165, 179, 172, 175, 167, 178, 174, 176, 171, 170, 169, 168, 166, 164, 163];
+    const poolIds = [177, 173, 320, 165, 179, 172, 175, 167, 178, 174, 176, 171, 170, 169, 168, 166, 164, 163,712];
     
     const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long' });
     const formattedDate = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -111,6 +111,8 @@ const myCustomDate = new Date();
             
             const doc = new DOMParser().parseFromString(data.contents, "text/html");
             const poolName = doc.querySelector("#ctl00_ctl00_contenu_texte_page_InstallationDetails1_hlTitre")?.innerText.trim() || "Nom inconnu";
+const poolAddressRaw = doc.querySelector("#ctl00_ctl00_contenu_texte_page_InstallationDetails1_lblAdresse")?.innerHTML || "";
+const poolAddress = poolAddressRaw.replace(/<br\s*\/?>/gi, ", ").trim();
 
             const url = baseUrl + poolIds[index];
             
@@ -123,7 +125,7 @@ const myCustomDate = new Date();
                     
                     if (!seenResults.has(scheduleEntry)) {
                         seenResults.add(scheduleEntry);
-                        results += `<p><a href="${url}" target="_blank" style="color: #00bfff; text-decoration: none;"><strong>${poolName}</strong></a>: ${hours}</p>`;
+                        results += `<p><a href="${url}" target="_blank" style="color: #00bfff; text-decoration: none;"><strong>${poolName}</strong></a><br><em>${poolAddress}</em><br>${hours}</p>`;
                     }
                 }
             });
