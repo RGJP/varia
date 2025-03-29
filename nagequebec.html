@@ -105,7 +105,8 @@
             if (!data) return;
             
             const doc = new DOMParser().parseFromString(data.contents, "text/html");
-            const poolName = doc.title.trim();
+            const poolName = doc.querySelector("#ctl00_ctl00_contenu_texte_page_InstallationDetails1_hlTitre")?.innerText.trim() || "Nom inconnu";
+
             const url = baseUrl + poolIds[index];
             
             doc.querySelectorAll(".tableau_horaire_loisirs tr").forEach(row => {
