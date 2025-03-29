@@ -15,7 +15,7 @@
             justify-content: center;
             text-align: center;
             padding: 20px;
-            min-height: 100vh;
+            min-height: 90vh;
             box-sizing: border-box;
         }
 
@@ -78,9 +78,14 @@
     <h1 id="main-title"></h1>
     <button onclick="fetchSchedules()">Où nager aujourd'hui à Québec?</button>
     <div id="result"></div>
-    
+    <p id="today-date" style="font-size:small;"></p>
     <script>
+
+const myCustomDate = new Date();
+  const displayDate = myCustomDate.toLocaleDateString();
+  document.getElementById("today-date").textContent = displayDate;
      async function fetchSchedules() {
+        document.getElementById("today-date").style.display = "none";
     const resultDiv = document.getElementById("result");
     const title = document.getElementById("main-title");
     title.style.display = "block";
@@ -129,7 +134,8 @@
         resultDiv.innerHTML = `<p>Erreur lors du chargement des données: ${error.message}</p>`;
     }
 }
+
     </script>
-    
+
 </body>
 </html>
