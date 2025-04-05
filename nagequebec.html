@@ -112,7 +112,11 @@ const myCustomDate = new Date();
             const doc = new DOMParser().parseFromString(data.contents, "text/html");
             const poolName = doc.querySelector("#ctl00_ctl00_contenu_texte_page_InstallationDetails1_hlTitre")?.innerText.trim() || "Nom inconnu";
 const poolAddressRaw = doc.querySelector("#ctl00_ctl00_contenu_texte_page_InstallationDetails1_lblAdresse")?.innerHTML || "";
-const poolAddress = poolAddressRaw.replace(/<br\s*\/?>/gi, ", ").trim();
+const poolAddress = poolAddressRaw
+  .replace(/<br\s*\/?>/gi, ", ")
+  .replace(/<\/?sup>/gi, "")
+  .trim();
+
 
             const url = baseUrl + poolIds[index];
             
