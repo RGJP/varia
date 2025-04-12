@@ -84,74 +84,88 @@
 const myCustomDate = new Date();
   const displayDate = myCustomDate.toLocaleDateString();
   document.getElementById("today-date").textContent = displayDate;
-     async function fetchSchedules() {
-        document.getElementById("today-date").style.display = "none";
+   
+//MAIN FETCHSCHEDULES FUNCTION
+
+async function fetchSchedules() {
+    document.getElementById("today-date").style.display = "none";
     const resultDiv = document.getElementById("result");
     const title = document.getElementById("main-title");
     title.style.display = "block";
-    resultDiv.innerHTML = "<p>Chargement des données...</p>";
-
-    const baseUrl = "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=";
-    const poolIds = [177, 173, 320, 165, 179, 172, 175, 167, 178, 174, 176, 171, 170, 169, 168, 166, 164, 163,712];
     
+    const baseUrl = "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=";
+    const poolIds = [177, 173, 320, 165, 179, 172, 175, 167, 178, 174, 176, 171, 170, 169, 168, 166, 164, 163, 712];
+
     const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long' });
     const formattedDate = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+    resultDiv.innerHTML = `Bains trouvés pour <strong>${formattedDate}</strong><br>Cliquez sur le nom de piscine pour valider ou sur l'adresse pour navigation Google Maps<br><hr>`;
+    const header = document.createElement("p");
+    header.innerHTML = ``;
+    resultDiv.appendChild(header);
+
     const seenResults = new Set();
-    let results = `<p>Aujourd'hui c'est <strong>${formattedDate}</strong>, voici les bains disponibles:</p>`;
 
-    try {
-        const responses = await Promise.all(poolIds.map(id => 
-            fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(baseUrl + id)}`)
-                .then(response => response.ok ? response.json() : null)
-                .catch(() => null)
-        ));
+    // Retry helper
+    async function fetchWithRetry(url, attempts = 3, delay = 500) {
+        for (let i = 0; i < attempts; i++) {
+            try {
+                const res = await fetch(url);
+                if (res.ok) return await res.json();
+            } catch (_) {}
+            await new Promise(r => setTimeout(r, delay * (i + 1)));
+        }
+        return null;
+    }
 
-        responses.forEach((data, index) => {
-            if (!data) return;
-            
-            const doc = new DOMParser().parseFromString(data.contents, "text/html");
-            const poolName = doc.querySelector("#ctl00_ctl00_contenu_texte_page_InstallationDetails1_hlTitre")?.innerText.trim() || "Nom inconnu";
-const poolAddressRaw = doc.querySelector("#ctl00_ctl00_contenu_texte_page_InstallationDetails1_lblAdresse")?.innerHTML || "";
-const poolAddress = poolAddressRaw
-  .replace(/<br\s*\/?>/gi, ", ")
-  .replace(/<\/?sup>/gi, "")
-  .trim();
+    // Fetch each pool one by one
+    for (const id of poolIds) {
+        const url = `https://api.allorigins.win/get?url=${encodeURIComponent(baseUrl + id)}`;
+        const data = await fetchWithRetry(url);
+        if (!data) continue;
 
+        const doc = new DOMParser().parseFromString(data.contents, "text/html");
+        const poolName = doc.querySelector("#ctl00_ctl00_contenu_texte_page_InstallationDetails1_hlTitre")?.innerText.trim() || "Nom inconnu";
+        const poolAddressRaw = doc.querySelector("#ctl00_ctl00_contenu_texte_page_InstallationDetails1_lblAdresse")?.innerHTML || "";
+        const poolAddress = poolAddressRaw.replace(/<br\s*\/?>/gi, ", ").replace(/<\/?sup>/gi, "").trim();
+        const detailUrl = baseUrl + id;
 
-            const url = baseUrl + poolIds[index];
-            
-            doc.querySelectorAll(".tableau_horaire_loisirs tr").forEach(row => {
-                const day = row.querySelector("th")?.innerText.trim();
-                let hours = row.querySelector("td")?.innerText.trim().replace(/<[^>]*>/g, ' ') || '';
+        doc.querySelectorAll(".tableau_horaire_loisirs tr").forEach(row => {
+            const day = row.querySelector("th")?.innerText.trim();
+            let hours = row.querySelector("td")?.innerText.trim().replace(/<[^>]*>/g, ' ') || '';
 
-// Add trailing space to specific words if not already present
-const keywords = ['Aînés', 'Adultes', 'Longueurs', 'Tous'];
-keywords.forEach(word => {
-    const regex = new RegExp(`\\b${word}(?!\\s)`, 'gi');
-    hours = hours.replace(regex, `${word} `);
-});
-                
-                if (day?.toLowerCase() === today.toLowerCase() && hours) {
-                    const scheduleEntry = `${poolName}: ${hours}`;
-                    
-                    if (!seenResults.has(scheduleEntry)) {
-                        seenResults.add(scheduleEntry);
-                        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poolAddress)}`;
-results += `<p>
-    <a href="${url}" target="_blank" style="color: #00bfff; text-decoration: none;"><strong>${poolName}</strong></a><br>
-    <a href="${mapsUrl}" target="_blank" style="color: #00ffcc; text-decoration: none;"><em>${poolAddress}</em></a><br>
-    ${hours}
-</p>`;
-                    }
-                }
+            const keywords = ['Aînés', 'Adultes', 'Longueurs', 'Tous'];
+            keywords.forEach(word => {
+                const regex = new RegExp(`\\b${word}(?!\\s)`, 'gi');
+                hours = hours.replace(regex, `${word} `);
             });
-        });
 
-        resultDiv.innerHTML = results || "<p>Aucune information trouvée pour aujourd'hui.</p>";
-    } catch (error) {
-        resultDiv.innerHTML = `<p>Erreur lors du chargement des données: ${error.message}</p>`;
+            if (day?.toLowerCase() === today.toLowerCase() && hours) {
+                const entryKey = `${poolName}: ${hours}`;
+                if (seenResults.has(entryKey)) return;
+                seenResults.add(entryKey);
+
+                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poolAddress)}`;
+                const poolHtml = `
+                    <p>
+                        <a href="${detailUrl}" target="_blank" style="color: #00bfff; text-decoration: none;"><strong>${poolName}</strong></a><br>
+                        <a href="${mapsUrl}" target="_blank" style="color: #00ffcc; text-decoration: none;"><em>${poolAddress}</em></a><br>
+                        ${hours}
+                    </p>
+                `;
+
+                resultDiv.insertAdjacentHTML('beforeend', poolHtml);
+            }
+        });
+    }
+
+    if (seenResults.size === 0) {
+        resultDiv.insertAdjacentHTML('beforeend', "<p>Aucune information trouvée pour aujourd'hui.</p>");
     }
 }
+
+
+// END MAIN FETCHSCHEDULES FUNCTION
 
     </script>
 
