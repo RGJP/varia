@@ -137,16 +137,17 @@
 
       const seenResults = new Set();
 
-      async function fetchWithRetry(url, attempts = 3, delay = 500) {
-        for (let i = 0; i < attempts; i++) {
-          try {
+      async function fetchWithRetry(url, retries = 3, delay = 200) {
+    for (let i = 0; i < retries; i++) {
+        try {
             const res = await fetch(url);
             if (res.ok) return await res.json();
-          } catch (_) {}
-          await new Promise(r => setTimeout(r, delay * (i + 1)));
-        }
-        return null;
-      }
+        } catch (_) {}
+        if (i < retries - 1) await new Promise(r => setTimeout(r, delay));
+    }
+    return null;
+}
+
 
       let processed = 0;
 
