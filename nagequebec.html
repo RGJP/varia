@@ -103,14 +103,12 @@
   <p id="today-date" style="font-size:small;"></p>
 
   <div id="loading-overlay">
-    Chargement... <span id="loading-progress">0%</span>
+     <span id="loading-progress">0%</span>
   </div>
 
   <script>
-    const myCustomDate = new Date();
-    const displayDate = myCustomDate.toLocaleDateString();
-   document.getElementById("today-date").textContent = `${displayDate} - v2.1`;
-
+    document.getElementById("today-date").textContent =
+      new Date().toLocaleDateString() + " - v2.2";
 
     async function fetchSchedules() {
       document.getElementById("today-date").style.display = "none";
@@ -118,6 +116,7 @@
       const title = document.getElementById("main-title");
       const overlay = document.getElementById("loading-overlay");
       const progressText = document.getElementById("loading-progress");
+
 
       title.style.display = "block";
       overlay.style.display = "flex";
@@ -135,32 +134,27 @@
       });
 
       resultDiv.innerHTML = `Bains trouvés pour <strong>${formattedDate}</strong><br>Cliquez sur le nom de piscine pour valider ou sur l'adresse pour navigation Google Maps<br><hr>`;
-
       const seenResults = new Set();
+      let htmlOutput = '';
 
       async function fetchWithRetry(url, retries = 3, delay = 200) {
-    for (let i = 0; i < retries; i++) {
-        try {
+        for (let i = 0; i < retries; i++) {
+          try {
             const res = await fetch(url);
             if (res.ok) return await res.json();
-        } catch (_) {}
-        if (i < retries - 1) await new Promise(r => setTimeout(r, delay));
-    }
-    return null;
-}
+          } catch (_) {}
+          if (i < retries - 1) await new Promise(r => setTimeout(r, delay));
+        }
+        return null;
+      }
 
-
-      let processed = 0;
-
-      for (const id of poolIds) {
+      const poolFetches = poolIds.map(async (id, index) => {
         const url = `https://api.allorigins.win/get?url=${encodeURIComponent(baseUrl + id)}`;
         const data = await fetchWithRetry(url);
 
-        processed++;
-        const percent = Math.round((processed / totalPools) * 100);
-        progressText.textContent = `${percent}%`;
+        progressText.textContent = `Chargement...`;
 
-        if (!data) continue;
+        if (!data) return;
 
         const doc = new DOMParser().parseFromString(data.contents, "text/html");
         const poolName = doc.querySelector("#ctl00_ctl00_contenu_texte_page_InstallationDetails1_hlTitre")?.innerText.trim() || "Nom inconnu";
@@ -184,23 +178,25 @@
             seenResults.add(entryKey);
 
             const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poolAddress)}`;
-            const poolHtml = `
+            htmlOutput += `
               <p>
                 <a href="${detailUrl}" target="_blank" style="color: #00bfff; text-decoration: none;"><strong>${poolName}</strong></a><br>
                 <a href="${mapsUrl}" target="_blank" style="color: #00ffcc; text-decoration: none;"><em>${poolAddress}</em></a><br>
                 ${hours}
               </p>
             `;
-            resultDiv.insertAdjacentHTML('beforeend', poolHtml);
           }
         });
+      });
+
+      await Promise.all(poolFetches);
+
+      if (htmlOutput === '') {
+        htmlOutput = "<p>Aucune information trouvée pour aujourd'hui.</p>";
       }
 
-      if (seenResults.size === 0) {
-        resultDiv.insertAdjacentHTML('beforeend', "<p>Aucune information trouvée pour aujourd'hui.</p>");
-      }
-
-      overlay.style.display = "none"; // hide the overlay when done
+      resultDiv.innerHTML += htmlOutput;
+      overlay.style.display = "none";
     }
   </script>
 </body>
