@@ -108,7 +108,7 @@
 
   <script>
     document.getElementById("today-date").textContent =
-      new Date().toLocaleDateString() + " - v2.2";
+      new Date().toLocaleDateString() + " - v2.3";
 
     async function fetchSchedules() {
       document.getElementById("today-date").style.display = "none";
@@ -192,7 +192,7 @@
       await Promise.all(poolFetches);
 
       if (htmlOutput === '') {
-        htmlOutput = "<p>Aucune information trouvée pour aujourd'hui.</p>";
+        htmlOutput = "<p>Erreur - Aucune information trouvée, réessayer.</p>";
       }
 
       resultDiv.innerHTML += htmlOutput;
