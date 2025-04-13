@@ -109,7 +109,8 @@
   <script>
     const myCustomDate = new Date();
     const displayDate = myCustomDate.toLocaleDateString();
-    document.getElementById("today-date").textContent = displayDate;
+   document.getElementById("today-date").textContent = `${displayDate} - v2.1`;
+
 
     async function fetchSchedules() {
       document.getElementById("today-date").style.display = "none";
