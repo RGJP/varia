@@ -1,127 +1,163 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Où nager aujourd'hui à Québec ?</title>
-    <style>
-        body {
-            background-color: #002244;
-            color: white;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 20px;
-            min-height: 90vh;
-            box-sizing: border-box;
-        }
-
-        h1 {
-            margin-bottom: 20px;
-            font-size: 24px;
-        }
-
-        button {
-            padding: 15px 30px;
-            font-size: 18px;
-            background-color: #0077cc;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 5px;
-            margin-top: 20px;
-            width: 100%;
-            max-width: 300px;
-        }
-
-        button:hover {
-            background-color: #005599;
-        }
-
-        #result {
-            margin-top: 20px;
-            font-size: 18px;
-            max-width: 90%;
-            word-wrap: break-word;
-        }
-
-        p {
-            margin: 10px 0;
-        }
-
-        a {
-            color: #00bfff;
-            text-decoration: none;
-        }
-
-        @media (max-width: 600px) {
-            body {
-                padding: 10px;
-            }
-            h1 {
-                font-size: 22px;
-            }
-            button {
-                font-size: 16px;
-                padding: 12px 20px;
-            }
-            #result {
-                font-size: 16px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <h1 id="main-title"></h1>
-    <button onclick="fetchSchedules()">Où nager aujourd'hui à Québec?</button>
-    <div id="result"></div>
-    <p id="today-date" style="font-size:small;"></p>
-    <script>
-
-const myCustomDate = new Date();
-  const displayDate = myCustomDate.toLocaleDateString();
-  document.getElementById("today-date").textContent = displayDate;
-   
-//MAIN FETCHSCHEDULES FUNCTION
-
-async function fetchSchedules() {
-    document.getElementById("today-date").style.display = "none";
-    const resultDiv = document.getElementById("result");
-    const title = document.getElementById("main-title");
-    title.style.display = "block";
-    
-    const baseUrl = "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=";
-    const poolIds = [177, 173, 320, 165, 179, 172, 175, 167, 178, 174, 176, 171, 170, 169, 168, 166, 164, 163, 712];
-
-    const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long' });
-    const formattedDate = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-
-    resultDiv.innerHTML = `Bains trouvés pour <strong>${formattedDate}</strong><br>Cliquez sur le nom de piscine pour valider ou sur l'adresse pour navigation Google Maps<br><hr>`;
-    const header = document.createElement("p");
-    header.innerHTML = ``;
-    resultDiv.appendChild(header);
-
-    const seenResults = new Set();
-
-    // Retry helper
-    async function fetchWithRetry(url, attempts = 3, delay = 500) {
-        for (let i = 0; i < attempts; i++) {
-            try {
-                const res = await fetch(url);
-                if (res.ok) return await res.json();
-            } catch (_) {}
-            await new Promise(r => setTimeout(r, delay * (i + 1)));
-        }
-        return null;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Où nager aujourd'hui à Québec ?</title>
+  <style>
+    body {
+      background-color: #002244;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+      min-height: 90vh;
+      box-sizing: border-box;
     }
 
-    // Fetch each pool one by one
-    for (const id of poolIds) {
+    h1 {
+      margin-bottom: 20px;
+      font-size: 24px;
+    }
+
+    button {
+      padding: 15px 30px;
+      font-size: 18px;
+      background-color: #0077cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-top: 20px;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    button:hover {
+      background-color: #005599;
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      max-width: 90%;
+      word-wrap: break-word;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    a {
+      color: #00bfff;
+      text-decoration: none;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 10px;
+      }
+      h1 {
+        font-size: 22px;
+      }
+      button {
+        font-size: 16px;
+        padding: 12px 20px;
+      }
+      #result {
+        font-size: 16px;
+      }
+    }
+
+    #loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.85);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      color: white;
+      font-size: 2em;
+      flex-direction: column;
+      display: none;
+    }
+
+    #loading-overlay span {
+      margin-top: 10px;
+      font-size: 1.2em;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="main-title"></h1>
+  <button onclick="fetchSchedules()">Où nager aujourd'hui à Québec?</button>
+  <div id="result"></div>
+  <p id="today-date" style="font-size:small;"></p>
+
+  <div id="loading-overlay">
+    Chargement... <span id="loading-progress">0%</span>
+  </div>
+
+  <script>
+    const myCustomDate = new Date();
+    const displayDate = myCustomDate.toLocaleDateString();
+    document.getElementById("today-date").textContent = displayDate;
+
+    async function fetchSchedules() {
+      document.getElementById("today-date").style.display = "none";
+      const resultDiv = document.getElementById("result");
+      const title = document.getElementById("main-title");
+      const overlay = document.getElementById("loading-overlay");
+      const progressText = document.getElementById("loading-progress");
+
+      title.style.display = "block";
+      overlay.style.display = "flex";
+
+      const baseUrl = "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=";
+      const poolIds = [177, 173, 320, 165, 179, 172, 175, 167, 178, 174, 176, 171, 170, 169, 168, 166, 164, 163];
+      const totalPools = poolIds.length;
+
+      const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long' });
+      const formattedDate = new Date().toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+
+      resultDiv.innerHTML = `Bains trouvés pour <strong>${formattedDate}</strong><br>Cliquez sur le nom de piscine pour valider ou sur l'adresse pour navigation Google Maps<br><hr>`;
+
+      const seenResults = new Set();
+
+      async function fetchWithRetry(url, attempts = 3, delay = 500) {
+        for (let i = 0; i < attempts; i++) {
+          try {
+            const res = await fetch(url);
+            if (res.ok) return await res.json();
+          } catch (_) {}
+          await new Promise(r => setTimeout(r, delay * (i + 1)));
+        }
+        return null;
+      }
+
+      let processed = 0;
+
+      for (const id of poolIds) {
         const url = `https://api.allorigins.win/get?url=${encodeURIComponent(baseUrl + id)}`;
         const data = await fetchWithRetry(url);
+
+        processed++;
+        const percent = Math.round((processed / totalPools) * 100);
+        progressText.textContent = `${percent}%`;
+
         if (!data) continue;
 
         const doc = new DOMParser().parseFromString(data.contents, "text/html");
@@ -131,43 +167,39 @@ async function fetchSchedules() {
         const detailUrl = baseUrl + id;
 
         doc.querySelectorAll(".tableau_horaire_loisirs tr").forEach(row => {
-            const day = row.querySelector("th")?.innerText.trim();
-            let hours = row.querySelector("td")?.innerText.trim().replace(/<[^>]*>/g, ' ') || '';
+          const day = row.querySelector("th")?.innerText.trim();
+          let hours = row.querySelector("td")?.innerText.trim().replace(/<[^>]*>/g, ' ') || '';
 
-            const keywords = ['Aînés', 'Adultes', 'Longueurs', 'Tous'];
-            keywords.forEach(word => {
-                const regex = new RegExp(`\\b${word}(?!\\s)`, 'gi');
-                hours = hours.replace(regex, `${word} `);
-            });
+          const keywords = ['Aînés', 'Adultes', 'Longueurs', 'Tous'];
+          keywords.forEach(word => {
+            const regex = new RegExp(`\\b${word}(?!\\s)`, 'gi');
+            hours = hours.replace(regex, `${word} `);
+          });
 
-            if (day?.toLowerCase() === today.toLowerCase() && hours) {
-                const entryKey = `${poolName}: ${hours}`;
-                if (seenResults.has(entryKey)) return;
-                seenResults.add(entryKey);
+          if (day?.toLowerCase() === today.toLowerCase() && hours) {
+            const entryKey = `${poolName}: ${hours}`;
+            if (seenResults.has(entryKey)) return;
+            seenResults.add(entryKey);
 
-                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poolAddress)}`;
-                const poolHtml = `
-                    <p>
-                        <a href="${detailUrl}" target="_blank" style="color: #00bfff; text-decoration: none;"><strong>${poolName}</strong></a><br>
-                        <a href="${mapsUrl}" target="_blank" style="color: #00ffcc; text-decoration: none;"><em>${poolAddress}</em></a><br>
-                        ${hours}
-                    </p>
-                `;
-
-                resultDiv.insertAdjacentHTML('beforeend', poolHtml);
-            }
+            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(poolAddress)}`;
+            const poolHtml = `
+              <p>
+                <a href="${detailUrl}" target="_blank" style="color: #00bfff; text-decoration: none;"><strong>${poolName}</strong></a><br>
+                <a href="${mapsUrl}" target="_blank" style="color: #00ffcc; text-decoration: none;"><em>${poolAddress}</em></a><br>
+                ${hours}
+              </p>
+            `;
+            resultDiv.insertAdjacentHTML('beforeend', poolHtml);
+          }
         });
-    }
+      }
 
-    if (seenResults.size === 0) {
+      if (seenResults.size === 0) {
         resultDiv.insertAdjacentHTML('beforeend', "<p>Aucune information trouvée pour aujourd'hui.</p>");
+      }
+
+      overlay.style.display = "none"; // hide the overlay when done
     }
-}
-
-
-// END MAIN FETCHSCHEDULES FUNCTION
-
-    </script>
-
+  </script>
 </body>
 </html>
