@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mindfulness Pause</title>
+  <title>Mindfulness Pause v1.2</title>
   <style>
     body {
       background-color: #162d4d;
@@ -115,18 +115,19 @@
   <div class="message" id="message"></div>
 
   <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      const isEdge = () => {
-        const userAgent = navigator.userAgent.toLowerCase();
-        return userAgent.includes('edg/');
-      };
+window.addEventListener('DOMContentLoaded', () => {
+  const isEdge = () => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    return userAgent.includes('edg/') || userAgent.includes('edga') || userAgent.includes('edge');
+  };
 
-      if (isEdge()) {
-        console.log('OK - MS Edge detected');
-      } else {
-        alert('This WebApp only works in Microsoft Edge for improved voice quality. Please open this page in Microsoft Edge.');
-      }
-    });
+  if (isEdge()) {
+    console.log('OK - MS Edge detected');
+  } else {
+    alert('This WebApp only works in Microsoft Edge for improved voice quality. Please open this page in Microsoft Edge.');
+  }
+});
+
 
     const fiveMinBtn = document.getElementById('five-min');
     const tenMinBtn = document.getElementById('ten-min');
