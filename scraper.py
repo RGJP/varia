@@ -9,10 +9,10 @@ def scrape():
         soup = BeautifulSoup(response.text, "html.parser")
         html_content = soup.prettify()
 
-        with open("scraped_page.html", "w", encoding="utf-8") as file:
+        with open("datapiscinesvq.html", "w", encoding="utf-8") as file:
             file.write(html_content)
 
-        print("Scraping complete!")
+        print("Scraping complete! Saved as 'datapiscinesvq.html'.")
 
 if __name__ == "__main__":
     scrape()
