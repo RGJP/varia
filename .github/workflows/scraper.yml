@@ -24,13 +24,18 @@ jobs:
       - name: Run scraper script
         run: python3 scraper.py
 
+      - name: Move file to repository
+        run: mv datapiscinesvq.html $GITHUB_WORKSPACE/
+
       - name: Configure Git
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
       - name: Commit and Push HTML File
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git add datapiscinesvq.html
           git commit -m "Update scraped HTML file"
-          git push origin main
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
