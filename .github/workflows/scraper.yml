@@ -1,1 +1,25 @@
+name: Daily Web Scraper
 
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs at 00:00 UTC daily
+  workflow_dispatch:  # Allows manual execution
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y python3 python3-pip
+
+      - name: Install Python packages
+        run: pip3 install requests beautifulsoup4
+
+      - name: Run scraper script
+        run: python3 scraper.py
