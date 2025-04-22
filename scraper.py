@@ -9,8 +9,12 @@ def scrape():
         soup = BeautifulSoup(response.text, "html.parser")
         html_content = soup.prettify()
 
-        with open("datapiscinesvq.html", "w", encoding="utf-8") as file:
-            file.write(html_content)
+      from datetime import datetime
+
+with open("datapiscinesvq.html", "w", encoding="utf-8") as file:
+    file.write(f"<!-- Scraped at {datetime.utcnow()} UTC -->\n")
+    file.write(html_content)
+
 
         print("Scraping complete! Saved as 'datapiscinesvq.html'.")
 
