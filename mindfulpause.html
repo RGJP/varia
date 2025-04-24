@@ -122,6 +122,7 @@
     <button id="ten-min">10 Minutes</button>
   </div>
 
+  <div id="duration-message" style="font-size: 1.5rem; margin-bottom: 10px;"></div>
   <div class="timer" id="timer">00:00</div>
   <div class="progress-container" id="progress-container">
     <div class="progress-bar" id="progress-bar"></div>
@@ -184,66 +185,63 @@ function getRandom(arr) {
 
 const scriptVariations = {
   0: [
-    "Let's begin. First, find a comfortable position and gently close your eyes.",
-    "Start by settling into a relaxed position. Softly close your eyes.",
-    "Begin by finding a comfortable position. Close your eyes gently and rest your hands.",
-    "Let's start by getting comfortable. Close your eyes and bring your focus inward.",
-    "Take a moment to get settled. Find stillness and softly let your eyes close.",
-    "Ease into stillness by finding a relaxed posture. Gently close your eyes.",
-    "Begin in a comfortable, restful position. Close your eyes and let your attention turn inward."
+    "Welcome. Let's begin. First, find a comfortable position and gently close your eyes.",
+    "Welcome. Start by settling into a relaxed position. Softly close your eyes.",
+    "Welcome. Begin by finding a comfortable position. Close your eyes gently and rest your hands.",
+    "Welcome. Let's start by getting comfortable. Close your eyes and bring your focus inward.",
+    "Welcome. Take a moment to get settled. Find stillness and softly let your eyes close.",
+    "Welcome. Ease into stillness by finding a relaxed posture, and gently close your eyes.",
+    "Welcome. Begin in a comfortable, restful position. Close your eyes and let your attention turn inward."
   ],
   30: [
     "Take a few deep breaths. In through your nose, and out through your mouth. Let your body settle on its own.",
     "Breathe deeply, inhale through the nose, exhale through the mouth. Let yourself arrive here, in this moment.",
     "Take deep breaths. Feel the air enter and leave, in through the nose, and out through the mouth.",
     "Inhale deeply... exhale fully, in through the nose, and out through the mouth. Allow each breath to settle your body and mind.",
-    "Breathe in deeply... and breathe out fully. Let your breath bring you to the Now.",
-    "Draw in a full breath, and release it fully. Let your body start to unwind.",
-    "Inhale calm... exhale tension. Let breath guide you into presence."
+    "Breathe in deeply... and breathe out fully through your mouth. Let your breath bring you to the Now.",
+    "Draw in a full breath, and release it fully through your mouth. Let your body start to unwind.",
   ],
   60: [
-    "Begin to notice how your body feels. Soften any tension in your face, jaw, shoulders, your hands. Releasing all tension from head to toe.",
+    "Begin to notice how your body feels. Soften any tension in your face, your jaw, your shoulders, your hands. Releasing all tension from head to toe.",
     "Start scanning your body from head to toe. Relax your shoulders, your face, your hands. Let tension dissolve on its own.",
-    "Tune into your physical body. Gently release any tightness in your jaw, neck, or hands, in all areas of the body.",
-    "Feel into your body. Allow each part to soften—your face, your chest, your limbs, the whole body.",
+    "Tune into your physical body. Gently release any tightness in your jaw, your neck, your hands, in all areas of the body.",
+    "Feel into your body. Allow each part to soften. Your face, your chest, your limbs, the whole body.",
     "Bring attention to your body. Loosen the areas that feel tight. Let go of tension.",
-    "Gently check in with your body. Soften tight areas. Let tension melt away.",
+    "Gently check in with your body. Soften any tight areas. Let tension melt away.",
     "Let your body relax. Soften your face, your hands, your belly, your whole body. Let tension dissolve."
   ],
   90: [
     "Bring awareness to surrounding sounds and any sensations within. Notice your current mood and any emotions present. Let everything be as it is, like clouds in the sky.",
     "Listen to the sounds around you. Feel sensations as they come and go. Let your emotions be, without judgment.",
     "Observe the moment, sounds, feelings, thoughts, without clinging. Let everything drift by like clouds.",
-    "Feel the world around and within. Allow it all to flow without needing to change anything. Everything comes and goes, you simply observe.",
+    "Feel the world around and within you. Allow it all to flow without needing to change anything. Everything comes and goes, you simply observe.",
     "Notice what’s present, within and around you. Let it be, just as it is.",
-    "Be the silent witness to thoughts and emotions. Let them rise and fall like waves.",
-    "Observe without reacting. Let everything pass naturally, just like clouds moving in the sky."
+    "Bring awareness to surrounding sounds and any sensations within. Notice your current mood and any emotions present. Let them rise and fall like waves.",
   ],
   120: [
   "..."
   ],
   180: [
     "Settle your attention on the breath. Notice its natural rhythm, rising with the inhale, falling with the exhale. Nothing else to do.",
-    "Bring your focus to the breath. Feel it flow in and out, naturally. Nothing to do, just being here.",
+    "Bring your focus to the breath. Feel it flow in and out, naturally. Nothing to do at all. Nothing to change.",
     "Notice the breath, how it moves in your body. Let it guide your awareness gently.",
-    "Focus on the breath. Inhale, exhale, let the natural rhythm soothe you into stillness.",
-    "Feel your breath like a gentle wave. Simply ride it, moment by moment. Rising and falling."
+    "Focus on the breath. Inhale, exhale, rise and fall. Let the natural rhythm soothe you into stillness.",
+    "Feel your breath like a gentle wave. Riding it moment by moment. Rising and falling."
   ],
   240: [
-    "Simply witnessing, nothing to change.",
-    "Just observing. Everything comes and goes.",
+    "Nothing to change, simply witnessing",
+    "Just observing. Everything comes and goes, as it is.",
     "Be the simple observer. Let things be as they are.",
     "Resting in awareness, everything as it is, nothing to change.",
     "Simply witnessing, nothing to pursue, nothing to reject."
   ],
   270: [
-    "As we begin to close, take a few deep breaths in and exhale letting go of any remaining tension.",
-    "Take deep breaths as we begin to close. Inhale peace... exhale any remaining tension.",
-    "Let’s end with some deep breaths in... and full breaths out.",
+    "As we begin to close, take a few deep breaths and exhale letting go of any remaining tension.",
+    "as we begin to close, take some deep breaths. Inhale peace... exhale any remaining tension.",
     "As we near the end of the meditation, breathe in gently... and breathe out with ease.",
   ],
   290: [
-    "Gently start to wiggle your fingers and toes. Bring subtle movement back to the body.",
+    "Gently start to wiggle your fingers and toes. Bring movement back to the body.",
     "Begin to move your body slowly, wiggle your fingers, your toes, feel into the physical world.",
     "Awaken the body with gentle movements, stretch or shift softly.",
     "Introduce some small movements back to the body, gently rotate your wrists or ankles",
@@ -260,12 +258,12 @@ const scriptVariations = {
     "Let the world come back into focus, eyes open, heart calm."
   ],
   300: [
-    "Your mindfulness pause is complete. Wishing you a peaceful rest of your day.",
-    "Your meditation is complete. Take this stillness with you, have a beautiful day ahead.",
-    "You've completed a moment of mindful presence, well done. May the rest of your day unfold with ease.",
-    "Your short practice is complete. Carry this calm with you into whatever comes next. Be well.",
-    "The meditation is complet, well done. Let the benefits of this pause ripple through your day.",
-    "You’ve taken a wonderful time for yourself. May your day continue with ease, balance and clarity"
+    "Your mindfulness pause is complete. Wishing you a peaceful rest of your day. Until next time, goodbye.",
+    "Your meditation is complete. Take this stillness with you, have a beautiful day ahead. Until next time, goodbye.",
+    "You've completed a moment of mindful presence, well done. May the rest of your day unfold with ease. Until next time, goodbye.",
+    "Your pause is complete. Carry this calm with you into whatever comes next. Be well. Until next time, goodbye.",
+    "The meditation is complete, well done. Let the benefits of this pause ripple through your day. Until next time, goodbye.",
+    "You’ve taken a wonderful time for yourself. May your day continue with ease, balance and clarity. Until next time, goodbye."
   ]
 };
 
@@ -347,7 +345,7 @@ async function processInstructions(meditationScript) {
 function showCountdownOverlay(startCallback) {
   const overlay = document.getElementById('countdown-overlay');
   const numberDisplay = document.getElementById('countdown-number');
-  let count = 10;
+  let count = 7;
 
   overlay.style.display = 'flex';
   numberDisplay.textContent = count;
@@ -381,7 +379,7 @@ function startMeditation(meditationScript, duration) {
 
 
 
-  const preferredNames = ["Steffan", "Liam"]; // good voices are "Eric", "Steffan", "Jenny", "Liam","Thomas","Christopher"
+  const preferredNames = ["Steffan"]; // good voices are "Eric", "Steffan", "Jenny", "Liam","Thomas","Christopher"
 
 const matchingVoices = enVoices.filter(voice =>
   preferredNames.some(name => {
@@ -430,24 +428,27 @@ function resetMeditation() {
 }
 
 
-    fiveMinBtn.addEventListener('click', () => {
-      const freshScript = generateFiveMinuteMeditation();
-      resetMeditation();
-      showCountdownOverlay(() => startMeditation(freshScript, 300));
-    });
+fiveMinBtn.addEventListener('click', () => {
+  const freshScript = generateFiveMinuteMeditation();
+  resetMeditation();
+  document.getElementById('duration-message').textContent = "5 minutes meditation chosen";
+  showCountdownOverlay(() => startMeditation(freshScript, 300));
+});
 
-    const sevenMinBtn = document.getElementById('seven-min');
-    sevenMinBtn.addEventListener('click', () => {
-      const stretchedScript = generateStretchedSevenMinuteMeditation();
-      resetMeditation();
-      showCountdownOverlay(() => startMeditation(stretchedScript, 420));
-    });
+sevenMinBtn.addEventListener('click', () => {
+  const stretchedScript = generateStretchedSevenMinuteMeditation();
+  resetMeditation();
+  document.getElementById('duration-message').textContent = "7 minutes meditation chosen";
+  showCountdownOverlay(() => startMeditation(stretchedScript, 420));
+});
 
-    tenMinBtn.addEventListener('click', () => {
-      const stretchedScript = generateStretchedTenMinuteMeditation();
-      resetMeditation();
-      showCountdownOverlay(() => startMeditation(stretchedScript, 600));
-    });
+tenMinBtn.addEventListener('click', () => {
+  const stretchedScript = generateStretchedTenMinuteMeditation();
+  resetMeditation();
+  document.getElementById('duration-message').textContent = "10 minutes meditation chosen";
+  showCountdownOverlay(() => startMeditation(stretchedScript, 600));
+});
+
   </script>
 
   <div id="countdown-overlay" style="display: none;">
