@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mindfulness Pause v2.2</title>
+  <title>Mindfulness Pause v2.3</title>
 
   <!-- ─────────── Styles ─────────── -->
   <style>
@@ -207,7 +207,8 @@
         });
 
       const pickVoice = vs => {
-        const prefs=['Steffan','Christopher','Eric','Liam'];
+        const prefs=['Steffan'];
+        // const prefs=['Steffan','Christopher','Eric','Liam'];
         const en = vs.filter(v=>v.lang.toLowerCase().startsWith('en'));
         const match = en.filter(v=>prefs.some(n=>new RegExp(`\\b${n}\\b`,'i').test(v.name)));
         return match.length ? rand(match) : en[0] || null;
