@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mindfulness Pause v2.3</title>
+  <title>Mindfulness Pause v2.4</title>
 
   <!-- ─────────── Styles ─────────── -->
   <style>
@@ -263,7 +263,7 @@
         }
     
         await new Promise(r=>setTimeout(r,2000));
-        location.reload();
+        window.location.href = window.location.href;
       };
 
       const start = async totalSeconds=>{
