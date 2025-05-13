@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Step Counter v2.2</title>
+  <title>Step Counter v2.3</title>
   <style>
     html, body {
       margin: 0;
@@ -81,18 +81,16 @@
   </div>
 
   <script>
-    // Calibration factor: adjust to match true steps
-    // Example: for 39 raw steps to equal 30 true steps → factor = 30 / 39 ≈ 0.769
     const calibrationFactor = 0.700;
+    const minStepInterval = 400;
+    const stepLength = 0.78;
+    const caloriesPerStep = 0.04;
 
     let rawSteps = 0;
     let lastZ = 0;
     let lastStepTime = 0;
     let peakDetected = false;
-
-    const minStepInterval = 400;   // ms between steps
-    const stepLength = 0.78;       // meters
-    const caloriesPerStep = 0.04;  // kcal
+    let isTracking = false;
 
     const stepEl = document.getElementById('stepCount');
     const distEl = document.getElementById('distKm');
@@ -111,6 +109,8 @@
     }
 
     function handleMotion(event) {
+      if (!isTracking) return;
+
       const acc = event.acceleration;
       if (!acc || typeof acc.z !== 'number') return;
 
@@ -133,19 +133,26 @@
       }
     }
 
-    function startTracking() {
-      if (window.DeviceMotionEvent && DeviceMotionEvent.requestPermission) {
-        DeviceMotionEvent.requestPermission().then(response => {
-          if (response === 'granted') {
-            window.addEventListener('devicemotion', handleMotion);
-            startBtn.disabled = true;
-          } else {
-            alert("Permission denied.");
-          }
-        }).catch(console.error);
+    function toggleTracking() {
+      if (!isTracking) {
+        if (window.DeviceMotionEvent && DeviceMotionEvent.requestPermission) {
+          DeviceMotionEvent.requestPermission().then(response => {
+            if (response === 'granted') {
+              window.addEventListener('devicemotion', handleMotion);
+              isTracking = true;
+              startBtn.textContent = 'Pause';
+            } else {
+              alert("Permission denied.");
+            }
+          }).catch(console.error);
+        } else {
+          window.addEventListener('devicemotion', handleMotion);
+          isTracking = true;
+          startBtn.textContent = 'Pause';
+        }
       } else {
-        window.addEventListener('devicemotion', handleMotion);
-        startBtn.disabled = true;
+        isTracking = false;
+        startBtn.textContent = 'Start';
       }
     }
 
@@ -156,13 +163,14 @@
         lastStepTime = 0;
         peakDetected = false;
         updateDisplay();
-        window.removeEventListener('devicemotion', handleMotion);
-        startBtn.disabled = false;
+        isTracking = false;
+        startBtn.textContent = 'Start';
       }
     }
 
-    startBtn.addEventListener('click', startTracking);
+    startBtn.addEventListener('click', toggleTracking);
     resetBtn.addEventListener('click', resetAll);
+    window.addEventListener('devicemotion', handleMotion);
   </script>
 </body>
 </html>
