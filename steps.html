@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Step Counter 1.4</title>
+  <title>Step Counter v1.7</title>
   <style>
     html, body {
       margin: 0;
@@ -68,16 +68,21 @@
   </div>
 
   <script>
+    // Calibration factor: adjust to correct raw detected steps to true steps
+    // Example: for 39 raw steps to equal 30 true steps, factor = 30/39 ≈ 0.769
+    const calibrationFactor = 30 / 39;
+
     // Variables
-    let stepCount = 0;
+    let rawSteps = 0;
+    let displaySteps = 0;
     let distKm = 0;
     let distMi = 0;
     let calories = 0;
     const stepLength = 0.78;      // meters per step (average)
     const caloriesPerStep = 0.04; // kcal per step (average)
-    const threshold = 1.5;        // m/s² threshold for step detection (raised for accuracy)
-    const minStepInterval = 400;  // ms between steps (prevents double-count)
-    const alpha = 0.2;            // filter coefficient (more smoothing)
+    const threshold = 1.5;        // m/s² threshold
+    const minStepInterval = 400;  // ms
+    const alpha = 0.2;            // filter coefficient
     let filteredAcc = 0;
     let lastFilteredAcc = 0;
     let lastStepTime = 0;
@@ -92,7 +97,7 @@
 
     // Update displayed values
     function updateDisplay() {
-      stepEl.textContent = stepCount;
+      stepEl.textContent = displaySteps;
       kmEl.textContent   = distKm.toFixed(2);
       miEl.textContent   = distMi.toFixed(2);
       calEl.textContent  = calories.toFixed(2);
@@ -104,7 +109,6 @@
       if (!acc) return;
       const mag = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
       const netAcc = mag - 9.81; // remove gravity
-      // Low-pass filter
       filteredAcc = alpha * filteredAcc + (1 - alpha) * netAcc;
 
       const now = Date.now();
@@ -113,11 +117,13 @@
         lastFilteredAcc <= threshold &&
         (now - lastStepTime) > minStepInterval
       ) {
-        stepCount++;
+        rawSteps++;
         lastStepTime = now;
-        distKm = (stepCount * stepLength) / 1000;
+        // Apply calibration
+        displaySteps = Math.round(rawSteps * calibrationFactor);
+        distKm = (displaySteps * stepLength) / 1000;
         distMi = distKm * 0.621371;
-        calories = stepCount * caloriesPerStep;
+        calories = displaySteps * caloriesPerStep;
         updateDisplay();
       }
       lastFilteredAcc = filteredAcc;
@@ -147,7 +153,8 @@
     function resetAll() {
       if (confirm('Reset all data?')) {
         window.removeEventListener('devicemotion', onDeviceMotion);
-        stepCount = 0;
+        rawSteps = 0;
+        displaySteps = 0;
         distKm = 0;
         distMi = 0;
         calories = 0;
