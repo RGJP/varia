@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Step Counter v2.0</title>
+  <title>Step Counter v2.2</title>
   <style>
     html, body {
       margin: 0;
@@ -71,7 +71,7 @@
       <div id="distKm" class="panel-value">0.00</div>
     </div>
     <div class="panel">
-      <div class="panel-label">Calories Burned (kcal)</div>
+      <div class="panel-label">Calories (kcal)</div>
       <div id="calories" class="panel-value">0.00</div>
     </div>
     <div class="buttons">
@@ -81,16 +81,18 @@
   </div>
 
   <script>
-    let stepCount = 0;
-    let distKm = 0;
-    let calories = 0;
+    // Calibration factor: adjust to match true steps
+    // Example: for 39 raw steps to equal 30 true steps → factor = 30 / 39 ≈ 0.769
+    const calibrationFactor = 0.700;
+
+    let rawSteps = 0;
+    let lastZ = 0;
+    let lastStepTime = 0;
+    let peakDetected = false;
+
+    const minStepInterval = 400;   // ms between steps
     const stepLength = 0.78;       // meters
     const caloriesPerStep = 0.04;  // kcal
-    const minStepInterval = 400;   // ms between steps
-
-    let lastStepTime = 0;
-    let lastZ = 0;
-    let peakDetected = false;
 
     const stepEl = document.getElementById('stepCount');
     const distEl = document.getElementById('distKm');
@@ -99,9 +101,13 @@
     const resetBtn = document.getElementById('resetBtn');
 
     function updateDisplay() {
-      stepEl.textContent = stepCount;
-      distEl.textContent = (stepCount * stepLength / 1000).toFixed(2);
-      calEl.textContent = (stepCount * caloriesPerStep).toFixed(2);
+      const adjustedSteps = Math.round(rawSteps * calibrationFactor);
+      const distKm = (adjustedSteps * stepLength) / 1000;
+      const calories = adjustedSteps * caloriesPerStep;
+
+      stepEl.textContent = adjustedSteps;
+      distEl.textContent = distKm.toFixed(2);
+      calEl.textContent = calories.toFixed(2);
     }
 
     function handleMotion(event) {
@@ -110,19 +116,16 @@
 
       const now = Date.now();
       const z = acc.z;
-
       const zDiff = z - lastZ;
       lastZ = z;
 
-      // Detect a rising edge: upward bounce
       if (!peakDetected && zDiff > 1.2) {
         peakDetected = true;
       }
 
-      // Wait for the fall back down (negative diff) after peak
       if (peakDetected && zDiff < -1.2) {
         if (now - lastStepTime > minStepInterval) {
-          stepCount++;
+          rawSteps++;
           lastStepTime = now;
           updateDisplay();
         }
@@ -137,7 +140,7 @@
             window.addEventListener('devicemotion', handleMotion);
             startBtn.disabled = true;
           } else {
-            alert("Permission denied for motion sensors.");
+            alert("Permission denied.");
           }
         }).catch(console.error);
       } else {
@@ -148,12 +151,10 @@
 
     function resetAll() {
       if (confirm("Reset all data?")) {
-        stepCount = 0;
-        distKm = 0;
-        calories = 0;
+        rawSteps = 0;
         lastZ = 0;
-        peakDetected = false;
         lastStepTime = 0;
+        peakDetected = false;
         updateDisplay();
         window.removeEventListener('devicemotion', handleMotion);
         startBtn.disabled = false;
