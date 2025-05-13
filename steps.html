@@ -1,156 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <!-- Ensuring mobile compatibility -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CP Step Tracker</title>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>o4 Step Counter</title>
   <style>
-    /* Resetting default margins/padding */
-    html, body {
+    /* Full-screen center layout */
+    body {
       margin: 0;
       padding: 0;
-    }
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #00008B; /* Dark blue */
-      color: #FFD700; /* Gold */
+      background-color: #001f3f;       /* dark blue */
+      color: #ffd700;                  /* gold */
+      font-family: Arial, Helvetica, sans-serif;
       display: flex;
       flex-direction: column;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       min-height: 100vh;
       text-align: center;
-      padding: 20px;
-      box-sizing: border-box;
     }
-    .stat {
-      font-size: 2em;
-      margin: 10px 0;
+    #container {
+      width: 90%;
+      max-width: 400px;
+    }
+    h1, p {
+      margin: 0.5em 0;
+      font-size: 1.5em;
     }
     button {
-      font-size: 1.5em;
-      margin: 10px;
-      padding: 10px 20px;
+      display: inline-block;
+      width: 45%;
+      margin: 1em 2.5%;
+      padding: 0.75em 0;
+      font-size: 1em;
+      background-color: #ffd700;
+      color: #001f3f;
       border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      background-color: #FFD700;
-      color: #00008B;
-      transition: transform 0.1s ease-in-out;
+      border-radius: 0.5em;
     }
-    button:active {
-      transform: scale(0.98);
+    button:disabled {
+      opacity: 0.5;
     }
   </style>
 </head>
 <body>
-  <!-- Display sections -->
-  <div class="stat" id="steps">Steps: 0</div>
-  <div class="stat" id="km">Distance (km): 0</div>
-  <div class="stat" id="miles">Distance (miles): 0</div>
-  <div class="stat" id="calories">Calories burned: 0</div>
-
-  <!-- Control buttons -->
-  <button id="startButton">Start</button>
-  <button id="resetButton">Reset</button>
+  <div id="container">
+    <h1>Steps: <span id="stepCount">0</span></h1>
+    <p>Distance (km): <span id="distanceKm">0.00</span></p>
+    <p>Distance (miles): <span id="distanceMiles">0.00</span></p>
+    <p>Calories burned: <span id="calories">0.00</span></p>
+    <button id="startBtn">Start</button>
+    <button id="resetBtn">Reset</button>
+  </div>
 
   <script>
-    // Global variables to track counts and settings
-    let stepCount = 0;
-    let lastStepTime = 0;
-    const threshold = 1.2;         // Acceleration threshold (m/s²) to determine a step
-    const debounceTime = 400;      // Minimum time (ms) between steps to avoid double counting
-    const stepLengthMeters = 0.8;  // Average step length in meters (can be adjusted)
-    const caloriesPerStep = 0.04;  // Approximate calories burned per step
+    (function() {
+      let stepCount = 0;
+      let lastStepTime = 0;
+      const threshold = 1.2;          // acceleration threshold (m/s²)
+      const stepDelay = 300;          // minimum ms between steps
+      const strideLength = 0.78;      // average stride in meters
+      const caloriesPerStep = 0.04;   // average calories burned per step
+      let listening = false;
 
-    let motionEventListenerActive = false;
+      // DOM elements
+      const stepElem = document.getElementById('stepCount');
+      const kmElem   = document.getElementById('distanceKm');
+      const miElem   = document.getElementById('distanceMiles');
+      const calElem  = document.getElementById('calories');
+      const startBtn = document.getElementById('startBtn');
+      const resetBtn = document.getElementById('resetBtn');
 
-    // Element references
-    const stepsDiv = document.getElementById('steps');
-    const kmDiv = document.getElementById('km');
-    const milesDiv = document.getElementById('miles');
-    const caloriesDiv = document.getElementById('calories');
-    const startButton = document.getElementById('startButton');
-    const resetButton = document.getElementById('resetButton');
+      // Refresh on-screen values
+      function updateDisplay() {
+        stepElem.textContent = stepCount;
+        const distMeters = stepCount * strideLength;
+        const distKm = distMeters / 1000;
+        kmElem.textContent = distKm.toFixed(2);
+        miElem.textContent = (distKm * 0.621371).toFixed(2);
+        calElem.textContent = (stepCount * caloriesPerStep).toFixed(2);
+      }
 
-    // Update the displayed stats
-    function updateDisplay() {
-      stepsDiv.textContent = "Steps: " + stepCount;
-      let distanceMeters = stepCount * stepLengthMeters;
-      let distanceKm = distanceMeters / 1000;
-      let distanceMiles = distanceMeters * 0.000621371;
-      kmDiv.textContent = "Distance (km): " + distanceKm.toFixed(2);
-      milesDiv.textContent = "Distance (miles): " + distanceMiles.toFixed(2);
-      let calories = stepCount * caloriesPerStep;
-      caloriesDiv.textContent = "Calories burned: " + calories.toFixed(2);
-    }
+      // Peak-detection step counter
+      function handleMotion(event) {
+        let ax, ay, az;
+        if (event.acceleration && event.acceleration.x !== null) {
+          ({ x: ax, y: ay, z: az } = event.acceleration);
+        } else if (event.accelerationIncludingGravity) {
+          ax = event.accelerationIncludingGravity.x;
+          ay = event.accelerationIncludingGravity.y;
+          // subtract gravity on approximate Z
+          az = event.accelerationIncludingGravity.z - 9.81;
+        } else {
+          return; // no usable data
+        }
 
-    // Handle the incoming device motion events to detect a step.
-    // A simple approach: if the magnitude of acceleration exceeds a threshold 
-    // and enough time has passed since the last step, count one step.
-    function handleMotion(event) {
-      let acc = event.acceleration;
-      // Use fallback if acceleration is null (some devices only provide accelerationIncludingGravity)
-      if (!acc || (acc.x === null && acc.y === null && acc.z === null)) {
-        acc = event.accelerationIncludingGravity;
-        if (!acc || (acc.x === null && acc.y === null && acc.z === null)) {
-          return;
+        const magnitude = Math.sqrt(ax*ax + ay*ay + az*az);
+        if (magnitude > threshold) {
+          const now = Date.now();
+          if (now - lastStepTime > stepDelay) {
+            stepCount++;
+            lastStepTime = now;
+            updateDisplay();
+          }
         }
       }
-      
-      let { x, y, z } = acc;
-      x = x || 0;
-      y = y || 0;
-      z = z || 0;
-      
-      let totalAcceleration = Math.sqrt(x * x + y * y + z * z);
-      let currentTime = Date.now();
-      
-      // If acceleration is above our threshold and debounce time has been met, count a step.
-      if (totalAcceleration > threshold && (currentTime - lastStepTime > debounceTime)) {
-        stepCount++;
-        lastStepTime = currentTime;
-        updateDisplay();
-      }
-    }
 
-    // Initialize motion detection. On iOS 13+ it will request permission.
-    function initMotion() {
-      if (typeof DeviceMotionEvent !== 'undefined' &&
-          typeof DeviceMotionEvent.requestPermission === 'function') {
-        DeviceMotionEvent.requestPermission()
-          .then(response => {
-            if (response === 'granted') {
-              window.addEventListener('devicemotion', handleMotion);
-              motionEventListenerActive = true;
-            } else {
-              alert("Permission not granted for accessing motion sensors.");
-            }
-          })
-          .catch(console.error);
-      } else {
-        // For devices not requiring explicit permission (e.g., many Android devices)
-        window.addEventListener('devicemotion', handleMotion);
-        motionEventListenerActive = true;
+      // Begin listening (with iOS permission if needed)
+      function startCounting() {
+        if (listening) return;
+        const enable = () => {
+          window.addEventListener('devicemotion', handleMotion);
+          listening = true;
+          startBtn.disabled = true;
+        };
+        if (typeof DeviceMotionEvent !== 'undefined' &&
+            typeof DeviceMotionEvent.requestPermission === 'function') {
+          // iOS 13+ Safari
+          DeviceMotionEvent.requestPermission()
+            .then(response => {
+              if (response === 'granted') enable();
+              else alert('Motion permission was denied.');
+            })
+            .catch(err => console.error(err));
+        } else {
+          // Android / other
+          enable();
+        }
       }
-    }
 
-    // Start button: begin tracking motion if not already started.
-    startButton.addEventListener('click', function() {
-      if (!motionEventListenerActive) {
-        initMotion();
-      }
-    });
-
-    // Reset button: confirm with the user then clear data.
-    resetButton.addEventListener('click', function() {
-      if (confirm("Are you sure you want to reset?")) {
+      // Reset all counters
+      function resetAll() {
+        if (!confirm('Are you sure you want to reset all values?')) return;
+        if (listening) {
+          window.removeEventListener('devicemotion', handleMotion);
+          listening = false;
+        }
         stepCount = 0;
         lastStepTime = 0;
         updateDisplay();
+        startBtn.disabled = false;
       }
-    });
+
+      startBtn.addEventListener('click', startCounting);
+      resetBtn.addEventListener('click', resetAll);
+    })();
   </script>
 </body>
 </html>
