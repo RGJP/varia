@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Step Counter v1.8</title>
+  <title>Step Counter v2.0</title>
   <style>
-    /* full-screen dark navy background, centered content */
     html, body {
       margin: 0;
       padding: 0;
@@ -17,13 +16,11 @@
       justify-content: center;
       font-family: Arial, sans-serif;
     }
-    /* outer container */
     .container {
       width: 90%;
       max-width: 360px;
       text-align: center;
     }
-    /* each stat panel */
     .panel {
       background-color: #002b6c;
       border-radius: 8px;
@@ -41,7 +38,6 @@
       font-weight: bold;
       margin-top: 0.3rem;
     }
-    /* button row */
     .buttons {
       display: flex;
       gap: 0.5rem;
@@ -75,10 +71,6 @@
       <div id="distKm" class="panel-value">0.00</div>
     </div>
     <div class="panel">
-      <div class="panel-label">Distance (miles)</div>
-      <div id="distMi" class="panel-value">0.00</div>
-    </div>
-    <div class="panel">
       <div class="panel-label">Calories Burned (kcal)</div>
       <div id="calories" class="panel-value">0.00</div>
     </div>
@@ -89,100 +81,81 @@
   </div>
 
   <script>
-    // Calibration factor: adjust to correct raw detected steps to true steps
-    // Example: for 39 raw steps to equal 30 true steps, factor = 30/39 ≈ 0.769
-    const calibrationFactor = 30 / 39;
-
-    // Variables
-    let rawSteps = 0;
-    let displaySteps = 0;
+    let stepCount = 0;
     let distKm = 0;
-    let distMi = 0;
     let calories = 0;
-    const stepLength = 0.78;      // meters per step (average)
-    const caloriesPerStep = 0.04; // kcal per step (average)
-    const threshold = 1.5;        // m/s² threshold
-    const minStepInterval = 400;  // ms
-    const alpha = 0.2;            // filter coefficient
-    let filteredAcc = 0;
-    let lastFilteredAcc = 0;
-    let lastStepTime = 0;
+    const stepLength = 0.78;       // meters
+    const caloriesPerStep = 0.04;  // kcal
+    const minStepInterval = 400;   // ms between steps
 
-    // DOM elements
+    let lastStepTime = 0;
+    let lastZ = 0;
+    let peakDetected = false;
+
     const stepEl = document.getElementById('stepCount');
-    const kmEl   = document.getElementById('distKm');
-    const miEl   = document.getElementById('distMi');
+    const distEl = document.getElementById('distKm');
     const calEl  = document.getElementById('calories');
     const startBtn = document.getElementById('startBtn');
     const resetBtn = document.getElementById('resetBtn');
 
-    // Update displayed values
     function updateDisplay() {
-      stepEl.textContent = displaySteps;
-      kmEl.textContent   = distKm.toFixed(2);
-      miEl.textContent   = distMi.toFixed(2);
-      calEl.textContent  = calories.toFixed(2);
+      stepEl.textContent = stepCount;
+      distEl.textContent = (stepCount * stepLength / 1000).toFixed(2);
+      calEl.textContent = (stepCount * caloriesPerStep).toFixed(2);
     }
 
-    // Device motion handler
-    function onDeviceMotion(event) {
-      const acc = event.accelerationIncludingGravity;
-      if (!acc) return;
-      const mag = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
-      const netAcc = mag - 9.81; // remove gravity
-      filteredAcc = alpha * filteredAcc + (1 - alpha) * netAcc;
+    function handleMotion(event) {
+      const acc = event.acceleration;
+      if (!acc || typeof acc.z !== 'number') return;
 
       const now = Date.now();
-      if (
-        filteredAcc > threshold &&
-        lastFilteredAcc <= threshold &&
-        (now - lastStepTime) > minStepInterval
-      ) {
-        rawSteps++;
-        lastStepTime = now;
-        // Apply calibration
-        displaySteps = Math.round(rawSteps * calibrationFactor);
-        distKm = (displaySteps * stepLength) / 1000;
-        distMi = distKm * 0.621371;
-        calories = displaySteps * caloriesPerStep;
-        updateDisplay();
+      const z = acc.z;
+
+      const zDiff = z - lastZ;
+      lastZ = z;
+
+      // Detect a rising edge: upward bounce
+      if (!peakDetected && zDiff > 1.2) {
+        peakDetected = true;
       }
-      lastFilteredAcc = filteredAcc;
+
+      // Wait for the fall back down (negative diff) after peak
+      if (peakDetected && zDiff < -1.2) {
+        if (now - lastStepTime > minStepInterval) {
+          stepCount++;
+          lastStepTime = now;
+          updateDisplay();
+        }
+        peakDetected = false;
+      }
     }
 
-    // Start tracking
     function startTracking() {
       if (window.DeviceMotionEvent && DeviceMotionEvent.requestPermission) {
-        DeviceMotionEvent.requestPermission()
-          .then(response => {
-            if (response === 'granted') {
-              window.addEventListener('devicemotion', onDeviceMotion);
-              startBtn.disabled = true;
-            } else {
-              alert('Permission to access motion sensors was denied.');
-            }
-          }).catch(console.error);
-      } else if (window.DeviceMotionEvent) {
-        window.addEventListener('devicemotion', onDeviceMotion);
-        startBtn.disabled = true;
+        DeviceMotionEvent.requestPermission().then(response => {
+          if (response === 'granted') {
+            window.addEventListener('devicemotion', handleMotion);
+            startBtn.disabled = true;
+          } else {
+            alert("Permission denied for motion sensors.");
+          }
+        }).catch(console.error);
       } else {
-        alert('DeviceMotionEvent is not supported on this device.');
+        window.addEventListener('devicemotion', handleMotion);
+        startBtn.disabled = true;
       }
     }
 
-    // Reset all values
     function resetAll() {
-      if (confirm('Reset all data?')) {
-        window.removeEventListener('devicemotion', onDeviceMotion);
-        rawSteps = 0;
-        displaySteps = 0;
+      if (confirm("Reset all data?")) {
+        stepCount = 0;
         distKm = 0;
-        distMi = 0;
         calories = 0;
-        filteredAcc = 0;
-        lastFilteredAcc = 0;
+        lastZ = 0;
+        peakDetected = false;
         lastStepTime = 0;
         updateDisplay();
+        window.removeEventListener('devicemotion', handleMotion);
         startBtn.disabled = false;
       }
     }
