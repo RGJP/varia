@@ -1,1 +1,169 @@
-steps
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Step Counter</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #0b1826;
+            color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            background-image: linear-gradient(
+                to right,
+                #462523 0,
+                #cb9b51 22%,
+                #f6e27a 45%,
+                #f6f2c0 50%,
+                #f6e27a 55%,
+                #cb9b51 78%,
+                #462523 100%
+            );
+            -webkit-background-clip: text;
+            background-clip: text;
+            text-align: center;
+            font-size: 2.5rem;
+            margin: 20px 0;
+        }
+
+        .stats {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-item {
+            margin: 15px 0;
+            font-size: 1.2rem;
+            background-image: linear-gradient(
+                to right,
+                #cb9b51,
+                #f6e27a
+            );
+            -webkit-background-clip: text;
+            background-clip: text;
+        }
+
+        #resetBtn {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #cb9b51;
+            border-radius: 25px;
+            background: transparent;
+            color: #f6e27a;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #resetBtn:active {
+            background: rgba(203, 155, 81, 0.2);
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .stat-item {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>STEPS COUNTER</h1>
+        <div class="stats">
+            <div class="stat-item">Steps: <span id="steps">0</span></div>
+            <div class="stat-item">Distance: <span id="distanceKm">0</span> km</div>
+            <div class="stat-item">Miles: <span id="distanceMiles">0</span> mi</div>
+            <div class="stat-item">Calories: <span id="calories">0</span> kcal</div>
+        </div>
+        <button id="resetBtn">Reset Counter</button>
+    </div>
+
+    <script>
+        // Sensor initialization
+        let sensorPermissionGranted = false;
+        let initialSteps = 0;
+        let currentSteps = 0;
+        const averageStride = 0.00076; // km per step [11]
+
+        // Request sensor permissions [10]
+        if (typeof DeviceMotionEvent !== 'undefined' && 
+            typeof DeviceMotionEvent.requestPermission === 'function') {
+            DeviceMotionEvent.requestPermission()
+                .then(response => {
+                    if (response === 'granted') {
+                        sensorPermissionGranted = true;
+                        initializeStepCounter();
+                    }
+                })
+                .catch(console.error);
+        } else {
+            sensorPermissionGranted = true;
+            initializeStepCounter();
+        }
+
+        function initializeStepCounter() {
+            if ('linearAcceleration' in window) {
+                const sensor = new LinearAccelerationSensor({
+                    frequency: 1
+                });
+
+                sensor.addEventListener('reading', () => {
+                    // Basic step detection algorithm
+                    const acceleration = Math.sqrt(
+                        sensor.x ** 2 +
+                        sensor.y ** 2 +
+                        sensor.z ** 2
+                    );
+                    
+                    if (acceleration > 12) { // Threshold for step detection
+                        currentSteps++;
+                        updateDisplay();
+                    }
+                });
+
+                sensor.start();
+            } else {
+                alert('Step counter not supported on this device');
+            }
+        }
+
+        function updateDisplay() {
+            document.getElementById('steps').textContent = currentSteps;
+            
+            // Distance calculations [11]
+            const km = currentSteps * averageStride;
+            document.getElementById('distanceKm').textContent = km.toFixed(2);
+            document.getElementById('distanceMiles').textContent = (km * 0.621371).toFixed(2);
+
+            // Calorie calculation [6]
+            const calories = currentSteps * 0.04; // Average 0.04 kcal per step
+            document.getElementById('calories').textContent = calories.toFixed(0);
+        }
+
+        // Reset functionality [7][8]
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset all statistics?')) {
+                currentSteps = 0;
+                updateDisplay();
+            }
+        });
+    </script>
+</body>
+</html>
