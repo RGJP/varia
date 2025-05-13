@@ -56,7 +56,7 @@
       transition: background-color 0.3s ease;
     }
     button.pause {
-      background-color: #e6b800; /* darker yellow when paused */
+      background-color: #e6b800;
     }
     button:disabled {
       opacity: 0.5;
@@ -85,7 +85,7 @@
   </div>
 
   <script>
-    const STEP_LENGTH = 0.78; // meters
+    const STEP_LENGTH = 0.78;
     const CALORIES_PER_STEP = 0.04;
 
     let steps = 0;
@@ -97,6 +97,27 @@
     const calEl = document.getElementById('calories');
     const startBtn = document.getElementById('startBtn');
     const resetBtn = document.getElementById('resetBtn');
+
+    let wakeLock = null;
+
+    async function requestWakeLock() {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen');
+        console.log('Wake Lock is active');
+
+        wakeLock.addEventListener('release', () => {
+          console.log('Wake Lock was released');
+        });
+      } catch (err) {
+        console.error(`Failed to acquire wake lock: ${err.name}, ${err.message}`);
+      }
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (wakeLock !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    });
 
     function updateDisplay() {
       stepEl.textContent = steps;
@@ -139,6 +160,8 @@
       isTracking = true;
       startBtn.textContent = 'Pause';
       startBtn.classList.add('pause');
+
+      await requestWakeLock(); // Keep screen awake
     }
 
     function stopTracking() {
@@ -146,6 +169,11 @@
       isTracking = false;
       startBtn.textContent = 'Start';
       startBtn.classList.remove('pause');
+
+      if (wakeLock !== null) {
+        wakeLock.release();
+        wakeLock = null;
+      }
     }
 
     function toggleTracking() {
