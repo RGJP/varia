@@ -3,52 +3,89 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Step Counter v4</title>
+  <title>Step Counter 6</title>
   <style>
-    body {
+    html, body {
       margin: 0;
       padding: 0;
-      background: #001f3f;
-      font-family: Arial, sans-serif;
+      width: 100%;
+      height: 100%;
+      background-color: #001f3f;
       display: flex;
       align-items: center;
       justify-content: center;
-      height: 100vh;
+      font-family: Arial, sans-serif;
     }
     .container {
+      width: 90%;
+      max-width: 360px;
       text-align: center;
-      color: #FFD700;
     }
     .panel {
+      background-color: #002b6c;
+      border-radius: 8px;
+      padding: 1rem 0;
       margin-bottom: 1rem;
     }
-    .value {
-      font-size: 2.5rem;
+    .panel-label {
+      color: #FFD700;
+      font-size: 1rem;
       font-weight: bold;
     }
+    .panel-value {
+      color: #FFD700;
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin-top: 0.3rem;
+    }
+    .buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
     button {
-      margin: 0.5rem;
-      padding: 1rem 2rem;
-      font-size: 1rem;
-      background: #FFD700;
+      flex: 1;
+      background-color: #FFD700;
       color: #001f3f;
       border: none;
       border-radius: 8px;
+      padding: 0.8rem 0;
+      font-size: 1rem;
+      font-weight: bold;
       cursor: pointer;
+      text-transform: uppercase;
+      transition: background-color 0.3s ease;
+    }
+    button.pause {
+      background-color: #e6b800; /* darker yellow when paused */
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="panel">Steps: <div id="stepCount" class="value">0</div></div>
-    <div class="panel">Distance (km): <div id="distKm" class="value">0.00</div></div>
-    <div class="panel">Calories: <div id="calories" class="value">0.00</div></div>
-    <button id="startBtn">Start</button>
-    <button id="resetBtn">Reset</button>
+    <div class="panel">
+      <div class="panel-label">Steps</div>
+      <div id="stepCount" class="panel-value">0</div>
+    </div>
+    <div class="panel">
+      <div class="panel-label">Distance (km)</div>
+      <div id="distKm" class="panel-value">0.00</div>
+    </div>
+    <div class="panel">
+      <div class="panel-label">Calories (kcal)</div>
+      <div id="calories" class="panel-value">0.00</div>
+    </div>
+    <div class="buttons">
+      <button id="startBtn">Start</button>
+      <button id="resetBtn">Reset</button>
+    </div>
   </div>
 
   <script>
-    const STEP_LENGTH = 0.78;
+    const STEP_LENGTH = 0.78; // meters
     const CALORIES_PER_STEP = 0.04;
 
     let steps = 0;
@@ -57,7 +94,7 @@
 
     const stepEl = document.getElementById('stepCount');
     const distEl = document.getElementById('distKm');
-    const calEl  = document.getElementById('calories');
+    const calEl = document.getElementById('calories');
     const startBtn = document.getElementById('startBtn');
     const resetBtn = document.getElementById('resetBtn');
 
@@ -67,11 +104,11 @@
       calEl.textContent = (steps * CALORIES_PER_STEP).toFixed(2);
     }
 
-    function detectStep(acceleration) {
+    function detectStep(acc) {
       const now = Date.now();
-      const mag = Math.sqrt(acceleration.x**2 + acceleration.y**2 + acceleration.z**2);
-      
-      if (mag > 12 && now - lastStepTime > 400) { // Adjust threshold based on real test
+      const magnitude = Math.sqrt(acc.x ** 2 + acc.y ** 2 + acc.z ** 2);
+
+      if (magnitude > 12 && now - lastStepTime > 400) {
         steps++;
         lastStepTime = now;
         updateDisplay();
@@ -79,8 +116,9 @@
     }
 
     function handleMotion(event) {
-      if (!event.accelerationIncludingGravity) return;
-      detectStep(event.accelerationIncludingGravity);
+      if (event.accelerationIncludingGravity) {
+        detectStep(event.accelerationIncludingGravity);
+      }
     }
 
     async function startTracking() {
@@ -92,7 +130,7 @@
             return;
           }
         } catch (err) {
-          alert('Permission error: ' + err);
+          alert('Error requesting motion access: ' + err);
           return;
         }
       }
@@ -100,12 +138,14 @@
       window.addEventListener('devicemotion', handleMotion);
       isTracking = true;
       startBtn.textContent = 'Pause';
+      startBtn.classList.add('pause');
     }
 
     function stopTracking() {
       window.removeEventListener('devicemotion', handleMotion);
       isTracking = false;
       startBtn.textContent = 'Start';
+      startBtn.classList.remove('pause');
     }
 
     function toggleTracking() {
@@ -113,8 +153,9 @@
     }
 
     function resetAll() {
-      if (confirm('Reset all data?')) {
+      if (confirm("Reset all data?")) {
         steps = 0;
+        lastStepTime = 0;
         updateDisplay();
         stopTracking();
       }
