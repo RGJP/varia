@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Step Counter o4</title>
+  <title>Step Counter 1.4</title>
   <style>
     html, body {
       margin: 0;
@@ -75,9 +75,9 @@
     let calories = 0;
     const stepLength = 0.78;      // meters per step (average)
     const caloriesPerStep = 0.04; // kcal per step (average)
-    const threshold = 1.2;        // m/s² threshold for step detection
-    const minStepInterval = 300;  // ms between steps
-    const alpha = 0.1;            // filter coefficient
+    const threshold = 1.5;        // m/s² threshold for step detection (raised for accuracy)
+    const minStepInterval = 400;  // ms between steps (prevents double-count)
+    const alpha = 0.2;            // filter coefficient (more smoothing)
     let filteredAcc = 0;
     let lastFilteredAcc = 0;
     let lastStepTime = 0;
@@ -102,10 +102,8 @@
     function onDeviceMotion(event) {
       const acc = event.accelerationIncludingGravity;
       if (!acc) return;
-      // Calculate magnitude of acceleration vector
-      const mag = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
-      // Remove gravity (~9.81 m/s²)
-      const netAcc = mag - 9.81;
+      const mag = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
+      const netAcc = mag - 9.81; // remove gravity
       // Low-pass filter
       filteredAcc = alpha * filteredAcc + (1 - alpha) * netAcc;
 
@@ -115,13 +113,10 @@
         lastFilteredAcc <= threshold &&
         (now - lastStepTime) > minStepInterval
       ) {
-        // Step detected
         stepCount++;
         lastStepTime = now;
-        // Distance calculations
         distKm = (stepCount * stepLength) / 1000;
         distMi = distKm * 0.621371;
-        // Calories estimate
         calories = stepCount * caloriesPerStep;
         updateDisplay();
       }
@@ -131,7 +126,6 @@
     // Start tracking
     function startTracking() {
       if (window.DeviceMotionEvent && DeviceMotionEvent.requestPermission) {
-        // iOS 13+ requires permission
         DeviceMotionEvent.requestPermission()
           .then(response => {
             if (response === 'granted') {
@@ -140,10 +134,8 @@
             } else {
               alert('Permission to access motion sensors was denied.');
             }
-          })
-          .catch(err => console.error(err));
+          }).catch(console.error);
       } else if (window.DeviceMotionEvent) {
-        // Other mobile browsers
         window.addEventListener('devicemotion', onDeviceMotion);
         startBtn.disabled = true;
       } else {
@@ -153,7 +145,7 @@
 
     // Reset all values
     function resetAll() {
-      if (confirm('Are you sure you want to reset all data?')) {
+      if (confirm('Reset all data?')) {
         window.removeEventListener('devicemotion', onDeviceMotion);
         stepCount = 0;
         distKm = 0;
@@ -167,7 +159,6 @@
       }
     }
 
-    // Event listeners for buttons
     startBtn.addEventListener('click', startTracking);
     resetBtn.addEventListener('click', resetAll);
   </script>
