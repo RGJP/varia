@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Step Counter v3.0 (Research-Grade)</title>
+  <title>Step Counter v3.1</title>
   <style>
     html, body {
       margin: 0;
@@ -81,76 +81,42 @@
   </div>
 
   <script>
-    // --- Constants ---
-    const STEP_LENGTH = 0.78; // meters
+    const STEP_LENGTH = 0.78;
     const CALORIES_PER_STEP = 0.04;
-    const FILTER_WINDOW = 4; // moving average window
-    const DYNAMIC_THRESHOLD_RATIO = 0.6; // 60% of signal range
-    const MIN_STEP_DURATION = 180; // ms (5.5 steps/sec)
-    const MAX_STEP_DURATION = 1200; // ms (0.83 steps/sec)
+    const FILTER_WINDOW = 4;
+    const DYNAMIC_THRESHOLD_RATIO = 0.6;
+    const MIN_STEP_DURATION = 180;
+    const MAX_STEP_DURATION = 1200;
 
-    // --- State Variables ---
     let buffer = [];
     let steps = 0;
     let lastStepTime = 0;
     let state = 'NEUTRAL';
-    let dynamicThreshold = 1.2;
+    let dynamicThreshold = 0;
     let peakValue = 0;
     let valleyValue = 0;
     let isTracking = false;
 
-    // Bandpass filter state (4th order Butterworth, coefficients for 0.25-2.5Hz @50Hz)
-    let filterX = [0,0,0,0,0];
-    let filterY = [0,0,0,0,0];
+    const bandpassFilter = {
+      x: [0, 0, 0, 0, 0],
+      y: [0, 0, 0, 0, 0]
+    };
 
-    // --- UI Elements ---
     const stepEl = document.getElementById('stepCount');
     const distEl = document.getElementById('distKm');
     const calEl  = document.getElementById('calories');
     const startBtn = document.getElementById('startBtn');
     const resetBtn = document.getElementById('resetBtn');
 
-    // --- Utility Functions ---
-    function updateDisplay() {
-      const distKm = (steps * STEP_LENGTH) / 1000;
-      const calories = steps * CALORIES_PER_STEP;
-      stepEl.textContent = steps;
-      distEl.textContent = distKm.toFixed(2);
-      calEl.textContent = calories.toFixed(2);
-    }
-
-    function resetAll() {
-      if (confirm("Reset all data?")) {
-        steps = 0;
-        lastStepTime = 0;
-        state = 'NEUTRAL';
-        dynamicThreshold = 1.2;
-        peakValue = 0;
-        valleyValue = 0;
-        buffer = [];
-        filterX = [0,0,0,0,0];
-        filterY = [0,0,0,0,0];
-        updateDisplay();
-        isTracking = false;
-        startBtn.textContent = 'Start';
-      }
-    }
-
-    // --- Advanced Step Detection Algorithm ---
     function applyBandpassFilter(acc) {
-      // 4th order Butterworth bandpass filter (coefficients from MATLAB)
-      filterX.push(acc);
-      filterX.shift();
+      bandpassFilter.x.push(acc);
+      bandpassFilter.x.shift();
 
-      // y[n] = 0.2387*x[n] - 0.2387*x[n-4] - 1.8893*y[n-1] + 1.7045*y[n-2]
-      const y =
-        0.2387 * filterX[4] -
-        0.2387 * filterX[0] -
-        1.8893 * filterY[3] +
-        1.7045 * filterY[4];
+      const y = 0.2387 * bandpassFilter.x[4] - 0.2387 * bandpassFilter.x[0]
+              - 1.8893 * bandpassFilter.y[3] + 1.7045 * bandpassFilter.y[4];
 
-      filterY.push(y);
-      filterY.shift();
+      bandpassFilter.y.push(y);
+      bandpassFilter.y.shift();
 
       return y;
     }
@@ -160,40 +126,30 @@
       if (buffer.length > FILTER_WINDOW) buffer.shift();
 
       const avg = buffer.reduce((a, b) => a + b, 0) / buffer.length;
-      const variance =
-        buffer.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / buffer.length;
+      const variance = buffer.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / buffer.length;
 
-      // Adaptive threshold based on signal variance and peak-valley difference
-      if (peakValue !== 0 && valleyValue !== 0) {
-        return Math.max(1.2, DYNAMIC_THRESHOLD_RATIO * (peakValue - valleyValue));
-      } else {
-        return 1.2;
-      }
+      return variance > 0.5 ? DYNAMIC_THRESHOLD_RATIO * (peakValue - valleyValue) : 1.2;
+    }
+
+    function updateDisplay() {
+      const distKm = (steps * STEP_LENGTH) / 1000;
+      const calories = steps * CALORIES_PER_STEP;
+      stepEl.textContent = steps;
+      distEl.textContent = distKm.toFixed(2);
+      calEl.textContent = calories.toFixed(2);
     }
 
     function handleMotion(event) {
-      if (!isTracking) return;
+      if (!isTracking || !event.acceleration) return;
 
       const acc = event.acceleration;
-      if (!acc) return;
-
-      // 1. Compute vector magnitude for orientation independence
-      const vm = Math.sqrt(
-        (acc.x || 0) ** 2 +
-        (acc.y || 0) ** 2 +
-        (acc.z || 0) ** 2
-      );
-
-      // 2. Apply bandpass filter to remove noise/out-of-band motion
+      const vm = Math.sqrt(acc.x ** 2 + acc.y ** 2 + acc.z ** 2);
       const filtered = applyBandpassFilter(vm);
+      const threshold = updateDynamicThreshold(filtered);
 
-      // 3. Update dynamic threshold
-      dynamicThreshold = updateDynamicThreshold(filtered);
-
-      // 4. State machine for robust peak/valley detection
       switch (state) {
         case 'NEUTRAL':
-          if (filtered > dynamicThreshold) {
+          if (filtered > threshold) {
             peakValue = filtered;
             state = 'PEAK_DETECTED';
           }
@@ -202,7 +158,7 @@
         case 'PEAK_DETECTED':
           if (filtered > peakValue) {
             peakValue = filtered;
-          } else if (filtered < (peakValue - dynamicThreshold)) {
+          } else if (filtered < (peakValue - threshold)) {
             valleyValue = filtered;
             state = 'VALLEY_DETECTED';
           }
@@ -215,13 +171,13 @@
           if (
             stepDuration > MIN_STEP_DURATION &&
             stepDuration < MAX_STEP_DURATION &&
-            (peakValue - valleyValue) > dynamicThreshold
+            (peakValue - valleyValue) > threshold
           ) {
             steps++;
             lastStepTime = now;
             updateDisplay();
           }
-          // Reset detection
+
           state = 'NEUTRAL';
           peakValue = 0;
           valleyValue = 0;
@@ -229,10 +185,8 @@
       }
     }
 
-    // --- Permissions and Event Handling ---
     function toggleTracking() {
       if (!isTracking) {
-        // iOS 13+ requires permission
         if (window.DeviceMotionEvent && DeviceMotionEvent.requestPermission) {
           DeviceMotionEvent.requestPermission().then(response => {
             if (response === 'granted') {
@@ -240,7 +194,7 @@
               isTracking = true;
               startBtn.textContent = 'Pause';
             } else {
-              alert("Permission denied.");
+              alert('Motion access denied.');
             }
           }).catch(console.error);
         } else {
@@ -254,12 +208,22 @@
       }
     }
 
-    // --- UI Event Listeners ---
+    function resetAll() {
+      if (confirm("Reset all data?")) {
+        steps = 0;
+        lastStepTime = 0;
+        state = 'NEUTRAL';
+        buffer = [];
+        peakValue = 0;
+        valleyValue = 0;
+        updateDisplay();
+        isTracking = false;
+        startBtn.textContent = 'Start';
+      }
+    }
+
     startBtn.addEventListener('click', toggleTracking);
     resetBtn.addEventListener('click', resetAll);
-
-    // --- Initialize Display ---
-    updateDisplay();
   </script>
 </body>
 </html>
