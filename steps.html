@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Step Counter - Advanced</title>
+    <title>Step Counter v1.2</title>
     <style>
         body {
             background-color: #000080; /* Dark Blue */
@@ -19,40 +19,30 @@
             box-sizing: border-box;
             text-align: center;
         }
-
-        .container {
-            width: 100%;
-            max-width: 400px;
-        }
-
+        .container { width: 100%; max-width: 400px; }
         .metric {
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(255,255,255,0.1);
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
-
         .metric h2 {
-            margin-top: 0;
-            margin-bottom: 5px;
+            margin: 0 0 5px;
             font-size: 1.2em;
             color: #FFD700;
         }
-
         .metric p {
             margin: 0;
             font-size: 2em;
             font-weight: bold;
         }
-
         .buttons {
             display: flex;
             justify-content: space-around;
             width: 100%;
             margin-top: 20px;
         }
-
         button {
             background-color: #FFD700;
             color: #000080;
@@ -64,22 +54,15 @@
             cursor: pointer;
             transition: background-color 0.3s, transform 0.1s;
             flex-basis: 45%;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
-
-        button:hover {
-            background-color: #e6c300;
-        }
-
-        button:active {
-            transform: scale(0.98);
-        }
-
+        button:hover { background-color: #e6c300; }
+        button:active { transform: scale(0.98); }
         #permissionMessage {
             color: #FFD700;
             margin-top: 15px;
             font-size: 0.9em;
-            min-height: 1.2em; /* Reserve space to prevent layout shift */
+            min-height: 1.2em;
         }
     </style>
 </head>
@@ -90,22 +73,18 @@
             <h2>Steps</h2>
             <p id="stepCount">0</p>
         </div>
-
         <div class="metric">
             <h2>Distance (km)</h2>
             <p id="distanceKm">0.000</p>
         </div>
-
         <div class="metric">
             <h2>Distance (miles)</h2>
             <p id="distanceMiles">0.000</p>
         </div>
-
         <div class="metric">
             <h2>Calories Burned (kcal)</h2>
             <p id="caloriesBurned">0</p>
         </div>
-
         <div class="buttons">
             <button id="startButton">START</button>
             <button id="resetButton">RESET</button>
@@ -114,182 +93,144 @@
     </div>
 
     <script>
-        const stepCountElement = document.getElementById('stepCount');
-        const distanceKmElement = document.getElementById('distanceKm');
+        const stepCountElement     = document.getElementById('stepCount');
+        const distanceKmElement    = document.getElementById('distanceKm');
         const distanceMilesElement = document.getElementById('distanceMiles');
-        const caloriesBurnedElement = document.getElementById('caloriesBurned');
-        const startButton = document.getElementById('startButton');
-        const resetButton = document.getElementById('resetButton');
-        const permissionMessageElement = document.getElementById('permissionMessage');
+        const caloriesBurnedElement= document.getElementById('caloriesBurned');
+        const startButton          = document.getElementById('startButton');
+        const resetButton          = document.getElementById('resetButton');
+        const permissionMessage    = document.getElementById('permissionMessage');
 
-        let steps = 0;
+        // Raw sensor steps
+        let rawSteps = 0;
         let isCounting = false;
         let lastStepTime = 0;
 
-        // --- Configuration for Step Detection Algorithm ---
-        // Low-pass filter for gravity estimation. A smaller alpha = smoother (slower adapting) gravity estimate.
-        const ALPHA_FOR_GRAVITY_ESTIMATE = 0.1; // Range 0.05 - 0.2 is typical
-        // Threshold for dynamic acceleration magnitude to be considered a step. Unit: m/s^2.
-        // This is the most critical value to tune for sensitivity.
-        // Start with values between 1.0 and 2.5. Lower = more sensitive.
+        // Adjustment: subtract 23.53%
+        const ADJUSTMENT_PERCENTAGE   = 0.2353;
+        const STEP_ADJUSTMENT_FACTOR  = 1 - ADJUSTMENT_PERCENTAGE;
+
+        // Distance & calorie constants
+        const averageStrideLengthMeters = 0.7;
+        const metersToKm    = 0.001;
+        const metersToMiles= 0.000621371;
+        const caloriesPerStep = 0.04;
+
+        // Step‐detection parameters
+        const ALPHA_FOR_GRAVITY_ESTIMATE   = 0.1;
         const MIN_STEP_MAGNITUDE_THRESHOLD = 1.5;
-        // Minimum time between detected steps in milliseconds to prevent double counting.
-        // Typical human cadence: 1.5-2.5 steps/sec (interval: 400-670ms).
-        // 250ms allows for up to 4 steps/sec (fast walking/jogging).
-        const MIN_TIME_BETWEEN_STEPS_MS = 300;
-        // -------------------------------------------------
+        const MIN_TIME_BETWEEN_STEPS_MS    = 300;
 
-        // State variables for the step detection algorithm
-        let gravity = { x: 0, y: 0, z: 0 }; // Stores the estimated gravity vector
-        let lastDynamicAccelMag = 0;       // Stores the magnitude of dynamic acceleration from the previous event
-        let isGoingUp = false;             // State: true if acceleration magnitude is currently rising above threshold
-        let initialGravitySet = false;     // Flag to ensure gravity is initialized properly
-
-        // Constants for distance and calorie calculation
-        const averageStrideLengthMeters = 0.7; // Average, can be user-configurable in a more advanced app
-        const metersToKm = 0.001;
-        const metersToMiles = 0.000621371;
-        const caloriesPerStep = 0.04; // Highly approximate
+        let gravity = { x:0, y:0, z:0 };
+        let lastDynamicAccelMag = 0;
+        let isGoingUp = false;
+        let initialGravitySet = false;
 
         function updateDisplay() {
-            stepCountElement.textContent = steps;
-            const distanceMeters = steps * averageStrideLengthMeters;
-            distanceKmElement.textContent = (distanceMeters * metersToKm).toFixed(3);
+            // apply adjustment
+            const displaySteps = Math.round(rawSteps * STEP_ADJUSTMENT_FACTOR);
+            stepCountElement.textContent = displaySteps;
+            const distanceMeters = displaySteps * averageStrideLengthMeters;
+            distanceKmElement.textContent    = (distanceMeters * metersToKm).toFixed(3);
             distanceMilesElement.textContent = (distanceMeters * metersToMiles).toFixed(3);
-            caloriesBurnedElement.textContent = Math.round(steps * caloriesPerStep);
+            caloriesBurnedElement.textContent= Math.round(displaySteps * caloriesPerStep);
         }
 
         function resetAlgorithmState() {
-            gravity = { x: 0, y: 0, z: 0 };
+            gravity = { x:0, y:0, z:0 };
             lastDynamicAccelMag = 0;
             isGoingUp = false;
             initialGravitySet = false;
-            lastStepTime = 0; // Also reset lastStepTime here
+            lastStepTime = 0;
         }
 
         function resetAll() {
-            steps = 0;
+            rawSteps = 0;
             resetAlgorithmState();
             updateDisplay();
-            permissionMessageElement.textContent = '';
+            permissionMessage.textContent = '';
         }
 
         resetButton.addEventListener('click', () => {
             if (confirm("Are you sure you want to reset all data?")) {
-                if (isCounting) {
-                    stopCounting(); // Stop listening to events if counting
-                }
-                resetAll(); // Resets display and algorithm state
+                if (isCounting) stopCounting();
+                resetAll();
             }
         });
 
         function handleMotionEvent(event) {
             if (!isCounting) return;
-
             const accRaw = event.accelerationIncludingGravity;
-            if (!accRaw || accRaw.x === null || accRaw.y === null || accRaw.z === null) {
-                console.warn("Raw acceleration data is null or not available. Step detection may be unreliable.");
-                return;
-            }
+            if (!accRaw || accRaw.x===null) return;
 
-            // Initialize gravity with the first reading or ensure it's not all zeros if starting from scratch
             if (!initialGravitySet) {
-                gravity.x = accRaw.x || 0;
-                gravity.y = accRaw.y || 0;
-                gravity.z = accRaw.z || 0; // Or a default like 9.8 if orientation known, but this is safer
+                gravity.x = accRaw.x; gravity.y = accRaw.y; gravity.z = accRaw.z;
                 initialGravitySet = true;
             }
 
-            // 1. Estimate gravity using a low-pass filter:
-            // g_new = alpha * acc_raw + (1 - alpha) * g_old
-            gravity.x = ALPHA_FOR_GRAVITY_ESTIMATE * accRaw.x + (1 - ALPHA_FOR_GRAVITY_ESTIMATE) * gravity.x;
-            gravity.y = ALPHA_FOR_GRAVITY_ESTIMATE * accRaw.y + (1 - ALPHA_FOR_GRAVITY_ESTIMATE) * gravity.y;
-            gravity.z = ALPHA_FOR_GRAVITY_ESTIMATE * accRaw.z + (1 - ALPHA_FOR_GRAVITY_ESTIMATE) * gravity.z;
+            // low-pass gravity filter
+            gravity.x = ALPHA_FOR_GRAVITY_ESTIMATE * accRaw.x + (1-ALPHA_FOR_GRAVITY_ESTIMATE) * gravity.x;
+            gravity.y = ALPHA_FOR_GRAVITY_ESTIMATE * accRaw.y + (1-ALPHA_FOR_GRAVITY_ESTIMATE) * gravity.y;
+            gravity.z = ALPHA_FOR_GRAVITY_ESTIMATE * accRaw.z + (1-ALPHA_FOR_GRAVITY_ESTIMATE) * gravity.z;
 
-            // 2. Calculate dynamic (linear) acceleration by subtracting the estimated gravity
             const dynamicAx = accRaw.x - gravity.x;
             const dynamicAy = accRaw.y - gravity.y;
             const dynamicAz = accRaw.z - gravity.z;
+            const currentDynamicAccelMag = Math.hypot(dynamicAx, dynamicAy, dynamicAz);
+            const currentTime = Date.now();
 
-            // 3. Calculate the magnitude of the dynamic acceleration vector
-            const currentDynamicAccelMag = Math.sqrt(dynamicAx * dynamicAx + dynamicAy * dynamicAy + dynamicAz * dynamicAz);
-            const currentTime = new Date().getTime();
-
-            // --- Step Detection Logic ---
-            if ((currentTime - lastStepTime) < MIN_TIME_BETWEEN_STEPS_MS) {
-                // Debounce: Too soon since the last detected step.
-                lastDynamicAccelMag = currentDynamicAccelMag; // Still update for the next iteration's comparison
+            if (currentTime - lastStepTime < MIN_TIME_BETWEEN_STEPS_MS) {
+                lastDynamicAccelMag = currentDynamicAccelMag;
                 return;
             }
 
             if (isGoingUp) {
-                // We were on an upward slope. Check if we've peaked and are now going down.
                 if (currentDynamicAccelMag < lastDynamicAccelMag) {
-                    // Peak detected (lastDynamicAccelMag was the peak value).
-                    // The condition for setting isGoingUp = true already checked if lastDynamicAccelMag > threshold.
-                    steps++;
-                    lastStepTime = currentTime; // Record the time of this step
+                    rawSteps++;
+                    lastStepTime = currentTime;
                     updateDisplay();
-                    isGoingUp = false; // Reset state, wait for the next rise
+                    isGoingUp = false;
                 }
-                // else: still going up, or flat but still above where isGoingUp was triggered.
-            } else { // Not currently in "isGoingUp" state (i.e., was previously going down or below threshold)
-                if (currentDynamicAccelMag > lastDynamicAccelMag && // Magnitude is increasing
-                    currentDynamicAccelMag > MIN_STEP_MAGNITUDE_THRESHOLD) { // And it's above the minimum threshold
-                    // This looks like the start of an upward slope of a potential step.
+            } else {
+                if (currentDynamicAccelMag > lastDynamicAccelMag &&
+                    currentDynamicAccelMag > MIN_STEP_MAGNITUDE_THRESHOLD) {
                     isGoingUp = true;
                 }
-                // else: magnitude is decreasing, flat, or increasing but still below threshold.
-                // No action needed, isGoingUp remains false.
             }
-            lastDynamicAccelMag = currentDynamicAccelMag; // Store current magnitude for the next comparison
+            lastDynamicAccelMag = currentDynamicAccelMag;
         }
 
-
         function requestMotionPermission() {
-            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+            if (DeviceMotionEvent?.requestPermission) {
                 DeviceMotionEvent.requestPermission()
-                    .then(permissionState => {
-                        if (permissionState === 'granted') {
+                    .then(state => {
+                        if (state === 'granted') {
                             window.addEventListener('devicemotion', handleMotionEvent);
-                            permissionMessageElement.textContent = "Motion tracking active.";
+                            permissionMessage.textContent = "Motion tracking active.";
                             isCounting = true;
                             startButton.textContent = "STOP";
                         } else {
-                            permissionMessageElement.textContent = "Permission for motion sensors denied.";
+                            permissionMessage.textContent = "Permission for motion sensors denied.";
                             isCounting = false;
                             startButton.textContent = "START";
                         }
                     })
-                    .catch(error => {
-                        console.error("Error requesting motion permission:", error);
-                        permissionMessageElement.textContent = "Could not request motion permission.";
+                    .catch(err => {
+                        console.error(err);
+                        permissionMessage.textContent = "Could not request motion permission.";
                         isCounting = false;
                         startButton.textContent = "START";
                     });
             } else {
+                // fallback
                 try {
                     window.addEventListener('devicemotion', handleMotionEvent);
                     isCounting = true;
                     startButton.textContent = "STOP";
-                    permissionMessageElement.textContent = "Attempting motion tracking...";
-
-                    // Heuristic check if events are firing with useful data
-                    let testMotionListener = (event) => {
-                        if (event.accelerationIncludingGravity && event.accelerationIncludingGravity.x !== null) {
-                             if(isCounting) permissionMessageElement.textContent = "Motion tracking active.";
-                        } else {
-                            if(isCounting) permissionMessageElement.textContent = "Motion data not found. Tracking may not work.";
-                        }
-                        window.removeEventListener('devicemotion', testMotionListener); // Self-remove
-                    };
-                    setTimeout(() => { // Check after a brief moment
-                         window.addEventListener('devicemotion', testMotionListener, { once: true });
-                    }, 500);
-
-                } catch (error) {
-                    console.error("Error adding devicemotion listener:", error);
-                    permissionMessageElement.textContent = "Motion sensors not supported or access denied.";
+                    permissionMessage.textContent = "Motion tracking active.";
+                } catch(e) {
+                    console.error(e);
+                    permissionMessage.textContent = "Motion sensors not supported.";
                     isCounting = false;
                     startButton.textContent = "START";
                 }
@@ -297,39 +238,24 @@
         }
 
         function startCounting() {
-            if (window.DeviceMotionEvent) {
-                resetAlgorithmState(); // Ensure a fresh state for the algorithm
-                requestMotionPermission();
-            } else {
-                permissionMessageElement.textContent = "Motion sensors not supported on this device/browser.";
-                isCounting = false;
-                startButton.textContent = "START";
-            }
+            resetAlgorithmState();
+            requestMotionPermission();
         }
 
         function stopCounting() {
             window.removeEventListener('devicemotion', handleMotionEvent);
             isCounting = false;
             startButton.textContent = "START";
-            if (steps > 0) { // Only show stopped if it was actually running and tracking
-                permissionMessageElement.textContent = "Motion tracking stopped.";
-            } else {
-                 permissionMessageElement.textContent = "";
-            }
-            // Optionally, you might want to keep algorithm state if it's a pause,
-            // but for a clean stop/start, resetting is good.
-            // resetAlgorithmState(); // Resetting here means a "START" always begins fresh.
+            permissionMessage.textContent = rawSteps > 0
+                ? "Motion tracking stopped."
+                : "";
         }
 
         startButton.addEventListener('click', () => {
-            if (!isCounting) {
-                startCounting();
-            } else {
-                stopCounting();
-            }
+            isCounting ? stopCounting() : startCounting();
         });
 
-        // Initialize display
+        // init
         updateDisplay();
     </script>
 </body>
