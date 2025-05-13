@@ -1,151 +1,309 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>o4 Step Counter</title>
-  <style>
-    /* Full-screen center layout */
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #001f3f;       /* dark blue */
-      color: #ffd700;                  /* gold */
-      font-family: Arial, Helvetica, sans-serif;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      text-align: center;
-    }
-    #container {
-      width: 90%;
-      max-width: 400px;
-    }
-    h1, p {
-      margin: 0.5em 0;
-      font-size: 1.5em;
-    }
-    button {
-      display: inline-block;
-      width: 45%;
-      margin: 1em 2.5%;
-      padding: 0.75em 0;
-      font-size: 1em;
-      background-color: #ffd700;
-      color: #001f3f;
-      border: none;
-      border-radius: 0.5em;
-    }
-    button:disabled {
-      opacity: 0.5;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Gem Step Counter</title>
+    <style>
+        body {
+            background-color: #000080; /* Dark Blue */
+            color: #FFD700; /* Gold */
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px; /* Max width for larger mobile screens */
+        }
+
+        .metric {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .metric h2 {
+            margin-top: 0;
+            margin-bottom: 5px;
+            font-size: 1.2em;
+            color: #FFD700; /* Gold */
+        }
+
+        .metric p {
+            margin: 0;
+            font-size: 2em;
+            font-weight: bold;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-around; /* Distribute buttons evenly */
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        button {
+            background-color: #FFD700; /* Gold */
+            color: #000080; /* Dark Blue */
+            border: none;
+            padding: 15px 0; /* Vertical padding, horizontal will be handled by flex-basis */
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+            flex-basis: 45%; /* Each button takes up 45% of the container width */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        button:hover {
+            background-color: #e6c300; /* Darker Gold */
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #permissionMessage {
+            color: #FFD700;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
-  <div id="container">
-    <h1>Steps: <span id="stepCount">0</span></h1>
-    <p>Distance (km): <span id="distanceKm">0.00</span></p>
-    <p>Distance (miles): <span id="distanceMiles">0.00</span></p>
-    <p>Calories burned: <span id="calories">0.00</span></p>
-    <button id="startBtn">Start</button>
-    <button id="resetBtn">Reset</button>
-  </div>
 
-  <script>
-    (function() {
-      let stepCount = 0;
-      let lastStepTime = 0;
-      const threshold = 1.2;          // acceleration threshold (m/s²)
-      const stepDelay = 300;          // minimum ms between steps
-      const strideLength = 0.78;      // average stride in meters
-      const caloriesPerStep = 0.04;   // average calories burned per step
-      let listening = false;
+    <div class="container">
+        <div class="metric">
+            <h2>Steps</h2>
+            <p id="stepCount">0</p>
+        </div>
 
-      // DOM elements
-      const stepElem = document.getElementById('stepCount');
-      const kmElem   = document.getElementById('distanceKm');
-      const miElem   = document.getElementById('distanceMiles');
-      const calElem  = document.getElementById('calories');
-      const startBtn = document.getElementById('startBtn');
-      const resetBtn = document.getElementById('resetBtn');
+        <div class="metric">
+            <h2>Distance (km)</h2>
+            <p id="distanceKm">0.000</p>
+        </div>
 
-      // Refresh on-screen values
-      function updateDisplay() {
-        stepElem.textContent = stepCount;
-        const distMeters = stepCount * strideLength;
-        const distKm = distMeters / 1000;
-        kmElem.textContent = distKm.toFixed(2);
-        miElem.textContent = (distKm * 0.621371).toFixed(2);
-        calElem.textContent = (stepCount * caloriesPerStep).toFixed(2);
-      }
+        <div class="metric">
+            <h2>Distance (miles)</h2>
+            <p id="distanceMiles">0.000</p>
+        </div>
 
-      // Peak-detection step counter
-      function handleMotion(event) {
-        let ax, ay, az;
-        if (event.acceleration && event.acceleration.x !== null) {
-          ({ x: ax, y: ay, z: az } = event.acceleration);
-        } else if (event.accelerationIncludingGravity) {
-          ax = event.accelerationIncludingGravity.x;
-          ay = event.accelerationIncludingGravity.y;
-          // subtract gravity on approximate Z
-          az = event.accelerationIncludingGravity.z - 9.81;
-        } else {
-          return; // no usable data
+        <div class="metric">
+            <h2>Calories Burned (kcal)</h2>
+            <p id="caloriesBurned">0</p>
+        </div>
+
+        <div class="buttons">
+            <button id="startButton">START</button>
+            <button id="resetButton">RESET</button>
+        </div>
+        <p id="permissionMessage"></p>
+    </div>
+
+    <script>
+        const stepCountElement = document.getElementById('stepCount');
+        const distanceKmElement = document.getElementById('distanceKm');
+        const distanceMilesElement = document.getElementById('distanceMiles');
+        const caloriesBurnedElement = document.getElementById('caloriesBurned');
+        const startButton = document.getElementById('startButton');
+        const resetButton = document.getElementById('resetButton');
+        const permissionMessageElement = document.getElementById('permissionMessage');
+
+        let steps = 0;
+        let isCounting = false;
+        let lastAcceleration = { x: null, y: null, z: null };
+        let stepThreshold = 1.2; // Sensitivity: lower is more sensitive, higher is less. Tune this.
+        let lastStepTime = 0;
+        const stepDebounceTime = 300; // milliseconds to wait between potential steps to avoid double counting
+
+        // Average stride length: 0.762 meters for men, 0.67 meters for women. Using an average.
+        const averageStrideLengthMeters = 0.7;
+        const metersToKm = 0.001;
+        const metersToMiles = 0.000621371;
+
+        // Average calories burned per step: This is highly variable.
+        // A common estimate is 0.04 kcal per step for a 150lb person.
+        const caloriesPerStep = 0.04;
+
+        function updateDisplay() {
+            stepCountElement.textContent = steps;
+
+            const distanceMeters = steps * averageStrideLengthMeters;
+            const distanceKm = distanceMeters * metersToKm;
+            const distanceMiles = distanceMeters * metersToMiles;
+            const calories = steps * caloriesPerStep;
+
+            distanceKmElement.textContent = distanceKm.toFixed(3);
+            distanceMilesElement.textContent = distanceMiles.toFixed(3);
+            caloriesBurnedElement.textContent = Math.round(calories);
         }
 
-        const magnitude = Math.sqrt(ax*ax + ay*ay + az*az);
-        if (magnitude > threshold) {
-          const now = Date.now();
-          if (now - lastStepTime > stepDelay) {
-            stepCount++;
-            lastStepTime = now;
+        function resetAll() {
+            steps = 0;
+            lastAcceleration = { x: null, y: null, z: null };
+            lastStepTime = 0;
             updateDisplay();
-          }
+            permissionMessageElement.textContent = '';
         }
-      }
 
-      // Begin listening (with iOS permission if needed)
-      function startCounting() {
-        if (listening) return;
-        const enable = () => {
-          window.addEventListener('devicemotion', handleMotion);
-          listening = true;
-          startBtn.disabled = true;
-        };
-        if (typeof DeviceMotionEvent !== 'undefined' &&
-            typeof DeviceMotionEvent.requestPermission === 'function') {
-          // iOS 13+ Safari
-          DeviceMotionEvent.requestPermission()
-            .then(response => {
-              if (response === 'granted') enable();
-              else alert('Motion permission was denied.');
-            })
-            .catch(err => console.error(err));
-        } else {
-          // Android / other
-          enable();
-        }
-      }
+        resetButton.addEventListener('click', () => {
+            if (confirm("Are you sure you want to reset all data?")) {
+                if (isCounting) {
+                    stopCounting(); // Stop listening to events if counting
+                }
+                resetAll();
+            }
+        });
 
-      // Reset all counters
-      function resetAll() {
-        if (!confirm('Are you sure you want to reset all values?')) return;
-        if (listening) {
-          window.removeEventListener('devicemotion', handleMotion);
-          listening = false;
+        function handleMotionEvent(event) {
+            if (!isCounting) return;
+
+            const currentTime = new Date().getTime();
+            if (currentTime - lastStepTime < stepDebounceTime) {
+                return; // Debounce to prevent rapid multi-counts
+            }
+
+            const acceleration = event.accelerationIncludingGravity;
+            if (!acceleration || acceleration.x === null || acceleration.y === null || acceleration.z === null) {
+                // Fallback for browsers that don't provide accelerationIncludingGravity or return null values
+                // This is less reliable as it doesn't easily filter out gravity
+                // For a robust solution, one might need to implement a high-pass filter
+                // or use event.acceleration if available and makes sense for the use case.
+                // For simplicity, if accelerationIncludingGravity is problematic, this example
+                // might not perform well.
+                console.warn("Acceleration data is null or not available. Step detection may be unreliable.");
+                // Try event.acceleration (without gravity) if available, though it's often less suitable directly
+                // const accNoGravity = event.acceleration;
+                // if (accNoGravity && accNoGravity.x !== null) { /* process accNoGravity */ }
+                return;
+            }
+
+
+            if (lastAcceleration.x !== null) {
+                const deltaX = Math.abs(acceleration.x - lastAcceleration.x);
+                const deltaY = Math.abs(acceleration.y - lastAcceleration.y);
+                const deltaZ = Math.abs(acceleration.z - lastAcceleration.z);
+
+                // Simple peak detection: if the change in acceleration is significant on any axis
+                // This is a very basic step detection algorithm and can be improved.
+                // A more robust method would involve analyzing patterns, magnitudes, and frequencies.
+                const magnitude = Math.sqrt(deltaX*deltaX + deltaY*deltaY + deltaZ*deltaZ);
+
+                // Heuristic: A step often causes a noticeable jolt.
+                // The threshold value 'stepThreshold' is critical and may need tuning.
+                // It represents the magnitude of acceleration change considered a step.
+                if (magnitude > stepThreshold) {
+                    steps++;
+                    lastStepTime = currentTime;
+                    updateDisplay();
+                }
+            }
+            lastAcceleration = { x: acceleration.x, y: acceleration.y, z: acceleration.z };
         }
-        stepCount = 0;
-        lastStepTime = 0;
+
+
+        function requestMotionPermission() {
+            // For iOS 13+
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                DeviceMotionEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            window.addEventListener('devicemotion', handleMotionEvent);
+                            permissionMessageElement.textContent = "Motion tracking active.";
+                            isCounting = true;
+                            startButton.textContent = "STOP";
+                        } else {
+                            permissionMessageElement.textContent = "Permission for motion sensors denied.";
+                            isCounting = false;
+                            startButton.textContent = "START";
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error requesting motion permission:", error);
+                        permissionMessageElement.textContent = "Could not request motion permission.";
+                        isCounting = false;
+                        startButton.textContent = "START";
+                    });
+            } else {
+                // For other browsers (Android, older iOS)
+                // Check if we already have permission or if it's granted by default (less common now)
+                // The event listener itself will often trigger a permission prompt if needed
+                // or work if permission is already granted.
+                try {
+                    window.addEventListener('devicemotion', handleMotionEvent);
+                    // Attempt to add listener. If it fails silently or prompts, that's the browser behavior.
+                    // We assume it works or will prompt. A more robust check isn't straightforward.
+                    isCounting = true;
+                    startButton.textContent = "STOP";
+                    permissionMessageElement.textContent = "Attempting to track motion. Check browser prompts if any.";
+                    // A small timeout to see if an event fires; if not, it might indicate no permission or no sensor.
+                    // This is a heuristic.
+                    setTimeout(() => {
+                        if (isCounting && lastAcceleration.x === null) {
+                             // Check if any motion data has been received
+                            const testMotion = (e) => {
+                                if (e.accelerationIncludingGravity && e.accelerationIncludingGravity.x !== null) {
+                                    permissionMessageElement.textContent = "Motion tracking active.";
+                                } else {
+                                    permissionMessageElement.textContent = "Motion tracking might not be supported or is blocked.";
+                                }
+                                window.removeEventListener('devicemotion', testMotion, {once: true});
+                            };
+                            window.addEventListener('devicemotion', testMotion, {once: true});
+                        }
+                    }, 1000);
+
+
+                } catch (error) {
+                    console.error("Error adding devicemotion listener:", error);
+                    permissionMessageElement.textContent = "Motion sensors not supported or access denied.";
+                    isCounting = false;
+                    startButton.textContent = "START";
+                }
+            }
+        }
+
+        function startCounting() {
+            if (window.DeviceMotionEvent) {
+                requestMotionPermission();
+            } else {
+                permissionMessageElement.textContent = "Motion sensors not supported on this device/browser.";
+                isCounting = false;
+                startButton.textContent = "START";
+            }
+        }
+
+        function stopCounting() {
+            window.removeEventListener('devicemotion', handleMotionEvent);
+            isCounting = false;
+            startButton.textContent = "START";
+            lastAcceleration = { x: null, y: null, z: null }; // Reset last acceleration
+            permissionMessageElement.textContent = "Motion tracking stopped.";
+        }
+
+        startButton.addEventListener('click', () => {
+            if (!isCounting) {
+                startCounting();
+            } else {
+                stopCounting();
+            }
+        });
+
+        // Initialize display
         updateDisplay();
-        startBtn.disabled = false;
-      }
 
-      startBtn.addEventListener('click', startCounting);
-      resetBtn.addEventListener('click', resetAll);
-    })();
-  </script>
+    </script>
 </body>
 </html>
