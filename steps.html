@@ -3,104 +3,57 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Step Counter v3.1</title>
+  <title>Step Counter v4</title>
   <style>
-    html, body {
+    body {
       margin: 0;
       padding: 0;
-      width: 100%;
-      height: 100%;
-      background-color: #001f3f;
+      background: #001f3f;
+      font-family: Arial, sans-serif;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: Arial, sans-serif;
+      height: 100vh;
     }
     .container {
-      width: 90%;
-      max-width: 360px;
       text-align: center;
+      color: #FFD700;
     }
     .panel {
-      background-color: #002b6c;
-      border-radius: 8px;
-      padding: 1rem 0;
       margin-bottom: 1rem;
     }
-    .panel-label {
-      color: #FFD700;
-      font-size: 1rem;
-      font-weight: bold;
-    }
-    .panel-value {
-      color: #FFD700;
+    .value {
       font-size: 2.5rem;
       font-weight: bold;
-      margin-top: 0.3rem;
-    }
-    .buttons {
-      display: flex;
-      gap: 0.5rem;
     }
     button {
-      flex: 1;
-      background-color: #FFD700;
+      margin: 0.5rem;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      background: #FFD700;
       color: #001f3f;
       border: none;
       border-radius: 8px;
-      padding: 0.8rem 0;
-      font-size: 1rem;
-      font-weight: bold;
       cursor: pointer;
-      text-transform: uppercase;
-    }
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="panel">
-      <div class="panel-label">Steps</div>
-      <div id="stepCount" class="panel-value">0</div>
-    </div>
-    <div class="panel">
-      <div class="panel-label">Distance (km)</div>
-      <div id="distKm" class="panel-value">0.00</div>
-    </div>
-    <div class="panel">
-      <div class="panel-label">Calories (kcal)</div>
-      <div id="calories" class="panel-value">0.00</div>
-    </div>
-    <div class="buttons">
-      <button id="startBtn">Start</button>
-      <button id="resetBtn">Reset</button>
-    </div>
+    <div class="panel">Steps: <div id="stepCount" class="value">0</div></div>
+    <div class="panel">Distance (km): <div id="distKm" class="value">0.00</div></div>
+    <div class="panel">Calories: <div id="calories" class="value">0.00</div></div>
+    <button id="startBtn">Start</button>
+    <button id="resetBtn">Reset</button>
   </div>
 
   <script>
     const STEP_LENGTH = 0.78;
     const CALORIES_PER_STEP = 0.04;
-    const FILTER_WINDOW = 4;
-    const DYNAMIC_THRESHOLD_RATIO = 0.6;
-    const MIN_STEP_DURATION = 180;
-    const MAX_STEP_DURATION = 1200;
 
-    let buffer = [];
     let steps = 0;
-    let lastStepTime = 0;
-    let state = 'NEUTRAL';
-    let dynamicThreshold = 0;
-    let peakValue = 0;
-    let valleyValue = 0;
     let isTracking = false;
-
-    const bandpassFilter = {
-      x: [0, 0, 0, 0, 0],
-      y: [0, 0, 0, 0, 0]
-    };
+    let lastStepTime = 0;
 
     const stepEl = document.getElementById('stepCount');
     const distEl = document.getElementById('distKm');
@@ -108,117 +61,62 @@
     const startBtn = document.getElementById('startBtn');
     const resetBtn = document.getElementById('resetBtn');
 
-    function applyBandpassFilter(acc) {
-      bandpassFilter.x.push(acc);
-      bandpassFilter.x.shift();
-
-      const y = 0.2387 * bandpassFilter.x[4] - 0.2387 * bandpassFilter.x[0]
-              - 1.8893 * bandpassFilter.y[3] + 1.7045 * bandpassFilter.y[4];
-
-      bandpassFilter.y.push(y);
-      bandpassFilter.y.shift();
-
-      return y;
-    }
-
-    function updateDynamicThreshold(currentValue) {
-      buffer.push(currentValue);
-      if (buffer.length > FILTER_WINDOW) buffer.shift();
-
-      const avg = buffer.reduce((a, b) => a + b, 0) / buffer.length;
-      const variance = buffer.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / buffer.length;
-
-      return variance > 0.5 ? DYNAMIC_THRESHOLD_RATIO * (peakValue - valleyValue) : 1.2;
-    }
-
     function updateDisplay() {
-      const distKm = (steps * STEP_LENGTH) / 1000;
-      const calories = steps * CALORIES_PER_STEP;
       stepEl.textContent = steps;
-      distEl.textContent = distKm.toFixed(2);
-      calEl.textContent = calories.toFixed(2);
+      distEl.textContent = ((steps * STEP_LENGTH) / 1000).toFixed(2);
+      calEl.textContent = (steps * CALORIES_PER_STEP).toFixed(2);
+    }
+
+    function detectStep(acceleration) {
+      const now = Date.now();
+      const mag = Math.sqrt(acceleration.x**2 + acceleration.y**2 + acceleration.z**2);
+      
+      if (mag > 12 && now - lastStepTime > 400) { // Adjust threshold based on real test
+        steps++;
+        lastStepTime = now;
+        updateDisplay();
+      }
     }
 
     function handleMotion(event) {
-      if (!isTracking || !event.acceleration) return;
+      if (!event.accelerationIncludingGravity) return;
+      detectStep(event.accelerationIncludingGravity);
+    }
 
-      const acc = event.acceleration;
-      const vm = Math.sqrt(acc.x ** 2 + acc.y ** 2 + acc.z ** 2);
-      const filtered = applyBandpassFilter(vm);
-      const threshold = updateDynamicThreshold(filtered);
-
-      switch (state) {
-        case 'NEUTRAL':
-          if (filtered > threshold) {
-            peakValue = filtered;
-            state = 'PEAK_DETECTED';
+    async function startTracking() {
+      if (typeof DeviceMotionEvent?.requestPermission === 'function') {
+        try {
+          const response = await DeviceMotionEvent.requestPermission();
+          if (response !== 'granted') {
+            alert('Motion access denied.');
+            return;
           }
-          break;
-
-        case 'PEAK_DETECTED':
-          if (filtered > peakValue) {
-            peakValue = filtered;
-          } else if (filtered < (peakValue - threshold)) {
-            valleyValue = filtered;
-            state = 'VALLEY_DETECTED';
-          }
-          break;
-
-        case 'VALLEY_DETECTED':
-          const now = Date.now();
-          const stepDuration = now - lastStepTime;
-
-          if (
-            stepDuration > MIN_STEP_DURATION &&
-            stepDuration < MAX_STEP_DURATION &&
-            (peakValue - valleyValue) > threshold
-          ) {
-            steps++;
-            lastStepTime = now;
-            updateDisplay();
-          }
-
-          state = 'NEUTRAL';
-          peakValue = 0;
-          valleyValue = 0;
-          break;
+        } catch (err) {
+          alert('Permission error: ' + err);
+          return;
+        }
       }
+
+      window.addEventListener('devicemotion', handleMotion);
+      isTracking = true;
+      startBtn.textContent = 'Pause';
+    }
+
+    function stopTracking() {
+      window.removeEventListener('devicemotion', handleMotion);
+      isTracking = false;
+      startBtn.textContent = 'Start';
     }
 
     function toggleTracking() {
-      if (!isTracking) {
-        if (window.DeviceMotionEvent && DeviceMotionEvent.requestPermission) {
-          DeviceMotionEvent.requestPermission().then(response => {
-            if (response === 'granted') {
-              window.addEventListener('devicemotion', handleMotion);
-              isTracking = true;
-              startBtn.textContent = 'Pause';
-            } else {
-              alert('Motion access denied.');
-            }
-          }).catch(console.error);
-        } else {
-          window.addEventListener('devicemotion', handleMotion);
-          isTracking = true;
-          startBtn.textContent = 'Pause';
-        }
-      } else {
-        isTracking = false;
-        startBtn.textContent = 'Start';
-      }
+      isTracking ? stopTracking() : startTracking();
     }
 
     function resetAll() {
-      if (confirm("Reset all data?")) {
+      if (confirm('Reset all data?')) {
         steps = 0;
-        lastStepTime = 0;
-        state = 'NEUTRAL';
-        buffer = [];
-        peakValue = 0;
-        valleyValue = 0;
         updateDisplay();
-        isTracking = false;
-        startBtn.textContent = 'Start';
+        stopTracking();
       }
     }
 
