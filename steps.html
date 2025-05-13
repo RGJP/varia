@@ -1,262 +1,175 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Step Counter v1.2</title>
-    <style>
-        body {
-            background-color: #000080; /* Dark Blue */
-            color: #FFD700; /* Gold */
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-            text-align: center;
-        }
-        .container { width: 100%; max-width: 400px; }
-        .metric {
-            background-color: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        .metric h2 {
-            margin: 0 0 5px;
-            font-size: 1.2em;
-            color: #FFD700;
-        }
-        .metric p {
-            margin: 0;
-            font-size: 2em;
-            font-weight: bold;
-        }
-        .buttons {
-            display: flex;
-            justify-content: space-around;
-            width: 100%;
-            margin-top: 20px;
-        }
-        button {
-            background-color: #FFD700;
-            color: #000080;
-            border: none;
-            padding: 15px 0;
-            font-size: 1.1em;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
-            flex-basis: 45%;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        button:hover { background-color: #e6c300; }
-        button:active { transform: scale(0.98); }
-        #permissionMessage {
-            color: #FFD700;
-            margin-top: 15px;
-            font-size: 0.9em;
-            min-height: 1.2em;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Step Counter o4</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #001f3f; /* Dark blue background */
+      color: #FFD700;           /* Gold text */
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .container {
+      width: 90%;
+      max-width: 400px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 1.8em;
+      margin-bottom: 1em;
+    }
+    .stat {
+      display: flex;
+      justify-content: space-between;
+      margin: 0.5em 0;
+      font-size: 1.2em;
+    }
+    .buttons {
+      margin-top: 1.5em;
+      display: flex;
+      justify-content: space-around;
+    }
+    button {
+      background-color: transparent;
+      color: #FFD700;
+      border: 2px solid #FFD700;
+      border-radius: 5px;
+      padding: 0.8em 1.5em;
+      font-size: 1em;
+      flex: 1;
+      margin: 0 0.5em;
+    }
+    button:disabled {
+      opacity: 0.5;
+      border-color: #888;
+      color: #888;
+    }
+  </style>
 </head>
 <body>
-
-    <div class="container">
-        <div class="metric">
-            <h2>Steps</h2>
-            <p id="stepCount">0</p>
-        </div>
-        <div class="metric">
-            <h2>Distance (km)</h2>
-            <p id="distanceKm">0.000</p>
-        </div>
-        <div class="metric">
-            <h2>Distance (miles)</h2>
-            <p id="distanceMiles">0.000</p>
-        </div>
-        <div class="metric">
-            <h2>Calories Burned (kcal)</h2>
-            <p id="caloriesBurned">0</p>
-        </div>
-        <div class="buttons">
-            <button id="startButton">START</button>
-            <button id="resetButton">RESET</button>
-        </div>
-        <p id="permissionMessage"></p>
+  <div class="container">
+    <h1>Step Counter</h1>
+    <div class="stat"><span>Steps:</span> <span id="stepCount">0</span></div>
+    <div class="stat"><span>Distance (km):</span> <span id="distKm">0.00</span></div>
+    <div class="stat"><span>Distance (miles):</span> <span id="distMi">0.00</span></div>
+    <div class="stat"><span>Calories burned:</span> <span id="calories">0.00</span></div>
+    <div class="buttons">
+      <button id="startBtn">Start</button>
+      <button id="resetBtn">Reset</button>
     </div>
+  </div>
 
-    <script>
-        const stepCountElement     = document.getElementById('stepCount');
-        const distanceKmElement    = document.getElementById('distanceKm');
-        const distanceMilesElement = document.getElementById('distanceMiles');
-        const caloriesBurnedElement= document.getElementById('caloriesBurned');
-        const startButton          = document.getElementById('startButton');
-        const resetButton          = document.getElementById('resetButton');
-        const permissionMessage    = document.getElementById('permissionMessage');
+  <script>
+    // Variables
+    let stepCount = 0;
+    let distKm = 0;
+    let distMi = 0;
+    let calories = 0;
+    const stepLength = 0.78;      // meters per step (average)
+    const caloriesPerStep = 0.04; // kcal per step (average)
+    const threshold = 1.2;        // m/s² threshold for step detection
+    const minStepInterval = 300;  // ms between steps
+    const alpha = 0.1;            // filter coefficient
+    let filteredAcc = 0;
+    let lastFilteredAcc = 0;
+    let lastStepTime = 0;
 
-        // Raw sensor steps
-        let rawSteps = 0;
-        let isCounting = false;
-        let lastStepTime = 0;
+    // DOM elements
+    const stepEl = document.getElementById('stepCount');
+    const kmEl   = document.getElementById('distKm');
+    const miEl   = document.getElementById('distMi');
+    const calEl  = document.getElementById('calories');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
 
-        // Adjustment: subtract 23.53%
-        const ADJUSTMENT_PERCENTAGE   = 0.2353;
-        const STEP_ADJUSTMENT_FACTOR  = 1 - ADJUSTMENT_PERCENTAGE;
+    // Update displayed values
+    function updateDisplay() {
+      stepEl.textContent = stepCount;
+      kmEl.textContent   = distKm.toFixed(2);
+      miEl.textContent   = distMi.toFixed(2);
+      calEl.textContent  = calories.toFixed(2);
+    }
 
-        // Distance & calorie constants
-        const averageStrideLengthMeters = 0.7;
-        const metersToKm    = 0.001;
-        const metersToMiles= 0.000621371;
-        const caloriesPerStep = 0.04;
+    // Device motion handler
+    function onDeviceMotion(event) {
+      const acc = event.accelerationIncludingGravity;
+      if (!acc) return;
+      // Calculate magnitude of acceleration vector
+      const mag = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+      // Remove gravity (~9.81 m/s²)
+      const netAcc = mag - 9.81;
+      // Low-pass filter
+      filteredAcc = alpha * filteredAcc + (1 - alpha) * netAcc;
 
-        // Step‐detection parameters
-        const ALPHA_FOR_GRAVITY_ESTIMATE   = 0.1;
-        const MIN_STEP_MAGNITUDE_THRESHOLD = 1.5;
-        const MIN_TIME_BETWEEN_STEPS_MS    = 300;
-
-        let gravity = { x:0, y:0, z:0 };
-        let lastDynamicAccelMag = 0;
-        let isGoingUp = false;
-        let initialGravitySet = false;
-
-        function updateDisplay() {
-            // apply adjustment
-            const displaySteps = Math.round(rawSteps * STEP_ADJUSTMENT_FACTOR);
-            stepCountElement.textContent = displaySteps;
-            const distanceMeters = displaySteps * averageStrideLengthMeters;
-            distanceKmElement.textContent    = (distanceMeters * metersToKm).toFixed(3);
-            distanceMilesElement.textContent = (distanceMeters * metersToMiles).toFixed(3);
-            caloriesBurnedElement.textContent= Math.round(displaySteps * caloriesPerStep);
-        }
-
-        function resetAlgorithmState() {
-            gravity = { x:0, y:0, z:0 };
-            lastDynamicAccelMag = 0;
-            isGoingUp = false;
-            initialGravitySet = false;
-            lastStepTime = 0;
-        }
-
-        function resetAll() {
-            rawSteps = 0;
-            resetAlgorithmState();
-            updateDisplay();
-            permissionMessage.textContent = '';
-        }
-
-        resetButton.addEventListener('click', () => {
-            if (confirm("Are you sure you want to reset all data?")) {
-                if (isCounting) stopCounting();
-                resetAll();
-            }
-        });
-
-        function handleMotionEvent(event) {
-            if (!isCounting) return;
-            const accRaw = event.accelerationIncludingGravity;
-            if (!accRaw || accRaw.x===null) return;
-
-            if (!initialGravitySet) {
-                gravity.x = accRaw.x; gravity.y = accRaw.y; gravity.z = accRaw.z;
-                initialGravitySet = true;
-            }
-
-            // low-pass gravity filter
-            gravity.x = ALPHA_FOR_GRAVITY_ESTIMATE * accRaw.x + (1-ALPHA_FOR_GRAVITY_ESTIMATE) * gravity.x;
-            gravity.y = ALPHA_FOR_GRAVITY_ESTIMATE * accRaw.y + (1-ALPHA_FOR_GRAVITY_ESTIMATE) * gravity.y;
-            gravity.z = ALPHA_FOR_GRAVITY_ESTIMATE * accRaw.z + (1-ALPHA_FOR_GRAVITY_ESTIMATE) * gravity.z;
-
-            const dynamicAx = accRaw.x - gravity.x;
-            const dynamicAy = accRaw.y - gravity.y;
-            const dynamicAz = accRaw.z - gravity.z;
-            const currentDynamicAccelMag = Math.hypot(dynamicAx, dynamicAy, dynamicAz);
-            const currentTime = Date.now();
-
-            if (currentTime - lastStepTime < MIN_TIME_BETWEEN_STEPS_MS) {
-                lastDynamicAccelMag = currentDynamicAccelMag;
-                return;
-            }
-
-            if (isGoingUp) {
-                if (currentDynamicAccelMag < lastDynamicAccelMag) {
-                    rawSteps++;
-                    lastStepTime = currentTime;
-                    updateDisplay();
-                    isGoingUp = false;
-                }
-            } else {
-                if (currentDynamicAccelMag > lastDynamicAccelMag &&
-                    currentDynamicAccelMag > MIN_STEP_MAGNITUDE_THRESHOLD) {
-                    isGoingUp = true;
-                }
-            }
-            lastDynamicAccelMag = currentDynamicAccelMag;
-        }
-
-        function requestMotionPermission() {
-            if (DeviceMotionEvent?.requestPermission) {
-                DeviceMotionEvent.requestPermission()
-                    .then(state => {
-                        if (state === 'granted') {
-                            window.addEventListener('devicemotion', handleMotionEvent);
-                            permissionMessage.textContent = "Motion tracking active.";
-                            isCounting = true;
-                            startButton.textContent = "STOP";
-                        } else {
-                            permissionMessage.textContent = "Permission for motion sensors denied.";
-                            isCounting = false;
-                            startButton.textContent = "START";
-                        }
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        permissionMessage.textContent = "Could not request motion permission.";
-                        isCounting = false;
-                        startButton.textContent = "START";
-                    });
-            } else {
-                // fallback
-                try {
-                    window.addEventListener('devicemotion', handleMotionEvent);
-                    isCounting = true;
-                    startButton.textContent = "STOP";
-                    permissionMessage.textContent = "Motion tracking active.";
-                } catch(e) {
-                    console.error(e);
-                    permissionMessage.textContent = "Motion sensors not supported.";
-                    isCounting = false;
-                    startButton.textContent = "START";
-                }
-            }
-        }
-
-        function startCounting() {
-            resetAlgorithmState();
-            requestMotionPermission();
-        }
-
-        function stopCounting() {
-            window.removeEventListener('devicemotion', handleMotionEvent);
-            isCounting = false;
-            startButton.textContent = "START";
-            permissionMessage.textContent = rawSteps > 0
-                ? "Motion tracking stopped."
-                : "";
-        }
-
-        startButton.addEventListener('click', () => {
-            isCounting ? stopCounting() : startCounting();
-        });
-
-        // init
+      const now = Date.now();
+      if (
+        filteredAcc > threshold &&
+        lastFilteredAcc <= threshold &&
+        (now - lastStepTime) > minStepInterval
+      ) {
+        // Step detected
+        stepCount++;
+        lastStepTime = now;
+        // Distance calculations
+        distKm = (stepCount * stepLength) / 1000;
+        distMi = distKm * 0.621371;
+        // Calories estimate
+        calories = stepCount * caloriesPerStep;
         updateDisplay();
-    </script>
+      }
+      lastFilteredAcc = filteredAcc;
+    }
+
+    // Start tracking
+    function startTracking() {
+      if (window.DeviceMotionEvent && DeviceMotionEvent.requestPermission) {
+        // iOS 13+ requires permission
+        DeviceMotionEvent.requestPermission()
+          .then(response => {
+            if (response === 'granted') {
+              window.addEventListener('devicemotion', onDeviceMotion);
+              startBtn.disabled = true;
+            } else {
+              alert('Permission to access motion sensors was denied.');
+            }
+          })
+          .catch(err => console.error(err));
+      } else if (window.DeviceMotionEvent) {
+        // Other mobile browsers
+        window.addEventListener('devicemotion', onDeviceMotion);
+        startBtn.disabled = true;
+      } else {
+        alert('DeviceMotionEvent is not supported on this device.');
+      }
+    }
+
+    // Reset all values
+    function resetAll() {
+      if (confirm('Are you sure you want to reset all data?')) {
+        window.removeEventListener('devicemotion', onDeviceMotion);
+        stepCount = 0;
+        distKm = 0;
+        distMi = 0;
+        calories = 0;
+        filteredAcc = 0;
+        lastFilteredAcc = 0;
+        lastStepTime = 0;
+        updateDisplay();
+        startBtn.disabled = false;
+      }
+    }
+
+    // Event listeners for buttons
+    startBtn.addEventListener('click', startTracking);
+    resetBtn.addEventListener('click', resetAll);
+  </script>
 </body>
 </html>
