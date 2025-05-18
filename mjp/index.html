@@ -190,11 +190,16 @@
             transition: border-color 0.3s ease;
         }
         .lightbox-close {
+            /* This is the key change: hide the close button */
+            display: none; 
+            /* Original styles kept for reference if you want to bring it back:
             position: absolute; top: -35px; right: 0px; font-size: 2.5rem;
             color: #fff; cursor: pointer; background: none; border: none;
-            line-height: 1; padding: 0.25rem; transition: color 0.3s ease;
+            line-height: 1; padding: 0.25rem; transition: color 0.3s ease; 
+            */
         }
-        .lightbox-close:hover { color: #ccc; }
+        /* .lightbox-close:hover { color: #ccc; } */ /* Commented out as the button is hidden */
+
 
         /* Footer - Updated Styles for New Layout */
         .site-footer {
@@ -239,7 +244,7 @@
             .main-content { padding: 3rem; }
             .page-title { font-size: 1.5rem; margin-bottom: 4rem; }
             .image-gallery { gap: 2rem; }
-            .lightbox-close { top: 15px; right: 20px; font-size: 2rem; }
+            /* .lightbox-close { top: 15px; right: 20px; font-size: 2rem; } */ /* Commented out as the button is hidden */
             .artist-signature-img { max-height: 80px; } /* EVEN LARGER for desktop */
         }
 
@@ -287,7 +292,7 @@
             .image-gallery { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
             .main-content { padding: 1.5rem; }
             .lightbox-content { max-width: 95vw; max-height: 85vh; }
-            .lightbox-close { font-size: 2.2rem; top: 10px; right: 10px; padding: 0.5rem; background-color: rgba(0,0,0,0.2); border-radius: 50%;}
+            /* .lightbox-close { font-size: 2.2rem; top: 10px; right: 10px; padding: 0.5rem; background-color: rgba(0,0,0,0.2); border-radius: 50%;} */ /* Commented out as the button is hidden */
             /* Signature height for tablets/medium screens will use the base 70px if not overridden here */
         }
          @media (max-width: 480px) {
@@ -317,12 +322,12 @@
         </button>
         <nav class="main-nav">
             <ul>
-               
+                
                 <li><a href="index.html" class="active" data-lang-key="navImages">Images</a></li>
                 <li><a href="texts.html" data-lang-key="navTexts">Texts</a></li>
                 <li><a href="about.html" data-lang-key="navAbout">About</a></li>
                 <li><a href="prints.html" data-lang-key="navAcquire">Acquire</a></li>
-              
+            
                 <li class="nav-item-control"> 
                     <button id="lang-toggle" class="lang-toggle-button" aria-label="Switch language"></button>
                 </li>
@@ -387,8 +392,12 @@
             const themeToggleButton = document.getElementById('theme-toggle');
             const themeIcon = document.getElementById('theme-icon');
             const langToggleButton = document.getElementById('lang-toggle');
-            const lightboxCloseButton = document.getElementById('lightbox-close');
+            const lightboxCloseButton = document.getElementById('lightbox-close'); // Still get reference, though hidden
             const signatureImage = document.getElementById('artist-signature-img'); 
+            // Restored original local paths for signature images
+            const signatureBaseSrcLt = "images/signaturelt.png"; 
+            const signatureBaseSrcDt = "images/signaturedt.png"; 
+
 
             // --- Translations ---
             const translations = {
@@ -404,7 +413,7 @@
                     langToggleLabel: "Switch to French",
                     themeToggleLightLabel: "Switch to Dark Mode",
                     themeToggleDarkLabel: "Switch to Light Mode", 
-                    closeLightboxLabel: "Close lightbox",
+                    closeLightboxLabel: "Close lightbox", // Aria-label still useful for accessibility if button were visible
                     navToggleLabel: "Toggle navigation"
                 },
                 fr: {
@@ -430,7 +439,7 @@
 
             if (localStorage.getItem('hasVisited')) {
                 initialTheme = localStorage.getItem('theme') || 
-                               (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                                (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
                 initialLang = localStorage.getItem('language') || 'en';
             } else {
                 localStorage.setItem('language', initialLang);
@@ -456,6 +465,7 @@
                     isDarkMode ? translations[currentLang].themeToggleDarkLabel : translations[currentLang].themeToggleLightLabel
                 );
                 
+                // Even if hidden, keeping aria-label updated is good practice
                 if(lightboxCloseButton) lightboxCloseButton.setAttribute('aria-label', translations[currentLang].closeLightboxLabel);
                 if(navToggle) navToggle.setAttribute('aria-label', translations[currentLang].navToggleLabel);
                 
@@ -471,11 +481,11 @@
                 if (theme === 'dark') {
                     body.classList.add('dark-theme');
                     if (themeIcon) themeIcon.textContent = '☀️'; 
-                    if (signatureImage) signatureImage.src = 'images/signaturedt.png'; 
+                    if (signatureImage) signatureImage.src = signatureBaseSrcDt; 
                 } else {
                     body.classList.remove('dark-theme');
                     if (themeIcon) themeIcon.textContent = '🌙'; 
-                    if (signatureImage) signatureImage.src = 'images/signaturelt.png'; 
+                    if (signatureImage) signatureImage.src = signatureBaseSrcLt; 
                 }
                 localStorage.setItem('theme', theme);
                 applyTranslations(); 
@@ -505,6 +515,7 @@
 
                 mainNav.querySelectorAll('ul > li > a').forEach(link => { 
                     link.addEventListener('click', (e) => {
+                        // Close nav only if it's active and the clicked item is not a control button
                         if (mainNav.classList.contains('active') && !e.currentTarget.closest('.nav-item-control')) {
                              mainNav.classList.remove('active');
                              navToggle.classList.remove('active');
@@ -519,7 +530,7 @@
             const lightboxImg = document.getElementById('lightbox-img');
             const galleryItems = document.querySelectorAll('.gallery-item');
 
-            if (lightbox && lightboxImg && lightboxCloseButton) {
+            if (lightbox && lightboxImg && lightboxCloseButton) { // lightboxCloseButton reference is kept
                 galleryItems.forEach(item => {
                     item.addEventListener('click', () => {
                         const imgSrc = item.getAttribute('data-src');
@@ -536,8 +547,16 @@
                     lightbox.classList.remove('active');
                     document.body.style.overflow = ''; 
                 };
+
+                // Event listener for the close button is still here.
+                // If the button is purely decorative and should never be clickable,
+                // you could remove this. But since it's just hidden via CSS,
+                // the JS logic can remain for now.
                 lightboxCloseButton.addEventListener('click', closeLightbox);
+
                 lightbox.addEventListener('click', (e) => { 
+                    // Close lightbox if the overlay (lightbox itself) is clicked,
+                    // but not if the image content or the (hidden) close button is clicked.
                     if (e.target === lightbox) closeLightbox(); 
                 });
                 document.addEventListener('keydown', (e) => {
@@ -548,6 +567,9 @@
             // --- Update Copyright Year ---
             const currentYearSpan = document.getElementById('current-year');
             if (currentYearSpan) currentYearSpan.textContent = new Date().getFullYear();
+
+            // Apply initial translations after everything is set up
+            applyTranslations();
         });
     </script>
 
