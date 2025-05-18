@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marius Jomphe Photo</title>
+    <style>
+        /* Reset and Base Styles */
+        :root {
+            --primary-text-color: #333;
+            --secondary-text-color: #555;
+            --background-color: #ffffff;
+            --header-background: #ffffff;
+            --accent-color: #1a1a1a; /* Used for the mailto link */
+            --border-color: #eee;
+            --lightbox-overlay-color: rgba(0, 0, 0, 0.85);
+            --gallery-item-bg: #f9f9f9;
+            --mobile-nav-link-hover-bg: #f9f9f9;
+            --mobile-nav-link-border: #f0f0f0;
+            
+            --control-button-bg: #f0f0f0; /* Slightly off-white for controls */
+            --control-button-hover-bg: #e0e0e0;
+            --control-text-color: var(--primary-text-color);
+            --theme-icon-color: var(--primary-text-color);
+
+            --font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+            --header-height-desktop: 80px;
+            --header-height-mobile: 70px;
+
+            --text-prose-max-width: 720px; 
+            --divider-color: var(--border-color);
+        }
+
+        body.dark-theme {
+            --primary-text-color: #f0f0f0;
+            --secondary-text-color: #bbb;
+            --background-color: #121212;
+            --header-background: #1e1e1e;
+            --accent-color: #64b5f6; /* Adjusted accent for dark theme link visibility */
+            --border-color: #333;
+            --lightbox-overlay-color: rgba(0, 0, 0, 0.9);
+            --gallery-item-bg: #2a2a2a;
+            --mobile-nav-link-hover-bg: #2c2c2c;
+            --mobile-nav-link-border: #383838;
+
+            --control-button-bg: #2c2c2c;
+            --control-button-hover-bg: #3a3a3a;
+            --control-text-color: var(--primary-text-color);
+            --theme-icon-color: var(--primary-text-color);
+
+            --divider-color: var(--border-color);
+        }
+
+        @font-face {
+            font-family: 'Inter';
+            src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2') format('woff2');
+            font-weight: 400; font-style: normal;
+        }
+        @font-face {
+            font-family: 'Inter';
+            src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2') format('woff2');
+            font-weight: 300; font-style: normal;
+        }
+        @font-face {
+            font-family: 'Inter';
+            src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2') format('woff2');
+            font-weight: 600; font-style: normal;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; font-size: 16px; }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--primary-text-color);
+            line-height: 1.7; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding-top: var(--header-height-mobile);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Header and Navigation */
+        .site-header {
+            position: fixed; top: 0; left: 0; width: 100%;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 1rem; height: var(--header-height-mobile);
+            background-color: var(--header-background);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .artist-name {
+            font-size: 1.3rem; font-weight: 300; text-decoration: none;
+            color: var(--primary-text-color); letter-spacing: 1px;
+            transition: color 0.3s ease;
+        }
+
+        .main-nav ul { list-style: none; display: flex; align-items: center; }
+        .main-nav li { margin-left: 0.75rem; }
+
+        .main-nav a {
+            text-decoration: none; color: var(--secondary-text-color);
+            font-size: 0.85rem; font-weight: 400; text-transform: uppercase;
+            letter-spacing: 0.5px; padding: 0.5rem 0;
+            transition: color 0.3s ease, border-color 0.3s ease;
+        }
+        .main-nav a:hover, .main-nav a.active {
+            color: var(--primary-text-color);
+            border-bottom: 1px solid var(--primary-text-color);
+        }
+        
+        /* Control Buttons Styling */
+        .nav-item-control { display: flex; align-items: center; }
+
+        .lang-toggle-button, .theme-toggle-button {
+            background-color: var(--control-button-bg);
+            border: 1px solid var(--border-color); 
+            color: var(--control-text-color);
+            cursor: pointer;
+            padding: 0.3rem 0.6rem; 
+            margin: 0 0.1rem; 
+            border-radius: 15px; 
+            font-family: var(--font-family);
+            font-size: 0.85rem; 
+            font-weight: 500; 
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+            display: inline-flex; 
+            align-items: center;
+            justify-content: center;
+            min-width: 44px; 
+            height: 28px; 
+        }
+        .lang-toggle-button:hover, .theme-toggle-button:hover {
+            background-color: var(--control-button-hover-bg);
+        }
+
+        .theme-toggle-button {
+            padding: 0.3rem; 
+            width: 36px; 
+            height: 28px;
+        }
+        .theme-icon {
+            font-size: 16px; 
+            color: var(--theme-icon-color);
+            transition: color 0.3s ease;
+            line-height: 1; 
+        }
+
+        /* Mobile Navigation Toggle */
+        .nav-toggle {
+            display: none; cursor: pointer; background: none; border: none;
+            padding: 0; z-index: 1001;
+        }
+        .nav-toggle span {
+            display: block; width: 25px; height: 2px;
+            background-color: var(--primary-text-color); margin: 5px 0;
+            transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
+        }
+
+        /* Main Content Area (Base styles) */
+        .main-content { padding: 2rem; max-width: 1600px; margin: 0 auto; }
+        .page-title {
+            font-size: 1.2rem; font-weight: 300; color: var(--secondary-text-color);
+            text-align: center; margin-bottom: 3rem; text-transform: uppercase;
+            letter-spacing: 2px; transition: color 0.3s ease;
+        }
+
+        /* Styles for Acquire Page (Mirroring About Page Structure) */
+        .acquire-container {
+            max-width: 960px; 
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .acquire-flex-container {
+            display: flex;
+            flex-wrap: wrap; 
+            gap: 2.5rem; /* Increased gap slightly for better separation */
+            align-items: flex-start; 
+        }
+
+        .acquire-image-container {
+            flex: 1 1 350px; /* Flex properties for responsiveness */
+            max-width: 450px; /* Max width for the image container */
+            margin: 0 auto 2rem auto; /* Center on small screens when wrapped */
+        }
+
+        .acquire-image {
+            width: 100%;
+            height: auto;
+            border-radius: 8px; 
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05); 
+            display: block;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        body.dark-theme .acquire-image {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); /* Dark theme shadow */
+        }
+
+        .acquire-text-content {
+            flex: 1.5 1 500px; /* Text takes a bit more space, adjust as needed */
+        }
+
+        .acquire-text-content h2 { 
+            font-size: 1.6rem; /* Slightly smaller than bio h2 for sub-sections */
+            font-weight: 600;
+            color: var(--primary-text-color);
+            margin-top: 2rem; 
+            margin-bottom: 1rem;
+            line-height: 1.3;
+            transition: color 0.3s ease;
+        }
+        .acquire-text-content h2:first-of-type { /* For "Customize Your Print" */
+             margin-top: 0;
+        }
+        .acquire-text-content > p:first-of-type { /* The intro paragraph */
+            font-size: 1.1rem; /* Slightly larger intro */
+            margin-bottom: 2rem;
+        }
+
+
+        .acquire-text-content p {
+            font-size: 1rem; 
+            color: var(--primary-text-color);
+            margin-bottom: 1.25rem; 
+            transition: color 0.3s ease;
+        }
+         .acquire-text-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .acquire-options-list {
+            list-style: none;
+            padding-left: 0;
+            margin-bottom: 1.5rem;
+            font-size: 1rem; 
+            color: var(--primary-text-color);
+        }
+        .acquire-options-list li {
+            margin-bottom: 0.85rem; /* Increased spacing a bit */
+            line-height: 1.6;
+            padding-left: 1em; /* Indent list items slightly */
+            position: relative;
+        }
+        .acquire-options-list li::before { /* Custom bullet for a cleaner look */
+            content: "•";
+            position: absolute;
+            left: 0;
+            top: 0; /* Adjust if line-height causes misalignment */
+            color: var(--accent-color);
+        }
+
+        .acquire-options-list strong {
+            font-weight: 600; 
+            margin-right: 0.5em;
+            color: var(--primary-text-color); /* Ensure strong tag inherits theme color */
+        }
+        
+        /* Footer */
+        .site-footer {
+            text-align: center; padding: 2rem; margin-top: 4rem;
+            font-size: 0.85rem; color: var(--secondary-text-color);
+            border-top: 1px solid var(--border-color);
+            transition: color 0.3s ease, border-color 0.3s ease;
+        }
+        
+        /* Responsive Adjustments */
+        @media (min-width: 769px) {
+            body { padding-top: var(--header-height-desktop); }
+            .site-header { height: var(--header-height-desktop); padding: 0 3rem; }
+            .artist-name { font-size: 1.8rem; }
+            .main-nav a { font-size: 0.9rem; }
+            .main-nav li { margin-left: 1rem; }
+            .main-nav li.nav-item-control + li:not(.nav-item-control) { margin-left: 1.5rem; }
+            .lang-toggle-button, .theme-toggle-button { font-size: 0.9rem; height: 32px; padding: 0.4rem 0.8rem; }
+            .theme-toggle-button { width: 40px; padding: 0.4rem; }
+            .theme-icon { font-size: 18px; }
+            .main-content { padding: 3rem; }
+            .page-title { font-size: 1.5rem; margin-bottom: 4rem; }
+            
+            /* Acquire page specific responsive */
+            .acquire-text-content h2 { font-size: 1.8rem; }
+            .acquire-text-content p, .acquire-options-list { font-size: 1.05rem; }
+            .acquire-text-content > p:first-of-type { font-size: 1.15rem; }
+            .acquire-image-container {
+                margin: 0; 
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-nav {
+                position: fixed; top: var(--header-height-mobile); left: 0; width: 100%;
+                background-color: var(--header-background); flex-direction: column;
+                align-items: stretch; padding: 0;
+                transform: translateY(-150%);
+                transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.3s ease;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                border-top: 1px solid var(--border-color);
+            }
+            .main-nav.active { transform: translateY(0); }
+            .main-nav ul { flex-direction: column; width: 100%; align-items: stretch; }
+            .main-nav li {
+                margin: 0; width: 100%; text-align: center;
+                display: flex; justify-content: center;
+                border-bottom: 1px solid var(--mobile-nav-link-border);
+            }
+            .main-nav li:last-child { border-bottom: none; }
+            
+            .main-nav a { 
+                display: block; padding: 1rem; font-size: 1.1rem; width: 100%; text-align: center;
+            }
+            .main-nav li.nav-item-control { 
+                padding: 0.75rem 0; 
+                justify-content: center; 
+            }
+            .lang-toggle-button, .theme-toggle-button { 
+                font-size: 1rem; padding: 0.5rem 0.8rem; height: 38px; margin: 0 0.25rem;
+            }
+            .theme-toggle-button { width: 42px; padding: 0.5rem;}
+            .theme-icon { font-size: 18px; }
+
+            .main-nav a:hover {
+                background-color: var(--mobile-nav-link-hover-bg);
+                border-bottom-color: var(--mobile-nav-link-border);
+            }
+            .main-nav a.active { 
+                color: var(--primary-text-color);
+                background-color: var(--mobile-nav-link-hover-bg); 
+            }
+
+            .nav-toggle { display: block; }
+            .nav-toggle.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+            .nav-toggle.active span:nth-child(2) { opacity: 0; }
+            .nav-toggle.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+            .main-content { padding: 1.5rem; }
+            .page-title { font-size: 1.2rem; margin-bottom: 2.5rem; }
+
+            /* Acquire page specific responsive */
+            .acquire-flex-container {
+                flex-direction: column; 
+                align-items: center; 
+            }
+            .acquire-image-container {
+                max-width: 80%; 
+                margin-bottom: 2rem;
+            }
+            .acquire-text-content {
+                text-align: left; 
+                width: 100%;
+            }
+             .acquire-text-content > p:first-of-type { font-size: 1.05rem; }
+            .acquire-text-content h2 {
+                font-size: 1.5rem; /* Adjusted for mobile */
+                text-align: left; /* Keep headings left-aligned for readability */
+            }
+            .acquire-text-content p, .acquire-options-list {
+                font-size: 1rem;
+            }
+            .acquire-options-list li {
+                padding-left: 1.2em; /* Adjust custom bullet position for mobile if needed */
+            }
+            .acquire-options-list li::before {
+                top: 0.05em; /* Fine-tune bullet vertical alignment */
+            }
+        }
+         @media (max-width: 480px) {
+            .artist-name { font-size: 1.2rem; }
+            .site-header { padding: 0 1rem; }
+            .main-content { padding: 1rem; }
+            .page-title { font-size: 1.1rem; margin-bottom: 2rem; }
+            .main-nav a { padding: 0.8rem; font-size: 1rem; }
+            .main-nav li.nav-item-control { padding: 0.5rem 0; }
+            .lang-toggle-button, .theme-toggle-button { height: 36px; font-size: 0.9rem; padding: 0.4rem 0.6rem; }
+            .theme-toggle-button { width: 38px; padding: 0.4rem; }
+            .theme-icon { font-size: 16px; }
+
+            /* Acquire page specific responsive */
+            .acquire-image-container {
+                max-width: 90%; 
+            }
+             .acquire-text-content > p:first-of-type { font-size: 1rem; }
+            .acquire-text-content h2 {
+                font-size: 1.3rem; /* Adjusted for small mobile */
+            }
+            .acquire-text-content p, .acquire-options-list {
+                font-size: 0.95rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="site-header">
+        <a href="index.html" class="artist-name" data-lang-key="artistName">Marius Jomphe</a>
+        <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <nav class="main-nav">
+            <ul>
+                <li class="nav-item-control"> <button id="theme-toggle" class="theme-toggle-button" aria-label="Toggle theme">
+                        <span id="theme-icon" class="theme-icon"></span></button>
+                </li>
+                <li class="nav-item-control"> <button id="lang-toggle" class="lang-toggle-button" aria-label="Switch language"></button>
+                </li>
+                <li><a href="index.html" data-lang-key="navImages">Images</a></li>
+                <li><a href="texts.html" data-lang-key="navTexts">Texts</a></li>
+                <li><a href="about.html" data-lang-key="navAbout">About</a></li>
+                <li><a href="prints.html" class="active" data-lang-key="navAcquire">Acquire Prints</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="main-content" id="acquire-content">
+        <h1 class="page-title" data-lang-key="acquirePageTitle">Acquire Prints</h1>
+        
+        <div class="acquire-container">
+            <div class="acquire-flex-container">
+                <div class="acquire-image-container">
+                    <img src="images/printdemo.png" 
+                         alt="Example of a framed photography print" 
+                         class="acquire-image" 
+                         data-lang-alt-key="acquireImageAlt"
+                         onerror="this.onerror=null; this.src='https://placehold.co/600x450/cccccc/999999?text=Image+Not+Available';">
+                </div>
+                <article class="acquire-text-content">
+                    <p data-lang-key="acquireIntro">Bring the artist’s vibrant energy into your space with a premium print, delivered straight from the studio and accompanied by a signed Certificate of Authenticity.</p>
+                    
+                    <h2 data-lang-key="acquireCustomizeTitle">Customize Your Print</h2>
+                    <ul class="acquire-options-list">
+                        <li><strong data-lang-key="acquireSizesLabel">Sizes</strong>: <span data-lang-key="acquireSizesOptions">8 × 10 in, 11 × 14 in, 16 × 20 in, 20 × 30 in, 24 × 36 in, or custom</span></li>
+                        <li><strong data-lang-key="acquirePaperLabel">Paper</strong>: <span data-lang-key="acquirePaperOptions">Fine-Art Matte, Lustre, Baryta Gloss, Metallic, or Canvas</span></li>
+                        <li><strong data-lang-key="acquireBorderLabel">Border</strong>: <span data-lang-key="acquireBorderOptions">Borderless, 1 in white, or custom</span></li>
+                        <li><strong data-lang-key="acquireMatLabel">Mat</strong>: <span data-lang-key="acquireMatOptions">Bright White, Black, or 8-ply Museum (optional)</span></li>
+                        <li><strong data-lang-key="acquireFrameLabel">Frame</strong>: <span data-lang-key="acquireFrameOptions">Black Wood, White Wood, Natural Oak, Brushed Aluminum, or none</span></li>
+                        <li><strong data-lang-key="acquireGlazingLabel">Glazing</strong>: <span data-lang-key="acquireGlazingOptions">Museum Glass, UV-protective Glass, Acrylic, or none</span></li>
+                        <li><strong data-lang-key="acquireSignatureLabel">Signature</strong>: <span data-lang-key="acquireSignatureOptions">Front, back, or unsigned</span></li>
+                        <li><strong data-lang-key="acquireEditionLabel">Edition</strong>: <span data-lang-key="acquireEditionOptions">Numbered limited edition or open edition</span></li>
+                        <li><strong data-lang-key="acquireShippingLabel">Shipping</strong>: <span data-lang-key="acquireShippingOptions">Standard, Express, or local pickup</span></li>
+                    </ul>
+
+                    <h2 data-lang-key="acquireHowToOrderTitle">How to Order</h2>
+                    <p><span data-lang-key="acquireHowToOrderText">Write an email to the artist mentioning the image number to discuss prices and finalize your selections.</span></p>
+
+                    <p data-lang-key="acquireThankYou">Thank you for your interest in Marius Jomphe’s work!</p>
+                </article>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <p><span data-lang-key="copyrightPre">&copy; </span><span id="current-year"></span> <span data-lang-key="copyrightArtist">Marius Jomphe</span>. <span data-lang-key="copyrightRights">All Rights Reserved.</span></p>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const body = document.body;
+        const navToggle = document.querySelector('.nav-toggle');
+        const mainNav = document.querySelector('.main-nav');
+        const themeToggleButton = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const langToggleButton = document.getElementById('lang-toggle');
+
+        // --- Translations ---
+        const translations = {
+            en: {
+                artistName: "Marius Jomphe", 
+                navImages: "Images",
+                navTexts: "Texts",
+                navAbout: "About",
+                navAcquire: "Acquire Prints",
+                copyrightPre: "© ",
+                copyrightArtist: "Marius Jomphe", 
+                copyrightRights: "All Rights Reserved.",
+                langToggleText: "🌐 Français",
+                langToggleLabel: "Switch to French",
+                themeToggleLightLabel: "Switch to Dark Mode",
+                themeToggleDarkLabel: "Switch to Light Mode",
+                navToggleLabel: "Toggle navigation",
+                
+                // Acquire Page Specific
+                acquirePageTitle: "Acquire Prints",
+                acquireImageAlt: "Example of a framed photography print",
+                acquireIntro: "Bring the artist’s vibrant energy into your space with a premium print, delivered straight from the studio and accompanied by a signed Certificate of Authenticity.",
+                acquireCustomizeTitle: "Customize Your Print",
+                acquireSizesLabel: "Sizes",
+                acquireSizesOptions: "8 × 10 in, 11 × 14 in, 16 × 20 in, 20 × 30 in, 24 × 36 in, or custom",
+                acquirePaperLabel: "Paper",
+                acquirePaperOptions: "Fine-Art Matte, Lustre, Baryta Gloss, Metallic, or Canvas",
+                acquireBorderLabel: "Border",
+                acquireBorderOptions: "Borderless, 1 in white, or custom",
+                acquireMatLabel: "Mat",
+                acquireMatOptions: "Bright White, Black, or 8-ply Museum (optional)",
+                acquireFrameLabel: "Frame",
+                acquireFrameOptions: "Black Wood, White Wood, Natural Oak, Brushed Aluminum, or none",
+                acquireGlazingLabel: "Glazing",
+                acquireGlazingOptions: "Museum Glass, UV-protective Glass, Acrylic, or none",
+                acquireSignatureLabel: "Signature",
+                acquireSignatureOptions: "Front, back, or unsigned",
+                acquireEditionLabel: "Edition",
+                acquireEditionOptions: "Numbered limited edition or open edition",
+                acquireShippingLabel: "Shipping",
+                acquireShippingOptions: "Standard, Express, or local pickup",
+                acquireHowToOrderTitle: "How to Order",
+                acquireHowToOrderText: "Write an <a href='mailto:mariusjomphe52@gmail.com?subject=About%20acquiring%20a%20MJ%20print' style='color: var(--accent-color); text-decoration: underline;'>email to the artist</a> mentioning the image number to discuss prices and finalize your selections.",                acquireThankYou: "Thank you for your interest in Marius Jomphe’s work!",
+
+                // About Page (from original, keep for reference if script is shared)
+                aboutPageTitle: "About the Artist",
+                artistPortraitAlt: "Portrait of the Artist",
+                bioParagraphOne: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Pharetra sit amet aliquam id diam maecenas ultricies mi eget. At imperdiet dui accumsan sit amet nulla facilisi morbi.",
+                bioParagraphTwo: "Velit egestas dui id ornare arcu odio ut sem. Nibh praesent tristique magna sit amet purus gravida quis. Eget nullam non nisi est sit amet facilisis magna etiam. Elementum curabitur vitae nunc sed velit dignissim sodales ut.",
+                bioParagraphThree: "Risus commodo viverra maecenas accumsan lacus vel facilisis. Faucibus purus in massa tempor nec feugiat nisl pretium fusce. Amet justo donec enim diam vulputate ut pharetra. Scelerisque purus semper eget duis.",
+            },
+            fr: {
+                artistName: "Marius Jomphe",
+                navImages: "Images",
+                navTexts: "Textes",
+                navAbout: "À Propos",
+                navAcquire: "Acquérir",
+                copyrightPre: "© ",
+                copyrightArtist: "Marius Jomphe",
+                copyrightRights: "Tous Droits Réservés.",
+                langToggleText: "🌐 English",
+                langToggleLabel: "Passer en Anglais",
+                themeToggleLightLabel: "Passer en Mode Sombre",
+                themeToggleDarkLabel: "Passer en Mode Clair",
+                navToggleLabel: "Basculer la navigation",
+
+                // Acquire Page Specific
+                acquirePageTitle: "Acquérir des Tirages",
+                acquireImageAlt: "Exemple d'un tirage photographique encadré",
+                acquireIntro: "Apportez l'énergie vibrante de l'artiste dans votre espace avec un tirage haut de gamme, livré directement depuis l'atelier et accompagné d'un certificat d'authenticité signé.",
+                acquireCustomizeTitle: "Personnalisez Votre Tirage",
+                acquireSizesLabel: "Formats",
+                acquireSizesOptions: "8 × 10 po, 11 × 14 po, 16 × 20 po, 20 × 30 po, 24 × 36 po, ou personnalisé",
+                acquirePaperLabel: "Papier",
+                acquirePaperOptions: "Mat Beaux-Arts, Lustré, Baryta Brillant, Métallique, ou Toile",
+                acquireBorderLabel: "Bordure",
+                acquireBorderOptions: "Sans bordure, blanche de 1 po, ou personnalisée",
+                acquireMatLabel: "Passe-partout",
+                acquireMatOptions: "Blanc Vif, Noir, ou Musée 8 épaisseurs (optionnel)",
+                acquireFrameLabel: "Cadre",
+                acquireFrameOptions: "Bois Noir, Bois Blanc, Chêne Naturel, Aluminium Brossé, ou aucun",
+                acquireGlazingLabel: "Vitrage",
+                acquireGlazingOptions: "Verre Musée, Verre anti-UV, Acrylique, ou aucun",
+                acquireSignatureLabel: "Signature",
+                acquireSignatureOptions: "Recto, verso, ou non signé",
+                acquireEditionLabel: "Édition",
+                acquireEditionOptions: "Édition limitée numérotée ou édition ouverte",
+                acquireShippingLabel: "Expédition",
+                acquireShippingOptions: "Standard, Express, ou ramassage local",
+                acquireHowToOrderTitle: "Comment Commander",
+                acquireHowToOrderText: "Écrivez un <a href='mailto:mariusjomphe52@gmail.com?subject=Acquisition%20d%27un%20tirage%20de%20MJ' style='color: var(--accent-color); text-decoration: underline;'>courriel à l'artiste</a> en mentionnant le numéro de l'image pour discuter des prix et finaliser vos sélections.",                acquireThankYou: "Merci de votre intérêt pour le travail de Marius Jomphe !",
+                
+                // About Page (from original, keep for reference if script is shared)
+                aboutPageTitle: "À Propos de l'Artiste",
+                artistPortraitAlt: "Portrait de l'artiste",
+                bioParagraphOne: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Pharetra sit amet aliquam id diam maecenas ultricies mi eget. (FR)",
+                bioParagraphTwo: "Velit egestas dui id ornare arcu odio ut sem. Nibh praesent tristique magna sit amet purus gravida quis. Eget nullam non nisi est sit amet facilisis magna etiam. (FR)",
+                bioParagraphThree: "Risus commodo viverra maecenas accumsan lacus vel facilisis. Faucibus purus in massa tempor nec feugiat nisl pretium fusce. Amet justo donec enim diam vulputate ut pharetra. (FR)",
+            }
+        };
+
+        let initialTheme = 'light';
+        let initialLang = 'en';
+
+        if (localStorage.getItem('hasVisited')) {
+            initialTheme = localStorage.getItem('theme') || 
+                           (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            initialLang = localStorage.getItem('language') || 'en';
+        } else {
+            localStorage.setItem('language', initialLang);
+            localStorage.setItem('theme', initialTheme); 
+            localStorage.setItem('hasVisited', 'true');
+        }
+        
+        let currentLang = initialLang;
+
+        function applyTranslations() {
+            document.querySelectorAll('[data-lang-key]').forEach(el => {
+                const key = el.getAttribute('data-lang-key');
+                if (translations[currentLang] && translations[currentLang][key]) {
+                    if (key === 'acquireHowToOrderText') { // Check for the specific key that needs HTML
+                        el.innerHTML = translations[currentLang][key];
+                    } else {
+                        el.textContent = translations[currentLang][key];
+                    }
+                }
+            });
+
+            document.querySelectorAll('[data-lang-alt-key]').forEach(el => {
+                const key = el.getAttribute('data-lang-alt-key');
+                if (translations[currentLang] && translations[currentLang][key]) {
+                    el.alt = translations[currentLang][key];
+                }
+            });
+
+            if (langToggleButton) {
+                langToggleButton.textContent = translations[currentLang].langToggleText;
+                langToggleButton.setAttribute('aria-label', translations[currentLang].langToggleLabel);
+            }
+            
+            const isDarkMode = body.classList.contains('dark-theme');
+            if (themeToggleButton) {
+                themeToggleButton.setAttribute('aria-label', 
+                    isDarkMode ? translations[currentLang].themeToggleDarkLabel : translations[currentLang].themeToggleLightLabel
+                );
+            }
+            
+            if(navToggle) navToggle.setAttribute('aria-label', translations[currentLang].navToggleLabel);
+            document.documentElement.lang = currentLang;
+        }
+
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                body.classList.add('dark-theme');
+                if (themeIcon) themeIcon.textContent = '☀️'; 
+            } else {
+                body.classList.remove('dark-theme');
+                if (themeIcon) themeIcon.textContent = '🌙'; 
+            }
+            localStorage.setItem('theme', theme);
+            applyTranslations(); 
+        }
+
+        if (themeToggleButton) {
+            themeToggleButton.addEventListener('click', () => {
+                const newTheme = body.classList.contains('dark-theme') ? 'light' : 'dark';
+                applyTheme(newTheme);
+            });
+        }
+        
+        applyTheme(initialTheme); 
+
+        if (langToggleButton) {
+            langToggleButton.addEventListener('click', () => {
+                currentLang = (currentLang === 'en') ? 'fr' : 'en';
+                localStorage.setItem('language', currentLang);
+                applyTranslations();
+            });
+        }
+        
+        applyTranslations(); 
+
+        if (navToggle && mainNav) {
+            navToggle.addEventListener('click', () => {
+                const isActive = mainNav.classList.toggle('active');
+                navToggle.classList.toggle('active');
+                navToggle.setAttribute('aria-expanded', isActive);
+            });
+
+            mainNav.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    // No need to explicitly close for page navigation
+                });
+            });
+        }
+        
+        const currentYearSpan = document.getElementById('current-year');
+        if (currentYearSpan) currentYearSpan.textContent = new Date().getFullYear();
+    });
+    </script>
+
+</body>
+</html>
