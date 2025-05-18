@@ -250,14 +250,14 @@
             .main-nav li:last-child { border-bottom: none; }
             
             .main-nav a { /* Regular nav links take full width */
-                 display: block; padding: 1rem; font-size: 1.1rem; width: 100%; text-align: center;
+                display: block; padding: 1rem; font-size: 1.1rem; width: 100%; text-align: center;
             }
             .main-nav li.nav-item-control { /* Container for control buttons */
                 padding: 0.75rem 0; /* Padding around the group of controls */
                 justify-content: center; /* Center the buttons within this li */
             }
             .lang-toggle-button, .theme-toggle-button { /* Individual control buttons */
-                 font-size: 1rem; padding: 0.5rem 0.8rem; height: 38px; margin: 0 0.25rem;
+                font-size: 1rem; padding: 0.5rem 0.8rem; height: 38px; margin: 0 0.25rem;
             }
             .theme-toggle-button { width: 42px; padding: 0.5rem;}
             .theme-icon { font-size: 18px; }
@@ -400,7 +400,23 @@
                 }
             };
 
-            let currentLang = localStorage.getItem('language') || 'en';
+            // --- First Visit Logic ---
+            let initialTheme = 'light'; // Default to light for first visit
+            let initialLang = 'en';   // Default to English for first visit
+
+            if (localStorage.getItem('hasVisited')) {
+                // Not the first visit, load preferences
+                initialTheme = localStorage.getItem('theme') || 
+                               (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                initialLang = localStorage.getItem('language') || 'en';
+            } else {
+                // First visit: set defaults and mark as visited
+                localStorage.setItem('language', initialLang);
+                localStorage.setItem('theme', initialTheme);
+                localStorage.setItem('hasVisited', 'true');
+            }
+            
+            let currentLang = initialLang; // Initialize currentLang
 
             function applyTranslations() {
                 document.querySelectorAll('[data-lang-key]').forEach(el => {
@@ -434,7 +450,7 @@
                     body.classList.remove('dark-theme');
                     if (themeIcon) themeIcon.textContent = '🌙'; // Show moon icon (to switch to dark)
                 }
-                localStorage.setItem('theme', theme);
+                localStorage.setItem('theme', theme); // This line is fine, it will overwrite the initial if user changes
                 applyTranslations(); // Update aria-labels which might depend on language
             }
 
@@ -443,9 +459,8 @@
                 applyTheme(newTheme);
             });
 
-            const storedTheme = localStorage.getItem('theme') || 
-                                (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-            applyTheme(storedTheme); // Apply initial theme
+            // Apply initial theme (which is 'light' on first visit, or stored/system preference otherwise)
+            applyTheme(initialTheme);
 
 
             // --- Language Switcher ---
@@ -468,7 +483,7 @@
                 mainNav.querySelectorAll('ul > li > *:not(div)').forEach(linkOrButton => { // Target direct children of li that are links/buttons
                     linkOrButton.addEventListener('click', (e) => {
                         const isNavLink = e.currentTarget.tagName === 'A' && e.currentTarget.getAttribute('href').startsWith('#');
-                        const isControlInsideLi = e.currentTarget.closest('.nav-item-control');
+                        // const isControlInsideLi = e.currentTarget.closest('.nav-item-control'); // Not needed for this logic
 
                         if (mainNav.classList.contains('active')) {
                             if (isNavLink) { // Only close for actual navigation links
