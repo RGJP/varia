@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Marius Jomphe Photo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
         /* Reset and Base Styles */
         :root {
@@ -13,12 +16,12 @@
             --header-background: #ffffff;
             --accent-color: #1a1a1a;
             --border-color: #eee;
-            --lightbox-overlay-color: rgba(0, 0, 0, 0.85);
-            --gallery-item-bg: #f9f9f9;
+            --lightbox-overlay-color: rgba(0, 0, 0, 0.85); /* Kept for consistency if lightbox were added */
+            --gallery-item-bg: #f9f9f9; /* Kept for consistency */
             --mobile-nav-link-hover-bg: #f9f9f9;
             --mobile-nav-link-border: #f0f0f0;
             
-            --control-button-bg: #f0f0f0; /* Slightly off-white for controls */
+            --control-button-bg: #f0f0f0;
             --control-button-hover-bg: #e0e0e0;
             --control-text-color: var(--primary-text-color);
             --theme-icon-color: var(--primary-text-color);
@@ -28,7 +31,7 @@
             --header-height-mobile: 70px;
 
             /* Styles for Texts Page */
-            --text-prose-max-width: 720px; /* Max width for readable text */
+            --text-prose-max-width: 720px;
             --divider-color: var(--border-color);
         }
 
@@ -52,21 +55,7 @@
             --divider-color: var(--border-color);
         }
 
-        @font-face {
-            font-family: 'Inter';
-            src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2') format('woff2');
-            font-weight: 400; font-style: normal;
-        }
-        @font-face {
-            font-family: 'Inter';
-            src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2') format('woff2');
-            font-weight: 300; font-style: normal;
-        }
-        @font-face {
-            font-family: 'Inter';
-            src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2') format('woff2');
-            font-weight: 600; font-style: normal;
-        }
+        /* @font-face rules removed as google fonts link is used and preferred for dynamic weights */
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; font-size: 16px; }
@@ -75,14 +64,17 @@
             font-family: var(--font-family);
             background-color: var(--background-color);
             color: var(--primary-text-color);
-            line-height: 1.7; /* Slightly increased for readability of long texts */
+            line-height: 1.7; 
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             padding-top: var(--header-height-mobile);
             transition: background-color 0.3s ease, color 0.3s ease;
+            display: flex; /* Added for sticky footer */
+            flex-direction: column; /* Added for sticky footer */
+            min-height: 100vh; /* Added for sticky footer */
         }
 
-        /* Header and Navigation (Same as your original CSS) */
+        /* Header and Navigation */
         .site-header {
             position: fixed; top: 0; left: 0; width: 100%;
             display: flex; justify-content: space-between; align-items: center;
@@ -108,12 +100,12 @@
             letter-spacing: 0.5px; padding: 0.5rem 0;
             transition: color 0.3s ease, border-color 0.3s ease;
         }
-        .main-nav a:hover, .main-nav a.active { /* .active class marks the current page */
+        .main-nav a:hover, .main-nav a.active {
             color: var(--primary-text-color);
             border-bottom: 1px solid var(--primary-text-color);
         }
         
-        /* Control Buttons Styling (Same as your original CSS) */
+        /* Control Buttons Styling */
         .nav-item-control { display: flex; align-items: center; }
 
         .lang-toggle-button, .theme-toggle-button {
@@ -150,7 +142,7 @@
             line-height: 1; 
         }
 
-        /* Mobile Navigation Toggle (Same as your original CSS) */
+        /* Mobile Navigation Toggle */
         .nav-toggle {
             display: none; cursor: pointer; background: none; border: none;
             padding: 0; z-index: 1001;
@@ -161,8 +153,13 @@
             transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
         }
 
-        /* Main Content Area (Base styles, can be overridden for specific pages) */
-        .main-content { padding: 2rem; max-width: 1600px; margin: 0 auto; }
+        /* Main Content Area */
+        .main-content { 
+            padding: 2rem; 
+            max-width: 1600px; 
+            margin: 0 auto; 
+            flex-grow: 1; /* Added for sticky footer */
+        }
         .page-title {
             font-size: 1.2rem; font-weight: 300; color: var(--secondary-text-color);
             text-align: center; margin-bottom: 3rem; text-transform: uppercase;
@@ -171,16 +168,16 @@
 
         /* Styles for the Texts Page */
         .texts-container {
-            max-width: var(--text-prose-max-width); /* Optimal width for reading */
-            margin: 0 auto; /* Center the text block */
-            padding: 0 1rem; /* Padding on smaller screens */
+            max-width: var(--text-prose-max-width);
+            margin: 0 auto; 
+            padding: 0 1rem; 
         }
 
         .artist-text {
-            margin-bottom: 3rem; /* Space below each text block */
+            margin-bottom: 3rem; 
         }
 
-        .artist-text h2 { /* Title of a specific text */
+        .artist-text h2 { 
             font-size: 1.8rem;
             font-weight: 600;
             color: var(--primary-text-color);
@@ -189,9 +186,9 @@
         }
 
         .artist-text p {
-            font-size: 1rem; /* Or 1.1rem for better readability */
+            font-size: 1rem; 
             color: var(--primary-text-color);
-            margin-bottom: 1.25rem; /* Space between paragraphs */
+            margin-bottom: 1.25rem; 
         }
 
         .artist-text p:last-child {
@@ -208,34 +205,45 @@
         /* Flourished Divider */
         .flourished-divider {
             text-align: center;
-            margin: 3rem auto; /* Space around the divider */
-            color: var(--accent-color); /* Use accent color for visibility */
-            font-size: 2rem; /* Size of the floral heart */
+            margin: 3rem auto; 
+            color: var(--accent-color); 
+            font-size: 2rem; 
             line-height: 1;
             opacity: 0.7;
             transition: color 0.3s ease, opacity 0.3s ease;
         }
-        /* Alternative: Simple HR based divider */
-        /*
-        .hr-divider {
-            border: 0;
-            height: 1px;
-            background-color: var(--divider-color);
-            margin: 3rem auto;
-            width: 50%;
-            opacity: 0.5;
-        }
-        */
 
-        /* Footer (Same as your original CSS) */
+        /* Footer - Styles from the first page */
         .site-footer {
-            text-align: center; padding: 2rem; margin-top: 4rem;
-            font-size: 0.85rem; color: var(--secondary-text-color);
+            text-align: center; 
+            padding: 2rem 1rem; 
+            margin-top: 4rem; /* This will be overridden by flex-grow on main-content for sticky effect */
+            font-size: 0.85rem; 
+            color: var(--secondary-text-color);
             border-top: 1px solid var(--border-color);
             transition: color 0.3s ease, border-color 0.3s ease;
+            display: flex;
+            flex-direction: column; 
+            align-items: center;    
+            gap: 0.75rem; 
+            width: 100%; /* Ensure footer takes full width */
         }
         
-        /* Responsive Adjustments (Largely same, with considerations for text readability) */
+        .artist-signature-img {
+            max-height: 70px; 
+            width: auto;
+            object-fit: contain;
+            display: block;
+            transition: opacity 0.3s ease;
+        }
+
+        .footer-info-line {
+            display: flex; 
+            align-items: center; 
+            gap: 0.4em; 
+        }
+        
+        /* Responsive Adjustments */
         @media (min-width: 769px) {
             body { padding-top: var(--header-height-desktop); }
             .site-header { height: var(--header-height-desktop); padding: 0 3rem; }
@@ -250,6 +258,7 @@
             .page-title { font-size: 1.5rem; margin-bottom: 4rem; }
             .artist-text h2 { font-size: 2rem; }
             .artist-text p { font-size: 1.1rem; }
+            .artist-signature-img { max-height: 80px; } /* Footer responsive */
         }
 
         @media (max-width: 768px) {
@@ -286,11 +295,11 @@
 
             .main-nav a:hover {
                 background-color: var(--mobile-nav-link-hover-bg);
-                border-bottom-color: var(--mobile-nav-link-border); /* Use same color as border */
+                border-bottom-color: var(--mobile-nav-link-border);
             }
-            .main-nav a.active { /* Ensure active link is distinguishable in mobile too */
+            .main-nav a.active {
                 color: var(--primary-text-color);
-                background-color: var(--mobile-nav-link-hover-bg); /* Or a slightly different shade */
+                background-color: var(--mobile-nav-link-hover-bg); 
             }
 
             .nav-toggle { display: block; }
@@ -302,6 +311,7 @@
             .page-title { font-size: 1.2rem; margin-bottom: 2.5rem; }
             .artist-text h2 { font-size: 1.6rem; }
             .artist-text p { font-size: 1rem; }
+            /* Signature height for tablets/medium screens will use the base 70px if not overridden here */
         }
          @media (max-width: 480px) {
             .artist-name { font-size: 1.2rem; }
@@ -314,13 +324,16 @@
             .theme-toggle-button { width: 38px; padding: 0.4rem; }
             .theme-icon { font-size: 16px; }
             .artist-text h2 { font-size: 1.4rem; }
+            /* Footer responsive */
+            .artist-signature-img { max-height: 55px; } 
+            .site-footer { padding: 1.5rem 1rem; gap: 0.6rem; font-size: 0.8rem;} 
         }
     </style>
 </head>
 <body>
 
     <header class="site-header">
-        <a href="index.html" class="artist-name" data-lang-key="artistName">ARTIST NAME</a>
+        <a href="index.html" class="artist-name" data-lang-key="artistName">Marius Jomphe Photography</a>
         <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
             <span></span>
             <span></span>
@@ -329,8 +342,8 @@
         <nav class="main-nav">
             <ul>
                 <li class="nav-item-control"> <button id="theme-toggle" class="theme-toggle-button" aria-label="Toggle theme">
-                         <span id="theme-icon" class="theme-icon"></span>
-                     </button>
+                        <span id="theme-icon" class="theme-icon"></span>
+                    </button>
                 </li>
                 <li class="nav-item-control"> <button id="lang-toggle" class="lang-toggle-button" aria-label="Switch language"></button>
                 </li>
@@ -361,16 +374,21 @@
                 <p data-lang-key="textParagraphTwoA">Here, the artist discusses the concept of the silent conversation that occurs between the photographer, the subject, and eventually, the viewer. It's a dialogue without words, conveyed through composition, focus, and the decisive moment.</p>
                 <p data-lang-key="textParagraphTwoB">The camera acts as a conduit, a bridge between inner worlds. The challenge lies in listening intently to what the scene wishes to communicate, and translating that essence into a visual language that resonates universally, or perhaps, very personally.</p>
             </article>
-
-          
-            
-           
-
             </div>
     </main>
 
     <footer class="site-footer">
-        <p><span data-lang-key="copyrightPre">&copy; </span><span id="current-year"></span> <span data-lang-key="copyrightArtist">Artist Name</span>. <span data-lang-key="copyrightRights">All Rights Reserved.</span></p>
+        <img id="artist-signature-img" 
+             src="images/signaturelt.png" 
+             alt="Artist Signature" 
+             class="artist-signature-img"
+             onerror="this.onerror=null; this.src='https://placehold.co/150x70/f0f0f0/333333?text=Signature'; this.alt='Signature image not found';">
+        
+        <div class="footer-info-line">
+            <span>&copy; </span>
+            <span id="current-year"></span>
+            <span data-lang-key="copyrightRights">All Rights Reserved.</span>
+        </div>
     </footer>
 
     <script>
@@ -381,20 +399,18 @@
         const themeToggleButton = document.getElementById('theme-toggle');
         const themeIcon = document.getElementById('theme-icon');
         const langToggleButton = document.getElementById('lang-toggle');
-        // Lightbox elements are not on this page, so no need to select them
-        // const lightboxCloseButton = document.getElementById('lightbox-close'); 
+        const signatureImage = document.getElementById('artist-signature-img'); // Added for the new footer
 
         // --- Translations ---
         const translations = {
             en: {
-                artistName: "ARTIST NAME",
+                artistName: "Marius Jomphe Photography", // Kept from original texts.html
                 navImages: "Images",
                 navTexts: "Texts",
                 navAbout: "About",
                 navAcquire: "Acquire Prints",
-                copyrightPre: "© ",
-                copyrightArtist: "Marius Jomphe", // Replace with actual artist name if different
-                copyrightRights: "All Rights Reserved.",
+                copyrightRights: "All Rights Reserved.", // Used by new footer
+                artistSignatureAlt: "Artist Signature", // Added for new footer
                 langToggleText: "🌐 Français",
                 langToggleLabel: "Switch to French",
                 themeToggleLightLabel: "Switch to Dark Mode",
@@ -410,17 +426,15 @@
                 textMetaTwo: "From the series: \"Whispers in the Static\", October 2022",
                 textParagraphTwoA: "Here, the artist discusses the concept of the silent conversation that occurs between the photographer, the subject, and eventually, the viewer. It's a dialogue without words, conveyed through composition, focus, and the decisive moment.",
                 textParagraphTwoB: "The camera acts as a conduit, a bridge between inner worlds. The challenge lies in listening intently to what the scene wishes to communicate, and translating that essence into a visual language that resonates universally, or perhaps, very personally.",
-         
             },
             fr: {
-                artistName: "NOM DE L'ARTISTE",
+                artistName: "Marius Jomphe Photographie", // Kept from original texts.html
                 navImages: "Images",
                 navTexts: "Textes",
                 navAbout: "À Propos",
-                navAcquire: "Acquérir",
-                copyrightPre: "© ",
-                copyrightArtist: "Marius Jomphe", // Replace
-                copyrightRights: "Tous Droits Réservés.",
+                navAcquire: "Acquérir des tirages",
+                copyrightRights: "Tous Droits Réservés.", // Used by new footer
+                artistSignatureAlt: "Signature de l'artiste", // Added for new footer
                 langToggleText: "🌐 English",
                 langToggleLabel: "Passer en Anglais",
                 themeToggleLightLabel: "Passer en Mode Sombre",
@@ -436,7 +450,6 @@
                 textMetaTwo: "De la série : \"Murmures dans la Statique\", Octobre 2022",
                 textParagraphTwoA: "Ici, l'artiste aborde le concept de la conversation silencieuse qui s'opère entre le photographe, le sujet, et finalement, le spectateur. C'est un dialogue sans mots, transmis par la composition, la mise au point, et l'instant décisif.",
                 textParagraphTwoB: "L'appareil photo agit comme un conduit, un pont entre les mondes intérieurs. Le défi consiste à écouter attentivement ce que la scène souhaite communiquer, et à traduire cette essence en un langage visuel qui résonne universellement, ou peut-être, très personnellement.",
-              
             }
         };
 
@@ -471,6 +484,12 @@
             );
             
             if(navToggle) navToggle.setAttribute('aria-label', translations[currentLang].navToggleLabel);
+            
+            // Handle signature alt text
+            if (signatureImage && translations[currentLang] && translations[currentLang].artistSignatureAlt) {
+                signatureImage.alt = translations[currentLang].artistSignatureAlt;
+            }
+
             document.documentElement.lang = currentLang;
         }
 
@@ -478,9 +497,11 @@
             if (theme === 'dark') {
                 body.classList.add('dark-theme');
                 if (themeIcon) themeIcon.textContent = '☀️';
+                if (signatureImage) signatureImage.src = 'images/signaturedt.png'; // Update signature for dark theme
             } else {
                 body.classList.remove('dark-theme');
                 if (themeIcon) themeIcon.textContent = '🌙';
+                if (signatureImage) signatureImage.src = 'images/signaturelt.png'; // Update signature for light theme
             }
             localStorage.setItem('theme', theme);
             applyTranslations(); 
@@ -491,7 +512,7 @@
             applyTheme(newTheme);
         });
 
-        applyTheme(initialTheme);
+        applyTheme(initialTheme); // Apply initial theme settings
 
         langToggleButton.addEventListener('click', () => {
             currentLang = (currentLang === 'en') ? 'fr' : 'en';
@@ -499,29 +520,28 @@
             applyTranslations();
         });
         
-        applyTranslations();
+        applyTranslations(); // Apply initial translations
 
         if (navToggle && mainNav) {
             navToggle.addEventListener('click', () => {
-                mainNav.classList.toggle('active');
+                const isActive = mainNav.classList.toggle('active');
                 navToggle.classList.toggle('active');
-                navToggle.setAttribute('aria-expanded', mainNav.classList.contains('active'));
+                navToggle.setAttribute('aria-expanded', isActive);
             });
 
-            mainNav.querySelectorAll('ul > li > *:not(div)').forEach(linkOrButton => {
-                linkOrButton.addEventListener('click', (e) => {
-                    const isNavLink = e.currentTarget.tagName === 'A'; 
-                    // For multi-page sites, we usually don't close the mobile nav on link click
-                    // unless it's an anchor link on the SAME page.
-                    // Since these links go to other pages, we can let the page load handle it.
-                    // However, if you had anchor links on this texts page, you'd add logic here.
-                    if (mainNav.classList.contains('active') && isNavLink) {
-                         // If it's a link to the same page (e.g. an #anchor), you might want to close.
-                         // For now, we let all link clicks behave normally, leading to page navigation.
-                         // If you want to close on any link click:
-                         // mainNav.classList.remove('active');
-                         // navToggle.classList.remove('active');
-                         // navToggle.setAttribute('aria-expanded', 'false');
+            // Close mobile nav if a link is clicked (optional, based on preference for multi-page sites)
+             mainNav.querySelectorAll('ul > li > a').forEach(link => { 
+                link.addEventListener('click', (e) => {
+                    if (mainNav.classList.contains('active')) { // Check if mobile nav is open
+                        // Only close if it's not a control button itself
+                        if (!e.currentTarget.closest('.nav-item-control')) { 
+                            // For multi-page navigation, the page will reload, naturally closing the nav.
+                            // If it were a single-page app or same-page anchor links, explicit close would be more crucial here.
+                            // You can uncomment the lines below if you want to force-close on any link click.
+                            // mainNav.classList.remove('active');
+                            // navToggle.classList.remove('active');
+                            // navToggle.setAttribute('aria-expanded', 'false');
+                        }
                     }
                 });
             });
