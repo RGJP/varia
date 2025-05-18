@@ -27,9 +27,6 @@
             --font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
             --header-height-desktop: 80px;
             --header-height-mobile: 70px;
-
-            /* --text-prose-max-width: 720px; /* Original, kept if needed */
-            /* --divider-color: var(--border-color); /* Original, kept if needed */
         }
 
         body.dark-theme {
@@ -46,11 +43,7 @@
             --control-button-hover-bg: #3a3a3a;
             --control-text-color: var(--primary-text-color);
             --theme-icon-color: var(--primary-text-color);
-
-            /* --divider-color: var(--border-color); /* Original, kept if needed */
         }
-
-        /* @font-face rules removed, using Google Fonts link instead */
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; font-size: 16px; }
@@ -263,7 +256,7 @@
             transition: color 0.3s ease, border-color 0.3s ease;
             display: flex;
             flex-direction: column; 
-            align-items: center;    
+            align-items: center;     
             gap: 0.75rem; 
             width: 100%; 
         }
@@ -382,7 +375,6 @@
             .acquire-options-list li::before {
                 top: 0.05em; 
             }
-            /* Signature height for tablets/medium screens will use the base 70px if not overridden here */
         }
         @media (max-width: 480px) {
             .artist-name { font-size: 1.2rem; }
@@ -423,7 +415,6 @@
         </button>
         <nav class="main-nav">
             <ul>
-          
                 <li><a href="index.html" data-lang-key="navImages">Images</a></li>
                 <li><a href="texts.html" data-lang-key="navTexts">Texts</a></li>
                 <li><a href="about.html" data-lang-key="navAbout">About</a></li>
@@ -444,16 +435,32 @@
         <h1 class="page-title" data-lang-key="acquirePageTitle">Acquire</h1>
         
         <div class="acquire-container">
+
             <div class="acquire-flex-container">
+                <div class="acquire-image-container">
+                    <img src="images/books.png" 
+                         alt="Placeholder for Photo Book X" 
+                         class="acquire-image" 
+                         data-lang-alt-key="photoBookImageAlt"
+                         onerror="this.onerror=null; this.src='https://placehold.co/400x500/cccccc/999999?text=Book+Not+Available';">
+                </div>
+                <article class="acquire-text-content">
+                    <h2 data-lang-key="photoBooksTitle">Photo Books</h2>
+                    <p data-lang-key="photoBooksIntro">Discover a curated selection of photography books...</p>
+                    <p data-lang-key="photoBooksOrderInfo">For inquiries about purchasing photo books...</p>
+                </article>
+            </div>
+
+            <div class="acquire-flex-container" style="margin-top: 4rem; border-top: 1px solid var(--border-color); padding-top: 3rem;">
                 <div class="acquire-image-container">
                     <img src="images/printdemo.png" 
                          alt="Example of a framed photography print" 
                          class="acquire-image" 
                          data-lang-alt-key="acquireImageAlt"
-                         onerror="this.onerror=null; this.src='https://placehold.co/600x450/cccccc/999999?text=Image+Not+Available';">
+                         onerror="this.onerror=null; this.src='https://placehold.co/600x450/cccccc/999999?text=Print+Not+Available';">
                 </div>
                 <article class="acquire-text-content">
-                    <p data-lang-key="acquireIntro">Bring the artist’s vibrant energy into your space with a premium print...</p>
+                    <h2 data-lang-key="printsSectionTitle">Prints</h2> <p data-lang-key="acquireIntro">Bring the artist’s vibrant energy into your space...</p>
                     
                     <h2 data-lang-key="acquireCustomizeTitle">Customize Your Print</h2>
                     <ul class="acquire-options-list">
@@ -468,10 +475,11 @@
                         <li><strong data-lang-key="acquireShippingLabel">Shipping</strong>: <span data-lang-key="acquireShippingOptions">Standard, Express...</span></li>
                     </ul>
 
-                    <h2 data-lang-key="acquireHowToOrderTitle">How to Order</h2>
-                    <p><span data-lang-key="acquireHowToOrderText">Write an email to the artist...</span></p> <p data-lang-key="acquireThankYou">Thank you for your interest...</p>
+                    <h2 data-lang-key="acquireHowToOrderTitle">How to Order Prints</h2> <p><span data-lang-key="acquireHowToOrderText">Write an email to the artist...</span></p> 
+                    <p data-lang-key="acquireThankYou">Thank you for your interest...</p>
                 </article>
             </div>
+
         </div>
     </main>
 
@@ -497,7 +505,7 @@
         const themeToggleButton = document.getElementById('theme-toggle');
         const themeIcon = document.getElementById('theme-icon');
         const langToggleButton = document.getElementById('lang-toggle');
-        const signatureImage = document.getElementById('artist-signature-img'); // Added for the new footer
+        const signatureImage = document.getElementById('artist-signature-img');
 
         // --- Translations ---
         const translations = {
@@ -507,16 +515,22 @@
                 navTexts: "Texts",
                 navAbout: "About",
                 navAcquire: "Acquire",
-                copyrightRights: "All Rights Reserved.", // Used by new footer
-                artistSignatureAlt: "Artist Signature",  // Added for new footer
+                copyrightRights: "All Rights Reserved.",
+                artistSignatureAlt: "Artist Signature", 
                 langToggleText: "🌐 Français",
                 langToggleLabel: "Switch to French",
                 themeToggleLightLabel: "Switch to Dark Mode",
                 themeToggleDarkLabel: "Switch to Light Mode",
                 navToggleLabel: "Toggle navigation",
                 
-                // Acquire Page Specific
                 acquirePageTitle: "Acquire",
+
+                photoBooksTitle: "Photo Books",
+                photoBookImageAlt: "Photography book titled 'Livre de photo X'",
+                photoBooksIntro: "Discover a curated selection of photography books by Marius Jomphe. Each volume offers an immersive journey through compelling visual narratives, meticulously designed and produced to bring the artist's vision to your coffee table or bookshelf. Explore thematic collections, in-depth series, and beautifully crafted publications perfect for collectors and art enthusiasts alike.",
+                photoBooksOrderInfo: "For inquiries about purchasing photo books, including availability and pricing, please <a href='mailto:mariusjomphe52@gmail.com?subject=Inquiry%20about%20Photo%20Books' style='color: var(--accent-color); text-decoration: underline;'>contact the artist directly</a>.",
+
+                printsSectionTitle: "Prints", // ADDED THIS LINE
                 acquireImageAlt: "Example of a framed photography print",
                 acquireIntro: "Bring the artist’s vibrant energy into your space with a premium print, delivered straight from the studio and accompanied by a signed Certificate of Authenticity.",
                 acquireCustomizeTitle: "Customize Your Print",
@@ -538,9 +552,9 @@
                 acquireEditionOptions: "Numbered limited edition or open edition",
                 acquireShippingLabel: "Shipping",
                 acquireShippingOptions: "Standard, Express, or local pickup",
-                acquireHowToOrderTitle: "How to Order",
-                acquireHowToOrderText: "Write an <a href='mailto:mariusjomphe52@gmail.com?subject=About%20acquiring%20a%20MJ%20print' style='color: var(--accent-color); text-decoration: underline;'>email to the artist</a> with screenshots of the desired images to discuss prices and finalize your selections.",
-                acquireThankYou: "Thank you for your interest in Marius Jomphe’s work!",
+                acquireHowToOrderTitle: "How to Order Prints",
+                acquireHowToOrderText: "Write an <a href='mailto:mariusjomphe52@gmail.com?subject=About%20acquiring%20a%20MJ%20print' style='color: var(--accent-color); text-decoration: underline;'>email to the artist</a> with screenshots of the desired images to discuss prices and finalize your selections for prints.",
+                acquireThankYou: "Thank you for your interest in Marius Jomphe’s work!"
             },
             fr: {
                 artistName: "Marius Jomphe - Photographie",
@@ -548,16 +562,22 @@
                 navTexts: "Textes",
                 navAbout: "À Propos",
                 navAcquire: "Acquérir",
-                copyrightRights: "Tous Droits Réservés.", // Used by new footer
-                artistSignatureAlt: "Signature de l'artiste", // Added for new footer
+                copyrightRights: "Tous Droits Réservés.",
+                artistSignatureAlt: "Signature de l'artiste",
                 langToggleText: "🌐 English",
                 langToggleLabel: "Passer en Anglais",
                 themeToggleLightLabel: "Passer en Mode Sombre",
                 themeToggleDarkLabel: "Passer en Mode Clair",
                 navToggleLabel: "Basculer la navigation",
 
-                // Acquire Page Specific
                 acquirePageTitle: "Acquérir",
+                
+                photoBooksTitle: "Livres Photo",
+                photoBookImageAlt: "Livre de photo intitulé 'Livre de photo X'",
+                photoBooksIntro: "Découvrez une sélection de livres photo par Marius Jomphe. Chaque volume offre un voyage immersif à travers des récits visuels captivants, méticuleusement conçus et produits pour apporter la vision de l'artiste à votre table basse ou bibliothèque. Explorez des collections thématiques, des séries approfondies et des publications magnifiquement réalisées, parfaites pour les collectionneurs et les amateurs d'art.",
+                photoBooksOrderInfo: "Pour toute demande concernant l'achat de livres photo, y compris la disponibilité et les prix, veuillez <a href='mailto:mariusjomphe52@gmail.com?subject=Demande%20concernant%20les%20Livres%20Photo' style='color: var(--accent-color); text-decoration: underline;'>contacter directement l'artiste</a>.",
+
+                printsSectionTitle: "Tirages", // ADDED THIS LINE
                 acquireImageAlt: "Exemple d'un tirage photographique encadré",
                 acquireIntro: "Apportez l'énergie vibrante de l'artiste dans votre espace avec un tirage haut de gamme, livré directement depuis l'atelier et accompagné d'un certificat d'authenticité signé.",
                 acquireCustomizeTitle: "Personnalisez Votre Tirage",
@@ -579,9 +599,9 @@
                 acquireEditionOptions: "Édition limitée numérotée ou édition ouverte",
                 acquireShippingLabel: "Expédition",
                 acquireShippingOptions: "Standard, Express, ou ramassage local",
-                acquireHowToOrderTitle: "Comment Commander",
-                acquireHowToOrderText: "Écrivez un <a href='mailto:mariusjomphe52@gmail.com?subject=Acquisition%20d%27un%20tirage%20de%20MJ' style='color: var(--accent-color); text-decoration: underline;'>courriel à l'artiste</a> avec une capture d'écran des images désirées pour discuter des prix et finaliser vos sélections.",
-                acquireThankYou: "Merci de votre intérêt pour le travail de Marius Jomphe !",
+                acquireHowToOrderTitle: "Commander des Tirages",
+                acquireHowToOrderText: "Écrivez un <a href='mailto:mariusjomphe52@gmail.com?subject=Acquisition%20d%27un%20tirage%20de%20MJ' style='color: var(--accent-color); text-decoration: underline;'>courriel à l'artiste</a> avec une capture d'écran des images désirées pour discuter des prix et finaliser vos sélections de tirages.",
+                acquireThankYou: "Merci de votre intérêt pour le travail de Marius Jomphe !"
             }
         };
 
@@ -604,8 +624,7 @@
             document.querySelectorAll('[data-lang-key]').forEach(el => {
                 const key = el.getAttribute('data-lang-key');
                 if (translations[currentLang] && translations[currentLang][key]) {
-                    // Special handling for elements that require HTML content (like mailto links)
-                    if (key === 'acquireHowToOrderText') { 
+                    if (key === 'acquireHowToOrderText' || key === 'photoBooksOrderInfo') { 
                         el.innerHTML = translations[currentLang][key];
                     } else {
                         el.textContent = translations[currentLang][key];
@@ -634,7 +653,6 @@
             
             if(navToggle) navToggle.setAttribute('aria-label', translations[currentLang].navToggleLabel);
 
-            // Handle signature alt text for the new footer
             if (signatureImage && translations[currentLang] && translations[currentLang].artistSignatureAlt) {
                 signatureImage.alt = translations[currentLang].artistSignatureAlt;
             }
@@ -646,11 +664,11 @@
             if (theme === 'dark') {
                 body.classList.add('dark-theme');
                 if (themeIcon) themeIcon.textContent = '☀️'; 
-                if (signatureImage) signatureImage.src = 'images/signaturedt.png'; // Update signature for dark theme
+                if (signatureImage) signatureImage.src = 'images/signaturedt.png';
             } else {
                 body.classList.remove('dark-theme');
                 if (themeIcon) themeIcon.textContent = '🌙'; 
-                if (signatureImage) signatureImage.src = 'images/signaturelt.png'; // Update signature for light theme
+                if (signatureImage) signatureImage.src = 'images/signaturelt.png';
             }
             localStorage.setItem('theme', theme);
             applyTranslations(); 
@@ -684,7 +702,7 @@
 
             mainNav.querySelectorAll('a').forEach(link => {
                 link.addEventListener('click', () => {
-                    // Page navigation will handle closing the menu.
+                    // Allow default navigation
                 });
             });
         }
