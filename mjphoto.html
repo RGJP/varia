@@ -3,327 +3,550 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lumina Gallery - Artist Name</title>
+    <title>Artistic Photography</title>
     <style>
-        /* VERY MINIMAL inline styles for basic structure demonstration.
-            THIS IS NOT THE FINAL MINIMALIST DESIGN.
-            The final design requires extensive external CSS.
-        */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            background-color: #fdfdfd; /* A very light base, true white would be #fff */
-            color: #333;
-            line-height: 1.6;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        header {
-            padding: 20px 0;
-            border-bottom: 1px solid #eee;
-            margin-bottom: 30px;
-            text-align: center; /* Simple centering for demo */
-        }
-        .logo {
-            font-size: 1.8em;
-            font-weight: bold;
-            text-decoration: none;
-            color: #222;
-        }
-        nav ul {
-            list-style: none;
-            padding: 0;
-            margin-top: 10px;
-        }
-        nav ul li {
-            display: inline-block;
-            margin: 0 15px;
-        }
-        nav ul li a {
-            text-decoration: none;
-            color: #555;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-            text-transform: uppercase; /* Example of styling */
-            font-size: 0.9em;
-        }
-        nav ul li a.active {
-            color: #000; /* Example active link */
-            border-bottom: 1px solid #000;
+        /* Reset and Base Styles */
+        :root {
+            --primary-text-color: #333;
+            --secondary-text-color: #555;
+            --background-color: #ffffff;
+            --accent-color: #1a1a1a; /* For subtle borders or hover effects */
+            --lightbox-overlay-color: rgba(0, 0, 0, 0.85);
+            --font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+            --header-height-desktop: 80px;
+            --header-height-mobile: 60px;
         }
 
-        .section {
-            padding: 40px 0;
-            margin-bottom: 30px;
-            /* Generous whitespace would be controlled here with padding/margins */
+        @font-face {
+            font-family: 'Inter';
+            src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
         }
-        .section-title {
-            font-size: 2em;
-            font-weight: 300; /* Lighter weight for modern feel */
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center; /* Or left-aligned for a different feel */
+        @font-face {
+            font-family: 'Inter';
+            src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2') format('woff2'); /* Using a readily available woff2 for simplicity */
+            font-weight: 300; /* Light */
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Inter';
+            src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2') format('woff2');
+            font-weight: 600; /* Semibold */
+            font-style: normal;
+        }
+
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px; /* Base font size for rem units */
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--primary-text-color);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding-top: var(--header-height-mobile); /* Space for fixed header on mobile */
+        }
+
+        /* Header and Navigation */
+        .site-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 2rem;
+            height: var(--header-height-mobile);
+            background-color: var(--background-color);
+            border-bottom: 1px solid #eee;
+            z-index: 1000;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .artist-name {
+            font-size: 1.5rem;
+            font-weight: 300; /* Lighter weight for elegance */
+            text-decoration: none;
+            color: var(--primary-text-color);
             letter-spacing: 1px;
         }
 
-        /* Image Gallery Placeholder Styles */
-        .image-gallery {
-            display: grid; /* Modern grid layout */
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Responsive grid */
-            gap: 20px; /* Spacing between images */
-        }
-        .image-gallery .img-placeholder {
-            width: 100%;
-            height: 200px; /* Adjust height as needed or use aspect-ratio */
-            background-color: #e0e0e0; /* Placeholder color */
+        .main-nav ul {
+            list-style: none;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #777;
-            cursor: pointer; /* To indicate clickable for lightbox */
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .image-gallery .img-placeholder:hover {
-            transform: scale(1.03); /* Subtle hover effect */
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1); /* Subtle shadow for depth */
         }
 
-        /* Lightbox Placeholder Styles (would be controlled by JS) */
-        .lightbox-overlay {
+        .main-nav li {
+            margin-left: 1.5rem;
+        }
+
+        .main-nav a {
+            text-decoration: none;
+            color: var(--secondary-text-color);
+            font-size: 0.9rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: color 0.3s ease;
+            padding: 0.5rem 0;
+        }
+
+        .main-nav a:hover,
+        .main-nav a.active {
+            color: var(--primary-text-color);
+            border-bottom: 1px solid var(--primary-text-color);
+        }
+        
+        /* Mobile Navigation Toggle */
+        .nav-toggle {
+            display: none; /* Hidden on desktop */
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            z-index: 1001;
+        }
+
+        .nav-toggle span {
+            display: block;
+            width: 25px;
+            height: 2px;
+            background-color: var(--primary-text-color);
+            margin: 5px 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .page-title {
+            font-size: 1.2rem;
+            font-weight: 300;
+            color: var(--secondary-text-color);
+            text-align: center;
+            margin-bottom: 3rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* Image Gallery */
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem; /* Increased gap for museum feel */
+        }
+
+        .gallery-item {
+            cursor: pointer;
+            overflow: hidden; /* Ensures image doesn't spill on zoom effect */
+            background-color: #f9f9f9; /* Slight background for image placeholders */
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures image covers the area, might crop */
+            display: block;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease;
+            aspect-ratio: 4 / 3; /* Common photography aspect ratio */
+        }
+
+        .gallery-item:hover img {
+            transform: scale(1.05);
+            opacity: 0.85;
+        }
+
+        /* Lightbox */
+        .lightbox {
             display: none; /* Hidden by default */
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(16, 16, 16, 0.9); /* Darkened overlay */
-            z-index: 1000;
+            background-color: var(--lightbox-overlay-color);
+            z-index: 2000;
             justify-content: center;
             align-items: center;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            padding: 1rem; /* Padding for smaller screens */
         }
+
+        .lightbox.active {
+            display: flex;
+            opacity: 1;
+        }
+
         .lightbox-content {
             position: relative;
             max-width: 90vw;
             max-height: 90vh;
+            display: flex; /* For centering image */
+            justify-content: center; /* For centering image */
+            align-items: center; /* For centering image */
         }
+
         .lightbox-content img {
-            display: block;
             max-width: 100%;
-            max-height: 90vh;
+            max-height: 100%;
             object-fit: contain;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 3px solid white; /* Subtle border for definition */
         }
+
         .lightbox-close {
             position: absolute;
-            top: -30px; /* Positioned outside for clarity, could be inside */
+            top: -35px; /* Position above the image or to the side */
             right: 0px;
+            font-size: 2.5rem;
             color: #fff;
-            font-size: 2em;
             cursor: pointer;
             background: none;
             border: none;
+            line-height: 1;
+            padding: 0.25rem;
+            transition: color 0.3s ease;
         }
-        /* Basic button styling for Acquire Prints */
-        .btn {
-            display: inline-block;
-            padding: 12px 25px;
-            background-color: #333;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 3px; /* Minimal rounding */
-            font-weight: 500;
-            transition: background-color 0.3s ease;
-        }
-        .btn:hover {
-            background-color: #555;
-        }
-        .print-item {
-            margin-bottom: 30px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 20px;
-        }
-        .print-item:last-child {
-            border-bottom: none;
-        }
-        .print-item h3 {
-            margin-top: 0;
+        .lightbox-close:hover {
+            color: #ccc;
         }
 
-        footer {
+
+        /* Footer */
+        .site-footer {
             text-align: center;
-            padding: 30px 0;
+            padding: 2rem;
+            margin-top: 4rem;
+            font-size: 0.85rem;
+            color: var(--secondary-text-color);
             border-top: 1px solid #eee;
-            font-size: 0.9em;
-            color: #777;
-            margin-top: 50px;
+        }
+        
+        /* Responsive Adjustments */
+        @media (min-width: 769px) {
+            body {
+                padding-top: var(--header-height-desktop);
+            }
+            .site-header {
+                height: var(--header-height-desktop);
+                padding: 0 3rem;
+            }
+            .artist-name {
+                font-size: 1.8rem;
+            }
+            .main-nav a {
+                font-size: 1rem;
+            }
+             .main-nav li {
+                margin-left: 2.5rem;
+            }
+            .main-content {
+                padding: 3rem;
+            }
+            .page-title {
+                font-size: 1.5rem;
+                margin-bottom: 4rem;
+            }
+            .image-gallery {
+                gap: 2rem;
+            }
+            .lightbox-close {
+                top: 15px;
+                right: 20px;
+                font-size: 2rem;
+            }
         }
 
-        /* Basic responsive text for demo */
+
         @media (max-width: 768px) {
-            .logo { font-size: 1.5em; }
-            nav ul li { margin: 0 8px;}
-            .section-title { font-size: 1.8em; }
+            .main-nav {
+                position: fixed;
+                top: var(--header-height-mobile);
+                left: 0;
+                width: 100%;
+                background-color: var(--background-color);
+                flex-direction: column;
+                align-items: center;
+                padding: 1rem 0;
+                transform: translateY(-150%); /* Start off-screen */
+                transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                border-top: 1px solid #eee;
+            }
+
+            .main-nav.active {
+                transform: translateY(0);
+            }
+
+            .main-nav ul {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .main-nav li {
+                margin: 0;
+                width: 100%;
+                text-align: center;
+            }
+
+            .main-nav a {
+                display: block;
+                padding: 1rem;
+                font-size: 1.1rem;
+                border-bottom: 1px solid #f0f0f0; /* Separator for mobile links */
+            }
+            .main-nav a:hover,
+            .main-nav a.active {
+                background-color: #f9f9f9;
+                border-bottom: 1px solid #f0f0f0; /* Keep separator on hover */
+            }
+            .main-nav li:last-child a {
+                border-bottom: none;
+            }
+
+            .nav-toggle {
+                display: block;
+            }
+            
+            .nav-toggle.active span:nth-child(1) {
+                transform: translateY(7px) rotate(45deg);
+            }
+            .nav-toggle.active span:nth-child(2) {
+                opacity: 0;
+            }
+            .nav-toggle.active span:nth-child(3) {
+                transform: translateY(-7px) rotate(-45deg);
+            }
+
+            .image-gallery {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 1rem;
+            }
+             .main-content {
+                padding: 1.5rem;
+            }
+            .lightbox-content {
+                max-width: 95vw;
+                max-height: 85vh;
+            }
+            .lightbox-close { /* Make close button easier to tap */
+                font-size: 2.2rem;
+                top: 10px;
+                right: 10px;
+                padding: 0.5rem;
+                 background-color: rgba(0,0,0,0.2); /* Slight background for visibility */
+                border-radius: 50%;
+            }
+        }
+         @media (max-width: 480px) {
+            .artist-name {
+                font-size: 1.3rem;
+            }
+            .site-header {
+                padding: 0 1rem;
+            }
+            .main-content {
+                padding: 1rem;
+            }
+            .page-title {
+                 font-size: 1rem;
+                 margin-bottom: 2rem;
+            }
+             .image-gallery {
+                /* On very small screens, 1 column might be better */
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
         }
 
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="container">
-            <a href="#home" class="logo">ARTIST NAME</a>
-            <nav>
-                <ul>
-                    <li><a href="#images" class="active" onclick="showSection('images')">Images</a></li>
-                    <li><a href="#texts" onclick="showSection('texts')">Texts</a></li>
-                    <li><a href="#about" onclick="showSection('about')">About</a></li>
-                    <li><a href="#acquire" onclick="showSection('acquire')">Acquire Prints</a></li>
-                </ul>
-            </nav>
-        </div>
+    <header class="site-header">
+        <a href="#" class="artist-name">ARTIST NAME</a>
+        <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <nav class="main-nav">
+            <ul>
+                <li><a href="#images" class="active">Images</a></li>
+                <li><a href="#texts">Texts</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#acquire">Acquire Prints</a></li>
+            </ul>
+        </nav>
     </header>
 
-    <main>
-        <section id="images" class="section container">
-            <div class="image-gallery">
-                <div class="img-placeholder" onclick="openLightbox('placeholder-large-1.jpg', 'Artwork Title 1')">Image 1</div>
-                <div class="img-placeholder" onclick="openLightbox('placeholder-large-2.jpg', 'Artwork Title 2')">Image 2</div>
-                <div class="img-placeholder" onclick="openLightbox('placeholder-large-3.jpg', 'Artwork Title 3')">Image 3</div>
-                <div class="img-placeholder" onclick="openLightbox('placeholder-large-4.jpg', 'Artwork Title 4')">Image 4</div>
-                <div class="img-placeholder" onclick="openLightbox('placeholder-large-5.jpg', 'Artwork Title 5')">Image 5</div>
-                <div class="img-placeholder" onclick="openLightbox('placeholder-large-6.jpg', 'Artwork Title 6')">Image 6</div>
-                </div>
-        </section>
-
-        <section id="texts" class="section container" style="display: none;">
-            <h2 class="section-title">Texts</h2>
-            <article>
-                <h3>On Light and Shadow</h3>
-                <p>This is where a narrative or artist writing related to the artworks would go. It should be formatted for readability, with ample white space (achieved via CSS). Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...</p>
-            </article>
-            <article>
-                <h3>The Ephemeral Moment</h3>
-                <p>Another piece of writing. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur...</p>
-            </article>
-        </section>
-
-        <section id="about" class="section container" style="display: none;">
-            <h2 class="section-title">About the Artist</h2>
-            <div>
-                <div class="img-placeholder" style="width: 200px; height: 200px; float: left; margin-right: 20px; margin-bottom: 10px;">Artist Portrait</div>
-                <h3>Biography</h3>
-                <p>Artist Name (b. 19XX) is a contemporary photographer known for [describe style/focus]. Their work explores themes of [themes]. Lorem ipsum dolor sit amet, consectetur adipiscing elit...</p>
-                <h3>Artistic Statement</h3>
-                <p>My practice centers on the exploration of [core concepts]. I aim to capture [artistic goals] through [methods/mediums]. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium...</p>
-                </div>
-        </section>
-
-        <section id="acquire" class="section container" style="display: none;">
-            <h2 class="section-title">Acquire Prints</h2>
-            <p style="text-align: center; margin-bottom: 30px;">For inquiries about purchasing prints, please use the contact information below or fill out an inquiry form for specific pieces.</p>
-            
-            <div class="print-item">
-                <h3>"Artwork Title 1" - Limited Edition</h3>
-                <div class="img-placeholder" style="width: 150px; height: 100px; float: left; margin-right: 15px;">Print Thumbnail</div>
-                <p>Details: Archival Pigment Print, 16x20 inches, Edition of 25.</p>
-                <p>Price: $XXX.XX USD</p>
-                <a href="mailto:your.email@example.com?subject=Inquiry for Artwork Title 1" class="btn">Inquire/Purchase</a>
+    <main class="main-content" id="images">
+        <h1 class="page-title">Portfolio</h1>
+        <div class="image-gallery">
+            <div class="gallery-item" data-src="https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200" data-alt="Misty mountain landscape">
+                <img src="https://images.unsplash.com/photo-1506748686214-e9df14d4d9d0?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=600" alt="Misty mountain landscape thumbnail">
             </div>
-
-            <div class="print-item">
-                <h3>"Artwork Title 2" - Open Edition</h3>
-                <div class="img-placeholder" style="width: 150px; height: 100px; float: left; margin-right: 15px;">Print Thumbnail</div>
-                <p>Details: Giclée Print, 12x18 inches.</p>
-                <p>Price: $YYY.YY USD</p>
-                <a href="mailto:your.email@example.com?subject=Inquiry for Artwork Title 2" class="btn">Inquire/Purchase</a>
+            <div class="gallery-item" data-src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200" data-alt="Wooden boardwalk over a lake">
+                <img src="https://images.unsplash.com/photo-1470770841072-f978cf4d019e?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=600" alt="Wooden boardwalk over a lake thumbnail">
             </div>
-            </section>
+            <div class="gallery-item" data-src="https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200" data-alt="Blue lake with wooden pier">
+                <img src="https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=600" alt="Blue lake with wooden pier thumbnail">
+            </div>
+            <div class="gallery-item" data-src="https://images.unsplash.com/photo-1472214103451-9374bd1c798e?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200" data-alt="Green rolling hills under cloudy sky">
+                <img src="https://images.unsplash.com/photo-1472214103451-9374bd1c798e?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=600" alt="Green rolling hills thumbnail">
+            </div>
+             <div class="gallery-item" data-src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200" data-alt="Italian lake and mountains">
+                <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=600" alt="Italian lake and mountains thumbnail">
+            </div>
+            <div class="gallery-item" data-src="https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200" data-alt="Forest path with sunlight">
+                <img src="https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=600" alt="Forest path thumbnail">
+            </div>
+             <div class="gallery-item" data-src="https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200" data-alt="Beach sunrise with waves">
+                <img src="https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=600" alt="Beach sunrise thumbnail">
+            </div>
+            <div class="gallery-item" data-src="https://images.unsplash.com/photo-1505159940484-eb2b9f2588e2?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200" data-alt="Desert landscape with mountains">
+                <img src="https://images.unsplash.com/photo-1505159940484-eb2b9f2588e2?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=600" alt="Desert landscape thumbnail">
+            </div>
+            <div class="gallery-item" data-src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200" data-alt="Starry night sky over mountains">
+                <img src="https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=600" alt="Starry night sky thumbnail">
+            </div>
+        </div>
     </main>
 
-    <footer>
-        <div class="container">
-            <p>&copy; <span id="currentYear"></span> Artist Name. All Rights Reserved.</p>
-            </div>
-    </footer>
-
-    <div id="lightbox" class="lightbox-overlay" onclick="closeLightboxOutside(event)">
+    <div class="lightbox" id="lightbox">
         <div class="lightbox-content">
-            <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
-            <img id="lightbox-img" src="" alt="Enlarged Artwork">
-            </div>
+            <img src="" alt="" id="lightbox-img">
+            <button class="lightbox-close" id="lightbox-close" aria-label="Close lightbox">&times;</button>
+        </div>
     </div>
 
+    <footer class="site-footer">
+        <p>&copy; <span id="current-year"></span> Artist Name. All Rights Reserved.</p>
+    </footer>
+
     <script>
-        // Basic JavaScript for section navigation and VERY simple lightbox functionality
-        // This is NOT a complete or robust lightbox solution.
-        // A proper solution would handle preloading, arrow navigation, captions, etc.
-
-        document.getElementById('currentYear').textContent = new Date().getFullYear();
-
-        const sections = ['images', 'texts', 'about', 'acquire'];
-        const navLinks = document.querySelectorAll('nav ul li a');
-
-        function showSection(sectionId) {
-            sections.forEach(id => {
-                const sectionElement = document.getElementById(id);
-                if (sectionElement) {
-                    sectionElement.style.display = (id === sectionId) ? 'block' : 'none';
-                }
-            });
-            navLinks.forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('href') === '#' + sectionId) {
-                    link.classList.add('active');
-                }
-            });
-            window.scrollTo(0,0); // Scroll to top when section changes
-        }
-
-        // Initialize with the 'images' section visible
         document.addEventListener('DOMContentLoaded', () => {
-            showSection('images');
+            // Mobile Navigation Toggle
+            const navToggle = document.querySelector('.nav-toggle');
+            const mainNav = document.querySelector('.main-nav');
+
+            if (navToggle && mainNav) {
+                navToggle.addEventListener('click', () => {
+                    mainNav.classList.toggle('active');
+                    navToggle.classList.toggle('active');
+                    const isExpanded = mainNav.classList.contains('active');
+                    navToggle.setAttribute('aria-expanded', isExpanded);
+                });
+
+                // Close mobile menu when a link is clicked
+                const navLinks = mainNav.querySelectorAll('a');
+                navLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        if (mainNav.classList.contains('active')) {
+                            mainNav.classList.remove('active');
+                            navToggle.classList.remove('active');
+                            navToggle.setAttribute('aria-expanded', 'false');
+                        }
+                    });
+                });
+            }
+            
+            // Active navigation link based on section
+            // For a single page app, this would be more complex. Here, it's simple.
+            const navLinks = document.querySelectorAll('.main-nav a');
+            const sections = document.querySelectorAll('main > section'); // Assuming sections exist
+
+            // For this landing page, "Images" is default active.
+            // If you had multiple actual sections on one page:
+            /*
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    if (pageYOffset >= sectionTop - var(--header-height-desktop) - 10) { // Adjust offset
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.getAttribute('href').includes(current)) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+            */
+
+
+            // Lightbox Functionality
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            const lightboxClose = document.getElementById('lightbox-close');
+            const galleryItems = document.querySelectorAll('.gallery-item');
+
+            if (lightbox && lightboxImg && lightboxClose) {
+                galleryItems.forEach(item => {
+                    item.addEventListener('click', () => {
+                        const imgSrc = item.getAttribute('data-src');
+                        const imgAlt = item.getAttribute('data-alt');
+                        if (imgSrc && imgAlt) {
+                            lightboxImg.setAttribute('src', imgSrc);
+                            lightboxImg.setAttribute('alt', imgAlt);
+                            lightbox.classList.add('active');
+                            document.body.style.overflow = 'hidden'; // Prevent scrolling background
+                        }
+                    });
+                });
+
+                const closeLightbox = () => {
+                    lightbox.classList.remove('active');
+                    document.body.style.overflow = ''; // Restore scrolling
+                    // Optional: clear image src to save memory, though modern browsers are good
+                    // lightboxImg.setAttribute('src', ''); 
+                    // lightboxImg.setAttribute('alt', '');
+                };
+
+                lightboxClose.addEventListener('click', closeLightbox);
+
+                lightbox.addEventListener('click', (e) => {
+                    // Close if clicked on the overlay background, not the image itself
+                    if (e.target === lightbox) {
+                        closeLightbox();
+                    }
+                });
+
+                // Close lightbox with Escape key
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && lightbox.classList.contains('active')) {
+                        closeLightbox();
+                    }
+                });
+            }
+
+            // Update Copyright Year
+            const currentYearSpan = document.getElementById('current-year');
+            if (currentYearSpan) {
+                currentYearSpan.textContent = new Date().getFullYear();
+            }
         });
-
-
-        // Basic Lightbox JS
-        const lightbox = document.getElementById('lightbox');
-        const lightboxImg = document.getElementById('lightbox-img');
-        // const lightboxCaption = document.getElementById('lightbox-caption');
-
-        function openLightbox(imageSrc, captionText) {
-            // In a real scenario, imageSrc would be the path to a high-resolution image.
-            // For this demo, we'll just use what's passed.
-            // You'd replace 'placeholder-large-X.jpg' with actual image paths.
-            lightboxImg.src = 'https://via.placeholder.com/1200x800/EEEEEE/AAAAAA?text=' + encodeURIComponent(captionText); // Using placeholder
-            // lightboxCaption.textContent = captionText;
-            if (lightbox) {
-                lightbox.style.display = 'flex'; // Use flex to center content
-            }
-            document.body.style.overflow = 'hidden'; // Prevent scrolling of background
-        }
-
-        function closeLightbox() {
-            if (lightbox) {
-                lightbox.style.display = 'none';
-            }
-            document.body.style.overflow = 'auto'; // Restore scrolling
-        }
-        
-        function closeLightboxOutside(event) {
-            if (event.target === lightbox) { // if click is on the overlay itself
-                closeLightbox();
-            }
-        }
-
-        // Close lightbox with Escape key
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape' && lightbox.style.display === 'flex') {
-                closeLightbox();
-            }
-        });
-
     </script>
+
 </body>
 </html>
