@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lumina Gallery - Artist Name</title>
+    <style>
+        /* VERY MINIMAL inline styles for basic structure demonstration.
+            THIS IS NOT THE FINAL MINIMALIST DESIGN.
+            The final design requires extensive external CSS.
+        */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            background-color: #fdfdfd; /* A very light base, true white would be #fff */
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            padding: 20px 0;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 30px;
+            text-align: center; /* Simple centering for demo */
+        }
+        .logo {
+            font-size: 1.8em;
+            font-weight: bold;
+            text-decoration: none;
+            color: #222;
+        }
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin-top: 10px;
+        }
+        nav ul li {
+            display: inline-block;
+            margin: 0 15px;
+        }
+        nav ul li a {
+            text-decoration: none;
+            color: #555;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase; /* Example of styling */
+            font-size: 0.9em;
+        }
+        nav ul li a.active {
+            color: #000; /* Example active link */
+            border-bottom: 1px solid #000;
+        }
+
+        .section {
+            padding: 40px 0;
+            margin-bottom: 30px;
+            /* Generous whitespace would be controlled here with padding/margins */
+        }
+        .section-title {
+            font-size: 2em;
+            font-weight: 300; /* Lighter weight for modern feel */
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center; /* Or left-aligned for a different feel */
+            letter-spacing: 1px;
+        }
+
+        /* Image Gallery Placeholder Styles */
+        .image-gallery {
+            display: grid; /* Modern grid layout */
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Responsive grid */
+            gap: 20px; /* Spacing between images */
+        }
+        .image-gallery .img-placeholder {
+            width: 100%;
+            height: 200px; /* Adjust height as needed or use aspect-ratio */
+            background-color: #e0e0e0; /* Placeholder color */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #777;
+            cursor: pointer; /* To indicate clickable for lightbox */
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .image-gallery .img-placeholder:hover {
+            transform: scale(1.03); /* Subtle hover effect */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+        }
+
+        /* Lightbox Placeholder Styles (would be controlled by JS) */
+        .lightbox-overlay {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(16, 16, 16, 0.9); /* Darkened overlay */
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .lightbox-content {
+            position: relative;
+            max-width: 90vw;
+            max-height: 90vh;
+        }
+        .lightbox-content img {
+            display: block;
+            max-width: 100%;
+            max-height: 90vh;
+            object-fit: contain;
+        }
+        .lightbox-close {
+            position: absolute;
+            top: -30px; /* Positioned outside for clarity, could be inside */
+            right: 0px;
+            color: #fff;
+            font-size: 2em;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+        /* Basic button styling for Acquire Prints */
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background-color: #333;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 3px; /* Minimal rounding */
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+        .btn:hover {
+            background-color: #555;
+        }
+        .print-item {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 20px;
+        }
+        .print-item:last-child {
+            border-bottom: none;
+        }
+        .print-item h3 {
+            margin-top: 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px 0;
+            border-top: 1px solid #eee;
+            font-size: 0.9em;
+            color: #777;
+            margin-top: 50px;
+        }
+
+        /* Basic responsive text for demo */
+        @media (max-width: 768px) {
+            .logo { font-size: 1.5em; }
+            nav ul li { margin: 0 8px;}
+            .section-title { font-size: 1.8em; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container">
+            <a href="#home" class="logo">ARTIST NAME</a>
+            <nav>
+                <ul>
+                    <li><a href="#images" class="active" onclick="showSection('images')">Images</a></li>
+                    <li><a href="#texts" onclick="showSection('texts')">Texts</a></li>
+                    <li><a href="#about" onclick="showSection('about')">About</a></li>
+                    <li><a href="#acquire" onclick="showSection('acquire')">Acquire Prints</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section id="images" class="section container">
+            <div class="image-gallery">
+                <div class="img-placeholder" onclick="openLightbox('placeholder-large-1.jpg', 'Artwork Title 1')">Image 1</div>
+                <div class="img-placeholder" onclick="openLightbox('placeholder-large-2.jpg', 'Artwork Title 2')">Image 2</div>
+                <div class="img-placeholder" onclick="openLightbox('placeholder-large-3.jpg', 'Artwork Title 3')">Image 3</div>
+                <div class="img-placeholder" onclick="openLightbox('placeholder-large-4.jpg', 'Artwork Title 4')">Image 4</div>
+                <div class="img-placeholder" onclick="openLightbox('placeholder-large-5.jpg', 'Artwork Title 5')">Image 5</div>
+                <div class="img-placeholder" onclick="openLightbox('placeholder-large-6.jpg', 'Artwork Title 6')">Image 6</div>
+                </div>
+        </section>
+
+        <section id="texts" class="section container" style="display: none;">
+            <h2 class="section-title">Texts</h2>
+            <article>
+                <h3>On Light and Shadow</h3>
+                <p>This is where a narrative or artist writing related to the artworks would go. It should be formatted for readability, with ample white space (achieved via CSS). Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...</p>
+            </article>
+            <article>
+                <h3>The Ephemeral Moment</h3>
+                <p>Another piece of writing. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur...</p>
+            </article>
+        </section>
+
+        <section id="about" class="section container" style="display: none;">
+            <h2 class="section-title">About the Artist</h2>
+            <div>
+                <div class="img-placeholder" style="width: 200px; height: 200px; float: left; margin-right: 20px; margin-bottom: 10px;">Artist Portrait</div>
+                <h3>Biography</h3>
+                <p>Artist Name (b. 19XX) is a contemporary photographer known for [describe style/focus]. Their work explores themes of [themes]. Lorem ipsum dolor sit amet, consectetur adipiscing elit...</p>
+                <h3>Artistic Statement</h3>
+                <p>My practice centers on the exploration of [core concepts]. I aim to capture [artistic goals] through [methods/mediums]. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium...</p>
+                </div>
+        </section>
+
+        <section id="acquire" class="section container" style="display: none;">
+            <h2 class="section-title">Acquire Prints</h2>
+            <p style="text-align: center; margin-bottom: 30px;">For inquiries about purchasing prints, please use the contact information below or fill out an inquiry form for specific pieces.</p>
+            
+            <div class="print-item">
+                <h3>"Artwork Title 1" - Limited Edition</h3>
+                <div class="img-placeholder" style="width: 150px; height: 100px; float: left; margin-right: 15px;">Print Thumbnail</div>
+                <p>Details: Archival Pigment Print, 16x20 inches, Edition of 25.</p>
+                <p>Price: $XXX.XX USD</p>
+                <a href="mailto:your.email@example.com?subject=Inquiry for Artwork Title 1" class="btn">Inquire/Purchase</a>
+            </div>
+
+            <div class="print-item">
+                <h3>"Artwork Title 2" - Open Edition</h3>
+                <div class="img-placeholder" style="width: 150px; height: 100px; float: left; margin-right: 15px;">Print Thumbnail</div>
+                <p>Details: Giclée Print, 12x18 inches.</p>
+                <p>Price: $YYY.YY USD</p>
+                <a href="mailto:your.email@example.com?subject=Inquiry for Artwork Title 2" class="btn">Inquire/Purchase</a>
+            </div>
+            </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; <span id="currentYear"></span> Artist Name. All Rights Reserved.</p>
+            </div>
+    </footer>
+
+    <div id="lightbox" class="lightbox-overlay" onclick="closeLightboxOutside(event)">
+        <div class="lightbox-content">
+            <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+            <img id="lightbox-img" src="" alt="Enlarged Artwork">
+            </div>
+    </div>
+
+    <script>
+        // Basic JavaScript for section navigation and VERY simple lightbox functionality
+        // This is NOT a complete or robust lightbox solution.
+        // A proper solution would handle preloading, arrow navigation, captions, etc.
+
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        const sections = ['images', 'texts', 'about', 'acquire'];
+        const navLinks = document.querySelectorAll('nav ul li a');
+
+        function showSection(sectionId) {
+            sections.forEach(id => {
+                const sectionElement = document.getElementById(id);
+                if (sectionElement) {
+                    sectionElement.style.display = (id === sectionId) ? 'block' : 'none';
+                }
+            });
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + sectionId) {
+                    link.classList.add('active');
+                }
+            });
+            window.scrollTo(0,0); // Scroll to top when section changes
+        }
+
+        // Initialize with the 'images' section visible
+        document.addEventListener('DOMContentLoaded', () => {
+            showSection('images');
+        });
+
+
+        // Basic Lightbox JS
+        const lightbox = document.getElementById('lightbox');
+        const lightboxImg = document.getElementById('lightbox-img');
+        // const lightboxCaption = document.getElementById('lightbox-caption');
+
+        function openLightbox(imageSrc, captionText) {
+            // In a real scenario, imageSrc would be the path to a high-resolution image.
+            // For this demo, we'll just use what's passed.
+            // You'd replace 'placeholder-large-X.jpg' with actual image paths.
+            lightboxImg.src = 'https://via.placeholder.com/1200x800/EEEEEE/AAAAAA?text=' + encodeURIComponent(captionText); // Using placeholder
+            // lightboxCaption.textContent = captionText;
+            if (lightbox) {
+                lightbox.style.display = 'flex'; // Use flex to center content
+            }
+            document.body.style.overflow = 'hidden'; // Prevent scrolling of background
+        }
+
+        function closeLightbox() {
+            if (lightbox) {
+                lightbox.style.display = 'none';
+            }
+            document.body.style.overflow = 'auto'; // Restore scrolling
+        }
+        
+        function closeLightboxOutside(event) {
+            if (event.target === lightbox) { // if click is on the overlay itself
+                closeLightbox();
+            }
+        }
+
+        // Close lightbox with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && lightbox.style.display === 'flex') {
+                closeLightbox();
+            }
+        });
+
+    </script>
+</body>
+</html>
