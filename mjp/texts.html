@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marius Jomphe Photo - Texts</title>
+    <style>
+        /* Reset and Base Styles */
+        :root {
+            --primary-text-color: #333;
+            --secondary-text-color: #555;
+            --background-color: #ffffff;
+            --header-background: #ffffff;
+            --accent-color: #1a1a1a;
+            --border-color: #eee;
+            --lightbox-overlay-color: rgba(0, 0, 0, 0.85);
+            --gallery-item-bg: #f9f9f9;
+            --mobile-nav-link-hover-bg: #f9f9f9;
+            --mobile-nav-link-border: #f0f0f0;
+            
+            --control-button-bg: #f0f0f0; /* Slightly off-white for controls */
+            --control-button-hover-bg: #e0e0e0;
+            --control-text-color: var(--primary-text-color);
+            --theme-icon-color: var(--primary-text-color);
+
+            --font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+            --header-height-desktop: 80px;
+            --header-height-mobile: 70px;
+
+            /* Styles for Texts Page */
+            --text-prose-max-width: 720px; /* Max width for readable text */
+            --divider-color: var(--border-color);
+        }
+
+        body.dark-theme {
+            --primary-text-color: #f0f0f0;
+            --secondary-text-color: #bbb;
+            --background-color: #121212;
+            --header-background: #1e1e1e;
+            --accent-color: #f0f0f0;
+            --border-color: #333;
+            --lightbox-overlay-color: rgba(0, 0, 0, 0.9);
+            --gallery-item-bg: #2a2a2a;
+            --mobile-nav-link-hover-bg: #2c2c2c;
+            --mobile-nav-link-border: #383838;
+
+            --control-button-bg: #2c2c2c;
+            --control-button-hover-bg: #3a3a3a;
+            --control-text-color: var(--primary-text-color);
+            --theme-icon-color: var(--primary-text-color);
+
+            --divider-color: var(--border-color);
+        }
+
+        @font-face {
+            font-family: 'Inter';
+            src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2') format('woff2');
+            font-weight: 400; font-style: normal;
+        }
+        @font-face {
+            font-family: 'Inter';
+            src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2') format('woff2');
+            font-weight: 300; font-style: normal;
+        }
+        @font-face {
+            font-family: 'Inter';
+            src: url('https://fonts.gstatic.com/s/inter/v12/UcC73FwrK3iLTeHuS_fvQtMwCp50KnMa1ZL7.woff2') format('woff2');
+            font-weight: 600; font-style: normal;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; font-size: 16px; }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--background-color);
+            color: var(--primary-text-color);
+            line-height: 1.7; /* Slightly increased for readability of long texts */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            padding-top: var(--header-height-mobile);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Header and Navigation (Same as your original CSS) */
+        .site-header {
+            position: fixed; top: 0; left: 0; width: 100%;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 1rem; height: var(--header-height-mobile);
+            background-color: var(--header-background);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .artist-name {
+            font-size: 1.3rem; font-weight: 300; text-decoration: none;
+            color: var(--primary-text-color); letter-spacing: 1px;
+            transition: color 0.3s ease;
+        }
+
+        .main-nav ul { list-style: none; display: flex; align-items: center; }
+        .main-nav li { margin-left: 0.75rem; }
+
+        .main-nav a {
+            text-decoration: none; color: var(--secondary-text-color);
+            font-size: 0.85rem; font-weight: 400; text-transform: uppercase;
+            letter-spacing: 0.5px; padding: 0.5rem 0;
+            transition: color 0.3s ease, border-color 0.3s ease;
+        }
+        .main-nav a:hover, .main-nav a.active { /* .active class marks the current page */
+            color: var(--primary-text-color);
+            border-bottom: 1px solid var(--primary-text-color);
+        }
+        
+        /* Control Buttons Styling (Same as your original CSS) */
+        .nav-item-control { display: flex; align-items: center; }
+
+        .lang-toggle-button, .theme-toggle-button {
+            background-color: var(--control-button-bg);
+            border: 1px solid var(--border-color); 
+            color: var(--control-text-color);
+            cursor: pointer;
+            padding: 0.3rem 0.6rem; 
+            margin: 0 0.1rem; 
+            border-radius: 15px; 
+            font-family: var(--font-family);
+            font-size: 0.85rem; 
+            font-weight: 500; 
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+            display: inline-flex; 
+            align-items: center;
+            justify-content: center;
+            min-width: 44px; 
+            height: 28px; 
+        }
+        .lang-toggle-button:hover, .theme-toggle-button:hover {
+            background-color: var(--control-button-hover-bg);
+        }
+
+        .theme-toggle-button {
+            padding: 0.3rem; 
+            width: 36px; 
+            height: 28px;
+        }
+        .theme-icon {
+            font-size: 16px; 
+            color: var(--theme-icon-color);
+            transition: color 0.3s ease;
+            line-height: 1; 
+        }
+
+        /* Mobile Navigation Toggle (Same as your original CSS) */
+        .nav-toggle {
+            display: none; cursor: pointer; background: none; border: none;
+            padding: 0; z-index: 1001;
+        }
+        .nav-toggle span {
+            display: block; width: 25px; height: 2px;
+            background-color: var(--primary-text-color); margin: 5px 0;
+            transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
+        }
+
+        /* Main Content Area (Base styles, can be overridden for specific pages) */
+        .main-content { padding: 2rem; max-width: 1600px; margin: 0 auto; }
+        .page-title {
+            font-size: 1.2rem; font-weight: 300; color: var(--secondary-text-color);
+            text-align: center; margin-bottom: 3rem; text-transform: uppercase;
+            letter-spacing: 2px; transition: color 0.3s ease;
+        }
+
+        /* Styles for the Texts Page */
+        .texts-container {
+            max-width: var(--text-prose-max-width); /* Optimal width for reading */
+            margin: 0 auto; /* Center the text block */
+            padding: 0 1rem; /* Padding on smaller screens */
+        }
+
+        .artist-text {
+            margin-bottom: 3rem; /* Space below each text block */
+        }
+
+        .artist-text h2 { /* Title of a specific text */
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--primary-text-color);
+            margin-bottom: 1rem;
+            line-height: 1.3;
+        }
+
+        .artist-text p {
+            font-size: 1rem; /* Or 1.1rem for better readability */
+            color: var(--primary-text-color);
+            margin-bottom: 1.25rem; /* Space between paragraphs */
+        }
+
+        .artist-text p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .text-meta {
+            font-size: 0.85rem;
+            color: var(--secondary-text-color);
+            margin-bottom: 1.5rem;
+            font-style: italic;
+        }
+
+        /* Flourished Divider */
+        .flourished-divider {
+            text-align: center;
+            margin: 3rem auto; /* Space around the divider */
+            color: var(--accent-color); /* Use accent color for visibility */
+            font-size: 2rem; /* Size of the floral heart */
+            line-height: 1;
+            opacity: 0.7;
+            transition: color 0.3s ease, opacity 0.3s ease;
+        }
+        /* Alternative: Simple HR based divider */
+        /*
+        .hr-divider {
+            border: 0;
+            height: 1px;
+            background-color: var(--divider-color);
+            margin: 3rem auto;
+            width: 50%;
+            opacity: 0.5;
+        }
+        */
+
+        /* Footer (Same as your original CSS) */
+        .site-footer {
+            text-align: center; padding: 2rem; margin-top: 4rem;
+            font-size: 0.85rem; color: var(--secondary-text-color);
+            border-top: 1px solid var(--border-color);
+            transition: color 0.3s ease, border-color 0.3s ease;
+        }
+        
+        /* Responsive Adjustments (Largely same, with considerations for text readability) */
+        @media (min-width: 769px) {
+            body { padding-top: var(--header-height-desktop); }
+            .site-header { height: var(--header-height-desktop); padding: 0 3rem; }
+            .artist-name { font-size: 1.8rem; }
+            .main-nav a { font-size: 0.9rem; }
+            .main-nav li { margin-left: 1rem; }
+            .main-nav li.nav-item-control + li:not(.nav-item-control) { margin-left: 1.5rem; }
+            .lang-toggle-button, .theme-toggle-button { font-size: 0.9rem; height: 32px; padding: 0.4rem 0.8rem; }
+            .theme-toggle-button { width: 40px; padding: 0.4rem; }
+            .theme-icon { font-size: 18px; }
+            .main-content { padding: 3rem; }
+            .page-title { font-size: 1.5rem; margin-bottom: 4rem; }
+            .artist-text h2 { font-size: 2rem; }
+            .artist-text p { font-size: 1.1rem; }
+        }
+
+        @media (max-width: 768px) {
+            .main-nav {
+                position: fixed; top: var(--header-height-mobile); left: 0; width: 100%;
+                background-color: var(--header-background); flex-direction: column;
+                align-items: stretch; padding: 0;
+                transform: translateY(-150%);
+                transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.3s ease;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                border-top: 1px solid var(--border-color);
+            }
+            .main-nav.active { transform: translateY(0); }
+            .main-nav ul { flex-direction: column; width: 100%; align-items: stretch; }
+            .main-nav li {
+                margin: 0; width: 100%; text-align: center;
+                display: flex; justify-content: center;
+                border-bottom: 1px solid var(--mobile-nav-link-border);
+            }
+            .main-nav li:last-child { border-bottom: none; }
+            
+            .main-nav a { 
+                display: block; padding: 1rem; font-size: 1.1rem; width: 100%; text-align: center;
+            }
+            .main-nav li.nav-item-control { 
+                padding: 0.75rem 0; 
+                justify-content: center; 
+            }
+            .lang-toggle-button, .theme-toggle-button { 
+                font-size: 1rem; padding: 0.5rem 0.8rem; height: 38px; margin: 0 0.25rem;
+            }
+            .theme-toggle-button { width: 42px; padding: 0.5rem;}
+            .theme-icon { font-size: 18px; }
+
+            .main-nav a:hover {
+                background-color: var(--mobile-nav-link-hover-bg);
+                border-bottom-color: var(--mobile-nav-link-border); /* Use same color as border */
+            }
+            .main-nav a.active { /* Ensure active link is distinguishable in mobile too */
+                color: var(--primary-text-color);
+                background-color: var(--mobile-nav-link-hover-bg); /* Or a slightly different shade */
+            }
+
+            .nav-toggle { display: block; }
+            .nav-toggle.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+            .nav-toggle.active span:nth-child(2) { opacity: 0; }
+            .nav-toggle.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+            .main-content { padding: 1.5rem; }
+            .page-title { font-size: 1.2rem; margin-bottom: 2.5rem; }
+            .artist-text h2 { font-size: 1.6rem; }
+            .artist-text p { font-size: 1rem; }
+        }
+         @media (max-width: 480px) {
+            .artist-name { font-size: 1.2rem; }
+            .site-header { padding: 0 1rem; }
+            .main-content { padding: 1rem; }
+            .page-title { font-size: 1.1rem; margin-bottom: 2rem; }
+            .main-nav a { padding: 0.8rem; font-size: 1rem; }
+            .main-nav li.nav-item-control { padding: 0.5rem 0; }
+            .lang-toggle-button, .theme-toggle-button { height: 36px; font-size: 0.9rem; padding: 0.4rem 0.6rem; }
+            .theme-toggle-button { width: 38px; padding: 0.4rem; }
+            .theme-icon { font-size: 16px; }
+            .artist-text h2 { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="site-header">
+        <a href="index.html" class="artist-name" data-lang-key="artistName">ARTIST NAME</a>
+        <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        <nav class="main-nav">
+            <ul>
+                <li class="nav-item-control"> <button id="theme-toggle" class="theme-toggle-button" aria-label="Toggle theme">
+                         <span id="theme-icon" class="theme-icon"></span>
+                     </button>
+                </li>
+                <li class="nav-item-control"> <button id="lang-toggle" class="lang-toggle-button" aria-label="Switch language"></button>
+                </li>
+                <li><a href="index.html" class="active" data-lang-key="navImages">Images</a></li>
+                <li><a href="texts.html" data-lang-key="navTexts">Texts</a></li>
+                <li><a href="about.html" data-lang-key="navAbout">About</a></li>
+                <li><a href="prints.html" data-lang-key="navAcquire">Acquire Prints</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main class="main-content" id="texts-content">
+        <h1 class="page-title" data-lang-key="textsPageTitle">Texts</h1>
+        
+        <div class="texts-container">
+            <article class="artist-text">
+                <h2 data-lang-key="textTitleOne">Reflections on Light</h2>
+                <p class="text-meta" data-lang-key="textMetaOne">Published: January 2023</p>
+                <p data-lang-key="textParagraphOneA">This is the first paragraph of the artist's reflections on light. It delves into the ephemeral nature of illumination and its profound impact on perception. The interplay of shadow and brightness creates a dance that transforms the mundane into the magical.</p>
+                <p data-lang-key="textParagraphOneB">Further thoughts explore how different sources of light – the starkness of midday sun, the gentle embrace of twilight, or the artificial glow of a city night – evoke varied emotions and narratives within the captured frame. Each photon carries a story, a whisper from the world it has touched.</p>
+            </article>
+
+            <div class="flourished-divider" aria-hidden="true">❦</div>
+
+            <article class="artist-text">
+                <h2 data-lang-key="textTitleTwo">The Silent Conversation</h2>
+                <p class="text-meta" data-lang-key="textMetaTwo">From the series: "Whispers in the Static", October 2022</p>
+                <p data-lang-key="textParagraphTwoA">Here, the artist discusses the concept of the silent conversation that occurs between the photographer, the subject, and eventually, the viewer. It's a dialogue without words, conveyed through composition, focus, and the decisive moment.</p>
+                <p data-lang-key="textParagraphTwoB">The camera acts as a conduit, a bridge between inner worlds. The challenge lies in listening intently to what the scene wishes to communicate, and translating that essence into a visual language that resonates universally, or perhaps, very personally.</p>
+            </article>
+
+            <div class="flourished-divider" aria-hidden="true">❦</div>
+            
+            <article class="artist-text">
+                <h2 data-lang-key="textTitleThree">On Finding Beauty in Imperfection</h2>
+                 <p class="text-meta" data-lang-key="textMetaThree">Artist's Journal, June 2021</p>
+                <p data-lang-key="textParagraphThreeA">This piece explores the wabi-sabi philosophy in the context of photography. The beauty of the imperfect, the impermanent, and the incomplete. It's about finding soul in the cracks, the fades, and the slightly off-kilter.</p>
+                <p data-lang-key="textParagraphThreeB">Instead of chasing sterile perfection, the focus shifts to capturing authenticity and the stories that imperfections tell. A weathered texture, a fleeting, unconventional expression – these often hold more truth and emotional depth.</p>
+            </article>
+
+            </div>
+    </main>
+
+    <footer class="site-footer">
+        <p><span data-lang-key="copyrightPre">&copy; </span><span id="current-year"></span> <span data-lang-key="copyrightArtist">Artist Name</span>. <span data-lang-key="copyrightRights">All Rights Reserved.</span></p>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const body = document.body;
+        const navToggle = document.querySelector('.nav-toggle');
+        const mainNav = document.querySelector('.main-nav');
+        const themeToggleButton = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const langToggleButton = document.getElementById('lang-toggle');
+        // Lightbox elements are not on this page, so no need to select them
+        // const lightboxCloseButton = document.getElementById('lightbox-close'); 
+
+        // --- Translations ---
+        const translations = {
+            en: {
+                artistName: "ARTIST NAME",
+                navImages: "Images",
+                navTexts: "Texts",
+                navAbout: "About",
+                navAcquire: "Acquire Prints",
+                copyrightPre: "© ",
+                copyrightArtist: "Marius Jomphe", // Replace with actual artist name if different
+                copyrightRights: "All Rights Reserved.",
+                langToggleText: "🌐 Français",
+                langToggleLabel: "Switch to French",
+                themeToggleLightLabel: "Switch to Dark Mode",
+                themeToggleDarkLabel: "Switch to Light Mode",
+                navToggleLabel: "Toggle navigation",
+                // Texts Page Specific
+                textsPageTitle: "Texts",
+                textTitleOne: "Reflections on Light",
+                textMetaOne: "Published: January 2023",
+                textParagraphOneA: "This is the first paragraph of the artist's reflections on light. It delves into the ephemeral nature of illumination and its profound impact on perception. The interplay of shadow and brightness creates a dance that transforms the mundane into the magical.",
+                textParagraphOneB: "Further thoughts explore how different sources of light – the starkness of midday sun, the gentle embrace of twilight, or the artificial glow of a city night – evoke varied emotions and narratives within the captured frame. Each photon carries a story, a whisper from the world it has touched.",
+                textTitleTwo: "The Silent Conversation",
+                textMetaTwo: "From the series: \"Whispers in the Static\", October 2022",
+                textParagraphTwoA: "Here, the artist discusses the concept of the silent conversation that occurs between the photographer, the subject, and eventually, the viewer. It's a dialogue without words, conveyed through composition, focus, and the decisive moment.",
+                textParagraphTwoB: "The camera acts as a conduit, a bridge between inner worlds. The challenge lies in listening intently to what the scene wishes to communicate, and translating that essence into a visual language that resonates universally, or perhaps, very personally.",
+                textTitleThree: "On Finding Beauty in Imperfection",
+                textMetaThree: "Artist's Journal, June 2021",
+                textParagraphThreeA: "This piece explores the wabi-sabi philosophy in the context of photography. The beauty of the imperfect, the impermanent, and the incomplete. It's about finding soul in the cracks, the fades, and the slightly off-kilter.",
+                textParagraphThreeB: "Instead of chasing sterile perfection, the focus shifts to capturing authenticity and the stories that imperfections tell. A weathered texture, a fleeting, unconventional expression – these often hold more truth and emotional depth."
+
+            },
+            fr: {
+                artistName: "NOM DE L'ARTISTE",
+                navImages: "Images",
+                navTexts: "Textes",
+                navAbout: "À Propos",
+                navAcquire: "Acquérir",
+                copyrightPre: "© ",
+                copyrightArtist: "Marius Jomphe", // Replace
+                copyrightRights: "Tous Droits Réservés.",
+                langToggleText: "🌐 English",
+                langToggleLabel: "Passer en Anglais",
+                themeToggleLightLabel: "Passer en Mode Sombre",
+                themeToggleDarkLabel: "Passer en Mode Clair",
+                navToggleLabel: "Basculer la navigation",
+                // Texts Page Specific
+                textsPageTitle: "Textes",
+                textTitleOne: "Réflexions sur la Lumière",
+                textMetaOne: "Publié : Janvier 2023",
+                textParagraphOneA: "Ceci est le premier paragraphe des réflexions de l'artiste sur la lumière. Il explore la nature éphémère de l'illumination et son impact profond sur la perception. L'interaction de l'ombre et de la luminosité crée une danse qui transforme le banal en magique.",
+                textParagraphOneB: "D'autres pensées explorent comment différentes sources de lumière – la crudité du soleil de midi, la douce étreinte du crépuscule, ou la lueur artificielle d'une nuit urbaine – évoquent des émotions et des récits variés au sein du cadre capturé. Chaque photon porte une histoire, un murmure du monde qu'il a touché.",
+                textTitleTwo: "La Conversation Silencieuse",
+                textMetaTwo: "De la série : \"Murmures dans la Statique\", Octobre 2022",
+                textParagraphTwoA: "Ici, l'artiste aborde le concept de la conversation silencieuse qui s'opère entre le photographe, le sujet, et finalement, le spectateur. C'est un dialogue sans mots, transmis par la composition, la mise au point, et l'instant décisif.",
+                textParagraphTwoB: "L'appareil photo agit comme un conduit, un pont entre les mondes intérieurs. Le défi consiste à écouter attentivement ce que la scène souhaite communiquer, et à traduire cette essence en un langage visuel qui résonne universellement, ou peut-être, très personnellement.",
+                textTitleThree: "Trouver la Beauté dans l'Imperfection",
+                textMetaThree: "Journal de l'artiste, Juin 2021",
+                textParagraphThreeA: "Ce texte explore la philosophie wabi-sabi dans le contexte de la photographie. La beauté de l'imparfait, de l'impermanent et de l'incomplet. Il s'agit de trouver l'âme dans les fissures, les estompages et ce qui est légèrement décalé.",
+                textParagraphThreeB: "Au lieu de rechercher une perfection stérile, l'accent est mis sur la capture de l'authenticité et des histoires que racontent les imperfections. Une texture patinée, une expression fugace et non conventionnelle – celles-ci détiennent souvent plus de vérité et de profondeur émotionnelle."
+            }
+        };
+
+        let initialTheme = 'light';
+        let initialLang = 'en';
+
+        if (localStorage.getItem('hasVisited')) {
+            initialTheme = localStorage.getItem('theme') || 
+                           (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            initialLang = localStorage.getItem('language') || 'en';
+        } else {
+            localStorage.setItem('language', initialLang);
+            localStorage.setItem('theme', initialTheme);
+            localStorage.setItem('hasVisited', 'true');
+        }
+        
+        let currentLang = initialLang;
+
+        function applyTranslations() {
+            document.querySelectorAll('[data-lang-key]').forEach(el => {
+                const key = el.getAttribute('data-lang-key');
+                if (translations[currentLang] && translations[currentLang][key]) {
+                    el.textContent = translations[currentLang][key];
+                }
+            });
+            langToggleButton.textContent = translations[currentLang].langToggleText;
+            langToggleButton.setAttribute('aria-label', translations[currentLang].langToggleLabel);
+            
+            const isDarkMode = body.classList.contains('dark-theme');
+            themeToggleButton.setAttribute('aria-label', 
+                isDarkMode ? translations[currentLang].themeToggleDarkLabel : translations[currentLang].themeToggleLightLabel
+            );
+            
+            if(navToggle) navToggle.setAttribute('aria-label', translations[currentLang].navToggleLabel);
+            document.documentElement.lang = currentLang;
+        }
+
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                body.classList.add('dark-theme');
+                if (themeIcon) themeIcon.textContent = '☀️';
+            } else {
+                body.classList.remove('dark-theme');
+                if (themeIcon) themeIcon.textContent = '🌙';
+            }
+            localStorage.setItem('theme', theme);
+            applyTranslations(); 
+        }
+
+        themeToggleButton.addEventListener('click', () => {
+            const newTheme = body.classList.contains('dark-theme') ? 'light' : 'dark';
+            applyTheme(newTheme);
+        });
+
+        applyTheme(initialTheme);
+
+        langToggleButton.addEventListener('click', () => {
+            currentLang = (currentLang === 'en') ? 'fr' : 'en';
+            localStorage.setItem('language', currentLang);
+            applyTranslations();
+        });
+        
+        applyTranslations();
+
+        if (navToggle && mainNav) {
+            navToggle.addEventListener('click', () => {
+                mainNav.classList.toggle('active');
+                navToggle.classList.toggle('active');
+                navToggle.setAttribute('aria-expanded', mainNav.classList.contains('active'));
+            });
+
+            mainNav.querySelectorAll('ul > li > *:not(div)').forEach(linkOrButton => {
+                linkOrButton.addEventListener('click', (e) => {
+                    const isNavLink = e.currentTarget.tagName === 'A'; 
+                    // For multi-page sites, we usually don't close the mobile nav on link click
+                    // unless it's an anchor link on the SAME page.
+                    // Since these links go to other pages, we can let the page load handle it.
+                    // However, if you had anchor links on this texts page, you'd add logic here.
+                    if (mainNav.classList.contains('active') && isNavLink) {
+                         // If it's a link to the same page (e.g. an #anchor), you might want to close.
+                         // For now, we let all link clicks behave normally, leading to page navigation.
+                         // If you want to close on any link click:
+                         // mainNav.classList.remove('active');
+                         // navToggle.classList.remove('active');
+                         // navToggle.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            });
+        }
+        
+        const currentYearSpan = document.getElementById('current-year');
+        if (currentYearSpan) currentYearSpan.textContent = new Date().getFullYear();
+    });
+    </script>
+
+</body>
+</html>
