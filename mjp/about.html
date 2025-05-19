@@ -151,14 +151,14 @@
         .about-flex-container {
             display: flex;
             flex-wrap: wrap; 
-            gap: 2rem; 
+            gap: 2rem; /* Default gap for desktop */
             align-items: flex-start; 
         }
 
         .artist-portrait-container {
             flex: 1 1 300px; 
             max-width: 350px; 
-            margin: 0 auto 2rem auto; 
+            margin: 0 auto 2rem auto; /* Default margins for desktop */
         }
 
         .artist-portrait {
@@ -221,7 +221,7 @@
             transition: color 0.3s ease, border-color 0.3s ease;
             display: flex;
             flex-direction: column; 
-            align-items: center;    
+            align-items: center;     
             gap: 0.75rem; 
             width: 100%; 
         }
@@ -252,9 +252,16 @@
             .main-content { padding: 3rem; }
             .page-title { font-size: 1.5rem; margin-bottom: 4rem; }
             
+            /* Desktop specific for .about-flex-container ensures gap is 2rem if it was changed for mobile */
+            .about-flex-container {
+                 gap: 2rem; /* Explicitly set for desktop to ensure it's not overridden by mobile styles if cascade is tricky */
+            }
             .artist-bio h2 { font-size: 2rem; } 
             .artist-bio p { font-size: 1.1rem; }
-            .artist-portrait-container { margin: 0; }
+            /* Reset margin for artist portrait on desktop if it was altered for mobile */
+            .artist-portrait-container { 
+                margin: 0 auto 2rem auto; /* Original desktop margin */
+            }
             .artist-signature-img { max-height: 80px; } 
         }
 
@@ -305,8 +312,16 @@
             .main-content { padding: 1.5rem; }
             .page-title { font-size: 1.2rem; margin-bottom: 2.5rem; }
 
-            .about-flex-container { flex-direction: column; align-items: center; }
-            .artist-portrait-container { max-width: 70%; margin-bottom: 2rem; }
+            .about-flex-container { 
+                flex-direction: column; 
+                align-items: center; 
+                gap: 1rem; /* MODIFIED: Reduced gap for mobile */
+            }
+            .artist-portrait-container { 
+                max-width: 70%; 
+                margin: 0 auto; /* Keep horizontal centering */
+                margin-bottom: 1rem; /* MODIFIED: Reduced bottom margin for mobile */
+            }
             .artist-bio { text-align: left; } /* Keep bio text left-aligned on mobile */
             .artist-bio h2 { font-size: 1.6rem; text-align: center; }
             .artist-bio p { font-size: 1rem; }
@@ -320,7 +335,11 @@
             .main-nav li.nav-item-control { padding: 0.5rem 0; }
             .lang-toggle-button, .theme-toggle-button { height: 36px; font-size: 0.9rem; padding: 0.4rem 0.6rem; }
 
-            .artist-portrait-container { max-width: 80%; }
+            .artist-portrait-container { 
+                max-width: 80%; 
+                /* margin-bottom will be inherited from the 768px breakpoint (1rem) */
+                /* gap for .about-flex-container will also be inherited (1rem) */
+            }
             .artist-bio h2 { font-size: 1.4rem; } 
             
             .artist-signature-img { max-height: 55px; } 
@@ -348,7 +367,7 @@
                 </li>
                 <li class="nav-item-control"> 
                     <button id="theme-toggle" class="theme-toggle-button" aria-label="Toggle theme">
-                        </button>
+                    </button>
                 </li>
             </ul>
         </nav>
@@ -370,7 +389,8 @@
                     <p data-lang-key="bioParagraphOne">Lorem ipsum dolor sit amet...</p>
                     <p data-lang-key="bioParagraphTwo">Velit egestas dui id ornare arcu odio ut sem...</p>
                     <p data-lang-key="bioParagraphThree">Risus commodo viverra maecenas accumsan lacus vel facilisis...</p>
-                    <p data-lang-key="contactInquiry"></p> </article>
+                    <p data-lang-key="contactInquiry"></p> 
+                </article>
             </div>
         </div>
     </main>
@@ -473,7 +493,7 @@
                 if (translations[currentLang] && translations[currentLang][key]) {
                     // If the translation string contains HTML (like our contact link), use innerHTML
                     if (key === 'contactInquiry' || translations[currentLang][key].includes('<a href')) {
-                         el.innerHTML = translations[currentLang][key];
+                        el.innerHTML = translations[currentLang][key];
                     } else {
                         el.textContent = translations[currentLang][key];
                     }
@@ -557,19 +577,11 @@
                 navToggle.setAttribute('aria-expanded', isActive);
             });
 
-            // Close nav if a link is clicked (for multi-page navigation)
             mainNav.querySelectorAll('ul > li > a').forEach(link => { 
                 link.addEventListener('click', (e) => {
-                    // This part is more relevant for SPAs. For MPAs, page load handles it.
-                    // However, if a control button (lang/theme) is clicked, we don't want to close.
                     if (!e.currentTarget.closest('.nav-item-control')) {
-                        if (mainNav.classList.contains('active')) {
-                            // For MPA, this might not be strictly necessary as page reloads,
-                            // but good for consistency if it were an SPA.
-                            // mainNav.classList.remove('active');
-                            // navToggle.classList.remove('active');
-                            // navToggle.setAttribute('aria-expanded', 'false');
-                        }
+                        // For MPAs, page reload will close the nav.
+                        // No explicit close needed here unless it was an SPA.
                     }
                 });
             });
@@ -579,8 +591,6 @@
         const currentYearSpan = document.getElementById('current-year');
         if (currentYearSpan) currentYearSpan.textContent = new Date().getFullYear();
 
-        // Initial application of translations after theme is set (which calls it once)
-        // applyTranslations(); // This call is now handled by applyTheme(initialTheme)
     });
     </script>
 
