@@ -21,11 +21,10 @@
             --gallery-item-bg: #f9f9f9;
             --mobile-nav-link-hover-bg: #f9f9f9;
             --mobile-nav-link-border: #f0f0f0;
-            
-            --control-button-bg: #f0f0f0; /* Slightly off-white for controls */
+
+            --control-button-bg: #f0f0f0;
             --control-button-hover-bg: #e0e0e0;
             --control-text-color: var(--primary-text-color);
-            /* --theme-icon-color: var(--primary-text-color); Removed as icon is part of text now */
 
             --font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
             --header-height-desktop: 80px;
@@ -47,7 +46,6 @@
             --control-button-bg: #2c2c2c;
             --control-button-hover-bg: #3a3a3a;
             --control-text-color: var(--primary-text-color);
-            /* --theme-icon-color: var(--primary-text-color); Removed */
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -94,35 +92,32 @@
             color: var(--primary-text-color);
             border-bottom: 1px solid var(--primary-text-color);
         }
-        
+
         /* Control Buttons Styling */
         .nav-item-control { display: flex; align-items: center; }
 
         .lang-toggle-button, .theme-toggle-button {
             background-color: var(--control-button-bg);
-            border: 1px solid var(--border-color); /* Subtle border */
+            border: 1px solid var(--border-color);
             color: var(--control-text-color);
             cursor: pointer;
-            padding: 0.3rem 0.6rem; /* Adjusted padding for text */
-            margin: 0 0.1rem; /* Small margin between control buttons */
-            border-radius: 15px; /* Pill shape */
+            padding: 0.3rem 0.6rem;
+            margin: 0 0.1rem;
+            border-radius: 15px;
             font-family: var(--font-family);
-            font-size: 0.85rem; /* Match nav links */
-            font-weight: 500; /* Slightly bolder for controls */
+            font-size: 0.85rem;
+            font-weight: 500;
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-            display: inline-flex; 
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 44px; /* Ensure minimum tappable area, text will expand it */
-            height: 28px; /* Consistent height */
-            white-space: nowrap; /* Prevent text from wrapping */
+            min-width: 44px;
+            height: 28px;
+            white-space: nowrap;
         }
         .lang-toggle-button:hover, .theme-toggle-button:hover {
             background-color: var(--control-button-hover-bg);
         }
-
-        /* .theme-toggle-button specific styles for icon removed */
-        /* .theme-icon styles removed */
 
         /* Mobile Navigation Toggle */
         .nav-toggle {
@@ -136,7 +131,12 @@
         }
 
         /* Main Content Area */
-        .main-content { padding: 2rem; max-width: 1600px; margin: 0 auto; }
+        .main-content {
+            padding: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            position: relative; /* Added for absolute positioning of more-to-come */
+        }
         .page-title {
             font-size: 1.2rem; font-weight: 300; color: var(--secondary-text-color);
             text-align: center; margin-bottom: 3rem; text-transform: uppercase;
@@ -152,13 +152,13 @@
             cursor: pointer; overflow: hidden;
             background-color: var(--gallery-item-bg);
             transition: background-color 0.3s ease;
-            border-radius: 8px; 
+            border-radius: 8px;
         }
         .gallery-item img {
             width: 100%; height: 100%; object-fit: cover; display: block;
             transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease;
             aspect-ratio: 4 / 3;
-            border-radius: 8px; 
+            border-radius: 8px;
         }
         .gallery-item:hover img { transform: scale(1.05); opacity: 0.85; }
 
@@ -178,30 +178,40 @@
             max-width: 100%; max-height: 100%; object-fit: contain;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             border: 3px solid var(--background-color);
-            border-radius: 4px; 
+            border-radius: 4px;
             transition: border-color 0.3s ease;
         }
         .lightbox-close {
-            display: none; 
+            display: none;
         }
 
-        /* Footer - Updated Styles for New Layout */
+        /* "More to Come" Text Styles */
+        .more-to-come {
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.9rem;
+            color: var(--secondary-text-color);
+            transition: color 0.3s ease;
+            margin-top: 2rem; /* Add space above the text */
+        }
+
+        /* Footer - Updated Styles */
         .site-footer {
-            text-align: center; 
-            padding: 2rem 1rem; 
-            margin-top: 4rem;
-            font-size: 0.85rem; 
+            text-align: center;
+            padding: 2rem 1rem;
+            margin-top: 6rem; /* Increased margin to create space */
+            font-size: 0.85rem;
             color: var(--secondary-text-color);
             border-top: 1px solid var(--border-color);
             transition: color 0.3s ease, border-color 0.3s ease;
             display: flex;
-            flex-direction: column; 
-            align-items: center;     
-            gap: 0.75rem; 
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
         }
-        
+
         .artist-signature-img {
-            max-height: 70px; 
+            max-height: 70px;
             width: auto;
             object-fit: contain;
             display: block;
@@ -209,11 +219,11 @@
         }
 
         .footer-info-line {
-            display: flex; 
-            align-items: center; 
-            gap: 0.4em; 
+            display: flex;
+            align-items: center;
+            gap: 0.4em;
         }
-        
+
         /* Responsive Adjustments */
         @media (min-width: 769px) {
             body { padding-top: var(--header-height-desktop); }
@@ -223,12 +233,10 @@
             .main-nav li { margin-left: 1rem; }
             .main-nav li.nav-item-control + li:not(.nav-item-control) { margin-left: 1.5rem; }
             .lang-toggle-button, .theme-toggle-button { font-size: 0.9rem; height: 32px; padding: 0.4rem 0.8rem; }
-            /* .theme-toggle-button width and specific padding removed */
-            /* .theme-icon font-size removed */
             .main-content { padding: 3rem; }
             .page-title { font-size: 1.5rem; margin-bottom: 4rem; }
             .image-gallery { gap: 2rem; }
-            .artist-signature-img { max-height: 80px; } 
+            .artist-signature-img { max-height: 80px; }
         }
 
         @media (max-width: 768px) {
@@ -245,27 +253,25 @@
             .main-nav ul { flex-direction: column; width: 100%; align-items: stretch; }
             .main-nav li {
                 margin: 0; width: 100%; text-align: center;
-                display: flex; justify-content: center; 
+                display: flex; justify-content: center;
                 border-bottom: 1px solid var(--mobile-nav-link-border);
             }
             .main-nav li:last-child { border-bottom: none; }
-            
-            .main-nav a { 
+
+            .main-nav a {
                 display: block; padding: 1rem; font-size: 1.1rem; width: 100%; text-align: center;
             }
-            .main-nav li.nav-item-control { 
-                padding: 0.75rem 0; 
-                justify-content: center; 
+            .main-nav li.nav-item-control {
+                padding: 0.75rem 0;
+                justify-content: center;
             }
-            .lang-toggle-button, .theme-toggle-button { 
+            .lang-toggle-button, .theme-toggle-button {
                 font-size: 1rem; padding: 0.5rem 0.8rem; height: 38px; margin: 0 0.25rem;
             }
-            /* .theme-toggle-button width and specific padding removed */
-            /* .theme-icon font-size removed */
 
             .main-nav a:hover {
                 background-color: var(--mobile-nav-link-hover-bg);
-                border-bottom-color: var(--mobile-nav-link-border); 
+                border-bottom-color: var(--mobile-nav-link-border);
             }
             .nav-toggle { display: block; }
             .nav-toggle.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
@@ -276,19 +282,17 @@
             .main-content { padding: 1.5rem; }
             .lightbox-content { max-width: 95vw; max-height: 85vh; }
         }
-         @media (max-width: 480px) {
+        @media (max-width: 480px) {
             .artist-name { font-size: 1.2rem; }
             .site-header { padding: 0 1rem; }
             .main-content { padding: 1rem; }
             .page-title { font-size: 1rem; margin-bottom: 2rem; }
-            .image-gallery { grid-template-columns: 1fr; gap: 1rem; } 
+            .image-gallery { grid-template-columns: 1fr; gap: 1rem; }
             .main-nav a { padding: 0.8rem; font-size: 1rem; }
             .main-nav li.nav-item-control { padding: 0.5rem 0; }
             .lang-toggle-button, .theme-toggle-button { height: 36px; font-size: 0.9rem; padding: 0.4rem 0.6rem; }
-            /* .theme-toggle-button width and specific padding removed */
-            /* .theme-icon font-size removed */
-            .artist-signature-img { max-height: 55px; } 
-            .site-footer { padding: 1.5rem 1rem; gap: 0.6rem; font-size: 0.8rem;} 
+            .artist-signature-img { max-height: 55px; }
+            .site-footer { padding: 1.5rem 1rem; gap: 0.6rem; font-size: 0.8rem;}
         }
     </style>
 </head>
@@ -308,14 +312,14 @@
                 <li><a href="texts.html" data-lang-key="navTexts">Texts</a></li>
                 <li><a href="about.html" data-lang-key="navAbout">About</a></li>
                 <li><a href="prints.html" data-lang-key="navAcquire">Acquire</a></li>
-            
-                <li class="nav-item-control"> 
+                <li class="nav-item-control">
+                    <button id="theme-toggle" class="theme-toggle-button" aria-label="Toggle theme">
+                    </button>
+                </li>
+                <li class="nav-item-control">
                     <button id="lang-toggle" class="lang-toggle-button" aria-label="Switch language"></button>
                 </li>
-                <li class="nav-item-control"> 
-                    <button id="theme-toggle" class="theme-toggle-button" aria-label="Toggle theme">
-                        </button>
-                </li>
+               
             </ul>
         </nav>
     </header>
@@ -346,7 +350,7 @@
             <div class="gallery-item" data-src="images/2.jpeg" data-alt="Serene landscape reflection">
                 <img src="images/2.jpeg" alt="Serene landscape reflection" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+2+Not+Found';">
             </div>
-            <div class="gallery-item" data-src="images/3.jpeg" data-alt="Monochrome architectural detail">
+             <div class="gallery-item" data-src="images/3.jpeg" data-alt="Monochrome architectural detail">
                 <img src="images/3.jpeg" alt="Monochrome architectural detail" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+3+Not+Found';">
             </div>
             <div class="gallery-item" data-src="images/4.jpeg" data-alt="Vibrant street art">
@@ -364,7 +368,7 @@
             <div class="gallery-item" data-src="images/2.jpeg" data-alt="Serene landscape reflection">
                 <img src="images/2.jpeg" alt="Serene landscape reflection" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+2+Not+Found';">
             </div>
-            <div class="gallery-item" data-src="images/3.jpeg" data-alt="Monochrome architectural detail">
+             <div class="gallery-item" data-src="images/3.jpeg" data-alt="Monochrome architectural detail">
                 <img src="images/3.jpeg" alt="Monochrome architectural detail" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+3+Not+Found';">
             </div>
             <div class="gallery-item" data-src="images/4.jpeg" data-alt="Vibrant street art">
@@ -376,6 +380,9 @@
             <div class="gallery-item" data-src="images/6.jpeg" data-alt="Portrait with dramatic lighting">
                 <img src="images/6.jpeg" alt="Portrait with dramatic lighting" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+6+Not+Found';">
             </div>
+        </div>
+        <div class="more-to-come" data-lang-key="moreToCome">
+             ...more to come... / ...plus à venir...
         </div>
     </main>
 
@@ -408,12 +415,12 @@
             const navToggle = document.querySelector('.nav-toggle');
             const mainNav = document.querySelector('.main-nav');
             const themeToggleButton = document.getElementById('theme-toggle');
-            // const themeIcon = document.getElementById('theme-icon'); // Removed
             const langToggleButton = document.getElementById('lang-toggle');
-            const lightboxCloseButton = document.getElementById('lightbox-close'); 
-            const signatureImage = document.getElementById('artist-signature-img'); 
-            const signatureBaseSrcLt = "images/signaturelt.png"; 
-            const signatureBaseSrcDt = "images/signaturedt.png"; 
+            const lightboxCloseButton = document.getElementById('lightbox-close');
+            const signatureImage = document.getElementById('artist-signature-img');
+            const signatureBaseSrcLt = "images/signaturelt.png";
+            const signatureBaseSrcDt = "images/signaturedt.png";
+            const moreToComeElement = document.querySelector('.more-to-come');
 
 
             // --- Translations ---
@@ -425,17 +432,16 @@
                     navAbout: "About",
                     navAcquire: "Acquire",
                     copyrightRights: "All Rights Reserved.",
-                    artistSignatureAlt: "Artist Signature", 
-                    langToggleText: "🌐 Français", 
+                    artistSignatureAlt: "Artist Signature",
+                    langToggleText: "🌐 Français",
                     langToggleLabel: "Switch to French",
-                    // ARIA labels describe the action
-                    themeToggleLightLabel: "Switch to Dark Mode", 
-                    themeToggleDarkLabel: "Switch to Light Mode", 
-                    // Text content for the theme button
+                    themeToggleLightLabel: "Switch to Dark Mode",
+                    themeToggleDarkLabel: "Switch to Light Mode",
                     themeTextLight: "🎨 Dark theme",
                     themeTextDark: "🎨 Light theme",
-                    closeLightboxLabel: "Close lightbox", 
-                    navToggleLabel: "Toggle navigation"
+                    closeLightboxLabel: "Close lightbox",
+                    navToggleLabel: "Toggle navigation",
+                    moreToCome: "...more to come...",
                 },
                 fr: {
                     artistName: "Marius Jomphe - Photographie",
@@ -444,34 +450,33 @@
                     navAbout: "À Propos",
                     navAcquire: "Acquérir",
                     copyrightRights: "Tous Droits Réservés.",
-                    artistSignatureAlt: "Signature de l'artiste", 
-                    langToggleText: "🌐 English", 
+                    artistSignatureAlt: "Signature de l'artiste",
+                    langToggleText: "🌐 English",
                     langToggleLabel: "Passer en Anglais",
-                    // ARIA labels describe the action
                     themeToggleLightLabel: "Passer en Mode Sombre",
                     themeToggleDarkLabel: "Passer en Mode Clair",
-                    // Text content for the theme button
                     themeTextLight: "🎨 Thème sombre",
                     themeTextDark: "🎨 Thème clair",
                     closeLightboxLabel: "Fermer la visionneuse",
-                    navToggleLabel: "Basculer la navigation"
+                    navToggleLabel: "Basculer la navigation",
+                    moreToCome: "...plus à venir...",
                 }
             };
 
             // --- First Visit Logic & Initialization ---
-            let initialTheme = 'light'; 
-            let initialLang = 'en';   
+            let initialTheme = 'light';
+            let initialLang = 'en';
 
             if (localStorage.getItem('hasVisited')) {
-                initialTheme = localStorage.getItem('theme') || 
-                               (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                initialTheme = localStorage.getItem('theme') ||
+                    (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
                 initialLang = localStorage.getItem('language') || 'en';
             } else {
                 localStorage.setItem('language', initialLang);
-                localStorage.setItem('theme', initialTheme); 
+                localStorage.setItem('theme', initialTheme);
                 localStorage.setItem('hasVisited', 'true');
             }
-            
+
             let currentLang = initialLang;
 
             function applyTranslations() {
@@ -481,10 +486,10 @@
                         el.textContent = translations[currentLang][key];
                     }
                 });
-                
+
                 langToggleButton.textContent = translations[currentLang].langToggleText;
                 langToggleButton.setAttribute('aria-label', translations[currentLang].langToggleLabel);
-                
+
                 // Update theme button text and aria-label
                 const isDarkMode = body.classList.contains('dark-theme');
                 if (isDarkMode) {
@@ -494,10 +499,10 @@
                     themeToggleButton.textContent = translations[currentLang].themeTextLight;
                     themeToggleButton.setAttribute('aria-label', translations[currentLang].themeToggleLightLabel);
                 }
-                
-                if(lightboxCloseButton) lightboxCloseButton.setAttribute('aria-label', translations[currentLang].closeLightboxLabel);
-                if(navToggle) navToggle.setAttribute('aria-label', translations[currentLang].navToggleLabel);
-                
+
+                if (lightboxCloseButton) lightboxCloseButton.setAttribute('aria-label', translations[currentLang].closeLightboxLabel);
+                if (navToggle) navToggle.setAttribute('aria-label', translations[currentLang].navToggleLabel);
+
                 if (signatureImage && translations[currentLang] && translations[currentLang].artistSignatureAlt) {
                     signatureImage.alt = translations[currentLang].artistSignatureAlt;
                 }
@@ -509,15 +514,13 @@
             function applyTheme(theme) {
                 if (theme === 'dark') {
                     body.classList.add('dark-theme');
-                    // themeIcon.textContent = '☀️'; // Removed
-                    if (signatureImage) signatureImage.src = signatureBaseSrcDt; 
+                    if (signatureImage) signatureImage.src = signatureBaseSrcDt;
                 } else {
                     body.classList.remove('dark-theme');
-                    // themeIcon.textContent = '🌙'; // Removed
-                    if (signatureImage) signatureImage.src = signatureBaseSrcLt; 
+                    if (signatureImage) signatureImage.src = signatureBaseSrcLt;
                 }
                 localStorage.setItem('theme', theme);
-                applyTranslations(); // This will update the theme button text among other things
+                applyTranslations();
             }
 
             themeToggleButton.addEventListener('click', () => {
@@ -525,7 +528,7 @@
                 applyTheme(newTheme);
             });
 
-            applyTheme(initialTheme); // Apply initial theme and run translations once
+            applyTheme(initialTheme);
 
             // --- Language Switcher ---
             langToggleButton.addEventListener('click', () => {
@@ -533,7 +536,7 @@
                 localStorage.setItem('language', currentLang);
                 applyTranslations();
             });
-            
+
             // --- Mobile Navigation Toggle ---
             if (navToggle && mainNav) {
                 navToggle.addEventListener('click', () => {
@@ -542,44 +545,44 @@
                     navToggle.setAttribute('aria-expanded', isActive);
                 });
 
-                mainNav.querySelectorAll('ul > li > a').forEach(link => { 
+                mainNav.querySelectorAll('ul > li > a').forEach(link => {
                     link.addEventListener('click', (e) => {
                         if (mainNav.classList.contains('active') && !e.currentTarget.closest('.nav-item-control')) {
-                           mainNav.classList.remove('active');
-                           navToggle.classList.remove('active');
-                           navToggle.setAttribute('aria-expanded', 'false');
+                            mainNav.classList.remove('active');
+                            navToggle.classList.remove('active');
+                            navToggle.setAttribute('aria-expanded', 'false');
                         }
                     });
                 });
             }
-            
+
             // --- Lightbox Functionality ---
             const lightbox = document.getElementById('lightbox');
             const lightboxImg = document.getElementById('lightbox-img');
             const galleryItems = document.querySelectorAll('.gallery-item');
 
-            if (lightbox && lightboxImg && lightboxCloseButton) { 
+            if (lightbox && lightboxImg && lightboxCloseButton) {
                 galleryItems.forEach(item => {
                     item.addEventListener('click', () => {
                         const imgSrc = item.getAttribute('data-src');
-                        const imgAlt = item.getAttribute('data-alt') || "Enlarged image"; 
+                        const imgAlt = item.getAttribute('data-alt') || "Enlarged image";
                         if (imgSrc) {
                             lightboxImg.setAttribute('src', imgSrc);
                             lightboxImg.setAttribute('alt', imgAlt);
                             lightbox.classList.add('active');
-                            document.body.style.overflow = 'hidden'; 
+                            document.body.style.overflow = 'hidden';
                         }
                     });
                 });
                 const closeLightbox = () => {
                     lightbox.classList.remove('active');
-                    document.body.style.overflow = ''; 
+                    document.body.style.overflow = '';
                 };
 
                 lightboxCloseButton.addEventListener('click', closeLightbox);
 
-                lightbox.addEventListener('click', (e) => { 
-                    if (e.target === lightbox) closeLightbox(); 
+                lightbox.addEventListener('click', (e) => {
+                    if (e.target === lightbox) closeLightbox();
                 });
                 document.addEventListener('keydown', (e) => {
                     if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
@@ -590,8 +593,8 @@
             const currentYearSpan = document.getElementById('current-year');
             if (currentYearSpan) currentYearSpan.textContent = new Date().getFullYear();
 
-            // Apply initial translations after everything is set up
-            // applyTranslations(); // Called by applyTheme(initialTheme) already
+            // Apply initial translations
+            applyTranslations();
         });
     </script>
 
