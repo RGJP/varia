@@ -22,14 +22,11 @@
             --control-button-bg: #f0f0f0;
             --control-button-hover-bg: #e0e0e0;
             --control-text-color: var(--primary-text-color);
-            --theme-icon-color: var(--primary-text-color);
+            /* --theme-icon-color removed */
 
             --font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
             --header-height-desktop: 80px;
             --header-height-mobile: 70px;
-
-            /* --text-prose-max-width: 720px; /* Original from this page, could be used if needed */
-            /* --divider-color: var(--border-color); /* Original from this page */
         }
 
         body.dark-theme {
@@ -45,12 +42,8 @@
             --control-button-bg: #2c2c2c;
             --control-button-hover-bg: #3a3a3a;
             --control-text-color: var(--primary-text-color);
-            --theme-icon-color: var(--primary-text-color);
-
-            /* --divider-color: var(--border-color); /* Original from this page */
+            /* --theme-icon-color removed */
         }
-
-        /* @font-face rules removed, using Google Fonts link instead */
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; font-size: 16px; }
@@ -64,9 +57,9 @@
             -moz-osx-font-smoothing: grayscale;
             padding-top: var(--header-height-mobile);
             transition: background-color 0.3s ease, color 0.3s ease;
-            display: flex; /* For sticky footer */
-            flex-direction: column; /* For sticky footer */
-            min-height: 100vh; /* For sticky footer */
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh; 
         }
 
         /* Header and Navigation */
@@ -120,22 +113,14 @@
             justify-content: center;
             min-width: 44px; 
             height: 28px; 
+            white-space: nowrap; /* Prevent text wrapping */
         }
         .lang-toggle-button:hover, .theme-toggle-button:hover {
             background-color: var(--control-button-hover-bg);
         }
 
-        .theme-toggle-button {
-            padding: 0.3rem; 
-            width: 36px; 
-            height: 28px;
-        }
-        .theme-icon {
-            font-size: 16px; 
-            color: var(--theme-icon-color);
-            transition: color 0.3s ease;
-            line-height: 1; 
-        }
+        /* .theme-toggle-button specific width/padding for icon removed */
+        /* .theme-icon styles removed */
 
         /* Mobile Navigation Toggle */
         .nav-toggle {
@@ -153,7 +138,7 @@
             padding: 2rem; 
             max-width: 1600px; 
             margin: 0 auto; 
-            flex-grow: 1; /* For sticky footer */
+            flex-grow: 1; 
         }
         .page-title {
             font-size: 1.2rem; font-weight: 300; color: var(--secondary-text-color);
@@ -198,7 +183,7 @@
             flex: 2 1 500px; 
         }
 
-        .artist-bio h2 { /* This was not in the original HTML structure but kept for potential use */
+        .artist-bio h2 { 
             font-size: 1.8rem;
             font-weight: 600;
             color: var(--primary-text-color);
@@ -218,7 +203,7 @@
             margin-bottom: 0;
         }
         
-        /* Footer - Styles from the first page */
+        /* Footer */
         .site-footer {
             text-align: center; 
             padding: 2rem 1rem; 
@@ -257,18 +242,15 @@
             .main-nav li { margin-left: 1rem; }
             .main-nav li.nav-item-control + li:not(.nav-item-control) { margin-left: 1.5rem; }
             .lang-toggle-button, .theme-toggle-button { font-size: 0.9rem; height: 32px; padding: 0.4rem 0.8rem; }
-            .theme-toggle-button { width: 40px; padding: 0.4rem; }
-            .theme-icon { font-size: 18px; }
+            /* .theme-toggle-button width and specific padding removed */
+            /* .theme-icon font-size removed */
             .main-content { padding: 3rem; }
             .page-title { font-size: 1.5rem; margin-bottom: 4rem; }
             
-            /* About page specific responsive */
-            .artist-bio h2 { font-size: 2rem; } /* if h2 is used */
+            .artist-bio h2 { font-size: 2rem; } 
             .artist-bio p { font-size: 1.1rem; }
-            .artist-portrait-container {
-                margin: 0; 
-            }
-            .artist-signature-img { max-height: 80px; } /* Footer responsive */
+            .artist-portrait-container { margin: 0; }
+            .artist-signature-img { max-height: 80px; } 
         }
 
         @media (max-width: 768px) {
@@ -300,8 +282,8 @@
             .lang-toggle-button, .theme-toggle-button { 
                 font-size: 1rem; padding: 0.5rem 0.8rem; height: 38px; margin: 0 0.25rem;
             }
-            .theme-toggle-button { width: 42px; padding: 0.5rem;}
-            .theme-icon { font-size: 18px; }
+            /* .theme-toggle-button width and specific padding removed */
+            /* .theme-icon font-size removed */
 
             .main-nav a:hover {
                 background-color: var(--mobile-nav-link-hover-bg);
@@ -320,26 +302,11 @@
             .main-content { padding: 1.5rem; }
             .page-title { font-size: 1.2rem; margin-bottom: 2.5rem; }
 
-            /* About page specific responsive */
-            .about-flex-container {
-                flex-direction: column; 
-                align-items: center; 
-            }
-            .artist-portrait-container {
-                max-width: 70%; 
-                margin-bottom: 2rem;
-            }
-            .artist-bio {
-                text-align: left; 
-            }
-            .artist-bio h2 { /* if h2 is used */
-                font-size: 1.6rem;
-                text-align: center; 
-            }
-            .artist-bio p {
-                font-size: 1rem;
-            }
-            /* Signature height for tablets/medium screens will use the base 70px if not overridden here */
+            .about-flex-container { flex-direction: column; align-items: center; }
+            .artist-portrait-container { max-width: 70%; margin-bottom: 2rem; }
+            .artist-bio { text-align: left; }
+            .artist-bio h2 { font-size: 1.6rem; text-align: center; }
+            .artist-bio p { font-size: 1rem; }
         }
         @media (max-width: 480px) {
             .artist-name { font-size: 1.2rem; }
@@ -349,16 +316,12 @@
             .main-nav a { padding: 0.8rem; font-size: 1rem; }
             .main-nav li.nav-item-control { padding: 0.5rem 0; }
             .lang-toggle-button, .theme-toggle-button { height: 36px; font-size: 0.9rem; padding: 0.4rem 0.6rem; }
-            .theme-toggle-button { width: 38px; padding: 0.4rem; }
-            .theme-icon { font-size: 16px; }
+            /* .theme-toggle-button width and specific padding removed */
+            /* .theme-icon font-size removed */
 
-            /* About page specific responsive */
-            .artist-portrait-container {
-                max-width: 80%; 
-            }
-            .artist-bio h2 { font-size: 1.4rem; } /* if h2 is used */
+            .artist-portrait-container { max-width: 80%; }
+            .artist-bio h2 { font-size: 1.4rem; } 
             
-            /* Footer responsive */
             .artist-signature-img { max-height: 55px; } 
             .site-footer { padding: 1.5rem 1rem; gap: 0.6rem; font-size: 0.8rem;} 
         }
@@ -385,7 +348,6 @@
                 </li>
                 <li class="nav-item-control"> 
                     <button id="theme-toggle" class="theme-toggle-button" aria-label="Toggle theme">
-                        <span id="theme-icon" class="theme-icon"></span>
                     </button>
                 </li>
             </ul>
@@ -433,50 +395,54 @@
         const navToggle = document.querySelector('.nav-toggle');
         const mainNav = document.querySelector('.main-nav');
         const themeToggleButton = document.getElementById('theme-toggle');
-        const themeIcon = document.getElementById('theme-icon');
+        // const themeIcon = document.getElementById('theme-icon'); // Removed
         const langToggleButton = document.getElementById('lang-toggle');
-        const signatureImage = document.getElementById('artist-signature-img'); // Added for the new footer
+        const signatureImage = document.getElementById('artist-signature-img');
+        const signatureBaseSrcLt = "images/signaturelt.png"; 
+        const signatureBaseSrcDt = "images/signaturedt.png"; 
 
         // --- Translations ---
         const translations = {
             en: {
-                artistName: "Marius Jomphe - Photography", // Kept from original about.html
+                artistName: "Marius Jomphe - Photography",
                 navImages: "Images",
                 navTexts: "Texts",
                 navAbout: "About",
                 navAcquire: "Acquire",
-                copyrightRights: "All Rights Reserved.", // Used by new footer
-                artistSignatureAlt: "Artist Signature", // Added for new footer
+                copyrightRights: "All Rights Reserved.",
+                artistSignatureAlt: "Artist Signature",
                 langToggleText: "🌐 Français",
                 langToggleLabel: "Switch to French",
                 themeToggleLightLabel: "Switch to Dark Mode",
                 themeToggleDarkLabel: "Switch to Light Mode",
+                themeTextLight: "🎨 Dark theme", // Text for light mode button (offering dark)
+                themeTextDark: "🎨 Light theme",  // Text for dark mode button (offering light)
                 navToggleLabel: "Toggle navigation",
                 // About Page Specific
                 aboutPageTitle: "About the Artist",
                 artistPortraitAlt: "Portrait of the Artist",
-                // bioHeading: "Biography", // Add if H2 for bio is used
                 bioParagraphOne: `Marius Jomphe is a Quebecois photographer whose work goes beyond mere landscape representation to explore the deep connections between humans and their environment. Originally from Havre-Saint-Pierre on the North Shore and now based in Gaspé, he draws inspiration from the raw and poetic territories of Eastern Quebec, particularly the Gaspé Peninsula and the Côte-Nord.`,
                 bioParagraphTwo: `His artistic approach is rooted in a quest for perception and multidimensionality. Through nature photography, he questions reality and how we perceive it, capturing moments where the visible and invisible meet. His images, often imbued with silence and mystery, invite meditative contemplation of the natural world.`,
                 bioParagraphThree: `Among his notable projects, his latest book 'Sonde' illustrates his ever-evolving approach, while his photo book "Bruine, La pointe de la Gaspésie" offers a new and personal interpretation of the region. His work has also been recognized at events such as "Vues sur Mer" and the Gaspé Documentary Film Festival. Marius Jomphe continues to develop a body of work where photography becomes a means to explore the multiple dimensions of reality, offering a unique perspective on nature and our relationship with it.`,
             },
             fr: {
-                artistName: "Marius Jomphe - Photographie", // Kept from original about.html
+                artistName: "Marius Jomphe - Photographie",
                 navImages: "Images",
                 navTexts: "Textes",
                 navAbout: "À Propos",
                 navAcquire: "Acquérir",
-                copyrightRights: "Tous Droits Réservés.", // Used by new footer
-                artistSignatureAlt: "Signature de l'artiste", // Added for new footer
+                copyrightRights: "Tous Droits Réservés.",
+                artistSignatureAlt: "Signature de l'artiste",
                 langToggleText: "🌐 English",
                 langToggleLabel: "Passer en Anglais",
                 themeToggleLightLabel: "Passer en Mode Sombre",
                 themeToggleDarkLabel: "Passer en Mode Clair",
+                themeTextLight: "🎨 Thème sombre", // Text for light mode button (offering dark)
+                themeTextDark: "🎨 Thème clair",  // Text for dark mode button (offering light)
                 navToggleLabel: "Basculer la navigation",
                 // About Page Specific
                 aboutPageTitle: "À Propos de l'Artiste",
                 artistPortraitAlt: "Portrait de l'artiste",
-                // bioHeading: "Biographie", // Add if H2 for bio is used
                 bioParagraphOne: `Marius Jomphe est un photographe québécois dont l'œuvre transcende la simple représentation du paysage pour explorer les liens profonds entre l'être humain et son environnement. Originaire de Havre-Saint-Pierre sur la Côte-Nord et établi à Gaspé, il puise son inspiration dans les territoires bruts et poétiques de l'Est du Québec, notamment la Gaspésie et la Côte-Nord.`,
                 bioParagraphTwo: `Sa démarche artistique s'inscrit dans une quête de perception et de multidimensionnalité. À travers la photographie de nature, il interroge la réalité et notre manière de l'appréhender, capturant des instants où le visible et l'invisible se rencontrent. Ses images, souvent empreintes de silence et de mystère, invitent à une contemplation méditative du monde naturel.`,
                 bioParagraphThree: `Parmi ses projets notables, son dernier livre 'Sonde' illustre son approche en constante évolution, tandis que son livre photographique "Bruine, La pointe de la Gaspésie" propose une série d'images offrant une interprétation nouvelle et personnelle de cette région. Son travail a également été reconnu lors d'événements tels que "Vues sur Mer" et le Festival de films documentaire de Gaspé. Marius Jomphe continue de développer une œuvre où la photographie devient un moyen d'explorer les dimensions multiples de la réalité, offrant une perspective unique sur la nature et notre relation avec elle.`,
@@ -520,14 +486,17 @@
             
             const isDarkMode = body.classList.contains('dark-theme');
             if (themeToggleButton) {
-                themeToggleButton.setAttribute('aria-label', 
-                    isDarkMode ? translations[currentLang].themeToggleDarkLabel : translations[currentLang].themeToggleLightLabel
-                );
+                if (isDarkMode) {
+                    themeToggleButton.textContent = translations[currentLang].themeTextDark;
+                    themeToggleButton.setAttribute('aria-label', translations[currentLang].themeToggleDarkLabel);
+                } else {
+                    themeToggleButton.textContent = translations[currentLang].themeTextLight;
+                    themeToggleButton.setAttribute('aria-label', translations[currentLang].themeToggleLightLabel);
+                }
             }
             
             if(navToggle) navToggle.setAttribute('aria-label', translations[currentLang].navToggleLabel);
             
-            // Handle signature alt text for the new footer
             if (signatureImage && translations[currentLang] && translations[currentLang].artistSignatureAlt) {
                 signatureImage.alt = translations[currentLang].artistSignatureAlt;
             }
@@ -538,12 +507,12 @@
         function applyTheme(theme) {
             if (theme === 'dark') {
                 body.classList.add('dark-theme');
-                if (themeIcon) themeIcon.textContent = '☀️';
-                if (signatureImage) signatureImage.src = 'images/signaturedt.png'; // Update signature for dark theme
+                // if (themeIcon) themeIcon.textContent = '☀️'; // Removed
+                if (signatureImage) signatureImage.src = signatureBaseSrcDt;
             } else {
                 body.classList.remove('dark-theme');
-                if (themeIcon) themeIcon.textContent = '🌙';
-                if (signatureImage) signatureImage.src = 'images/signaturelt.png'; // Update signature for light theme
+                // if (themeIcon) themeIcon.textContent = '🌙'; // Removed
+                if (signatureImage) signatureImage.src = signatureBaseSrcLt;
             }
             localStorage.setItem('theme', theme);
             applyTranslations(); 
@@ -556,7 +525,7 @@
             });
         }
         
-        applyTheme(initialTheme);
+        applyTheme(initialTheme); // Apply initial theme and run translations once
 
         if (langToggleButton) {
             langToggleButton.addEventListener('click', () => {
@@ -566,7 +535,7 @@
             });
         }
         
-        applyTranslations();
+        // applyTranslations(); // This call is redundant as applyTheme(initialTheme) calls it.
 
         if (navToggle && mainNav) {
             navToggle.addEventListener('click', () => {
@@ -575,10 +544,12 @@
                 navToggle.setAttribute('aria-expanded', isActive);
             });
 
-            mainNav.querySelectorAll('a').forEach(link => {
-                link.addEventListener('click', () => {
-                    if (mainNav.classList.contains('active')) {
-                        // On multi-page sites, page load handles "closing" the nav.
+            mainNav.querySelectorAll('ul > li > a').forEach(link => { 
+                link.addEventListener('click', (e) => {
+                    if (mainNav.classList.contains('active')) { 
+                        if (!e.currentTarget.closest('.nav-item-control')) { 
+                            // On multi-page sites, page reload handles "closing" the nav.
+                        }
                     }
                 });
             });

@@ -24,7 +24,7 @@
             --control-button-bg: #f0f0f0;
             --control-button-hover-bg: #e0e0e0;
             --control-text-color: var(--primary-text-color);
-            --theme-icon-color: var(--primary-text-color);
+            /* --theme-icon-color: var(--primary-text-color); Removed as icon is part of text now */
 
             --font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
             --header-height-desktop: 80px;
@@ -50,7 +50,7 @@
             --control-button-bg: #2c2c2c;
             --control-button-hover-bg: #3a3a3a;
             --control-text-color: var(--primary-text-color);
-            --theme-icon-color: var(--primary-text-color);
+            /* --theme-icon-color: var(--primary-text-color); Removed */
 
             --divider-color: var(--border-color);
         }
@@ -110,37 +110,30 @@
 
         .lang-toggle-button, .theme-toggle-button {
             background-color: var(--control-button-bg);
-            border: 1px solid var(--border-color); 
+            border: 1px solid var(--border-color); /* Subtle border */
             color: var(--control-text-color);
             cursor: pointer;
-            padding: 0.3rem 0.6rem; 
-            margin: 0 0.1rem; 
-            border-radius: 15px; 
+            padding: 0.3rem 0.6rem; /* Adjusted padding for text */
+            margin: 0 0.1rem; /* Small margin between control buttons */
+            border-radius: 15px; /* Pill shape */
             font-family: var(--font-family);
-            font-size: 0.85rem; 
-            font-weight: 500; 
+            font-size: 0.85rem; /* Match nav links */
+            font-weight: 500; /* Slightly bolder for controls */
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
             display: inline-flex; 
             align-items: center;
             justify-content: center;
-            min-width: 44px; 
-            height: 28px; 
+            min-width: 44px; /* Ensure minimum tappable area, text will expand it */
+            height: 28px; /* Consistent height */
+            white-space: nowrap; /* Prevent text from wrapping */
         }
         .lang-toggle-button:hover, .theme-toggle-button:hover {
             background-color: var(--control-button-hover-bg);
         }
 
-        .theme-toggle-button {
-            padding: 0.3rem; 
-            width: 36px; 
-            height: 28px;
-        }
-        .theme-icon {
-            font-size: 16px; 
-            color: var(--theme-icon-color);
-            transition: color 0.3s ease;
-            line-height: 1; 
-        }
+        /* .theme-toggle-button specific styles for icon removed */
+        /* .theme-icon styles removed */
+
 
         /* Mobile Navigation Toggle */
         .nav-toggle {
@@ -252,13 +245,13 @@
             .main-nav li { margin-left: 1rem; }
             .main-nav li.nav-item-control + li:not(.nav-item-control) { margin-left: 1.5rem; }
             .lang-toggle-button, .theme-toggle-button { font-size: 0.9rem; height: 32px; padding: 0.4rem 0.8rem; }
-            .theme-toggle-button { width: 40px; padding: 0.4rem; }
-            .theme-icon { font-size: 18px; }
+            /* .theme-toggle-button width and specific padding removed */
+            /* .theme-icon font-size removed */
             .main-content { padding: 3rem; }
             .page-title { font-size: 1.5rem; margin-bottom: 4rem; }
             .artist-text h2 { font-size: 2rem; }
             .artist-text p { font-size: 1.1rem; }
-            .artist-signature-img { max-height: 80px; } /* Footer responsive */
+            .artist-signature-img { max-height: 80px; } 
         }
 
         @media (max-width: 768px) {
@@ -290,12 +283,13 @@
             .lang-toggle-button, .theme-toggle-button { 
                 font-size: 1rem; padding: 0.5rem 0.8rem; height: 38px; margin: 0 0.25rem;
             }
-            .theme-toggle-button { width: 42px; padding: 0.5rem;}
-            .theme-icon { font-size: 18px; }
+            /* .theme-toggle-button width and specific padding removed */
+            /* .theme-icon font-size removed */
+
 
             .main-nav a:hover {
                 background-color: var(--mobile-nav-link-hover-bg);
-                border-bottom-color: var(--mobile-nav-link-border);
+                border-bottom-color: var(--mobile-nav-link-border); 
             }
             .main-nav a.active {
                 color: var(--primary-text-color);
@@ -311,7 +305,6 @@
             .page-title { font-size: 1.2rem; margin-bottom: 2.5rem; }
             .artist-text h2 { font-size: 1.6rem; }
             .artist-text p { font-size: 1rem; }
-            /* Signature height for tablets/medium screens will use the base 70px if not overridden here */
         }
          @media (max-width: 480px) {
             .artist-name { font-size: 1.2rem; }
@@ -321,10 +314,9 @@
             .main-nav a { padding: 0.8rem; font-size: 1rem; }
             .main-nav li.nav-item-control { padding: 0.5rem 0; }
             .lang-toggle-button, .theme-toggle-button { height: 36px; font-size: 0.9rem; padding: 0.4rem 0.6rem; }
-            .theme-toggle-button { width: 38px; padding: 0.4rem; }
-            .theme-icon { font-size: 16px; }
+             /* .theme-toggle-button width and specific padding removed */
+            /* .theme-icon font-size removed */
             .artist-text h2 { font-size: 1.4rem; }
-            /* Footer responsive */
             .artist-signature-img { max-height: 55px; } 
             .site-footer { padding: 1.5rem 1rem; gap: 0.6rem; font-size: 0.8rem;} 
         }
@@ -351,8 +343,7 @@
                 </li>
                 <li class="nav-item-control"> 
                     <button id="theme-toggle" class="theme-toggle-button" aria-label="Toggle theme">
-                        <span id="theme-icon" class="theme-icon"></span>
-                    </button>
+                        </button>
                 </li>
             </ul>
         </nav>
@@ -400,24 +391,29 @@
         const navToggle = document.querySelector('.nav-toggle');
         const mainNav = document.querySelector('.main-nav');
         const themeToggleButton = document.getElementById('theme-toggle');
-        const themeIcon = document.getElementById('theme-icon');
+        // const themeIcon = document.getElementById('theme-icon'); // Removed
         const langToggleButton = document.getElementById('lang-toggle');
-        const signatureImage = document.getElementById('artist-signature-img'); // Added for the new footer
+        const signatureImage = document.getElementById('artist-signature-img'); 
+        const signatureBaseSrcLt = "images/signaturelt.png"; 
+        const signatureBaseSrcDt = "images/signaturedt.png"; 
+
 
         // --- Translations ---
         const translations = {
             en: {
-                artistName: "Marius Jomphe - Photography", // Kept from original texts.html
+                artistName: "Marius Jomphe - Photography",
                 navImages: "Images",
                 navTexts: "Texts",
                 navAbout: "About",
                 navAcquire: "Acquire",
-                copyrightRights: "All Rights Reserved.", // Used by new footer
-                artistSignatureAlt: "Artist Signature", // Added for new footer
-                langToggleText: "🌐 Français",
+                copyrightRights: "All Rights Reserved.",
+                artistSignatureAlt: "Artist Signature", 
+                langToggleText: "🌐 Français", 
                 langToggleLabel: "Switch to French",
-                themeToggleLightLabel: "Switch to Dark Mode",
-                themeToggleDarkLabel: "Switch to Light Mode",
+                themeToggleLightLabel: "Switch to Dark Mode", 
+                themeToggleDarkLabel: "Switch to Light Mode", 
+                themeTextLight: "🎨 Dark theme", // Text for light mode button (offering dark)
+                themeTextDark: "🎨 Light theme",  // Text for dark mode button (offering light)
                 navToggleLabel: "Toggle navigation",
                 // Texts Page Specific
                 textsPageTitle: "Texts",
@@ -431,17 +427,19 @@
                 textParagraphTwoB: "The camera acts as a conduit, a bridge between inner worlds. The challenge lies in listening intently to what the scene wishes to communicate, and translating that essence into a visual language that resonates universally, or perhaps, very personally.",
             },
             fr: {
-                artistName: "Marius Jomphe - Photographie", // Kept from original texts.html
+                artistName: "Marius Jomphe - Photographie",
                 navImages: "Images",
                 navTexts: "Textes",
                 navAbout: "À Propos",
                 navAcquire: "Acquérir",
-                copyrightRights: "Tous Droits Réservés.", // Used by new footer
-                artistSignatureAlt: "Signature de l'artiste", // Added for new footer
-                langToggleText: "🌐 English",
+                copyrightRights: "Tous Droits Réservés.",
+                artistSignatureAlt: "Signature de l'artiste", 
+                langToggleText: "🌐 English", 
                 langToggleLabel: "Passer en Anglais",
                 themeToggleLightLabel: "Passer en Mode Sombre",
                 themeToggleDarkLabel: "Passer en Mode Clair",
+                themeTextLight: "🎨 Thème sombre", // Text for light mode button (offering dark)
+                themeTextDark: "🎨 Thème clair",  // Text for dark mode button (offering light)
                 navToggleLabel: "Basculer la navigation",
                 // Texts Page Specific
                 textsPageTitle: "Textes",
@@ -455,7 +453,7 @@
                 textParagraphTwoB: "L'appareil photo agit comme un conduit, un pont entre les mondes intérieurs. Le défi consiste à écouter attentivement ce que la scène souhaite communiquer, et à traduire cette essence en un langage visuel qui résonne universellement, ou peut-être, très personnellement.",
             }
         };
-
+        
         let initialTheme = 'light';
         let initialLang = 'en';
 
@@ -478,17 +476,22 @@
                     el.textContent = translations[currentLang][key];
                 }
             });
+            
             langToggleButton.textContent = translations[currentLang].langToggleText;
             langToggleButton.setAttribute('aria-label', translations[currentLang].langToggleLabel);
             
+            // Update theme button text and aria-label
             const isDarkMode = body.classList.contains('dark-theme');
-            themeToggleButton.setAttribute('aria-label', 
-                isDarkMode ? translations[currentLang].themeToggleDarkLabel : translations[currentLang].themeToggleLightLabel
-            );
+            if (isDarkMode) {
+                themeToggleButton.textContent = translations[currentLang].themeTextDark;
+                themeToggleButton.setAttribute('aria-label', translations[currentLang].themeToggleDarkLabel);
+            } else {
+                themeToggleButton.textContent = translations[currentLang].themeTextLight;
+                themeToggleButton.setAttribute('aria-label', translations[currentLang].themeToggleLightLabel);
+            }
             
             if(navToggle) navToggle.setAttribute('aria-label', translations[currentLang].navToggleLabel);
             
-            // Handle signature alt text
             if (signatureImage && translations[currentLang] && translations[currentLang].artistSignatureAlt) {
                 signatureImage.alt = translations[currentLang].artistSignatureAlt;
             }
@@ -499,15 +502,15 @@
         function applyTheme(theme) {
             if (theme === 'dark') {
                 body.classList.add('dark-theme');
-                if (themeIcon) themeIcon.textContent = '☀️';
-                if (signatureImage) signatureImage.src = 'images/signaturedt.png'; // Update signature for dark theme
+                // themeIcon.textContent = '☀️'; // Removed
+                if (signatureImage) signatureImage.src = signatureBaseSrcDt; 
             } else {
                 body.classList.remove('dark-theme');
-                if (themeIcon) themeIcon.textContent = '🌙';
-                if (signatureImage) signatureImage.src = 'images/signaturelt.png'; // Update signature for light theme
+                // themeIcon.textContent = '🌙'; // Removed
+                if (signatureImage) signatureImage.src = signatureBaseSrcLt; 
             }
             localStorage.setItem('theme', theme);
-            applyTranslations(); 
+            applyTranslations(); // This will update the theme button text among other things
         }
 
         themeToggleButton.addEventListener('click', () => {
@@ -515,7 +518,7 @@
             applyTheme(newTheme);
         });
 
-        applyTheme(initialTheme); // Apply initial theme settings
+        applyTheme(initialTheme); // Apply initial theme and run translations once
 
         langToggleButton.addEventListener('click', () => {
             currentLang = (currentLang === 'en') ? 'fr' : 'en';
@@ -523,7 +526,6 @@
             applyTranslations();
         });
         
-        applyTranslations(); // Apply initial translations
 
         if (navToggle && mainNav) {
             navToggle.addEventListener('click', () => {
@@ -532,15 +534,12 @@
                 navToggle.setAttribute('aria-expanded', isActive);
             });
 
-            // Close mobile nav if a link is clicked (optional, based on preference for multi-page sites)
              mainNav.querySelectorAll('ul > li > a').forEach(link => { 
                 link.addEventListener('click', (e) => {
-                    if (mainNav.classList.contains('active')) { // Check if mobile nav is open
-                        // Only close if it's not a control button itself
+                    if (mainNav.classList.contains('active')) { 
                         if (!e.currentTarget.closest('.nav-item-control')) { 
-                            // For multi-page navigation, the page will reload, naturally closing the nav.
-                            // If it were a single-page app or same-page anchor links, explicit close would be more crucial here.
-                            // You can uncomment the lines below if you want to force-close on any link click.
+                            // For multi-page navigation, this part might not be strictly necessary
+                            // as the page reloads, but good for SPA-like behavior or same-page anchors.
                             // mainNav.classList.remove('active');
                             // navToggle.classList.remove('active');
                             // navToggle.setAttribute('aria-expanded', 'false');
@@ -552,6 +551,8 @@
         
         const currentYearSpan = document.getElementById('current-year');
         if (currentYearSpan) currentYearSpan.textContent = new Date().getFullYear();
+
+        // applyTranslations(); // Called by applyTheme(initialTheme) already
     });
     </script>
 

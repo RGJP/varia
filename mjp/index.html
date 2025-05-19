@@ -25,7 +25,7 @@
             --control-button-bg: #f0f0f0; /* Slightly off-white for controls */
             --control-button-hover-bg: #e0e0e0;
             --control-text-color: var(--primary-text-color);
-            --theme-icon-color: var(--primary-text-color);
+            /* --theme-icon-color: var(--primary-text-color); Removed as icon is part of text now */
 
             --font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
             --header-height-desktop: 80px;
@@ -47,7 +47,7 @@
             --control-button-bg: #2c2c2c;
             --control-button-hover-bg: #3a3a3a;
             --control-text-color: var(--primary-text-color);
-            --theme-icon-color: var(--primary-text-color);
+            /* --theme-icon-color: var(--primary-text-color); Removed */
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -103,34 +103,26 @@
             border: 1px solid var(--border-color); /* Subtle border */
             color: var(--control-text-color);
             cursor: pointer;
-            padding: 0.3rem 0.6rem; /* Adjusted padding */
+            padding: 0.3rem 0.6rem; /* Adjusted padding for text */
             margin: 0 0.1rem; /* Small margin between control buttons */
             border-radius: 15px; /* Pill shape */
             font-family: var(--font-family);
             font-size: 0.85rem; /* Match nav links */
             font-weight: 500; /* Slightly bolder for controls */
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-            display: inline-flex; /* For icon alignment */
+            display: inline-flex; 
             align-items: center;
             justify-content: center;
-            min-width: 44px; /* Ensure minimum tappable area */
+            min-width: 44px; /* Ensure minimum tappable area, text will expand it */
             height: 28px; /* Consistent height */
+            white-space: nowrap; /* Prevent text from wrapping */
         }
         .lang-toggle-button:hover, .theme-toggle-button:hover {
             background-color: var(--control-button-hover-bg);
         }
 
-        .theme-toggle-button {
-            padding: 0.3rem; /* More square-like padding for icon */
-            width: 36px; /* Fixed width for icon button */
-            height: 28px;
-        }
-        .theme-icon {
-            font-size: 16px; /* Sun/Moon icon size */
-            color: var(--theme-icon-color);
-            transition: color 0.3s ease;
-            line-height: 1; /* Ensure icon is vertically centered */
-        }
+        /* .theme-toggle-button specific styles for icon removed */
+        /* .theme-icon styles removed */
 
         /* Mobile Navigation Toggle */
         .nav-toggle {
@@ -190,16 +182,8 @@
             transition: border-color 0.3s ease;
         }
         .lightbox-close {
-            /* This is the key change: hide the close button */
             display: none; 
-            /* Original styles kept for reference if you want to bring it back:
-            position: absolute; top: -35px; right: 0px; font-size: 2.5rem;
-            color: #fff; cursor: pointer; background: none; border: none;
-            line-height: 1; padding: 0.25rem; transition: color 0.3s ease; 
-            */
         }
-        /* .lightbox-close:hover { color: #ccc; } */ /* Commented out as the button is hidden */
-
 
         /* Footer - Updated Styles for New Layout */
         .site-footer {
@@ -212,12 +196,12 @@
             transition: color 0.3s ease, border-color 0.3s ease;
             display: flex;
             flex-direction: column; 
-            align-items: center;    
+            align-items: center;     
             gap: 0.75rem; 
         }
         
         .artist-signature-img {
-            max-height: 70px; /* EVEN LARGER base height */
+            max-height: 70px; 
             width: auto;
             object-fit: contain;
             display: block;
@@ -239,13 +223,12 @@
             .main-nav li { margin-left: 1rem; }
             .main-nav li.nav-item-control + li:not(.nav-item-control) { margin-left: 1.5rem; }
             .lang-toggle-button, .theme-toggle-button { font-size: 0.9rem; height: 32px; padding: 0.4rem 0.8rem; }
-            .theme-toggle-button { width: 40px; padding: 0.4rem; } 
-            .theme-icon { font-size: 18px; }
+            /* .theme-toggle-button width and specific padding removed */
+            /* .theme-icon font-size removed */
             .main-content { padding: 3rem; }
             .page-title { font-size: 1.5rem; margin-bottom: 4rem; }
             .image-gallery { gap: 2rem; }
-            /* .lightbox-close { top: 15px; right: 20px; font-size: 2rem; } */ /* Commented out as the button is hidden */
-            .artist-signature-img { max-height: 80px; } /* EVEN LARGER for desktop */
+            .artist-signature-img { max-height: 80px; } 
         }
 
         @media (max-width: 768px) {
@@ -277,8 +260,8 @@
             .lang-toggle-button, .theme-toggle-button { 
                 font-size: 1rem; padding: 0.5rem 0.8rem; height: 38px; margin: 0 0.25rem;
             }
-            .theme-toggle-button { width: 42px; padding: 0.5rem;}
-            .theme-icon { font-size: 18px; }
+            /* .theme-toggle-button width and specific padding removed */
+            /* .theme-icon font-size removed */
 
             .main-nav a:hover {
                 background-color: var(--mobile-nav-link-hover-bg);
@@ -292,8 +275,6 @@
             .image-gallery { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
             .main-content { padding: 1.5rem; }
             .lightbox-content { max-width: 95vw; max-height: 85vh; }
-            /* .lightbox-close { font-size: 2.2rem; top: 10px; right: 10px; padding: 0.5rem; background-color: rgba(0,0,0,0.2); border-radius: 50%;} */ /* Commented out as the button is hidden */
-            /* Signature height for tablets/medium screens will use the base 70px if not overridden here */
         }
          @media (max-width: 480px) {
             .artist-name { font-size: 1.2rem; }
@@ -304,9 +285,9 @@
             .main-nav a { padding: 0.8rem; font-size: 1rem; }
             .main-nav li.nav-item-control { padding: 0.5rem 0; }
             .lang-toggle-button, .theme-toggle-button { height: 36px; font-size: 0.9rem; padding: 0.4rem 0.6rem; }
-            .theme-toggle-button { width: 38px; padding: 0.4rem; }
-            .theme-icon { font-size: 16px; }
-            .artist-signature-img { max-height: 55px; } /* EVEN LARGER for smallest screens */
+            /* .theme-toggle-button width and specific padding removed */
+            /* .theme-icon font-size removed */
+            .artist-signature-img { max-height: 55px; } 
             .site-footer { padding: 1.5rem 1rem; gap: 0.6rem; font-size: 0.8rem;} 
         }
     </style>
@@ -333,8 +314,7 @@
                 </li>
                 <li class="nav-item-control"> 
                     <button id="theme-toggle" class="theme-toggle-button" aria-label="Toggle theme">
-                        <span id="theme-icon" class="theme-icon"></span>
-                    </button>
+                        </button>
                 </li>
             </ul>
         </nav>
@@ -390,11 +370,10 @@
             const navToggle = document.querySelector('.nav-toggle');
             const mainNav = document.querySelector('.main-nav');
             const themeToggleButton = document.getElementById('theme-toggle');
-            const themeIcon = document.getElementById('theme-icon');
+            // const themeIcon = document.getElementById('theme-icon'); // Removed
             const langToggleButton = document.getElementById('lang-toggle');
-            const lightboxCloseButton = document.getElementById('lightbox-close'); // Still get reference, though hidden
+            const lightboxCloseButton = document.getElementById('lightbox-close'); 
             const signatureImage = document.getElementById('artist-signature-img'); 
-            // Restored original local paths for signature images
             const signatureBaseSrcLt = "images/signaturelt.png"; 
             const signatureBaseSrcDt = "images/signaturedt.png"; 
 
@@ -411,9 +390,13 @@
                     artistSignatureAlt: "Artist Signature", 
                     langToggleText: "🌐 Français", 
                     langToggleLabel: "Switch to French",
-                    themeToggleLightLabel: "Switch to Dark Mode",
+                    // ARIA labels describe the action
+                    themeToggleLightLabel: "Switch to Dark Mode", 
                     themeToggleDarkLabel: "Switch to Light Mode", 
-                    closeLightboxLabel: "Close lightbox", // Aria-label still useful for accessibility if button were visible
+                    // Text content for the theme button
+                    themeTextLight: "🎨 Dark theme",
+                    themeTextDark: "🎨 Light theme",
+                    closeLightboxLabel: "Close lightbox", 
                     navToggleLabel: "Toggle navigation"
                 },
                 fr: {
@@ -426,8 +409,12 @@
                     artistSignatureAlt: "Signature de l'artiste", 
                     langToggleText: "🌐 English", 
                     langToggleLabel: "Passer en Anglais",
+                    // ARIA labels describe the action
                     themeToggleLightLabel: "Passer en Mode Sombre",
                     themeToggleDarkLabel: "Passer en Mode Clair",
+                    // Text content for the theme button
+                    themeTextLight: "🎨 Thème sombre",
+                    themeTextDark: "🎨 Thème clair",
                     closeLightboxLabel: "Fermer la visionneuse",
                     navToggleLabel: "Basculer la navigation"
                 }
@@ -439,7 +426,7 @@
 
             if (localStorage.getItem('hasVisited')) {
                 initialTheme = localStorage.getItem('theme') || 
-                                (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+                               (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
                 initialLang = localStorage.getItem('language') || 'en';
             } else {
                 localStorage.setItem('language', initialLang);
@@ -460,12 +447,16 @@
                 langToggleButton.textContent = translations[currentLang].langToggleText;
                 langToggleButton.setAttribute('aria-label', translations[currentLang].langToggleLabel);
                 
+                // Update theme button text and aria-label
                 const isDarkMode = body.classList.contains('dark-theme');
-                themeToggleButton.setAttribute('aria-label', 
-                    isDarkMode ? translations[currentLang].themeToggleDarkLabel : translations[currentLang].themeToggleLightLabel
-                );
+                if (isDarkMode) {
+                    themeToggleButton.textContent = translations[currentLang].themeTextDark;
+                    themeToggleButton.setAttribute('aria-label', translations[currentLang].themeToggleDarkLabel);
+                } else {
+                    themeToggleButton.textContent = translations[currentLang].themeTextLight;
+                    themeToggleButton.setAttribute('aria-label', translations[currentLang].themeToggleLightLabel);
+                }
                 
-                // Even if hidden, keeping aria-label updated is good practice
                 if(lightboxCloseButton) lightboxCloseButton.setAttribute('aria-label', translations[currentLang].closeLightboxLabel);
                 if(navToggle) navToggle.setAttribute('aria-label', translations[currentLang].navToggleLabel);
                 
@@ -480,15 +471,15 @@
             function applyTheme(theme) {
                 if (theme === 'dark') {
                     body.classList.add('dark-theme');
-                    if (themeIcon) themeIcon.textContent = '☀️'; 
+                    // themeIcon.textContent = '☀️'; // Removed
                     if (signatureImage) signatureImage.src = signatureBaseSrcDt; 
                 } else {
                     body.classList.remove('dark-theme');
-                    if (themeIcon) themeIcon.textContent = '🌙'; 
+                    // themeIcon.textContent = '🌙'; // Removed
                     if (signatureImage) signatureImage.src = signatureBaseSrcLt; 
                 }
                 localStorage.setItem('theme', theme);
-                applyTranslations(); 
+                applyTranslations(); // This will update the theme button text among other things
             }
 
             themeToggleButton.addEventListener('click', () => {
@@ -496,7 +487,7 @@
                 applyTheme(newTheme);
             });
 
-            applyTheme(initialTheme); 
+            applyTheme(initialTheme); // Apply initial theme and run translations once
 
             // --- Language Switcher ---
             langToggleButton.addEventListener('click', () => {
@@ -515,11 +506,10 @@
 
                 mainNav.querySelectorAll('ul > li > a').forEach(link => { 
                     link.addEventListener('click', (e) => {
-                        // Close nav only if it's active and the clicked item is not a control button
                         if (mainNav.classList.contains('active') && !e.currentTarget.closest('.nav-item-control')) {
-                             mainNav.classList.remove('active');
-                             navToggle.classList.remove('active');
-                             navToggle.setAttribute('aria-expanded', 'false');
+                           mainNav.classList.remove('active');
+                           navToggle.classList.remove('active');
+                           navToggle.setAttribute('aria-expanded', 'false');
                         }
                     });
                 });
@@ -530,7 +520,7 @@
             const lightboxImg = document.getElementById('lightbox-img');
             const galleryItems = document.querySelectorAll('.gallery-item');
 
-            if (lightbox && lightboxImg && lightboxCloseButton) { // lightboxCloseButton reference is kept
+            if (lightbox && lightboxImg && lightboxCloseButton) { 
                 galleryItems.forEach(item => {
                     item.addEventListener('click', () => {
                         const imgSrc = item.getAttribute('data-src');
@@ -548,15 +538,9 @@
                     document.body.style.overflow = ''; 
                 };
 
-                // Event listener for the close button is still here.
-                // If the button is purely decorative and should never be clickable,
-                // you could remove this. But since it's just hidden via CSS,
-                // the JS logic can remain for now.
                 lightboxCloseButton.addEventListener('click', closeLightbox);
 
                 lightbox.addEventListener('click', (e) => { 
-                    // Close lightbox if the overlay (lightbox itself) is clicked,
-                    // but not if the image content or the (hidden) close button is clicked.
                     if (e.target === lightbox) closeLightbox(); 
                 });
                 document.addEventListener('keydown', (e) => {
@@ -569,7 +553,7 @@
             if (currentYearSpan) currentYearSpan.textContent = new Date().getFullYear();
 
             // Apply initial translations after everything is set up
-            applyTranslations();
+            // applyTranslations(); // Called by applyTheme(initialTheme) already
         });
     </script>
 

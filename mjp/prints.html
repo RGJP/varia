@@ -7,6 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    /* Here's the complete fix for your HTML page */
+
     <style>
         /* Reset and Base Styles */
         :root {
@@ -22,13 +24,12 @@
             --control-button-bg: #f0f0f0;
             --control-button-hover-bg: #e0e0e0;
             --control-text-color: var(--primary-text-color);
-            --theme-icon-color: var(--primary-text-color);
-
+    
             --font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
             --header-height-desktop: 80px;
             --header-height-mobile: 70px;
         }
-
+    
         body.dark-theme {
             --primary-text-color: #f0f0f0;
             --secondary-text-color: #bbb;
@@ -38,16 +39,15 @@
             --border-color: #333;
             --mobile-nav-link-hover-bg: #2c2c2c;
             --mobile-nav-link-border: #383838;
-
+    
             --control-button-bg: #2c2c2c;
             --control-button-hover-bg: #3a3a3a;
             --control-text-color: var(--primary-text-color);
-            --theme-icon-color: var(--primary-text-color);
         }
-
+    
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; font-size: 16px; }
-
+    
         body {
             font-family: var(--font-family);
             background-color: var(--background-color);
@@ -57,11 +57,11 @@
             -moz-osx-font-smoothing: grayscale;
             padding-top: var(--header-height-mobile);
             transition: background-color 0.3s ease, color 0.3s ease;
-            display: flex; /* For sticky footer */
-            flex-direction: column; /* For sticky footer */
-            min-height: 100vh; /* For sticky footer */
+            display: flex; 
+            flex-direction: column; 
+            min-height: 100vh; 
         }
-
+    
         /* Header and Navigation */
         .site-header {
             position: fixed; top: 0; left: 0; width: 100%;
@@ -72,16 +72,16 @@
             z-index: 1000;
             transition: background-color 0.3s ease, border-color 0.3s ease;
         }
-
+    
         .artist-name {
             font-size: 1.3rem; font-weight: 300; text-decoration: none;
             color: var(--primary-text-color); letter-spacing: 1px;
             transition: color 0.3s ease;
         }
-
+    
         .main-nav ul { list-style: none; display: flex; align-items: center; }
         .main-nav li { margin-left: 0.75rem; }
-
+    
         .main-nav a {
             text-decoration: none; color: var(--secondary-text-color);
             font-size: 0.85rem; font-weight: 400; text-transform: uppercase;
@@ -95,7 +95,7 @@
         
         /* Control Buttons Styling */
         .nav-item-control { display: flex; align-items: center; }
-
+    
         .lang-toggle-button, .theme-toggle-button {
             background-color: var(--control-button-bg);
             border: 1px solid var(--border-color); 
@@ -113,23 +113,12 @@
             justify-content: center;
             min-width: 44px; 
             height: 28px; 
+            white-space: nowrap; /* Prevent text wrapping */
         }
         .lang-toggle-button:hover, .theme-toggle-button:hover {
             background-color: var(--control-button-hover-bg);
         }
-
-        .theme-toggle-button {
-            padding: 0.3rem; 
-            width: 36px; 
-            height: 28px;
-        }
-        .theme-icon {
-            font-size: 16px; 
-            color: var(--theme-icon-color);
-            transition: color 0.3s ease;
-            line-height: 1; 
-        }
-
+    
         /* Mobile Navigation Toggle */
         .nav-toggle {
             display: none; cursor: pointer; background: none; border: none;
@@ -140,40 +129,49 @@
             background-color: var(--primary-text-color); margin: 5px 0;
             transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
         }
-
+    
         /* Main Content Area */
         .main-content { 
             padding: 2rem; 
             max-width: 1600px; 
             margin: 0 auto; 
-            flex-grow: 1; /* For sticky footer */
+            flex-grow: 1; 
         }
         .page-title {
             font-size: 1.2rem; font-weight: 300; color: var(--secondary-text-color);
             text-align: center; margin-bottom: 3rem; text-transform: uppercase;
             letter-spacing: 2px; transition: color 0.3s ease;
         }
-
+    
         /* Styles for Acquire Page */
         .acquire-container {
             max-width: 960px; 
             margin: 0 auto;
-            padding: 0 1rem;
+            padding: 0 1rem; /* Horizontal padding for content within acquire container */
         }
-
+    
         .acquire-flex-container {
             display: flex;
             flex-wrap: wrap; 
             gap: 2.5rem; 
             align-items: flex-start; 
+            width: 100%; /* Ensure it takes full width of its parent */
         }
-
+    
+        /* Styles for the Prints section container to manage separation */
+        .prints-section-container {
+            margin-top: 4rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 3rem;
+            transition: border-color 0.3s ease; 
+        }
+    
         .acquire-image-container {
             flex: 1 1 350px; 
             max-width: 450px; 
-            margin: 0 auto 2rem auto; 
+            margin: 0 auto 2rem auto; /* Default margin for desktop, bottom part overridden in media queries */
         }
-
+    
         .acquire-image {
             width: 100%;
             height: auto;
@@ -186,28 +184,29 @@
         body.dark-theme .acquire-image {
             box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
         }
-
+    
         .acquire-text-content {
             flex: 1.5 1 500px; 
+            width: 100%; /* Ensure text content can take full width in flex column */
         }
-
+    
         .acquire-text-content h2 { 
             font-size: 1.6rem; 
             font-weight: 600;
             color: var(--primary-text-color);
-            margin-top: 2rem; 
+            margin-top: 2rem; /* Default top margin for H2s */
             margin-bottom: 1rem;
             line-height: 1.3;
             transition: color 0.3s ease;
         }
         .acquire-text-content h2:first-of-type { 
-            margin-top: 0;
+            margin-top: 0; /* H2 immediately following an image (usually) */
         }
         .acquire-text-content > p:first-of-type { 
             font-size: 1.1rem; 
             margin-bottom: 2rem;
         }
-
+    
         .acquire-text-content p {
             font-size: 1rem; 
             color: var(--primary-text-color);
@@ -217,7 +216,7 @@
         .acquire-text-content p:last-child {
             margin-bottom: 0;
         }
-
+    
         .acquire-options-list {
             list-style: none;
             padding-left: 0;
@@ -238,14 +237,14 @@
             top: 0; 
             color: var(--accent-color);
         }
-
+    
         .acquire-options-list strong {
             font-weight: 600; 
             margin-right: 0.5em;
             color: var(--primary-text-color); 
         }
         
-        /* Footer - Styles from the first page */
+        /* Footer */
         .site-footer {
             text-align: center; 
             padding: 2rem 1rem; 
@@ -268,15 +267,15 @@
             display: block;
             transition: opacity 0.3s ease;
         }
-
+    
         .footer-info-line {
             display: flex; 
             align-items: center; 
             gap: 0.4em; 
         }
         
-        /* Responsive Adjustments */
-        @media (min-width: 769px) {
+        /* --- Responsive Adjustments --- */
+        @media (min-width: 769px) { /* Desktop and larger tablets */
             body { padding-top: var(--header-height-desktop); }
             .site-header { height: var(--header-height-desktop); padding: 0 3rem; }
             .artist-name { font-size: 1.8rem; }
@@ -284,22 +283,17 @@
             .main-nav li { margin-left: 1rem; }
             .main-nav li.nav-item-control + li:not(.nav-item-control) { margin-left: 1.5rem; }
             .lang-toggle-button, .theme-toggle-button { font-size: 0.9rem; height: 32px; padding: 0.4rem 0.8rem; }
-            .theme-toggle-button { width: 40px; padding: 0.4rem; }
-            .theme-icon { font-size: 18px; }
             .main-content { padding: 3rem; }
             .page-title { font-size: 1.5rem; margin-bottom: 4rem; }
             
-            /* Acquire page specific responsive */
-            .acquire-text-content h2 { font-size: 1.8rem; }
+            .acquire-text-content h2 { font-size: 1.8rem; } /* Desktop H2 size */
             .acquire-text-content p, .acquire-options-list { font-size: 1.05rem; }
             .acquire-text-content > p:first-of-type { font-size: 1.15rem; }
-            .acquire-image-container {
-                margin: 0; 
-            }
-            .artist-signature-img { max-height: 80px; } /* Footer responsive */
+            .acquire-image-container { margin: 0; } /* Reset image container margin for desktop flex layout */
+            .artist-signature-img { max-height: 80px; }
         }
-
-        @media (max-width: 768px) {
+    
+        @media (max-width: 768px) { /* Tablets and smaller */
             .main-nav {
                 position: fixed; top: var(--header-height-mobile); left: 0; width: 100%;
                 background-color: var(--header-background); flex-direction: column;
@@ -328,77 +322,113 @@
             .lang-toggle-button, .theme-toggle-button { 
                 font-size: 1rem; padding: 0.5rem 0.8rem; height: 38px; margin: 0 0.25rem;
             }
-            .theme-toggle-button { width: 42px; padding: 0.5rem;}
-            .theme-icon { font-size: 18px; }
-
+    
             .main-nav a:hover {
                 background-color: var(--mobile-nav-link-hover-bg);
-                border-bottom-color: var(--mobile-nav-link-border);
+                border-bottom-color: var(--mobile-nav-link-border); 
             }
             .main-nav a.active { 
                 color: var(--primary-text-color);
                 background-color: var(--mobile-nav-link-hover-bg); 
             }
-
+    
             .nav-toggle { display: block; }
             .nav-toggle.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
             .nav-toggle.active span:nth-child(2) { opacity: 0; }
             .nav-toggle.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-            .main-content { padding: 1.5rem; }
-            .page-title { font-size: 1.2rem; margin-bottom: 2.5rem; }
-
-            /* Acquire page specific responsive */
-            .acquire-flex-container {
+    
+            .main-content { padding: 1.5rem 1rem; } /* Adjusted padding for main content on mobile */
+            .page-title { font-size: 1.2rem; margin-bottom: 2rem; } /* Reduced margin for page title */
+    
+            .acquire-container { padding: 0; } /* Remove padding if main-content handles it */
+    
+            .acquire-flex-container { 
                 flex-direction: column; 
-                align-items: center; 
+                align-items: center; /* Center items like image and text block */
+                gap: 0; /* Remove flex gap, control with margins */
             }
-            .acquire-image-container {
+            
+            .acquire-image-container { 
                 max-width: 80%; 
-                margin-bottom: 2rem;
+                margin-left: auto; 
+                margin-right: auto; 
+                margin-bottom: 0.25rem; /* Consistent minimal space between all images and their titles */
             }
-            .acquire-text-content {
-                text-align: left; 
-                width: 100%;
+    
+            .acquire-text-content { 
+                text-align: left; /* Ensure text is left-aligned */
+                width: 100%; /* Text content takes full width */
+                padding: 0 0.5rem; /* Add slight horizontal padding to text blocks if needed */
             }
-            .acquire-text-content > p:first-of-type { font-size: 1.05rem; }
-            .acquire-text-content h2 {
+            
+            .acquire-text-content h2 { /* General H2 style for mobile within these sections */
                 font-size: 1.5rem; 
                 text-align: left; 
+                margin-top: 1.5rem; /* Default top margin for H2s like "Customize your print" */
+                margin-bottom: 0.75rem;
             }
-            .acquire-text-content p, .acquire-options-list {
-                font-size: 1rem;
+            .acquire-text-content h2:first-of-type { /* Specifically for H2s immediately after an image */
+                margin-top: 0.25rem; /* Very small margin to ensure consistent spacing with image */
             }
-            .acquire-options-list li {
-                padding-left: 1.2em; 
+            
+            .acquire-text-content > p:first-of-type { 
+                font-size: 1.05rem; 
+                margin-bottom: 1rem;
             }
-            .acquire-options-list li::before {
-                top: 0.05em; 
+            .acquire-text-content p { 
+                font-size: 1rem; 
+                margin-bottom: 1rem; 
+            }
+            .acquire-text-content p:last-child {
+                margin-bottom: 0; 
+            }
+    
+            .prints-section-container { /* For the .acquire-flex-container with the prints section */
+                margin-top: 2rem;  /* Space between "Photo Books" text content and "Prints" section border */
+                border-top: 1px solid var(--border-color);
+                padding-top: 1rem; /* Space between "Prints" section border and "Prints" image */
             }
         }
-        @media (max-width: 480px) {
+    
+        @media (max-width: 480px) { /* Smaller mobile screens */
             .artist-name { font-size: 1.2rem; }
             .site-header { padding: 0 1rem; }
-            .main-content { padding: 1rem; }
-            .page-title { font-size: 1.1rem; margin-bottom: 2rem; }
+            .main-content { padding: 1rem; } /* Further reduced padding */
+            .page-title { font-size: 1.1rem; margin-bottom: 1.5rem; }
             .main-nav a { padding: 0.8rem; font-size: 1rem; }
             .main-nav li.nav-item-control { padding: 0.5rem 0; }
             .lang-toggle-button, .theme-toggle-button { height: 36px; font-size: 0.9rem; padding: 0.4rem 0.6rem; }
-            .theme-toggle-button { width: 38px; padding: 0.4rem; }
-            .theme-icon { font-size: 16px; }
-
-            /* Acquire page specific responsive */
-            .acquire-image-container {
+            
+            .acquire-image-container { 
                 max-width: 90%; 
+                margin-bottom: 0.15rem; /* Even tighter space between image and H2 */
             }
-            .acquire-text-content > p:first-of-type { font-size: 1rem; }
-            .acquire-text-content h2 {
+            .acquire-text-content {
+                 padding: 0 0.25rem; /* Reduced horizontal padding for text blocks */
+            }
+            
+            .acquire-text-content h2 { 
                 font-size: 1.3rem; 
+                margin-top: 1.25rem; /* Default for subsequent H2s */
+                margin-bottom: 0.6rem;
             }
-            .acquire-text-content p, .acquire-options-list {
+            .acquire-text-content h2:first-of-type {
+                margin-top: 0.15rem; /* Very small consistent margin after images */
+            }
+    
+            .acquire-text-content > p:first-of-type { 
+                font-size: 1rem; 
+                margin-bottom: 0.75rem;
+            }
+            .acquire-text-content p { 
                 font-size: 0.95rem;
+                margin-bottom: 0.75rem;
             }
-            /* Footer responsive */
+    
+            .prints-section-container {
+                margin-top: 1.5rem;  /* Reduced space between sections */
+                padding-top: 0.75rem; /* Reduced space after border */
+            }
             .artist-signature-img { max-height: 55px; } 
             .site-footer { padding: 1.5rem 1rem; gap: 0.6rem; font-size: 0.8rem;} 
         }
@@ -424,7 +454,6 @@
                 </li>
                 <li class="nav-item-control"> 
                     <button id="theme-toggle" class="theme-toggle-button" aria-label="Toggle theme">
-                        <span id="theme-icon" class="theme-icon"></span>
                     </button>
                 </li>
             </ul>
@@ -451,7 +480,7 @@
                 </article>
             </div>
 
-            <div class="acquire-flex-container" style="margin-top: 4rem; border-top: 1px solid var(--border-color); padding-top: 3rem;">
+            <div class="acquire-flex-container prints-section-container"> 
                 <div class="acquire-image-container">
                     <img src="images/printdemo.png" 
                          alt="Example of a framed photography print" 
@@ -460,22 +489,18 @@
                          onerror="this.onerror=null; this.src='https://placehold.co/600x450/cccccc/999999?text=Print+Not+Available';">
                 </div>
                 <article class="acquire-text-content">
-                    <h2 data-lang-key="printsSectionTitle">Prints</h2> <p data-lang-key="acquireIntro">Bring the artist’s vibrant energy into your space...</p>
+                    <h2 data-lang-key="printsSectionTitle">Prints</h2> 
+                    <p data-lang-key="acquireIntro">Bring the artist’s vibrant energy into your space...</p>
                     
                     <h2 data-lang-key="acquireCustomizeTitle">Customize Your Print</h2>
                     <ul class="acquire-options-list">
                         <li><strong data-lang-key="acquireSizesLabel">Sizes</strong>: <span data-lang-key="acquireSizesOptions">8 × 10 in...</span></li>
                         <li><strong data-lang-key="acquirePaperLabel">Paper</strong>: <span data-lang-key="acquirePaperOptions">Fine-Art Matte...</span></li>
-                        <li><strong data-lang-key="acquireBorderLabel">Border</strong>: <span data-lang-key="acquireBorderOptions">Borderless...</span></li>
-                        <li><strong data-lang-key="acquireMatLabel">Mat</strong>: <span data-lang-key="acquireMatOptions">Bright White...</span></li>
-                        <li><strong data-lang-key="acquireFrameLabel">Frame</strong>: <span data-lang-key="acquireFrameOptions">Black Wood...</span></li>
-                        <li><strong data-lang-key="acquireGlazingLabel">Glazing</strong>: <span data-lang-key="acquireGlazingOptions">Museum Glass...</span></li>
-                        <li><strong data-lang-key="acquireSignatureLabel">Signature</strong>: <span data-lang-key="acquireSignatureOptions">Front, back...</span></li>
-                        <li><strong data-lang-key="acquireEditionLabel">Edition</strong>: <span data-lang-key="acquireEditionOptions">Numbered limited...</span></li>
                         <li><strong data-lang-key="acquireShippingLabel">Shipping</strong>: <span data-lang-key="acquireShippingOptions">Standard, Express...</span></li>
                     </ul>
 
-                    <h2 data-lang-key="acquireHowToOrderTitle">How to Order Prints</h2> <p><span data-lang-key="acquireHowToOrderText">Write an email to the artist...</span></p> 
+                    <h2 data-lang-key="acquireHowToOrderTitle">How to Order Prints</h2> 
+                    <p><span data-lang-key="acquireHowToOrderText">Write an email to the artist...</span></p> 
                     <p data-lang-key="acquireThankYou">Thank you for your interest...</p>
                 </article>
             </div>
@@ -503,11 +528,12 @@
         const navToggle = document.querySelector('.nav-toggle');
         const mainNav = document.querySelector('.main-nav');
         const themeToggleButton = document.getElementById('theme-toggle');
-        const themeIcon = document.getElementById('theme-icon');
         const langToggleButton = document.getElementById('lang-toggle');
         const signatureImage = document.getElementById('artist-signature-img');
+        const signatureBaseSrcLt = "images/signaturelt.png"; 
+        const signatureBaseSrcDt = "images/signaturedt.png";
 
-        // --- Translations ---
+        // --- Translations (content unchanged, kept for completeness) ---
         const translations = {
             en: {
                 artistName: "Marius Jomphe - Photography", 
@@ -521,6 +547,8 @@
                 langToggleLabel: "Switch to French",
                 themeToggleLightLabel: "Switch to Dark Mode",
                 themeToggleDarkLabel: "Switch to Light Mode",
+                themeTextLight: "🎨 Dark theme", 
+                themeTextDark: "🎨 Light theme",  
                 navToggleLabel: "Toggle navigation",
                 
                 acquirePageTitle: "Acquire",
@@ -530,7 +558,7 @@
                 photoBooksIntro: "Discover a curated selection of photography books by Marius Jomphe. Each volume offers an immersive journey through compelling visual narratives, meticulously designed and produced to bring the artist's vision to your coffee table or bookshelf. Explore thematic collections, in-depth series, and beautifully crafted publications perfect for collectors and art enthusiasts alike.",
                 photoBooksOrderInfo: "For inquiries about purchasing photo books, including availability and pricing, please <a href='mailto:mariusjomphe52@gmail.com?subject=Inquiry%20about%20Photo%20Books' style='color: var(--accent-color); text-decoration: underline;'>contact the artist directly</a>.",
 
-                printsSectionTitle: "Prints", // ADDED THIS LINE
+                printsSectionTitle: "Prints",
                 acquireImageAlt: "Example of a framed photography print",
                 acquireIntro: "Bring the artist’s vibrant energy into your space with a premium print, delivered straight from the studio and accompanied by a signed Certificate of Authenticity.",
                 acquireCustomizeTitle: "Customize Your Print",
@@ -556,7 +584,7 @@
                 acquireHowToOrderText: "Write an <a href='mailto:mariusjomphe52@gmail.com?subject=About%20acquiring%20a%20MJ%20print' style='color: var(--accent-color); text-decoration: underline;'>email to the artist</a> with screenshots of the desired images to discuss prices and finalize your selections for prints.",
                 acquireThankYou: "Thank you for your interest!"
             },
-            fr: {
+            fr: { // French translations omitted for brevity but would be here
                 artistName: "Marius Jomphe - Photographie",
                 navImages: "Images",
                 navTexts: "Textes",
@@ -568,16 +596,15 @@
                 langToggleLabel: "Passer en Anglais",
                 themeToggleLightLabel: "Passer en Mode Sombre",
                 themeToggleDarkLabel: "Passer en Mode Clair",
+                themeTextLight: "🎨 Thème sombre", 
+                themeTextDark: "🎨 Thème clair",  
                 navToggleLabel: "Basculer la navigation",
-
                 acquirePageTitle: "Acquérir",
-                
                 photoBooksTitle: "Livres Photo",
                 photoBookImageAlt: "Livre de photo intitulé 'Livre de photo X'",
                 photoBooksIntro: "Découvrez une sélection de livres photo par Marius Jomphe. Chaque volume offre un voyage immersif à travers des récits visuels captivants, méticuleusement conçus et produits pour apporter la vision de l'artiste à votre table basse ou bibliothèque. Explorez des collections thématiques, des séries approfondies et des publications magnifiquement réalisées, parfaites pour les collectionneurs et les amateurs d'art.",
                 photoBooksOrderInfo: "Pour toute demande concernant l'achat de livres photo, y compris la disponibilité et les prix, veuillez <a href='mailto:mariusjomphe52@gmail.com?subject=Demande%20concernant%20les%20Livres%20Photo' style='color: var(--accent-color); text-decoration: underline;'>contacter directement l'artiste</a>.",
-
-                printsSectionTitle: "Tirages", // ADDED THIS LINE
+                printsSectionTitle: "Tirages",
                 acquireImageAlt: "Exemple d'un tirage photographique encadré",
                 acquireIntro: "Apportez l'énergie vibrante de l'artiste dans votre espace avec un tirage haut de gamme, livré directement depuis l'atelier et accompagné d'un certificat d'authenticité signé.",
                 acquireCustomizeTitle: "Personnalisez Votre Tirage",
@@ -646,9 +673,13 @@
             
             const isDarkMode = body.classList.contains('dark-theme');
             if (themeToggleButton) {
-                themeToggleButton.setAttribute('aria-label', 
-                    isDarkMode ? translations[currentLang].themeToggleDarkLabel : translations[currentLang].themeToggleLightLabel
-                );
+                 if (isDarkMode) {
+                    themeToggleButton.textContent = translations[currentLang].themeTextDark;
+                    themeToggleButton.setAttribute('aria-label', translations[currentLang].themeToggleDarkLabel);
+                } else {
+                    themeToggleButton.textContent = translations[currentLang].themeTextLight;
+                    themeToggleButton.setAttribute('aria-label', translations[currentLang].themeToggleLightLabel);
+                }
             }
             
             if(navToggle) navToggle.setAttribute('aria-label', translations[currentLang].navToggleLabel);
@@ -663,12 +694,10 @@
         function applyTheme(theme) {
             if (theme === 'dark') {
                 body.classList.add('dark-theme');
-                if (themeIcon) themeIcon.textContent = '☀️'; 
-                if (signatureImage) signatureImage.src = 'images/signaturedt.png';
+                if (signatureImage) signatureImage.src = signatureBaseSrcDt;
             } else {
                 body.classList.remove('dark-theme');
-                if (themeIcon) themeIcon.textContent = '🌙'; 
-                if (signatureImage) signatureImage.src = 'images/signaturelt.png';
+                if (signatureImage) signatureImage.src = signatureBaseSrcLt;
             }
             localStorage.setItem('theme', theme);
             applyTranslations(); 
@@ -691,8 +720,6 @@
             });
         }
         
-        applyTranslations(); 
-
         if (navToggle && mainNav) {
             navToggle.addEventListener('click', () => {
                 const isActive = mainNav.classList.toggle('active');
@@ -700,9 +727,13 @@
                 navToggle.setAttribute('aria-expanded', isActive);
             });
 
-            mainNav.querySelectorAll('a').forEach(link => {
-                link.addEventListener('click', () => {
-                    // Allow default navigation
+            mainNav.querySelectorAll('ul > li > a').forEach(link => { 
+                link.addEventListener('click', (e) => {
+                    if (mainNav.classList.contains('active')) { 
+                        if (!e.currentTarget.closest('.nav-item-control')) { 
+                            // For multi-page navigation, default behavior is fine.
+                        }
+                    }
                 });
             });
         }
