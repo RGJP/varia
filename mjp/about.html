@@ -14,7 +14,7 @@
             --secondary-text-color: #555;
             --background-color: #ffffff;
             --header-background: #ffffff;
-            --accent-color: #1a1a1a;
+            --accent-color: #1a1a1a; /* Used for link hovers, etc. */
             --border-color: #eee;
             --mobile-nav-link-hover-bg: #f9f9f9;
             --mobile-nav-link-border: #f0f0f0;
@@ -22,7 +22,6 @@
             --control-button-bg: #f0f0f0;
             --control-button-hover-bg: #e0e0e0;
             --control-text-color: var(--primary-text-color);
-            /* --theme-icon-color removed */
 
             --font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
             --header-height-desktop: 80px;
@@ -34,7 +33,7 @@
             --secondary-text-color: #bbb;
             --background-color: #121212;
             --header-background: #1e1e1e;
-            --accent-color: #f0f0f0;
+            --accent-color: #f0f0f0; /* Used for link hovers, etc. */
             --border-color: #333;
             --mobile-nav-link-hover-bg: #2c2c2c;
             --mobile-nav-link-border: #383838;
@@ -42,7 +41,6 @@
             --control-button-bg: #2c2c2c;
             --control-button-hover-bg: #3a3a3a;
             --control-text-color: var(--primary-text-color);
-            /* --theme-icon-color removed */
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -118,9 +116,6 @@
         .lang-toggle-button:hover, .theme-toggle-button:hover {
             background-color: var(--control-button-hover-bg);
         }
-
-        /* .theme-toggle-button specific width/padding for icon removed */
-        /* .theme-icon styles removed */
 
         /* Mobile Navigation Toggle */
         .nav-toggle {
@@ -203,6 +198,18 @@
             margin-bottom: 0;
         }
         
+        /* Style for links within the artist bio */
+        .artist-bio a {
+            color: var(--primary-text-color); /* Match paragraph text color */
+            text-decoration: underline;
+            transition: color 0.3s ease;
+        }
+
+        .artist-bio a:hover {
+            color: var(--accent-color); /* Use accent color for hover */
+            opacity: 0.8; /* Slight opacity change on hover */
+        }
+        
         /* Footer */
         .site-footer {
             text-align: center; 
@@ -242,8 +249,6 @@
             .main-nav li { margin-left: 1rem; }
             .main-nav li.nav-item-control + li:not(.nav-item-control) { margin-left: 1.5rem; }
             .lang-toggle-button, .theme-toggle-button { font-size: 0.9rem; height: 32px; padding: 0.4rem 0.8rem; }
-            /* .theme-toggle-button width and specific padding removed */
-            /* .theme-icon font-size removed */
             .main-content { padding: 3rem; }
             .page-title { font-size: 1.5rem; margin-bottom: 4rem; }
             
@@ -282,8 +287,6 @@
             .lang-toggle-button, .theme-toggle-button { 
                 font-size: 1rem; padding: 0.5rem 0.8rem; height: 38px; margin: 0 0.25rem;
             }
-            /* .theme-toggle-button width and specific padding removed */
-            /* .theme-icon font-size removed */
 
             .main-nav a:hover {
                 background-color: var(--mobile-nav-link-hover-bg);
@@ -304,7 +307,7 @@
 
             .about-flex-container { flex-direction: column; align-items: center; }
             .artist-portrait-container { max-width: 70%; margin-bottom: 2rem; }
-            .artist-bio { text-align: left; }
+            .artist-bio { text-align: left; } /* Keep bio text left-aligned on mobile */
             .artist-bio h2 { font-size: 1.6rem; text-align: center; }
             .artist-bio p { font-size: 1rem; }
         }
@@ -316,8 +319,6 @@
             .main-nav a { padding: 0.8rem; font-size: 1rem; }
             .main-nav li.nav-item-control { padding: 0.5rem 0; }
             .lang-toggle-button, .theme-toggle-button { height: 36px; font-size: 0.9rem; padding: 0.4rem 0.6rem; }
-            /* .theme-toggle-button width and specific padding removed */
-            /* .theme-icon font-size removed */
 
             .artist-portrait-container { max-width: 80%; }
             .artist-bio h2 { font-size: 1.4rem; } 
@@ -338,7 +339,6 @@
         </button>
         <nav class="main-nav">
             <ul>
-             
                 <li><a href="index.html" data-lang-key="navImages">Images</a></li>
                 <li><a href="texts.html" data-lang-key="navTexts">Texts</a></li>
                 <li><a href="about.html" class="active" data-lang-key="navAbout">About</a></li>
@@ -348,7 +348,7 @@
                 </li>
                 <li class="nav-item-control"> 
                     <button id="theme-toggle" class="theme-toggle-button" aria-label="Toggle theme">
-                    </button>
+                        </button>
                 </li>
             </ul>
         </nav>
@@ -370,7 +370,7 @@
                     <p data-lang-key="bioParagraphOne">Lorem ipsum dolor sit amet...</p>
                     <p data-lang-key="bioParagraphTwo">Velit egestas dui id ornare arcu odio ut sem...</p>
                     <p data-lang-key="bioParagraphThree">Risus commodo viverra maecenas accumsan lacus vel facilisis...</p>
-                </article>
+                    <p data-lang-key="contactInquiry"></p> </article>
             </div>
         </div>
     </main>
@@ -395,7 +395,6 @@
         const navToggle = document.querySelector('.nav-toggle');
         const mainNav = document.querySelector('.main-nav');
         const themeToggleButton = document.getElementById('theme-toggle');
-        // const themeIcon = document.getElementById('theme-icon'); // Removed
         const langToggleButton = document.getElementById('lang-toggle');
         const signatureImage = document.getElementById('artist-signature-img');
         const signatureBaseSrcLt = "images/signaturelt.png"; 
@@ -415,8 +414,8 @@
                 langToggleLabel: "Switch to French",
                 themeToggleLightLabel: "Switch to Dark Mode",
                 themeToggleDarkLabel: "Switch to Light Mode",
-                themeTextLight: "🎨 Dark theme", // Text for light mode button (offering dark)
-                themeTextDark: "🎨 Light theme",  // Text for dark mode button (offering light)
+                themeTextLight: "🎨 Dark theme",
+                themeTextDark: "🎨 Light theme",
                 navToggleLabel: "Toggle navigation",
                 // About Page Specific
                 aboutPageTitle: "About the Artist",
@@ -424,6 +423,7 @@
                 bioParagraphOne: `Marius Jomphe is a Quebecois photographer whose work goes beyond mere landscape representation to explore the deep connections between humans and their environment. Originally from Havre-Saint-Pierre on the North Shore and now based in Gaspé, he draws inspiration from the raw and poetic territories of Eastern Quebec, particularly the Gaspé Peninsula and the Côte-Nord.`,
                 bioParagraphTwo: `His artistic approach is rooted in a quest for perception and multidimensionality. Through nature photography, he questions reality and how we perceive it, capturing moments where the visible and invisible meet. His images, often imbued with silence and mystery, invite meditative contemplation of the natural world.`,
                 bioParagraphThree: `Among his notable projects, his latest book "Sonde" illustrates his ever-evolving approach in a new bold vision, while his photo book "Bruine, La pointe de la Gaspésie" offers a new and personal interpretation of the region. His work has also been recognized at events such as "Vues sur Mer" and the Gaspé Documentary Film Festival. Marius Jomphe continues to develop a body of work where photography becomes a means to explore the multiple dimensions of reality, offering a unique perspective on nature and our relationship with it.`,
+                contactInquiry: "You can <a href='mailto:mariusjomphe52@gmail.com'>directly contact the artist</a> for any inquiries." // Added contact line
             },
             fr: {
                 artistName: "Marius Jomphe - Photographie",
@@ -437,8 +437,8 @@
                 langToggleLabel: "Passer en Anglais",
                 themeToggleLightLabel: "Passer en Mode Sombre",
                 themeToggleDarkLabel: "Passer en Mode Clair",
-                themeTextLight: "🎨 Thème sombre", // Text for light mode button (offering dark)
-                themeTextDark: "🎨 Thème clair",  // Text for dark mode button (offering light)
+                themeTextLight: "🎨 Thème sombre",
+                themeTextDark: "🎨 Thème clair",
                 navToggleLabel: "Basculer la navigation",
                 // About Page Specific
                 aboutPageTitle: "À Propos de l'Artiste",
@@ -446,17 +446,20 @@
                 bioParagraphOne: `Marius Jomphe est un photographe québécois dont l'œuvre transcende la simple représentation du paysage pour explorer les liens profonds entre l'être humain et son environnement. Originaire de Havre-Saint-Pierre sur la Côte-Nord et établi à Gaspé, il puise son inspiration dans les territoires bruts et poétiques de l'Est du Québec, notamment la Gaspésie et la Côte-Nord.`,
                 bioParagraphTwo: `Sa démarche artistique s'inscrit dans une quête de perception et de multidimensionnalité. À travers la photographie de nature, il interroge la réalité et notre manière de l'appréhender, capturant des instants où le visible et l'invisible se rencontrent. Ses images, souvent empreintes de silence et de mystère, invitent à une contemplation méditative du monde naturel.`,
                 bioParagraphThree: `Parmi ses projets notables, son dernier livre "Sonde" illustre son approche en constante évolution, tandis que son livre photographique "Bruine, La pointe de la Gaspésie" propose une série d'images offrant une interprétation nouvelle et personnelle de cette région. Son travail a également été reconnu lors d'événements tels que "Vues sur Mer" et le Festival de films documentaire de Gaspé. Marius Jomphe continue de développer une œuvre où la photographie devient un moyen d'explorer les dimensions multiples de la réalité, offrant une perspective unique sur la nature et notre relation avec elle.`,
+                contactInquiry: "Vous pouvez <a href='mailto:mariusjomphe52@gmail.com'>contacter directement l'artiste</a> pour toute demande." // Added contact line
             }
         };
 
         let initialTheme = 'light';
         let initialLang = 'en';
 
+        // Check if the user has visited before to retain preferences
         if (localStorage.getItem('hasVisited')) {
             initialTheme = localStorage.getItem('theme') || 
                            (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
             initialLang = localStorage.getItem('language') || 'en';
         } else {
+            // First visit: set defaults and mark as visited
             localStorage.setItem('language', initialLang);
             localStorage.setItem('theme', initialTheme);
             localStorage.setItem('hasVisited', 'true');
@@ -468,7 +471,12 @@
             document.querySelectorAll('[data-lang-key]').forEach(el => {
                 const key = el.getAttribute('data-lang-key');
                 if (translations[currentLang] && translations[currentLang][key]) {
-                    el.textContent = translations[currentLang][key];
+                    // If the translation string contains HTML (like our contact link), use innerHTML
+                    if (key === 'contactInquiry' || translations[currentLang][key].includes('<a href')) {
+                         el.innerHTML = translations[currentLang][key];
+                    } else {
+                        el.textContent = translations[currentLang][key];
+                    }
                 }
             });
 
@@ -501,23 +509,22 @@
                 signatureImage.alt = translations[currentLang].artistSignatureAlt;
             }
 
-            document.documentElement.lang = currentLang;
+            document.documentElement.lang = currentLang; // Set the lang attribute on <html>
         }
 
         function applyTheme(theme) {
             if (theme === 'dark') {
                 body.classList.add('dark-theme');
-                // if (themeIcon) themeIcon.textContent = '☀️'; // Removed
                 if (signatureImage) signatureImage.src = signatureBaseSrcDt;
             } else {
                 body.classList.remove('dark-theme');
-                // if (themeIcon) themeIcon.textContent = '🌙'; // Removed
                 if (signatureImage) signatureImage.src = signatureBaseSrcLt;
             }
             localStorage.setItem('theme', theme);
-            applyTranslations(); 
+            applyTranslations(); // Re-apply translations as theme text might change
         }
 
+        // Theme Toggle Functionality
         if (themeToggleButton) {
             themeToggleButton.addEventListener('click', () => {
                 const newTheme = body.classList.contains('dark-theme') ? 'light' : 'dark';
@@ -525,18 +532,24 @@
             });
         }
         
-        applyTheme(initialTheme); // Apply initial theme and run translations once
+        applyTheme(initialTheme); // Apply initial theme and this will also call applyTranslations
 
+        // Language Toggle Functionality
         if (langToggleButton) {
             langToggleButton.addEventListener('click', () => {
                 currentLang = (currentLang === 'en') ? 'fr' : 'en';
                 localStorage.setItem('language', currentLang);
                 applyTranslations();
+                 // Close mobile nav if open after language switch for better UX
+                if (mainNav.classList.contains('active')) {
+                    mainNav.classList.remove('active');
+                    navToggle.classList.remove('active');
+                    navToggle.setAttribute('aria-expanded', 'false');
+                }
             });
         }
         
-        // applyTranslations(); // This call is redundant as applyTheme(initialTheme) calls it.
-
+        // Mobile Navigation Toggle
         if (navToggle && mainNav) {
             navToggle.addEventListener('click', () => {
                 const isActive = mainNav.classList.toggle('active');
@@ -544,19 +557,30 @@
                 navToggle.setAttribute('aria-expanded', isActive);
             });
 
+            // Close nav if a link is clicked (for multi-page navigation)
             mainNav.querySelectorAll('ul > li > a').forEach(link => { 
                 link.addEventListener('click', (e) => {
-                    if (mainNav.classList.contains('active')) { 
-                        if (!e.currentTarget.closest('.nav-item-control')) { 
-                            // On multi-page sites, page reload handles "closing" the nav.
+                    // This part is more relevant for SPAs. For MPAs, page load handles it.
+                    // However, if a control button (lang/theme) is clicked, we don't want to close.
+                    if (!e.currentTarget.closest('.nav-item-control')) {
+                        if (mainNav.classList.contains('active')) {
+                            // For MPA, this might not be strictly necessary as page reloads,
+                            // but good for consistency if it were an SPA.
+                            // mainNav.classList.remove('active');
+                            // navToggle.classList.remove('active');
+                            // navToggle.setAttribute('aria-expanded', 'false');
                         }
                     }
                 });
             });
         }
         
+        // Set current year in footer
         const currentYearSpan = document.getElementById('current-year');
         if (currentYearSpan) currentYearSpan.textContent = new Date().getFullYear();
+
+        // Initial application of translations after theme is set (which calls it once)
+        // applyTranslations(); // This call is now handled by applyTheme(initialTheme)
     });
     </script>
 
