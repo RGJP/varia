@@ -24,8 +24,8 @@
             --control-button-hover-bg: #e0e0e0;
             --control-text-color: var(--primary-text-color);
             --font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-            --header-height-desktop: 80px;
-            --header-height-mobile: 70px;
+            --header-height-desktop: 80px; /* Fixed height for header layout */
+            --header-height-mobile: 70px;  /* Fixed height for header layout */
         }
 
         body.dark-theme {
@@ -52,17 +52,21 @@
 
         html {
             scroll-behavior: smooth;
-            font-size: 16px;
+            /* font-size: 16px; */ /* REMOVED fixed root font-size */
+            font-size: clamp(14px, calc(12px + 0.4vw), 24px); /* ADDED: Dynamic root font-size */
+                                                            /* Min 14px, Preferred (12px + 0.4% of viewport width), Max 24px */
+                                                            /* Adjust 0.4vw to make scaling more or less aggressive */
+                                                            /* Adjust max 24px if text becomes too large on 4K+ */
         }
 
         body {
             font-family: var(--font-family);
             background-color: var(--background-color);
             color: var(--primary-text-color);
-            line-height: 1.6;
+            line-height: 1.6; /* Unitless line-height scales with font-size */
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            padding-top: var(--header-height-mobile);
+            padding-top: var(--header-height-mobile); /* Uses fixed header height */
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
@@ -75,8 +79,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0 1rem;
-            height: var(--header-height-mobile);
+            padding: 0 1rem; /* This padding will scale slightly due to rem */
+            height: var(--header-height-mobile); /* Fixed height */
             background-color: var(--header-background);
             border-bottom: 1px solid var(--border-color);
             z-index: 1000;
@@ -84,11 +88,11 @@
         }
 
         .artist-name {
-            font-size: 1.3rem;
+            font-size: 1.3rem; /* Will scale with root font-size */
             font-weight: 300;
             text-decoration: none;
             color: var(--primary-text-color);
-            letter-spacing: 1px;
+            letter-spacing: 1px; /* Fixed letter-spacing, consider rem if scaling is desired */
             transition: color 0.3s ease;
         }
 
@@ -99,24 +103,24 @@
         }
 
         .main-nav li {
-            margin-left: 0.75rem;
+            margin-left: 0.75rem; /* Will scale */
         }
 
         .main-nav a {
             text-decoration: none;
             color: var(--secondary-text-color);
-            font-size: 0.85rem;
+            font-size: 0.85rem; /* Will scale */
             font-weight: 400;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 0.5rem 0;
+            letter-spacing: 0.5px; /* Fixed letter-spacing */
+            padding: 0.5rem 0; /* Will scale */
             transition: color 0.3s ease, border-color 0.3s ease;
         }
 
         .main-nav a:hover,
         .main-nav a.active {
             color: var(--primary-text-color);
-            border-bottom: 1px solid var(--primary-text-color);
+            border-bottom: 1px solid var(--primary-text-color); /* Border width fixed, consider dynamic if needed */
         }
 
         /* Control Buttons Styling */
@@ -131,18 +135,19 @@
             border: 1px solid var(--border-color);
             color: var(--control-text-color);
             cursor: pointer;
-            padding: 0.3rem 0.6rem;
-            margin: 0 0.1rem;
-            border-radius: 15px;
+            padding: 0.3rem 0.6rem; /* Will scale */
+            margin: 0 0.1rem; /* Will scale */
+            border-radius: 1.5rem; /* CHANGED from 15px to make it scale and maintain pill shape */
             font-family: var(--font-family);
-            font-size: 0.85rem;
+            font-size: 0.85rem; /* Will scale */
             font-weight: 500;
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 44px;
-            height: 28px;
+            min-width: 2.75rem; /* CHANGED from 44px to make it scale (44px at 16px root) */
+            /* height: 28px; */ /* REMOVED fixed height, size will adapt to content + padding */
+            line-height: 1.2; /* Added for better vertical alignment if text wraps (unlikely here) */
             white-space: nowrap;
         }
 
@@ -163,37 +168,35 @@
 
         .nav-toggle span {
             display: block;
-            width: 25px;
-            height: 2px;
+            width: 25px; /* Fixed size for hamburger icon */
+            height: 2px;  /* Fixed size for hamburger icon */
             background-color: var(--primary-text-color);
-            margin: 5px 0;
+            margin: 5px 0; /* Fixed size for hamburger icon */
             transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
         }
 
-        /* Main Content Area - MODIFIED SECTION */
+        /* Main Content Area */
         .main-content {
-            padding: 2rem; /* This padding creates space from the screen edges */
-            /* max-width: 1600px; */ /* REMOVED to allow the content to use the full available width */
-            /* margin: 0 auto; */    /* REMOVED as it's not needed when max-width is not set */
-            position: relative; /* Keep for potential absolutely positioned children if any */
+            padding: 2rem; /* Will scale */
+            position: relative;
         }
 
         .page-title {
-            font-size: 1.2rem;
+            font-size: 1.2rem; /* Will scale */
             font-weight: 300;
             color: var(--secondary-text-color);
             text-align: center;
-            margin-bottom: 3rem;
+            margin-bottom: 3rem; /* Will scale */
             text-transform: uppercase;
-            letter-spacing: 2px;
+            letter-spacing: 2px; /* Fixed */
             transition: color 0.3s ease;
         }
 
         /* Image Gallery */
         .image-gallery {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* minmax uses fixed px, consider rem if items should scale */
+            gap: 1.5rem; /* Will scale */
         }
 
         .gallery-item {
@@ -201,7 +204,7 @@
             overflow: hidden;
             background-color: var(--gallery-item-bg);
             transition: background-color 0.3s ease;
-            border-radius: 8px;
+            border-radius: 8px; /* Fixed */
         }
 
         .gallery-item img {
@@ -211,7 +214,7 @@
             display: block;
             transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease;
             aspect-ratio: 4 / 3;
-            border-radius: 8px;
+            border-radius: 8px; /* Fixed */
         }
 
         .gallery-item:hover img {
@@ -233,8 +236,8 @@
             align-items: center;
             opacity: 0;
             transition: opacity 0.4s ease, background-color 0.3s ease;
-            padding: 0; /* Remove padding */
-            cursor: pointer; /* Indicate it's clickable for closing */
+            padding: 0;
+            cursor: pointer;
         }
 
         .lightbox.active {
@@ -244,13 +247,13 @@
 
         .lightbox-content {
             position: relative;
-            max-width: 100vw;  /* Changed to 100vw */
-            max-height: 100vh; /* Changed to 100vh */
+            max-width: 100vw;
+            max-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100%; /* Ensure full height */
-            cursor: default; /* Prevent double cursor changes if image is smaller than lightbox */
+            height: 100%;
+            cursor: default;
         }
 
         .lightbox-content img {
@@ -258,42 +261,42 @@
             max-height: 100%;
             object-fit: contain;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            border: none; /* Removed border */
-            border-radius: 0; /* Removed border radius */
-            cursor: pointer; /* Ensure image itself can be part of the close click area */
+            border: none;
+            border-radius: 0;
+            cursor: pointer;
         }
 
-        .lightbox-close { /* This remains unused as per current design, but kept for potential future use */
+        .lightbox-close {
             display: none;
         }
 
         /* "More to Come" Text Styles */
         .more-to-come {
             text-align: center;
-            padding: 1rem;
-            font-size: 0.9rem;
+            padding: 1rem; /* Will scale */
+            font-size: 0.9rem; /* Will scale */
             color: var(--secondary-text-color);
             transition: color 0.3s ease;
-            margin-top: 2rem;
+            margin-top: 2rem; /* Will scale */
         }
 
         /* Footer - Updated Styles */
         .site-footer {
             text-align: center;
-            padding: 2rem 1rem;
-            margin-top: 6rem;
-            font-size: 0.85rem;
+            padding: 2rem 1rem; /* Will scale */
+            margin-top: 6rem; /* Will scale */
+            font-size: 0.85rem; /* Will scale */
             color: var(--secondary-text-color);
             border-top: 1px solid var(--border-color);
             transition: color 0.3s ease, border-color 0.3s ease;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.75rem; /* Will scale */
         }
 
         .artist-signature-img {
-            max-height: 70px;
+            max-height: 70px; /* Fixed, as it's an image. Could use rem if you want it to scale. e.g., max-height: 4rem; */
             width: auto;
             object-fit: contain;
             display: block;
@@ -303,66 +306,65 @@
         .footer-info-line {
             display: flex;
             align-items: center;
-            gap: 0.4em;
+            gap: 0.4em; /* Scales with footer font-size */
         }
 
         /* Responsive Adjustments */
         @media (min-width: 769px) {
             body {
-                padding-top: var(--header-height-desktop);
+                padding-top: var(--header-height-desktop); /* Uses fixed header height */
             }
 
             .site-header {
-                height: var(--header-height-desktop);
-                padding: 0 3rem;
+                height: var(--header-height-desktop); /* Fixed height */
+                padding: 0 3rem; /* Will scale */
             }
 
             .artist-name {
-                font-size: 1.8rem;
+                font-size: 1.8rem; /* Will scale */
             }
 
             .main-nav a {
-                font-size: 0.9rem;
+                font-size: 0.9rem; /* Will scale */
             }
 
             .main-nav li {
-                margin-left: 1rem;
+                margin-left: 1rem; /* Will scale */
             }
 
             .main-nav li.nav-item-control + li:not(.nav-item-control) {
-                margin-left: 1.5rem;
+                margin-left: 1.5rem; /* Will scale */
             }
 
             .lang-toggle-button,
             .theme-toggle-button {
-                font-size: 0.9rem;
-                height: 32px;
-                padding: 0.4rem 0.8rem;
+                font-size: 0.9rem; /* Will scale */
+                /* height: 32px; */ /* REMOVED fixed height */
+                padding: 0.4rem 0.8rem; /* Will scale */
             }
 
-            /* Main Content Area - MODIFIED SECTION for desktop */
             .main-content {
-                padding: 3rem; /* Padding updated for larger screens, full width behavior maintained */
+                padding: 3rem; /* Will scale */
             }
 
             .page-title {
-                font-size: 1.5rem;
-                margin-bottom: 4rem;
+                font-size: 1.5rem; /* Will scale */
+                margin-bottom: 4rem; /* Will scale */
             }
 
             .image-gallery {
-                gap: 2rem;
+                gap: 2rem; /* Will scale */
             }
 
             .artist-signature-img {
-                max-height: 80px;
+                max-height: 80px; /* Fixed. e.g., max-height: 5rem; */
             }
         }
 
         @media (max-width: 768px) {
             .main-nav {
                 position: fixed;
-                top: var(--header-height-mobile);
+                top: var(--header-height-mobile); /* Uses fixed header height */
                 left: 0;
                 width: 100%;
                 background-color: var(--header-background);
@@ -400,23 +402,22 @@
 
             .main-nav a {
                 display: block;
-                padding: 1rem;
-                font-size: 1.1rem;
+                padding: 1rem; /* Will scale */
+                font-size: 1.1rem; /* Will scale */
                 width: 100%;
                 text-align: center;
             }
 
             .main-nav li.nav-item-control {
-                padding: 0.75rem 0;
+                padding: 0.75rem 0; /* Will scale */
                 justify-content: center;
             }
 
             .lang-toggle-button,
             .theme-toggle-button {
-                font-size: 1rem;
-                padding: 0.5rem 0.8rem;
-                height: 38px;
-                margin: 0 0.25rem;
+                font-size: 1rem; /* Will scale */
+                padding: 0.5rem 0.8rem; /* Will scale */
+                /* height: 38px; */ /* REMOVED fixed height */
             }
 
             .main-nav a:hover {
@@ -441,12 +442,12 @@
             }
 
             .image-gallery {
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 1rem;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Minmax fixed */
+                gap: 1rem; /* Will scale */
             }
 
-            .main-content { /* Ensures mobile padding is maintained */
-                padding: 1.5rem; 
+            .main-content {
+                padding: 1.5rem; /* Will scale */
             }
 
             .lightbox-content {
@@ -457,51 +458,51 @@
 
         @media (max-width: 480px) {
             .artist-name {
-                font-size: 1.2rem;
+                font-size: 1.2rem; /* Will scale */
             }
 
             .site-header {
-                padding: 0 1rem;
+                padding: 0 1rem; /* Will scale */
             }
 
-            .main-content { /* Ensures smallest screen padding is maintained */
-                padding: 1rem;
+            .main-content {
+                padding: 1rem; /* Will scale */
             }
 
             .page-title {
-                font-size: 1rem;
-                margin-bottom: 2rem;
+                font-size: 1rem; /* Will scale */
+                margin-bottom: 2rem; /* Will scale */
             }
 
             .image-gallery {
-                grid-template-columns: 1fr; /* Single column on very small screens */
-                gap: 1rem;
+                grid-template-columns: 1fr; /* Single column */
+                gap: 1rem; /* Will scale */
             }
 
             .main-nav a {
-                padding: 0.8rem;
-                font-size: 1rem;
+                padding: 0.8rem; /* Will scale */
+                font-size: 1rem; /* Will scale */
             }
 
             .main-nav li.nav-item-control {
-                padding: 0.5rem 0;
+                padding: 0.5rem 0; /* Will scale */
             }
 
             .lang-toggle-button,
             .theme-toggle-button {
-                height: 36px;
-                font-size: 0.9rem;
-                padding: 0.4rem 0.6rem;
+                /* height: 36px; */ /* REMOVED fixed height */
+                font-size: 0.9rem; /* Will scale */
+                padding: 0.4rem 0.6rem; /* Will scale */
             }
 
             .artist-signature-img {
-                max-height: 55px;
+                max-height: 55px; /* Fixed. e.g., max-height: 3rem; */
             }
 
             .site-footer {
-                padding: 1.5rem 1rem;
-                gap: 0.6rem;
-                font-size: 0.8rem;
+                padding: 1.5rem 1rem; /* Will scale */
+                gap: 0.6rem; /* Will scale */
+                font-size: 0.8rem; /* Will scale */
             }
         }
     </style>
@@ -696,7 +697,6 @@
                 langToggleButton.textContent = translations[currentLang].langToggleText;
                 langToggleButton.setAttribute('aria-label', translations[currentLang].langToggleLabel);
 
-                // Update theme button text and aria-label
                 const isDarkMode = body.classList.contains('dark-theme');
                 if (isDarkMode) {
                     themeToggleButton.textContent = translations[currentLang].themeTextDark;
@@ -774,7 +774,6 @@
                             lightboxElement.classList.add('active');
                             document.body.style.overflow = 'hidden';
 
-                            // Adjust image and lightbox-content style for full screen
                             lightboxImg.style.maxWidth = '100vw';
                             lightboxImg.style.maxHeight = '100vh';
                             lightboxImg.style.objectFit = 'contain';
@@ -783,19 +782,10 @@
                     });
                 });
 
-                // MODIFIED: Click anywhere on the lightbox (overlay or image) to close
                 lightboxElement.addEventListener('click', () => {
                     lightboxElement.classList.remove('active');
                     document.body.style.overflow = '';
                 });
-
-                // Prevent clicks on the image content from bubbling up if you want specific behavior for image vs background.
-                // For "click anywhere to close", the above is sufficient.
-                // If you wanted actions ON the image that DON'T close, you'd need e.stopPropagation() here.
-                // lightboxImg.addEventListener('click', (e) => {
-                //     e.stopPropagation(); // Example: if clicking image did something else
-                // });
-
 
                 document.addEventListener('keydown', (e) => {
                     if (e.key === 'Escape' && lightboxElement.classList.contains('active')) {
@@ -809,7 +799,6 @@
             const currentYearSpan = document.getElementById('current-year');
             if (currentYearSpan) currentYearSpan.textContent = new Date().getFullYear();
 
-            // Apply initial translations
             applyTranslations();
         });
     </script>
