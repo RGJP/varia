@@ -7,7 +7,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
-
     <style>
         /* Reset and Base Styles */
         :root {
@@ -21,11 +20,9 @@
             --gallery-item-bg: #f9f9f9;
             --mobile-nav-link-hover-bg: #f9f9f9;
             --mobile-nav-link-border: #f0f0f0;
-
             --control-button-bg: #f0f0f0;
             --control-button-hover-bg: #e0e0e0;
             --control-text-color: var(--primary-text-color);
-
             --font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
             --header-height-desktop: 80px;
             --header-height-mobile: 70px;
@@ -42,14 +39,21 @@
             --gallery-item-bg: #2a2a2a;
             --mobile-nav-link-hover-bg: #2c2c2c;
             --mobile-nav-link-border: #383838;
-
             --control-button-bg: #2c2c2c;
             --control-button-hover-bg: #3a3a3a;
             --control-text-color: var(--primary-text-color);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; font-size: 16px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px;
+        }
 
         body {
             font-family: var(--font-family);
@@ -64,9 +68,15 @@
 
         /* Header and Navigation */
         .site-header {
-            position: fixed; top: 0; left: 0; width: 100%;
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 0 1rem; height: var(--header-height-mobile);
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1rem;
+            height: var(--header-height-mobile);
             background-color: var(--header-background);
             border-bottom: 1px solid var(--border-color);
             z-index: 1000;
@@ -74,29 +84,49 @@
         }
 
         .artist-name {
-            font-size: 1.3rem; font-weight: 300; text-decoration: none;
-            color: var(--primary-text-color); letter-spacing: 1px;
+            font-size: 1.3rem;
+            font-weight: 300;
+            text-decoration: none;
+            color: var(--primary-text-color);
+            letter-spacing: 1px;
             transition: color 0.3s ease;
         }
 
-        .main-nav ul { list-style: none; display: flex; align-items: center; }
-        .main-nav li { margin-left: 0.75rem; }
+        .main-nav ul {
+            list-style: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .main-nav li {
+            margin-left: 0.75rem;
+        }
 
         .main-nav a {
-            text-decoration: none; color: var(--secondary-text-color);
-            font-size: 0.85rem; font-weight: 400; text-transform: uppercase;
-            letter-spacing: 0.5px; padding: 0.5rem 0;
+            text-decoration: none;
+            color: var(--secondary-text-color);
+            font-size: 0.85rem;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0.5rem 0;
             transition: color 0.3s ease, border-color 0.3s ease;
         }
-        .main-nav a:hover, .main-nav a.active {
+
+        .main-nav a:hover,
+        .main-nav a.active {
             color: var(--primary-text-color);
             border-bottom: 1px solid var(--primary-text-color);
         }
 
         /* Control Buttons Styling */
-        .nav-item-control { display: flex; align-items: center; }
+        .nav-item-control {
+            display: flex;
+            align-items: center;
+        }
 
-        .lang-toggle-button, .theme-toggle-button {
+        .lang-toggle-button,
+        .theme-toggle-button {
             background-color: var(--control-button-bg);
             border: 1px solid var(--border-color);
             color: var(--control-text-color);
@@ -115,72 +145,121 @@
             height: 28px;
             white-space: nowrap;
         }
-        .lang-toggle-button:hover, .theme-toggle-button:hover {
+
+        .lang-toggle-button:hover,
+        .theme-toggle-button:hover {
             background-color: var(--control-button-hover-bg);
         }
 
         /* Mobile Navigation Toggle */
         .nav-toggle {
-            display: none; cursor: pointer; background: none; border: none;
-            padding: 0; z-index: 1001;
+            display: none;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            z-index: 1001;
         }
+
         .nav-toggle span {
-            display: block; width: 25px; height: 2px;
-            background-color: var(--primary-text-color); margin: 5px 0;
+            display: block;
+            width: 25px;
+            height: 2px;
+            background-color: var(--primary-text-color);
+            margin: 5px 0;
             transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
         }
 
-        /* Main Content Area */
+        /* Main Content Area - MODIFIED SECTION */
         .main-content {
-            padding: 2rem;
-            max-width: 1600px;
-            margin: 0 auto;
-            position: relative; /* Added for absolute positioning of more-to-come */
+            padding: 2rem; /* This padding creates space from the screen edges */
+            /* max-width: 1600px; */ /* REMOVED to allow the content to use the full available width */
+            /* margin: 0 auto; */    /* REMOVED as it's not needed when max-width is not set */
+            position: relative; /* Keep for potential absolutely positioned children if any */
         }
+
         .page-title {
-            font-size: 1.2rem; font-weight: 300; color: var(--secondary-text-color);
-            text-align: center; margin-bottom: 3rem; text-transform: uppercase;
-            letter-spacing: 2px; transition: color 0.3s ease;
+            font-size: 1.2rem;
+            font-weight: 300;
+            color: var(--secondary-text-color);
+            text-align: center;
+            margin-bottom: 3rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: color 0.3s ease;
         }
 
         /* Image Gallery */
         .image-gallery {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 1.5rem;
         }
+
         .gallery-item {
-            cursor: pointer; overflow: hidden;
+            cursor: pointer;
+            overflow: hidden;
             background-color: var(--gallery-item-bg);
             transition: background-color 0.3s ease;
             border-radius: 8px;
         }
+
         .gallery-item img {
-            width: 100%; height: 100%; object-fit: cover; display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
             transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s ease;
             aspect-ratio: 4 / 3;
             border-radius: 8px;
         }
-        .gallery-item:hover img { transform: scale(1.05); opacity: 0.85; }
+
+        .gallery-item:hover img {
+            transform: scale(1.05);
+            opacity: 0.85;
+        }
 
         /* Lightbox */
         .lightbox {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--lightbox-overlay-color); z-index: 2000;
-            justify-content: center; align-items: center; opacity: 0;
-            transition: opacity 0.4s ease, background-color 0.3s ease; padding: 1rem;
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--lightbox-overlay-color);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.4s ease, background-color 0.3s ease;
+            padding: 0; /* Remove padding */
         }
-        .lightbox.active { display: flex; opacity: 1; }
+
+        .lightbox.active {
+            display: flex;
+            opacity: 1;
+        }
+
         .lightbox-content {
-            position: relative; max-width: 90vw; max-height: 90vh;
-            display: flex; justify-content: center; align-items: center;
+            position: relative;
+            max-width: 100vw;  /* Changed to 100vw */
+            max-height: 100vh; /* Changed to 100vh */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%; /* Ensure full height */
         }
+
         .lightbox-content img {
-            max-width: 100%; max-height: 100%; object-fit: contain;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            border: 3px solid var(--background-color);
-            border-radius: 4px;
-            transition: border-color 0.3s ease;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: none; /* Removed border */
+            border-radius: 0; /* Removed border radius */
         }
+
         .lightbox-close {
             display: none;
         }
@@ -192,14 +271,14 @@
             font-size: 0.9rem;
             color: var(--secondary-text-color);
             transition: color 0.3s ease;
-            margin-top: 2rem; /* Add space above the text */
+            margin-top: 2rem;
         }
 
         /* Footer - Updated Styles */
         .site-footer {
             text-align: center;
             padding: 2rem 1rem;
-            margin-top: 6rem; /* Increased margin to create space */
+            margin-top: 6rem;
             font-size: 0.85rem;
             color: var(--secondary-text-color);
             border-top: 1px solid var(--border-color);
@@ -226,78 +305,205 @@
 
         /* Responsive Adjustments */
         @media (min-width: 769px) {
-            body { padding-top: var(--header-height-desktop); }
-            .site-header { height: var(--header-height-desktop); padding: 0 3rem; }
-            .artist-name { font-size: 1.8rem; }
-            .main-nav a { font-size: 0.9rem; }
-            .main-nav li { margin-left: 1rem; }
-            .main-nav li.nav-item-control + li:not(.nav-item-control) { margin-left: 1.5rem; }
-            .lang-toggle-button, .theme-toggle-button { font-size: 0.9rem; height: 32px; padding: 0.4rem 0.8rem; }
-            .main-content { padding: 3rem; }
-            .page-title { font-size: 1.5rem; margin-bottom: 4rem; }
-            .image-gallery { gap: 2rem; }
-            .artist-signature-img { max-height: 80px; }
+            body {
+                padding-top: var(--header-height-desktop);
+            }
+
+            .site-header {
+                height: var(--header-height-desktop);
+                padding: 0 3rem;
+            }
+
+            .artist-name {
+                font-size: 1.8rem;
+            }
+
+            .main-nav a {
+                font-size: 0.9rem;
+            }
+
+            .main-nav li {
+                margin-left: 1rem;
+            }
+
+            .main-nav li.nav-item-control + li:not(.nav-item-control) {
+                margin-left: 1.5rem;
+            }
+
+            .lang-toggle-button,
+            .theme-toggle-button {
+                font-size: 0.9rem;
+                height: 32px;
+                padding: 0.4rem 0.8rem;
+            }
+
+            /* Main Content Area - MODIFIED SECTION for desktop */
+            .main-content {
+                padding: 3rem; /* Padding updated for larger screens, full width behavior maintained */
+            }
+
+            .page-title {
+                font-size: 1.5rem;
+                margin-bottom: 4rem;
+            }
+
+            .image-gallery {
+                gap: 2rem;
+            }
+
+            .artist-signature-img {
+                max-height: 80px;
+            }
         }
 
         @media (max-width: 768px) {
             .main-nav {
-                position: fixed; top: var(--header-height-mobile); left: 0; width: 100%;
-                background-color: var(--header-background); flex-direction: column;
-                align-items: stretch; padding: 0;
+                position: fixed;
+                top: var(--header-height-mobile);
+                left: 0;
+                width: 100%;
+                background-color: var(--header-background);
+                flex-direction: column;
+                align-items: stretch;
+                padding: 0;
                 transform: translateY(-150%);
                 transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.3s ease;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
                 border-top: 1px solid var(--border-color);
             }
-            .main-nav.active { transform: translateY(0); }
-            .main-nav ul { flex-direction: column; width: 100%; align-items: stretch; }
+
+            .main-nav.active {
+                transform: translateY(0);
+            }
+
+            .main-nav ul {
+                flex-direction: column;
+                width: 100%;
+                align-items: stretch;
+            }
+
             .main-nav li {
-                margin: 0; width: 100%; text-align: center;
-                display: flex; justify-content: center;
+                margin: 0;
+                width: 100%;
+                text-align: center;
+                display: flex;
+                justify-content: center;
                 border-bottom: 1px solid var(--mobile-nav-link-border);
             }
-            .main-nav li:last-child { border-bottom: none; }
+
+            .main-nav li:last-child {
+                border-bottom: none;
+            }
 
             .main-nav a {
-                display: block; padding: 1rem; font-size: 1.1rem; width: 100%; text-align: center;
+                display: block;
+                padding: 1rem;
+                font-size: 1.1rem;
+                width: 100%;
+                text-align: center;
             }
+
             .main-nav li.nav-item-control {
                 padding: 0.75rem 0;
                 justify-content: center;
             }
-            .lang-toggle-button, .theme-toggle-button {
-                font-size: 1rem; padding: 0.5rem 0.8rem; height: 38px; margin: 0 0.25rem;
+
+            .lang-toggle-button,
+            .theme-toggle-button {
+                font-size: 1rem;
+                padding: 0.5rem 0.8rem;
+                height: 38px;
+                margin: 0 0.25rem;
             }
 
             .main-nav a:hover {
                 background-color: var(--mobile-nav-link-hover-bg);
                 border-bottom-color: var(--mobile-nav-link-border);
             }
-            .nav-toggle { display: block; }
-            .nav-toggle.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-            .nav-toggle.active span:nth-child(2) { opacity: 0; }
-            .nav-toggle.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-            .image-gallery { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
-            .main-content { padding: 1.5rem; }
-            .lightbox-content { max-width: 95vw; max-height: 85vh; }
+            .nav-toggle {
+                display: block;
+            }
+
+            .nav-toggle.active span:nth-child(1) {
+                transform: translateY(7px) rotate(45deg);
+            }
+
+            .nav-toggle.active span:nth-child(2) {
+                opacity: 0;
+            }
+
+            .nav-toggle.active span:nth-child(3) {
+                transform: translateY(-7px) rotate(-45deg);
+            }
+
+            .image-gallery {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 1rem;
+            }
+
+            .main-content { /* Ensures mobile padding is maintained */
+                padding: 1.5rem; 
+            }
+
+            .lightbox-content {
+                max-width: 95vw;
+                max-height: 95vh;
+            }
         }
+
         @media (max-width: 480px) {
-            .artist-name { font-size: 1.2rem; }
-            .site-header { padding: 0 1rem; }
-            .main-content { padding: 1rem; }
-            .page-title { font-size: 1rem; margin-bottom: 2rem; }
-            .image-gallery { grid-template-columns: 1fr; gap: 1rem; }
-            .main-nav a { padding: 0.8rem; font-size: 1rem; }
-            .main-nav li.nav-item-control { padding: 0.5rem 0; }
-            .lang-toggle-button, .theme-toggle-button { height: 36px; font-size: 0.9rem; padding: 0.4rem 0.6rem; }
-            .artist-signature-img { max-height: 55px; }
-            .site-footer { padding: 1.5rem 1rem; gap: 0.6rem; font-size: 0.8rem;}
+            .artist-name {
+                font-size: 1.2rem;
+            }
+
+            .site-header {
+                padding: 0 1rem;
+            }
+
+            .main-content { /* Ensures smallest screen padding is maintained */
+                padding: 1rem;
+            }
+
+            .page-title {
+                font-size: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .image-gallery {
+                grid-template-columns: 1fr; /* Single column on very small screens */
+                gap: 1rem;
+            }
+
+            .main-nav a {
+                padding: 0.8rem;
+                font-size: 1rem;
+            }
+
+            .main-nav li.nav-item-control {
+                padding: 0.5rem 0;
+            }
+
+            .lang-toggle-button,
+            .theme-toggle-button {
+                height: 36px;
+                font-size: 0.9rem;
+                padding: 0.4rem 0.6rem;
+            }
+
+            .artist-signature-img {
+                max-height: 55px;
+            }
+
+            .site-footer {
+                padding: 1.5rem 1rem;
+                gap: 0.6rem;
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
 <body>
-
     <header class="site-header">
         <a href="#" class="artist-name" data-lang-key="artistName">ARTIST NAME</a>
         <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
@@ -307,7 +513,6 @@
         </button>
         <nav class="main-nav">
             <ul>
-                
                 <li><a href="index.html" class="active" data-lang-key="navImages">Images</a></li>
                 <li><a href="texts.html" data-lang-key="navTexts">Texts</a></li>
                 <li><a href="about.html" data-lang-key="navAbout">About</a></li>
@@ -319,13 +524,35 @@
                 <li class="nav-item-control">
                     <button id="lang-toggle" class="lang-toggle-button" aria-label="Switch language"></button>
                 </li>
-               
             </ul>
         </nav>
     </header>
-
     <main class="main-content" id="images">
         <div class="image-gallery">
+            <div class="gallery-item" data-src="images/1.jpeg" data-alt="Abstract cityscape photography">
+                <img src="images/1.jpeg" alt="Abstract cityscape photography"
+                     onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+1+Not+Found';">
+            </div>
+            <div class="gallery-item" data-src="images/2.jpeg" data-alt="Serene landscape reflection">
+                <img src="images/2.jpeg" alt="Serene landscape reflection"
+                     onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+2+Not+Found';">
+            </div>
+            <div class="gallery-item" data-src="images/3.jpeg" data-alt="Monochrome architectural detail">
+                <img src="images/3.jpeg" alt="Monochrome architectural detail"
+                     onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+3+Not+Found';">
+            </div>
+            <div class="gallery-item" data-src="images/4.jpeg" data-alt="Vibrant street art">
+                <img src="images/4.jpeg" alt="Vibrant street art"
+                     onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+4+Not+Found';">
+            </div>
+            <div class="gallery-item" data-src="images/5.jpeg" data-alt="Nature macro shot">
+                <img src="images/5.jpeg" alt="Nature macro shot"
+                     onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+5+Not+Found';">
+            </div>
+            <div class="gallery-item" data-src="images/6.jpeg" data-alt="Portrait with dramatic lighting">
+                <img src="images/6.jpeg" alt="Portrait with dramatic lighting"
+                     onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+6+Not+Found';">
+            </div>
             <div class="gallery-item" data-src="images/1.jpeg" data-alt="Abstract cityscape photography">
                 <img src="images/1.jpeg" alt="Abstract cityscape photography" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+1+Not+Found';">
             </div>
@@ -350,25 +577,7 @@
             <div class="gallery-item" data-src="images/2.jpeg" data-alt="Serene landscape reflection">
                 <img src="images/2.jpeg" alt="Serene landscape reflection" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+2+Not+Found';">
             </div>
-             <div class="gallery-item" data-src="images/3.jpeg" data-alt="Monochrome architectural detail">
-                <img src="images/3.jpeg" alt="Monochrome architectural detail" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+3+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/4.jpeg" data-alt="Vibrant street art">
-                <img src="images/4.jpeg" alt="Vibrant street art" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+4+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/5.jpeg" data-alt="Nature macro shot">
-                <img src="images/5.jpeg" alt="Nature macro shot" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+5+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/6.jpeg" data-alt="Portrait with dramatic lighting">
-                <img src="images/6.jpeg" alt="Portrait with dramatic lighting" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+6+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/1.jpeg" data-alt="Abstract cityscape photography">
-                <img src="images/1.jpeg" alt="Abstract cityscape photography" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+1+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/2.jpeg" data-alt="Serene landscape reflection">
-                <img src="images/2.jpeg" alt="Serene landscape reflection" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+2+Not+Found';">
-            </div>
-             <div class="gallery-item" data-src="images/3.jpeg" data-alt="Monochrome architectural detail">
+            <div class="gallery-item" data-src="images/3.jpeg" data-alt="Monochrome architectural detail">
                 <img src="images/3.jpeg" alt="Monochrome architectural detail" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+3+Not+Found';">
             </div>
             <div class="gallery-item" data-src="images/4.jpeg" data-alt="Vibrant street art">
@@ -382,33 +591,26 @@
             </div>
         </div>
         <div class="more-to-come" data-lang-key="moreToCome">
-             ...more to come... / ...plus à venir...
+            ...more to come... / ...plus à venir...
         </div>
     </main>
-
     <div class="lightbox" id="lightbox">
         <div class="lightbox-content">
             <img src="" alt="" id="lightbox-img">
-            <button class="lightbox-close" id="lightbox-close" aria-label="Close lightbox">&times;</button>
         </div>
     </div>
-
     <footer class="site-footer">
         <a href="about.html">
-            <img id="artist-signature-img"
-                 src="images/signaturelt.png"
-                 alt="Artist Signature"
+            <img id="artist-signature-img" src="images/signaturelt.png" alt="Artist Signature"
                  class="artist-signature-img"
                  onerror="this.onerror=null; this.src='https://placehold.co/150x70/f0f0f0/333333?text=Signature'; this.alt='Signature image not found';">
         </a>
-
         <div class="footer-info-line">
             <span>&copy; </span>
             <span id="current-year"></span>
             <span data-lang-key="copyrightRights">All Rights Reserved.</span>
         </div>
     </footer>
-
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const body = document.body;
@@ -416,12 +618,13 @@
             const mainNav = document.querySelector('.main-nav');
             const themeToggleButton = document.getElementById('theme-toggle');
             const langToggleButton = document.getElementById('lang-toggle');
-            const lightboxCloseButton = document.getElementById('lightbox-close');
+            const lightboxElement = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            const galleryItems = document.querySelectorAll('.gallery-item');
             const signatureImage = document.getElementById('artist-signature-img');
             const signatureBaseSrcLt = "images/signaturelt.png";
             const signatureBaseSrcDt = "images/signaturedt.png";
             const moreToComeElement = document.querySelector('.more-to-come');
-
 
             // --- Translations ---
             const translations = {
@@ -500,7 +703,7 @@
                     themeToggleButton.setAttribute('aria-label', translations[currentLang].themeToggleLightLabel);
                 }
 
-                if (lightboxCloseButton) lightboxCloseButton.setAttribute('aria-label', translations[currentLang].closeLightboxLabel);
+                if (lightboxElement) lightboxElement.setAttribute('aria-label', translations[currentLang].closeLightboxLabel);
                 if (navToggle) navToggle.setAttribute('aria-label', translations[currentLang].navToggleLabel);
 
                 if (signatureImage && translations[currentLang] && translations[currentLang].artistSignatureAlt) {
@@ -520,7 +723,7 @@
                     if (signatureImage) signatureImage.src = signatureBaseSrcLt;
                 }
                 localStorage.setItem('theme', theme);
-                applyTranslations();
+                applyTranslations(); 
             }
 
             themeToggleButton.addEventListener('click', () => {
@@ -557,11 +760,7 @@
             }
 
             // --- Lightbox Functionality ---
-            const lightbox = document.getElementById('lightbox');
-            const lightboxImg = document.getElementById('lightbox-img');
-            const galleryItems = document.querySelectorAll('.gallery-item');
-
-            if (lightbox && lightboxImg && lightboxCloseButton) {
+            if (lightboxElement && lightboxImg) {
                 galleryItems.forEach(item => {
                     item.addEventListener('click', () => {
                         const imgSrc = item.getAttribute('data-src');
@@ -569,23 +768,30 @@
                         if (imgSrc) {
                             lightboxImg.setAttribute('src', imgSrc);
                             lightboxImg.setAttribute('alt', imgAlt);
-                            lightbox.classList.add('active');
+                            lightboxElement.classList.add('active');
                             document.body.style.overflow = 'hidden';
+
+                            // Adjust image and lightbox-content style for full screen
+                            lightboxImg.style.maxWidth = '100vw';
+                            lightboxImg.style.maxHeight = '100vh';
+                            lightboxImg.style.objectFit = 'contain';
+                            lightboxElement.style.padding = '0'; 
                         }
                     });
                 });
-                const closeLightbox = () => {
-                    lightbox.classList.remove('active');
-                    document.body.style.overflow = '';
-                };
 
-                lightboxCloseButton.addEventListener('click', closeLightbox);
-
-                lightbox.addEventListener('click', (e) => {
-                    if (e.target === lightbox) closeLightbox();
+                lightboxElement.addEventListener('click', (e) => {
+                    if (e.target === lightboxElement) {
+                        lightboxElement.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
                 });
+
                 document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape' && lightbox.classList.contains('active')) closeLightbox();
+                    if (e.key === 'Escape' && lightboxElement.classList.contains('active')) {
+                        lightboxElement.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
                 });
             }
 
@@ -597,6 +803,5 @@
             applyTranslations();
         });
     </script>
-
 </body>
 </html>
