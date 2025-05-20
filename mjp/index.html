@@ -24,8 +24,8 @@
             --control-button-hover-bg: #e0e0e0;
             --control-text-color: var(--primary-text-color);
             --font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-            --header-height-desktop: 80px; /* Fixed height for header layout */
-            --header-height-mobile: 70px;  /* Fixed height for header layout */
+            --header-height-desktop: 80px;
+            --header-height-mobile: 70px;
         }
 
         body.dark-theme {
@@ -119,7 +119,6 @@
             border-bottom: 1px solid var(--primary-text-color);
         }
 
-        /* Control Buttons Styling */
         .nav-item-control {
             display: flex;
             align-items: center;
@@ -151,7 +150,6 @@
             background-color: var(--control-button-hover-bg);
         }
 
-        /* Mobile Navigation Toggle */
         .nav-toggle {
             display: none;
             cursor: pointer;
@@ -170,13 +168,12 @@
             transition: transform 0.3s ease, opacity 0.3s ease, background-color 0.3s ease;
         }
 
-        /* Main Content Area */
         .main-content {
-            padding: 2rem; /* This padding determines the space above the gallery */
+            padding: 2rem;
             position: relative;
         }
 
-        .page-title { /* If this element exists above gallery, its margin-bottom also contributes */
+        .page-title {
             font-size: 1.2rem;
             font-weight: 300;
             color: var(--secondary-text-color);
@@ -187,7 +184,6 @@
             transition: color 0.3s ease;
         }
 
-        /* Image Gallery */
         .image-gallery {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -231,8 +227,7 @@
             align-items: center;
             opacity: 0;
             transition: opacity 0.4s ease, background-color 0.3s ease;
-            padding: 0;
-            cursor: pointer;
+            cursor: pointer; /* Click anywhere on overlay closes */
         }
 
         .lightbox.active {
@@ -242,12 +237,14 @@
 
         .lightbox-content {
             position: relative;
-            max-width: 100vw;
-            max-height: 100vh;
+            width: 100%;
+            height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100%;
+            overflow: hidden;
+            /* Make sure clicks on content don't get stopped if lightbox has cursor:pointer */
+            /* Clicks will propagate to lightboxElement for closing */
             cursor: default;
         }
 
@@ -255,32 +252,37 @@
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            transform: translate(0px, 0px) scale(1);
+            transform-origin: center center;
+            cursor: pointer; /* Image click also closes due to event bubbling to .lightbox */
             border: none;
             border-radius: 0;
-            cursor: pointer;
+            box-shadow: none;
         }
+        /* .zoomed-in class can still be used for non-cursor related styling if needed */
+        .lightbox-content img.zoomed-in {
+             /* No specific cursor change needed here anymore for desktop */
+        }
+
 
         .lightbox-close {
             display: none;
         }
 
-        /* "More to Come" Text Styles */
         .more-to-come {
             text-align: center;
-            padding: 0rem; /* padding-bottom: 1rem contributes to space above footer */
+            padding: 0rem;
             font-size: 0.9rem;
             color: var(--secondary-text-color);
             transition: color 0.3s ease;
-            margin-top: 2rem; /* Space between gallery and "more to come" */
+            margin-top: 2rem;
         }
 
-        /* Footer - Updated Styles */
         .site-footer {
             text-align: center;
             padding: 2rem 1rem;
-            /* MODIFIED: Was 6rem, now 1rem for mobile to match main-content padding-top (2rem) minus .more-to-come padding-bottom (1rem) */
-            margin-top: 1rem; 
+            margin-top: 1rem;
             font-size: 0.85rem;
             color: var(--secondary-text-color);
             border-top: 1px solid var(--border-color);
@@ -305,213 +307,49 @@
             gap: 0.4em;
         }
 
-        /* Responsive Adjustments */
         @media (min-width: 769px) {
-            body {
-                padding-top: var(--header-height-desktop);
-            }
-
-            .site-header {
-                height: var(--header-height-desktop);
-                padding: 0 3rem;
-            }
-
-            .artist-name {
-                font-size: 1.8rem;
-            }
-
-            .main-nav a {
-                font-size: 0.9rem;
-            }
-
-            .main-nav li {
-                margin-left: 1rem;
-            }
-
-            .main-nav li.nav-item-control + li:not(.nav-item-control) {
-                margin-left: 1.5rem;
-            }
-
-            .lang-toggle-button,
-            .theme-toggle-button {
-                font-size: 0.9rem;
-                padding: 0.4rem 0.8rem;
-            }
-
-            .main-content {
-                padding: 3rem; /* This padding (3rem) is the target space for desktop */
-            }
-
-            .page-title {
-                font-size: 1.5rem;
-                margin-bottom: 4rem;
-            }
-
-            .image-gallery {
-                gap: 2rem;
-            }
-
-            .artist-signature-img {
-                max-height: 80px;
-            }
-
-            .site-footer {
-                 /* MODIFIED: For desktop, target space is 3rem. .more-to-come padding-bottom is 1rem. So 3rem - 1rem = 2rem */
-                margin-top: 1rem;
-            }
+            body { padding-top: var(--header-height-desktop); }
+            .site-header { height: var(--header-height-desktop); padding: 0 3rem; }
+            .artist-name { font-size: 1.8rem; }
+            .main-nav a { font-size: 0.9rem; }
+            .main-nav li { margin-left: 1rem; }
+            .main-nav li.nav-item-control + li:not(.nav-item-control) { margin-left: 1.5rem; }
+            .lang-toggle-button, .theme-toggle-button { font-size: 0.9rem; padding: 0.4rem 0.8rem; }
+            .main-content { padding: 3rem; }
+            .page-title { font-size: 1.5rem; margin-bottom: 4rem; }
+            .image-gallery { gap: 2rem; }
+            .artist-signature-img { max-height: 80px; }
+            .site-footer { margin-top: 1rem; }
         }
 
         @media (max-width: 768px) {
-            .main-nav {
-                position: fixed;
-                top: var(--header-height-mobile);
-                left: 0;
-                width: 100%;
-                background-color: var(--header-background);
-                flex-direction: column;
-                align-items: stretch;
-                padding: 0;
-                transform: translateY(-150%);
-                transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.3s ease;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-                border-top: 1px solid var(--border-color);
-            }
-
-            .main-nav.active {
-                transform: translateY(0);
-            }
-
-            .main-nav ul {
-                flex-direction: column;
-                width: 100%;
-                align-items: stretch;
-            }
-
-            .main-nav li {
-                margin: 0;
-                width: 100%;
-                text-align: center;
-                display: flex;
-                justify-content: center;
-                border-bottom: 1px solid var(--mobile-nav-link-border);
-            }
-
-            .main-nav li:last-child {
-                border-bottom: none;
-            }
-
-            .main-nav a {
-                display: block;
-                padding: 1rem;
-                font-size: 1.1rem;
-                width: 100%;
-                text-align: center;
-            }
-
-            .main-nav li.nav-item-control {
-                padding: 0.75rem 0;
-                justify-content: center;
-            }
-
-            .lang-toggle-button,
-            .theme-toggle-button {
-                font-size: 1rem;
-                padding: 0.5rem 0.8rem;
-            }
-
-            .main-nav a:hover {
-                background-color: var(--mobile-nav-link-hover-bg);
-                border-bottom-color: var(--mobile-nav-link-border);
-            }
-
-            .nav-toggle {
-                display: block;
-            }
-
-            .nav-toggle.active span:nth-child(1) {
-                transform: translateY(7px) rotate(45deg);
-            }
-
-            .nav-toggle.active span:nth-child(2) {
-                opacity: 0;
-            }
-
-            .nav-toggle.active span:nth-child(3) {
-                transform: translateY(-7px) rotate(-45deg);
-            }
-
-            .image-gallery {
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 1rem;
-            }
-
-            /* .main-content padding is 2rem here, already defined in base */
-
-            .lightbox-content {
-                max-width: 95vw;
-                max-height: 95vh;
-            }
+            .main-nav { position: fixed; top: var(--header-height-mobile); left: 0; width: 100%; background-color: var(--header-background); flex-direction: column; align-items: stretch; padding: 0; transform: translateY(-150%); transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), background-color 0.3s ease; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); border-top: 1px solid var(--border-color); }
+            .main-nav.active { transform: translateY(0); }
+            .main-nav ul { flex-direction: column; width: 100%; align-items: stretch; }
+            .main-nav li { margin: 0; width: 100%; text-align: center; display: flex; justify-content: center; border-bottom: 1px solid var(--mobile-nav-link-border); }
+            .main-nav li:last-child { border-bottom: none; }
+            .main-nav a { display: block; padding: 1rem; font-size: 1.1rem; width: 100%; text-align: center; }
+            .main-nav li.nav-item-control { padding: 0.75rem 0; justify-content: center; }
+            .lang-toggle-button, .theme-toggle-button { font-size: 1rem; padding: 0.5rem 0.8rem; }
+            .main-nav a:hover { background-color: var(--mobile-nav-link-hover-bg); }
+            .nav-toggle { display: block; }
+            .nav-toggle.active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+            .nav-toggle.active span:nth-child(2) { opacity: 0; }
+            .nav-toggle.active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+            .image-gallery { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
         }
 
         @media (max-width: 480px) {
-            .artist-name {
-                font-size: 1.2rem;
-            }
-
-            .site-header {
-                padding: 0 1rem;
-            }
-
-            .main-content {
-                padding: 1rem; /* If this changes, the footer margin might need re-evaluation for this breakpoint if perfect match is needed */
-            }
-             /*
-                NOTE for max-width: 480px:
-                .main-content padding is 1rem.
-                .more-to-come padding-bottom is 1rem.
-                So, for the same logic, .site-footer margin-top would be 1rem - 1rem = 0rem.
-                The current setup will use margin-top: 1rem from the base .site-footer rule,
-                making the gap (1rem padding-bottom + 1rem margin-top) = 2rem.
-                This might be acceptable, or you could add a specific rule here:
-                .site-footer { margin-top: 0rem; }
-                to make the gap 1rem. For now, leaving as is, inheriting the 1rem margin-top.
-            */
-
-            .page-title {
-                font-size: 1rem;
-                margin-bottom: 2rem;
-            }
-
-            .image-gallery {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-
-            .main-nav a {
-                padding: 0.8rem;
-                font-size: 1rem;
-            }
-
-            .main-nav li.nav-item-control {
-                padding: 0.5rem 0;
-            }
-
-            .lang-toggle-button,
-            .theme-toggle-button {
-                font-size: 0.9rem;
-                padding: 0.4rem 0.6rem;
-            }
-
-            .artist-signature-img {
-                max-height: 55px;
-            }
-
-            .site-footer {
-                padding: 1.5rem 1rem;
-                gap: 0.6rem;
-                font-size: 0.8rem;
-                /* margin-top will be 1rem (inherited from base), making total space below "more to come" text to divider 2rem */
-            }
+            .artist-name { font-size: 1.2rem; }
+            .site-header { padding: 0 1rem; }
+            .main-content { padding: 1rem; }
+            .page-title { font-size: 1rem; margin-bottom: 2rem; }
+            .image-gallery { grid-template-columns: 1fr; gap: 1rem; }
+            .main-nav a { padding: 0.8rem; font-size: 1rem; }
+            .main-nav li.nav-item-control { padding: 0.5rem 0; }
+            .lang-toggle-button, .theme-toggle-button { font-size: 0.9rem; padding: 0.4rem 0.6rem; }
+            .artist-signature-img { max-height: 55px; }
+            .site-footer { padding: 1.5rem 1rem; gap: 0.6rem; font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -519,9 +357,7 @@
     <header class="site-header">
         <a href="#" class="artist-name" data-lang-key="artistName">ARTIST NAME</a>
         <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
-            <span></span>
-            <span></span>
-            <span></span>
+            <span></span><span></span><span></span>
         </button>
         <nav class="main-nav">
             <ul>
@@ -529,82 +365,27 @@
                 <li><a href="texts.html" data-lang-key="navTexts">Texts</a></li>
                 <li><a href="about.html" data-lang-key="navAbout">About</a></li>
                 <li><a href="prints.html" data-lang-key="navAcquire">Acquire</a></li>
-                <li class="nav-item-control">
-                    <button id="theme-toggle" class="theme-toggle-button" aria-label="Toggle theme">
-                    </button>
-                </li>
-                <li class="nav-item-control">
-                    <button id="lang-toggle" class="lang-toggle-button" aria-label="Switch language"></button>
-                </li>
+                <li class="nav-item-control"><button id="theme-toggle" class="theme-toggle-button"></button></li>
+                <li class="nav-item-control"><button id="lang-toggle" class="lang-toggle-button"></button></li>
             </ul>
         </nav>
     </header>
     <main class="main-content" id="images">
         <div class="image-gallery">
-            <div class="gallery-item" data-src="images/1.jpeg" data-alt="Abstract cityscape photography">
-                <img src="images/1.jpeg" alt="Abstract cityscape photography"
-                     onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+1+Not+Found';">
+            <div class="gallery-item" data-src="images/demo.jpg" data-alt="photo">
+                <img src="images/demo.jpg" alt="photo" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+1+Not+Found';">
             </div>
-            <div class="gallery-item" data-src="images/2.jpeg" data-alt="Serene landscape reflection">
-                <img src="images/2.jpeg" alt="Serene landscape reflection"
-                     onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+2+Not+Found';">
+            <div class="gallery-item" data-src="images/demo.jpg" data-alt="photo">
+                <img src="images/demo.jpg" alt="photo" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+2+Not+Found';">
             </div>
-            <div class="gallery-item" data-src="images/3.jpeg" data-alt="Monochrome architectural detail">
-                <img src="images/3.jpeg" alt="Monochrome architectural detail"
-                     onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+3+Not+Found';">
+            <div class="gallery-item" data-src="images/demo.jpg" data-alt="photo">
+                <img src="images/demo.jpg" alt="photo" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+3+Not+Found';">
             </div>
-            <div class="gallery-item" data-src="images/4.jpeg" data-alt="Vibrant street art">
-                <img src="images/4.jpeg" alt="Vibrant street art"
-                     onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+4+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/5.jpeg" data-alt="Nature macro shot">
-                <img src="images/5.jpeg" alt="Nature macro shot"
-                     onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+5+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/6.jpeg" data-alt="Portrait with dramatic lighting">
-                <img src="images/6.jpeg" alt="Portrait with dramatic lighting"
-                     onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+6+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/1.jpeg" data-alt="Abstract cityscape photography">
-                <img src="images/1.jpeg" alt="Abstract cityscape photography" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+1+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/2.jpeg" data-alt="Serene landscape reflection">
-                <img src="images/2.jpeg" alt="Serene landscape reflection" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+2+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/3.jpeg" data-alt="Monochrome architectural detail">
-                <img src="images/3.jpeg" alt="Monochrome architectural detail" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+3+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/4.jpeg" data-alt="Vibrant street art">
-                <img src="images/4.jpeg" alt="Vibrant street art" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+4+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/5.jpeg" data-alt="Nature macro shot">
-                <img src="images/5.jpeg" alt="Nature macro shot" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+5+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/6.jpeg" data-alt="Portrait with dramatic lighting">
-                <img src="images/6.jpeg" alt="Portrait with dramatic lighting" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+6+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/1.jpeg" data-alt="Abstract cityscape photography">
-                <img src="images/1.jpeg" alt="Abstract cityscape photography" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+1+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/2.jpeg" data-alt="Serene landscape reflection">
-                <img src="images/2.jpeg" alt="Serene landscape reflection" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+2+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/3.jpeg" data-alt="Monochrome architectural detail">
-                <img src="images/3.jpeg" alt="Monochrome architectural detail" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+3+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/4.jpeg" data-alt="Vibrant street art">
-                <img src="images/4.jpeg" alt="Vibrant street art" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+4+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/5.jpeg" data-alt="Nature macro shot">
-                <img src="images/5.jpeg" alt="Nature macro shot" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+5+Not+Found';">
-            </div>
-            <div class="gallery-item" data-src="images/6.jpeg" data-alt="Portrait with dramatic lighting">
-                <img src="images/6.jpeg" alt="Portrait with dramatic lighting" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+6+Not+Found';">
+            <div class="gallery-item" data-src="images/demo.jpg" data-alt="photo">
+                <img src="images/demo.jpg" alt="photo" onerror="this.onerror=null;this.src='https://placehold.co/400x300/cccccc/333333?text=Image+4+Not+Found';">
             </div>
         </div>
-        <div class="more-to-come" data-lang-key="moreToCome">
-            ...more to come... / ...plus à venir...
-        </div>
+        <div class="more-to-come" data-lang-key="moreToCome">...more to come... / ...plus à venir...</div>
     </main>
     <div class="lightbox" id="lightbox">
         <div class="lightbox-content">
@@ -613,14 +394,10 @@
     </div>
     <footer class="site-footer">
         <a href="about.html">
-            <img id="artist-signature-img" src="images/signaturelt.png" alt="Artist Signature"
-                 class="artist-signature-img"
-                 onerror="this.onerror=null; this.src='https://placehold.co/150x70/f0f0f0/333333?text=Signature'; this.alt='Signature image not found';">
+            <img id="artist-signature-img" src="images/signaturelt.png" alt="Artist Signature" class="artist-signature-img" onerror="this.onerror=null; this.src='https://placehold.co/150x70/f0f0f0/333333?text=Signature'; this.alt='Signature image not found';">
         </a>
         <div class="footer-info-line">
-            <span>&copy; </span>
-            <span id="current-year"></span>
-            <span data-lang-key="copyrightRights">All Rights Reserved.</span>
+            <span>&copy; </span><span id="current-year"></span> <span data-lang-key="copyrightRights">All Rights Reserved.</span>
         </div>
     </footer>
     <script>
@@ -632,133 +409,64 @@
             const langToggleButton = document.getElementById('lang-toggle');
             const lightboxElement = document.getElementById('lightbox');
             const lightboxImg = document.getElementById('lightbox-img');
+            const lightboxContentElement = lightboxElement.querySelector('.lightbox-content');
             const galleryItems = document.querySelectorAll('.gallery-item');
             const signatureImage = document.getElementById('artist-signature-img');
             const signatureBaseSrcLt = "images/signaturelt.png";
             const signatureBaseSrcDt = "images/signaturedt.png";
-            const moreToComeElement = document.querySelector('.more-to-come');
 
-            // --- Translations ---
             const translations = {
-                en: {
-                    artistName: "Marius Jomphe - Photography",
-                    navImages: "Images",
-                    navTexts: "Texts",
-                    navAbout: "About",
-                    navAcquire: "Acquire",
-                    copyrightRights: "All Rights Reserved.",
-                    artistSignatureAlt: "Artist Signature",
-                    langToggleText: "🌐 Français",
-                    langToggleLabel: "Switch to French",
-                    themeToggleLightLabel: "Switch to Dark Mode",
-                    themeToggleDarkLabel: "Switch to Light Mode",
-                    themeTextLight: "🎨 Dark theme",
-                    themeTextDark: "🎨 Light theme",
-                    closeLightboxLabel: "Close lightbox",
-                    navToggleLabel: "Toggle navigation",
-                    moreToCome: "...more to come...",
-                },
-                fr: {
-                    artistName: "Marius Jomphe - Photographie",
-                    navImages: "Images",
-                    navTexts: "Textes",
-                    navAbout: "À Propos",
-                    navAcquire: "Acquérir",
-                    copyrightRights: "Tous Droits Réservés.",
-                    artistSignatureAlt: "Signature de l'artiste",
-                    langToggleText: "🌐 English",
-                    langToggleLabel: "Passer en Anglais",
-                    themeToggleLightLabel: "Passer en Mode Sombre",
-                    themeToggleDarkLabel: "Passer en Mode Clair",
-                    themeTextLight: "🎨 Thème sombre",
-                    themeTextDark: "🎨 Thème clair",
-                    closeLightboxLabel: "Fermer la visionneuse",
-                    navToggleLabel: "Basculer la navigation",
-                    moreToCome: "...plus à venir...",
-                }
+                en: { artistName: "Marius Jomphe - Photography", navImages: "Images", navTexts: "Texts", navAbout: "About", navAcquire: "Acquire", copyrightRights: "All Rights Reserved.", artistSignatureAlt: "Artist Signature", langToggleText: "🌐 Français", langToggleLabel: "Switch to French", themeToggleLightLabel: "Switch to Dark Mode", themeToggleDarkLabel: "Switch to Light Mode", themeTextLight: "🎨 Dark theme", themeTextDark: "🎨 Light theme", closeLightboxLabel: "Close lightbox", navToggleLabel: "Toggle navigation", moreToCome: "...more to come...", },
+                fr: { artistName: "Marius Jomphe - Photographie", navImages: "Images", navTexts: "Textes", navAbout: "À Propos", navAcquire: "Acquérir", copyrightRights: "Tous Droits Réservés.", artistSignatureAlt: "Signature de l'artiste", langToggleText: "🌐 English", langToggleLabel: "Passer en Anglais", themeToggleLightLabel: "Passer en Mode Sombre", themeToggleDarkLabel: "Passer en Mode Clair", themeTextLight: "🎨 Thème sombre", themeTextDark: "🎨 Thème clair", closeLightboxLabel: "Fermer la visionneuse", navToggleLabel: "Basculer la navigation", moreToCome: "...plus à venir...", }
             };
 
-            // --- First Visit Logic & Initialization ---
-            let initialTheme = 'light';
-            let initialLang = 'en';
-
-            if (localStorage.getItem('hasVisited')) {
-                initialTheme = localStorage.getItem('theme') ||
-                    (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-                initialLang = localStorage.getItem('language') || 'en';
-            } else {
-                localStorage.setItem('language', initialLang);
-                localStorage.setItem('theme', initialTheme);
+            let initialTheme = localStorage.getItem('theme') || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            let initialLang = localStorage.getItem('language') || 'en';
+            if (!localStorage.getItem('hasVisited')) {
+                localStorage.setItem('language', 'en'); initialLang = 'en';
+                localStorage.setItem('theme', 'light'); initialTheme = 'light';
                 localStorage.setItem('hasVisited', 'true');
             }
-
             let currentLang = initialLang;
 
             function applyTranslations() {
                 document.querySelectorAll('[data-lang-key]').forEach(el => {
                     const key = el.getAttribute('data-lang-key');
-                    if (translations[currentLang] && translations[currentLang][key]) {
-                        el.textContent = translations[currentLang][key];
-                    }
+                    if (translations[currentLang]?.[key]) el.textContent = translations[currentLang][key];
                 });
-
                 langToggleButton.textContent = translations[currentLang].langToggleText;
                 langToggleButton.setAttribute('aria-label', translations[currentLang].langToggleLabel);
-
                 const isDarkMode = body.classList.contains('dark-theme');
-                if (isDarkMode) {
-                    themeToggleButton.textContent = translations[currentLang].themeTextDark;
-                    themeToggleButton.setAttribute('aria-label', translations[currentLang].themeToggleDarkLabel);
-                } else {
-                    themeToggleButton.textContent = translations[currentLang].themeTextLight;
-                    themeToggleButton.setAttribute('aria-label', translations[currentLang].themeToggleLightLabel);
-                }
-
+                themeToggleButton.textContent = isDarkMode ? translations[currentLang].themeTextDark : translations[currentLang].themeTextLight;
+                themeToggleButton.setAttribute('aria-label', isDarkMode ? translations[currentLang].themeToggleDarkLabel : translations[currentLang].themeToggleLightLabel);
                 if (lightboxElement) lightboxElement.setAttribute('aria-label', translations[currentLang].closeLightboxLabel);
                 if (navToggle) navToggle.setAttribute('aria-label', translations[currentLang].navToggleLabel);
-
-                if (signatureImage && translations[currentLang] && translations[currentLang].artistSignatureAlt) {
-                    signatureImage.alt = translations[currentLang].artistSignatureAlt;
-                }
-
+                if (signatureImage) signatureImage.alt = translations[currentLang].artistSignatureAlt;
                 document.documentElement.lang = currentLang;
             }
 
-            // --- Theme Switcher ---
             function applyTheme(theme) {
-                if (theme === 'dark') {
-                    body.classList.add('dark-theme');
-                    if (signatureImage) signatureImage.src = signatureBaseSrcDt;
-                } else {
-                    body.classList.remove('dark-theme');
-                    if (signatureImage) signatureImage.src = signatureBaseSrcLt;
-                }
+                body.classList.toggle('dark-theme', theme === 'dark');
+                if (signatureImage) signatureImage.src = theme === 'dark' ? signatureBaseSrcDt : signatureBaseSrcLt;
                 localStorage.setItem('theme', theme);
-                applyTranslations(); 
+                applyTranslations();
             }
 
-            themeToggleButton.addEventListener('click', () => {
-                const newTheme = body.classList.contains('dark-theme') ? 'light' : 'dark';
-                applyTheme(newTheme);
-            });
-
+            themeToggleButton.addEventListener('click', () => applyTheme(body.classList.contains('dark-theme') ? 'light' : 'dark'));
             applyTheme(initialTheme);
 
-            // --- Language Switcher ---
             langToggleButton.addEventListener('click', () => {
                 currentLang = (currentLang === 'en') ? 'fr' : 'en';
                 localStorage.setItem('language', currentLang);
                 applyTranslations();
             });
 
-            // --- Mobile Navigation Toggle ---
             if (navToggle && mainNav) {
                 navToggle.addEventListener('click', () => {
                     const isActive = mainNav.classList.toggle('active');
                     navToggle.classList.toggle('active');
                     navToggle.setAttribute('aria-expanded', isActive);
                 });
-
                 mainNav.querySelectorAll('ul > li > a').forEach(link => {
                     link.addEventListener('click', (e) => {
                         if (mainNav.classList.contains('active') && !e.currentTarget.closest('.nav-item-control')) {
@@ -770,8 +478,31 @@
                 });
             }
 
-            // --- Lightbox Functionality ---
-            if (lightboxElement && lightboxImg) {
+            let lightboxScale = 1;
+            let lightboxTranslateX = 0;
+            let lightboxTranslateY = 0;
+            let isMobilePanning = false; // Renamed for clarity, only mobile uses this specific flag now
+            let mobilePanStartX, mobilePanStartY;
+            let initialPinchDistance = null;
+            let initialScaleOnPinch = 1;
+
+            function updateLightboxImageTransform() {
+                lightboxImg.style.transform = `translate(${lightboxTranslateX}px, ${lightboxTranslateY}px) scale(${lightboxScale})`;
+                lightboxImg.classList.toggle('zoomed-in', lightboxScale > 1);
+            }
+
+            function resetLightboxImageState() {
+                lightboxScale = 1;
+                lightboxTranslateX = 0;
+                lightboxTranslateY = 0;
+                updateLightboxImageTransform();
+                lightboxImg.style.transition = 'transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                lightboxImg.style.transformOrigin = 'center center';
+                initialPinchDistance = null;
+                isMobilePanning = false;
+            }
+
+            if (lightboxElement && lightboxImg && lightboxContentElement) {
                 galleryItems.forEach(item => {
                     item.addEventListener('click', () => {
                         const imgSrc = item.getAttribute('data-src');
@@ -779,34 +510,111 @@
                         if (imgSrc) {
                             lightboxImg.setAttribute('src', imgSrc);
                             lightboxImg.setAttribute('alt', imgAlt);
+                            resetLightboxImageState();
                             lightboxElement.classList.add('active');
                             document.body.style.overflow = 'hidden';
-
-                            lightboxImg.style.maxWidth = '100vw';
-                            lightboxImg.style.maxHeight = '100vh';
-                            lightboxImg.style.objectFit = 'contain';
-                            lightboxElement.style.padding = '0'; 
                         }
                     });
                 });
 
+                // MODIFIED: Click anywhere on lightbox closes it
                 lightboxElement.addEventListener('click', () => {
-                    lightboxElement.classList.remove('active');
-                    document.body.style.overflow = '';
+                    if (lightboxElement.classList.contains('active')) {
+                        lightboxElement.classList.remove('active');
+                        document.body.style.overflow = '';
+                        resetLightboxImageState();
+                    }
                 });
 
                 document.addEventListener('keydown', (e) => {
                     if (e.key === 'Escape' && lightboxElement.classList.contains('active')) {
                         lightboxElement.classList.remove('active');
                         document.body.style.overflow = '';
+                        resetLightboxImageState();
                     }
                 });
+
+                lightboxElement.addEventListener('wheel', function(event) {
+                    if (!lightboxElement.classList.contains('active') || !event.ctrlKey) return;
+                    
+                    event.preventDefault();
+                    const zoomIntensity = 0.1;
+                    let oldScale = lightboxScale;
+
+                    if (event.deltaY < 0) lightboxScale = Math.min(lightboxScale * (1 + zoomIntensity * 2), 5);
+                    else lightboxScale = Math.max(lightboxScale * (1 - zoomIntensity * 2), 0.5);
+
+                    if (lightboxScale <= 1.05 && oldScale > 1) {
+                        lightboxScale = 1; lightboxTranslateX = 0; lightboxTranslateY = 0;
+                    }
+                    lightboxImg.style.transformOrigin = 'center center'; // Keep zoom centered
+                    updateLightboxImageTransform();
+                }, { passive: false });
+
+                // Mobile Touch Pinch & Pan
+                lightboxContentElement.addEventListener('touchstart', function(event) {
+                    if (!lightboxElement.classList.contains('active')) return;
+                    
+                    const touches = event.touches;
+                    // Stop click propagation if touch is on image, to prevent immediate close on tap if not intended.
+                    // However, a tap should close, so we let the click event on lightboxElement handle it.
+                    // event.stopPropagation(); // Might be needed if tap-to-close is too sensitive
+
+                    if (touches.length === 1 && lightboxScale > 1) {
+                        event.preventDefault(); // Prevent page scroll
+                        isMobilePanning = true;
+                        mobilePanStartX = touches[0].clientX - lightboxTranslateX;
+                        mobilePanStartY = touches[0].clientY - lightboxTranslateY;
+                        lightboxImg.style.transition = 'none';
+                    } else if (touches.length === 2) {
+                        event.preventDefault(); // Prevent page pinch-zoom
+                        isMobilePanning = false;
+                        initialPinchDistance = getDistance(touches[0], touches[1]);
+                        initialScaleOnPinch = lightboxScale;
+                        lightboxImg.style.transition = 'none';
+                        const midpoint = getMidpoint(touches[0], touches[1]);
+                        const imgRect = lightboxImg.getBoundingClientRect();
+                        lightboxImg.style.transformOrigin = `${((midpoint.x - imgRect.left) / imgRect.width) * 100}% ${((midpoint.y - imgRect.top) / imgRect.height) * 100}%`;
+                    }
+                }, { passive: false });
+
+                lightboxContentElement.addEventListener('touchmove', function(event) {
+                    if (!lightboxElement.classList.contains('active')) return;
+
+                    const touches = event.touches;
+                    if (isMobilePanning && touches.length === 1) {
+                        event.preventDefault();
+                        lightboxTranslateX = touches[0].clientX - mobilePanStartX;
+                        lightboxTranslateY = touches[0].clientY - mobilePanStartY;
+                        updateLightboxImageTransform();
+                    } else if (touches.length === 2 && initialPinchDistance !== null) {
+                        event.preventDefault();
+                        const currentDistance = getDistance(touches[0], touches[1]);
+                        lightboxScale = Math.max(0.5, Math.min((currentDistance / initialPinchDistance) * initialScaleOnPinch, 5));
+                        updateLightboxImageTransform();
+                    }
+                }, { passive: false });
+
+                lightboxContentElement.addEventListener('touchend', function(event) {
+                    if (!lightboxElement.classList.contains('active')) return;
+                    
+                    lightboxImg.style.transition = 'transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                    if (isMobilePanning) isMobilePanning = false;
+                    if (event.touches.length < 2) {
+                        initialPinchDistance = null;
+                        lightboxImg.style.transformOrigin = 'center center';
+                    }
+                    if (lightboxScale <= 1.05 && (lightboxScale !== 1 || lightboxTranslateX !== 0 || lightboxTranslateY !== 0)) {
+                        resetLightboxImageState();
+                    }
+                });
+
+                function getDistance(t1, t2) { return Math.sqrt(Math.pow(t2.pageX - t1.pageX, 2) + Math.pow(t2.pageY - t1.pageY, 2)); }
+                function getMidpoint(t1, t2) { return { x: (t1.pageX + t2.pageX) / 2, y: (t1.pageY + t2.pageY) / 2 }; }
             }
 
-            // --- Update Copyright Year ---
             const currentYearSpan = document.getElementById('current-year');
             if (currentYearSpan) currentYearSpan.textContent = new Date().getFullYear();
-
             applyTranslations();
         });
     </script>
