@@ -234,6 +234,7 @@
             opacity: 0;
             transition: opacity 0.4s ease, background-color 0.3s ease;
             padding: 0; /* Remove padding */
+            cursor: pointer; /* Indicate it's clickable for closing */
         }
 
         .lightbox.active {
@@ -249,6 +250,7 @@
             justify-content: center;
             align-items: center;
             height: 100%; /* Ensure full height */
+            cursor: default; /* Prevent double cursor changes if image is smaller than lightbox */
         }
 
         .lightbox-content img {
@@ -258,9 +260,10 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             border: none; /* Removed border */
             border-radius: 0; /* Removed border radius */
+            cursor: pointer; /* Ensure image itself can be part of the close click area */
         }
 
-        .lightbox-close {
+        .lightbox-close { /* This remains unused as per current design, but kept for potential future use */
             display: none;
         }
 
@@ -780,12 +783,19 @@
                     });
                 });
 
-                lightboxElement.addEventListener('click', (e) => {
-                    if (e.target === lightboxElement) {
-                        lightboxElement.classList.remove('active');
-                        document.body.style.overflow = '';
-                    }
+                // MODIFIED: Click anywhere on the lightbox (overlay or image) to close
+                lightboxElement.addEventListener('click', () => {
+                    lightboxElement.classList.remove('active');
+                    document.body.style.overflow = '';
                 });
+
+                // Prevent clicks on the image content from bubbling up if you want specific behavior for image vs background.
+                // For "click anywhere to close", the above is sufficient.
+                // If you wanted actions ON the image that DON'T close, you'd need e.stopPropagation() here.
+                // lightboxImg.addEventListener('click', (e) => {
+                //     e.stopPropagation(); // Example: if clicking image did something else
+                // });
+
 
                 document.addEventListener('keydown', (e) => {
                     if (e.key === 'Escape' && lightboxElement.classList.contains('active')) {
@@ -799,7 +809,7 @@
             const currentYearSpan = document.getElementById('current-year');
             if (currentYearSpan) currentYearSpan.textContent = new Date().getFullYear();
 
-            // Apply initial translationss
+            // Apply initial translations
             applyTranslations();
         });
     </script>
