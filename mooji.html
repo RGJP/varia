@@ -39,7 +39,7 @@
             <div id="statusContainer" class="text-center text-gray-600 mb-4 space-y-2">
                 <div id="statusMessage"></div>
                 <div id="progressCounter" class="hidden">
-                    <p>Found <span id="longVideoCount" class="font-bold text-blue-600">0</span> videos (1h+) so far...</p>
+                    <p>Found <span id="longVideoCount" class="font-bold text-blue-600">0</span> videos so far...</p>
                 </div>
             </div>
             <div id="videoList" class="space-y-6">
@@ -166,7 +166,7 @@
                 return;
             }
 
-            updateStatus(`Displaying ${videos.length} 1H+ videos, sorted by newest first.`, false);
+            updateStatus(`Found ${videos.length} 1H+ videos, newest first ⬇️.`, false);
             const videoElements = videos.map(video => {
                 const videoUrl = `https://www.youtube.com/watch?v=${video.id}`;
                 const title = video.snippet.title;
