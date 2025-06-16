@@ -166,7 +166,7 @@
                 return;
             }
 
-            updateStatus(`Found ${videos.length} 1H+ videos, newest first ⬇️.`, false);
+            updateStatus(`Found ${videos.length} 1H+ videos, newest first ⬇️`, false);
             const videoElements = videos.map(video => {
                 const videoUrl = `https://www.youtube.com/watch?v=${video.id}`;
                 const title = video.snippet.title;
