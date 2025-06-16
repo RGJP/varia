@@ -36,6 +36,7 @@
         </header>
 
         <main id="content">
+            <!-- Container for status messages during initial load -->
             <div id="statusContainer" class="text-center text-gray-600 mb-4 space-y-2">
                 <div id="statusMessage"></div>
                 <div id="progressCounter" class="hidden">
@@ -43,17 +44,21 @@
                 </div>
             </div>
             
-            <!-- FIX: Sort buttons moved outside of statusContainer to prevent them from being hidden when the status message is cleared. -->
-            <div id="sortButtons" class="hidden flex justify-center space-x-4 mb-8">
-                <button id="sortOldest" class="px-5 py-2 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 shadow-md">
-                    Oldest First
-                </button>
-                <button id="sortNewest" class="px-5 py-2 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 shadow-md">
-                    Newest First
-                </button>
+            <!-- NEW: Container for final count and sort buttons. Hidden by default. -->
+            <div id="controlsContainer" class="hidden text-center mb-8">
+                <p id="finalCountMessage" class="text-lg text-gray-700 mb-4"></p>
+                <div id="sortButtons" class="flex justify-center space-x-4">
+                    <button id="sortOldest" class="px-5 py-2 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 shadow-md">
+                        Oldest First
+                    </button>
+                    <button id="sortNewest" class="px-5 py-2 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors duration-200 shadow-md">
+                        Newest First
+                    </button>
+                </div>
             </div>
 
             <div id="videoList" class="space-y-6">
+                <!-- Video items will be inserted here -->
             </div>
         </main>
     </div>
@@ -62,7 +67,7 @@
         // --- CONFIGURATION ---
         // IMPORTANT: Replace with your own valid YouTube Data API v3 key.
         // It's highly recommended to restrict your API key to your website's domain for security.
-        const API_KEY = 'AIzaSyCpCmU4Omt3WBPYw_pwoTPTj9vntgH_Sk4'; // Your unrestricted API key
+        const API_KEY = 'AIzaSyCpCmU4Omt3WBPYw_pwoTPTj9vntgH_Sk4'; // ENTER YOUR YOUTUBE API KEY HERE
         const CHANNEL_ID = 'UCpw2gh99XM6Mwsbksv0feEg';
         const UPLOADS_PLAYLIST_ID = CHANNEL_ID.replace(/^UC/, 'UU');
         const YOUTUBE_API_BASE_URL = 'https://www.googleapis.com/youtube/v3';
@@ -75,7 +80,10 @@
         const statusMessage = document.getElementById('statusMessage');
         const progressCounter = document.getElementById('progressCounter');
         const longVideoCountSpan = document.getElementById('longVideoCount');
-        const sortButtonsContainer = document.getElementById('sortButtons');
+        
+        // NEW: References for the new controls container
+        const controlsContainer = document.getElementById('controlsContainer');
+        const finalCountMessage = document.getElementById('finalCountMessage');
         const sortOldestButton = document.getElementById('sortOldest');
         const sortNewestButton = document.getElementById('sortNewest');
 
@@ -88,9 +96,14 @@
          * Initiates the video fetching and processing pipeline.
          */
         async function loadVideos() {
+            if (!API_KEY) {
+                updateStatus('<strong>API Key is missing.</strong> Please add your YouTube Data API v3 key to the script.', true);
+                return;
+            }
+
             videoListContainer.innerHTML = '';
             updateStatus('<div>Fetching video list...</div><div class="spinner mx-auto mt-4"></div>', false);
-            sortButtonsContainer.classList.add('hidden'); // Hide sort buttons initially
+            controlsContainer.classList.add('hidden'); // Hide controls initially
 
             try {
                 const videoIds = await fetchAllVideoIds(API_KEY, UPLOADS_PLAYLIST_ID);
@@ -106,21 +119,24 @@
 
                 allLongVideos = await fetchAndProcessVideoDetails(videoIds, API_KEY);
                 
-                // Default sort: Newest first
-                sortVideos('newest'); 
-
-                updateStatus('', false); // Clear status message, which now only hides statusContainer
+                // Hide loading indicators
+                updateStatus('', false); 
                 progressCounter.classList.add('hidden');
                 
-                // Show sort buttons only if there are videos to sort
+                // Show sort buttons and final count only if there are videos to display
                 if (allLongVideos.length > 0) {
-                    sortButtonsContainer.classList.remove('hidden'); 
+                    finalCountMessage.textContent = `Found ${allLongVideos.length} videos over 1 hour.`;
+                    controlsContainer.classList.remove('hidden'); 
+                    sortVideos('newest'); // Default sort: Newest first
+                } else {
+                    // If no long videos are found, display a message in the main list area
+                    displayVideos([]);
                 }
                 
             } catch (error) {
                 console.error('Error fetching videos:', error);
                 progressCounter.classList.add('hidden');
-                sortButtonsContainer.classList.add('hidden');
+                controlsContainer.classList.add('hidden');
                 let friendlyMessage = `Error: ${error.message}.`;
                 if (error.message.includes('API key not valid')) {
                     friendlyMessage += ' Please check that the API key is valid and that its restrictions are configured correctly.';
@@ -188,7 +204,7 @@
          * @param {string} order - 'oldest' for oldest first, 'newest' for newest first.
          */
         function sortVideos(order) {
-            let sortedVideos = [...allLongVideos]; // Create a copy to avoid mutating the original array directly
+            let sortedVideos = [...allLongVideos]; 
 
             if (order === 'oldest') {
                 sortedVideos.sort((a, b) => new Date(a.snippet.publishedAt) - new Date(b.snippet.publishedAt));
@@ -205,7 +221,8 @@
             videoListContainer.innerHTML = ''; // Clear previous list
 
             if (videos.length === 0) {
-                updateStatus('Found 0 videos with a duration of 1 hour or more.', false);
+                // Now uses the main list container for the final "not found" message
+                videoListContainer.innerHTML = `<p class="text-center text-gray-600 p-4">Found 0 videos with a duration of 1 hour or more.</p>`;
                 return;
             }
 
@@ -219,7 +236,7 @@
                 return `
                     <a href="${videoUrl}" target="_blank" rel="noopener noreferrer" class="block bg-white p-5 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-200 ease-in-out">
                         <div class="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-4">
-                            <img src="${thumbnailUrl}" alt="Video Thumbnail" class="w-full md:w-48 h-auto rounded-md object-cover">
+                            <img src="${thumbnailUrl}" alt="Video Thumbnail" class="w-full md:w-48 h-auto rounded-md object-cover" onerror="this.onerror=null;this.src='https://placehold.co/192x108/e2e8f0/334155?text=Thumbnail';">
                             <div class="flex-grow">
                                 <h3 class="text-lg font-semibold text-blue-700 hover:underline">${title}</h3>
                                 <div class="flex justify-between items-center mt-2 text-sm text-gray-500">
@@ -271,8 +288,6 @@
         function updateStatus(message, isError) {
             statusMessage.innerHTML = message;
             statusMessage.className = `p-4 rounded-md ${isError ? 'text-red-700 bg-red-100' : 'text-gray-600'}`;
-            // Ensure status container is visible if there's a message, hidden otherwise
-            // This now correctly only affects the status message and progress counter container
             statusMessage.parentElement.style.display = message ? 'block' : 'none';
         }
     </script>
