@@ -83,10 +83,28 @@
         .send-button:hover:not(:disabled) { transform: translateY(-2px) scale(1.05); box-shadow: 0 12px 40px rgba(99, 102, 241, 0.4); }
         .send-button:active:not(:disabled) { transform: translateY(0) scale(1); }
         .send-button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .send-button .send-icon { transition: opacity 0.2s ease; }
-        .send-button .loader { display: none; }
-        .send-button.loading .send-icon { opacity: 0; }
-        .send-button.loading .loader { display: block; width: 24px; height: 24px; border: 3px solid rgba(255, 255, 255, 0.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; }
+        
+        /* --- CORRECTED SPINNER STYLES --- */
+        .send-button .send-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .send-button .loader {
+            display: none;
+        }
+        .send-button.loading .send-icon {
+            display: none; /* This is the fix: removes icon from layout */
+        }
+        .send-button.loading .loader {
+            display: block; /* Shows the loader */
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
         @keyframes spin { to { transform: rotate(360deg); } }
         
         /* --- Status Bar --- */
@@ -229,7 +247,7 @@
         class LLMChat {
             // Private fields for better encapsulation
             #config = {
-                apiUrl: 'https://83d9-174-88-255-123.ngrok-free.app/v1/chat/completions',
+                apiUrl: 'https://shiny-hats-raise.loca.lt/v1/chat/completions',
                 model: 'tinyllama-1.1b-chat-v1.0',
                 bearerToken: 'lm-studio',
                 systemPrompt: 'You are a professional, helpful assistant.'
