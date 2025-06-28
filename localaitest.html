@@ -269,6 +269,7 @@
             #elements = {};
             #isStreaming = false;
             #messages = [];
+            #wakeLock = null;
 
             constructor() {
                 this.#initializeElements();
@@ -304,6 +305,9 @@
                     this.#updateTokenCount();
                     this.#autoResizeTextarea();
                 });
+
+                // Handle visibility change for Wake Lock
+                document.addEventListener('visibilitychange', () => this.#handleVisibilityChange());
                 
                 // Use event delegation for dynamically added elements
                 this.#elements.outputArea.addEventListener('click', (e) => {
@@ -379,6 +383,8 @@
                 this.#toggleLoading(true);
                 this.#updateStatus('Sending...', 'processing');
 
+                await this.#requestWakeLock();
+
                 this.#addMessage(prompt, 'user');
                 this.#messages.push({ role: 'user', content: prompt });
 
@@ -447,6 +453,7 @@
                     this.#updateStatus('Error', 'error');
                 } finally {
                     this.#toggleLoading(false);
+                    await this.#releaseWakeLock();
                 }
             }
             
@@ -543,6 +550,44 @@
                         button.classList.remove('copied');
                     }, 2000);
                 });
+            }
+
+            async #requestWakeLock() {
+                if ('wakeLock' in navigator) {
+                    try {
+                        this.#wakeLock = await navigator.wakeLock.request('screen');
+                        console.log('Screen Wake Lock is active.');
+                        this.#wakeLock.addEventListener('release', () => {
+                            console.log('Screen Wake Lock was released by the system.');
+                            this.#wakeLock = null;
+                        });
+                    } catch (err) {
+                        this.#wakeLock = null;
+                        console.error(`Failed to acquire screen wake lock: ${err.name}, ${err.message}`);
+                    }
+                } else {
+                    console.warn('Screen Wake Lock API not supported in this browser.');
+                }
+            }
+
+            async #releaseWakeLock() {
+                if (this.#wakeLock !== null) {
+                    try {
+                        await this.#wakeLock.release();
+                        this.#wakeLock = null;
+                        console.log('Screen Wake Lock released programmatically.');
+                    } catch (err) {
+                        console.error(`Failed to release screen wake lock: ${err.name}, ${err.message}`);
+                        this.#wakeLock = null;
+                    }
+                }
+            }
+
+            async #handleVisibilityChange() {
+                if (document.visibilityState === 'visible' && this.#isStreaming && !this.#wakeLock) {
+                    console.log('Page became visible during streaming, re-acquiring wake lock.');
+                    await this.#requestWakeLock();
+                }
             }
         }
     </script>
