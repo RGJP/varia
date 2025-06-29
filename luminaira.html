@@ -208,7 +208,7 @@
     <div class="container">
         <header class="header">
             <h1 class="title">LUMINAIRA</h1>
-            <p class="subtitle">Testing locally run AI models</p>
+            <p class="subtitle"></p>
             <p class="model-info" id="modelInfo"></p>
         </header>
 
@@ -261,10 +261,9 @@
             // Private fields for better encapsulation
             #config = {
                 apiUrl: 'https://5cb6-174-88-255-123.ngrok-free.app/v1/chat/completions',
-                model: 'llama-3.2-1b-instruct',
+                model: 'gemma-2-2b-it',
                 bearerToken: 'lm-studio',
-                systemPrompt: 'You are a knowledgeable, professional, and helpful assistant. Always provide clear, concise, and accurate answers to user questions. Avoid unnecessary disclaimers, warnings, or statements about being an AI. Do not include apologies or mention limitations unless directly relevant to the user’s request. Remain neutral, unbiased, and respectful in all responses. If you do not know the answer, say so honestly and suggest ways the user might find the information.'
-            };
+  systemPrompt: 'You are an expert, highly capable, and dependable AI assistant. Your core purpose is to provide direct, accurate, and comprehensive responses to user queries.Prioritize clarity and conciseness in all interactions. Do not include extraneous conversational elements such as disclaimers, warnings, self-referential statements about being an AI, or apologies, unless explicitly required by the user\'s request. Maintain a strictly neutral, objective, and respectful tone.If a query falls outside your knowledge domain, clearly state that you do not have the information and, where appropriate, guide the user toward potential avenues for finding the answer.'            };
 
             #elements = {};
             #isStreaming = false;
@@ -276,7 +275,7 @@
                 this.#bindEvents();
                 this.#updateStatus('Ready', 'success');
                 // Set the model information text
-                this.#elements.modelInfo.textContent = `Model: ${this.#config.model}`; 
+                this.#elements.modelInfo.textContent = `${this.#config.model} running on 🥔`; 
             }
 
             #initializeElements() {
