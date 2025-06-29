@@ -31,17 +31,16 @@
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, var(--bg-dark) 0%, #16213e 100%);
-            background-attachment: fixed; /* <-- THE FIX IS HERE */
+            background-attachment: fixed;
             color: var(--text-primary);
             min-height: 100vh;
-            /* Use -webkit-fill-available for Safari compatibility */
             min-height: -webkit-fill-available;
             overflow-x: hidden;
         }
 
         /* --- Background Animation --- */
         .background-animation { 
-            position: fixed; /* Reverted back to fixed as intended */
+            position: fixed;
             top: 0; 
             left: 0; 
             width: 100%; 
@@ -58,7 +57,17 @@
         /* --- Layout & Main Components --- */
         .container { max-width: 800px; margin: 0 auto; padding: 1rem; position: relative; z-index: 1; display: flex; flex-direction: column; height: 100vh; height: -webkit-fill-available; }
         .header { text-align: center; margin-bottom: 1rem; flex-shrink: 0; }
-        .title { font-size: clamp(2rem, 5vw, 2.5rem); font-weight: 800; background: linear-gradient(135deg, var(--primary-light), var(--primary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.25rem; animation: glow 2s ease-in-out infinite alternate; }
+        .title { 
+            font-size: clamp(2rem, 5vw, 2.5rem); 
+            font-weight: 800; 
+            background: linear-gradient(135deg, var(--primary-light), var(--primary)); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            background-clip: text; 
+            margin-bottom: 0.25rem; 
+            animation: glow 2s ease-in-out infinite alternate; 
+            cursor: pointer;
+        }
         @keyframes glow { from { filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.3)); } to { filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.6)); } }
         .subtitle { font-size: 1rem; color: var(--text-secondary); font-weight: 300; }
         .model-info { font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem; }
@@ -97,17 +106,9 @@
         .send-button:disabled { opacity: 0.6; cursor: not-allowed; }
         
         /* --- CORRECTED SPINNER STYLES --- */
-        .send-button .send-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .send-button .loader {
-            display: none;
-        }
-        .send-button.loading .send-icon {
-            display: none;
-        }
+        .send-button .send-icon { display: flex; align-items: center; justify-content: center; }
+        .send-button .loader { display: none; }
+        .send-button.loading .send-icon { display: none; }
         .send-button.loading .loader {
             display: block;
             width: 24px;
@@ -125,7 +126,7 @@
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s ease-in-out infinite; }
         .status-dot.error { background: #ef4444; }
         .status-dot.processing { background: #f59e0b; }
-        .response-time { margin-left: 0.5rem; } /* <-- ADDED STYLE */
+        .response-time { margin-left: 0.5rem; }
         
         /* --- Empty State & Prompt Suggestions --- */
         .empty-state { text-align: center; padding: 2rem 1rem; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
@@ -155,48 +156,68 @@
 
         /* --- Desktop-Specific Adjustments --- */
         @media (min-width: 769px) {
-            .container {
-                padding: 2rem;
-            }
-            .header {
-                margin-bottom: 2rem;
-            }
-            .title {
-                font-size: 3.5rem;
-            }
-            .subtitle {
-                font-size: 1.1rem;
-            }
-            .output-area {
-                padding: 2rem;
-            }
-            .message-avatar {
-                width: 40px;
-                height: 40px;
-                font-size: 1.2rem;
-            }
-            .message-content {
-                padding: 1rem 1.5rem;
-            }
-            .input-section {
-                padding: 1.5rem;
-            }
-            .input-container {
-                gap: 1rem;
-            }
-            .prompt-input {
-                padding: 1rem 1.5rem;
-                max-height: 200px;
-            }
-            .send-button {
-                width: 52px;
-                height: 52px;
-            }
-            .status-bar {
-                padding: 0.75rem 1.5rem;
-                font-size: 0.875rem;
-            }
+            .container { padding: 2rem; }
+            .header { margin-bottom: 2rem; }
+            .title { font-size: 3.5rem; }
+            .subtitle { font-size: 1.1rem; }
+            .output-area { padding: 2rem; }
+            .message-avatar { width: 40px; height: 40px; font-size: 1.2rem; }
+            .message-content { padding: 1rem 1.5rem; }
+            .input-section { padding: 1.5rem; }
+            .input-container { gap: 1rem; }
+            .prompt-input { padding: 1rem 1.5rem; max-height: 200px; }
+            .send-button { width: 52px; height: 52px; }
+            .status-bar { padding: 0.75rem 1.5rem; font-size: 0.875rem; }
         }
+
+        /* --- Overlay Styles --- */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            cursor: pointer;
+            visibility: hidden;
+            opacity: 0;
+            transition: visibility 0s 0.3s, opacity 0.3s ease;
+        }
+
+        .overlay.visible {
+            visibility: visible;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        .overlay-content {
+            background-color: var(--bg-card);
+            padding: 2rem;
+            border-radius: 16px;
+            max-width: 600px;
+            text-align: center;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            cursor: default; /* So it doesn't look like the text itself is a button */
+        }
+        
+        .overlay-content #dynamicModelName {
+            color: var(--primary-light);
+            font-weight: 500;
+        }
+
+        .overlay.visible .overlay-content {
+            transform: scale(1);
+        }
+
     </style>
 </head>
 <body>
@@ -206,9 +227,15 @@
         <div class="floating-orb"></div>
     </div>
 
+    <div id="overlay" class="overlay">
+        <div class="overlay-content">
+            <p>This is a small personal side project featuring the <span id="dynamicModelName"></span> LLM, running entirely locally in LM Studio on an old 2013 Dell Latitude E6440 (i5-4310M, 8 GB DDR3 SDRAM), which is available for interaction via this webpage.</p>
+        </div>
+    </div>
+
     <div class="container">
         <header class="header">
-            <h1 class="title">LUMINAIRA</h1>
+            <h1 class="title" id="clickableTitle">LUMINAIRA</h1>
             <p class="subtitle"></p>
             <p class="model-info" id="modelInfo"></p>
         </header>
@@ -220,7 +247,7 @@
                     <h2>Start a new conversation</h2>
                     <p>What can I help you with today?</p>
                     <div class="prompt-suggestions" id="promptSuggestions">
-                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -250,13 +277,33 @@
                     <span id="responseTime" class="response-time"></span>
                 </div>
                 <div id="tokenCount">0 tokens</div>
-            </footer>
+             </footer>
         </main>
     </div>
     
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            new LLMChat();
+            const chat = new LLMChat();
+            const modelName = chat.getModelName();
+
+            const clickableTitle = document.getElementById('clickableTitle');
+            const overlay = document.getElementById('overlay');
+            const dynamicModelNameSpan = document.getElementById('dynamicModelName');
+
+            // Dynamically set the model name in the overlay text
+            if (dynamicModelNameSpan) {
+                dynamicModelNameSpan.textContent = modelName;
+            }
+
+            clickableTitle.addEventListener('click', () => {
+                overlay.classList.add('visible');
+            });
+
+            // --- THIS IS THE CORRECTED PART ---
+            // A click anywhere on the overlay (background or content) will close it.
+            overlay.addEventListener('click', () => {
+                overlay.classList.remove('visible');
+            });
         });
 
         class LLMChat {
@@ -277,8 +324,10 @@
                 this.#initializeElements();
                 this.#bindEvents();
                 this.#updateStatus('Ready', 'success');
-                // Set the model information text
-                this.#elements.modelInfo.textContent = `${this.#config.model} running on a potato`; 
+            }
+            
+            getModelName() {
+                return this.#config.model;
             }
 
             #initializeElements() {
@@ -292,7 +341,6 @@
                     emptyState: document.getElementById('emptyState'),
                     promptSuggestions: document.getElementById('promptSuggestions'),
                     modelInfo: document.getElementById('modelInfo'),
-                    // MODIFIED: Added responseTime element
                     responseTime: document.getElementById('responseTime')
                 };
             }
@@ -310,10 +358,8 @@
                     this.#autoResizeTextarea();
                 });
 
-                // Handle visibility change for Wake Lock
                 document.addEventListener('visibilitychange', () => this.#handleVisibilityChange());
                 
-                // Use event delegation for dynamically added elements
                 this.#elements.outputArea.addEventListener('click', (e) => {
                     if (e.target.matches('.copy-btn')) {
                         this.#handleCopyClick(e.target);
@@ -384,11 +430,10 @@
                 const prompt = this.#elements.promptInput.value.trim();
                 if (!prompt || this.#isStreaming) return;
 
-                // MODIFIED: Added start timer
                 let startTime; 
                 this.#toggleLoading(true);
                 this.#updateStatus('Sending...', 'processing');
-                this.#elements.responseTime.textContent = ''; // Clear previous time
+                this.#elements.responseTime.textContent = '';
 
                 await this.#requestWakeLock();
 
@@ -400,7 +445,6 @@
                 this.#updateTokenCount();
 
                 try {
-                    // MODIFIED: Record start time before fetch
                     startTime = performance.now(); 
 
                     const response = await fetch(this.#config.apiUrl, {
@@ -454,7 +498,6 @@
                         }
                     }
 
-                    // MODIFIED: Calculate and display duration
                     const endTime = performance.now();
                     const duration = ((endTime - startTime) / 1000).toFixed(2);
                     this.#elements.responseTime.textContent = `(response took ${duration}s)`;
@@ -467,7 +510,7 @@
                     console.error('Error:', error);
                     this.#addMessage(`**Error:**\n\`\`\`\n${error.message}\n\`\`\``, 'ai');
                     this.#updateStatus('Error', 'error');
-                    this.#elements.responseTime.textContent = ''; // Clear time on error
+                    this.#elements.responseTime.textContent = '';
                 } finally {
                     this.#toggleLoading(false);
                     await this.#releaseWakeLock();
@@ -487,7 +530,6 @@
                     .replace(/>/g, '&gt;')
                     .trim();
 
-                // Code blocks (```lang\ncode\n```)
                 html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
                     const language = lang || 'plaintext';
                     const escapedCode = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -496,34 +538,27 @@
                     `;
                 });
 
-                // Process remaining text line by line for lists and paragraphs
                 const lines = html.split('\n');
-                let inList = null; // 'ul' or 'ol'
+                let inList = null;
                 let processedHtml = '';
 
                 for(let i = 0; i < lines.length; i++) {
                     let line = lines[i];
 
                     if (line.startsWith('<pre>')) {
-                        // If we are in a code block, just append it and continue
                         const preEnd = html.indexOf('</pre>', html.indexOf(line));
                         const block = html.substring(html.indexOf(line), preEnd + 6);
                         processedHtml += block;
-                        // Skip lines that are part of the code block
                         const lineCount = block.split('\n').length;
                         i += lineCount - 1;
-                        inList = null; // Exit list state
+                        inList = null;
                         continue;
                     }
 
-                    // Bold and Italics
                     line = line.replace(/\*\*([^\*]+)\*\*|__([^__]+)__/g, '<strong>$1$2</strong>');
                     line = line.replace(/\*([^\*]+)\*|_([^_]+)_/g, '<em>$1$2</em>');
-
-                    // Inline code
                     line = line.replace(/`([^`]+)`/g, '<code>$1</code>');
                     
-                    // Unordered lists
                     if (/^\s*[\-\*]\s/.test(line)) {
                         if (inList !== 'ul') {
                             processedHtml += (inList ? `</${inList}>` : '') + '<ul>';
@@ -531,7 +566,6 @@
                         }
                         processedHtml += `<li>${line.replace(/^\s*[\-\*]\s/, '')}</li>`;
                     } 
-                    // Ordered lists
                     else if (/^\s*\d\.\s/.test(line)) {
                         if (inList !== 'ol') {
                             processedHtml += (inList ? `</${inList}>` : '') + '<ol>';
@@ -539,7 +573,6 @@
                         }
                         processedHtml += `<li>${line.replace(/^\s*\d\.\s/, '')}</li>`;
                     } 
-                    // Paragraphs
                     else {
                         if (inList) {
                             processedHtml += `</${inList}>`;
