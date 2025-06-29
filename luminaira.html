@@ -125,6 +125,7 @@
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s ease-in-out infinite; }
         .status-dot.error { background: #ef4444; }
         .status-dot.processing { background: #f59e0b; }
+        .response-time { margin-left: 0.5rem; } /* <-- ADDED STYLE */
         
         /* --- Empty State & Prompt Suggestions --- */
         .empty-state { text-align: center; padding: 2rem 1rem; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
@@ -246,6 +247,7 @@
                 <div class="status-indicator">
                     <div class="status-dot" id="statusDot"></div>
                     <span id="statusText">Ready</span>
+                    <span id="responseTime" class="response-time"></span>
                 </div>
                 <div id="tokenCount">0 tokens</div>
             </footer>
@@ -261,9 +263,10 @@
             // Private fields for better encapsulation
             #config = {
                 apiUrl: 'https://5cb6-174-88-255-123.ngrok-free.app/v1/chat/completions',
-                model: 'gemma-2-2b-it',
+                model: 'gemma-2-2b-it@q4_k_m',
                 bearerToken: 'lm-studio',
-  systemPrompt: 'You are an expert, highly capable, and dependable AI assistant. Your core purpose is to provide direct, accurate, and comprehensive responses to user queries.Prioritize clarity and conciseness in all interactions. Do not include extraneous conversational elements such as disclaimers, warnings, self-referential statements about being an AI, or apologies, unless explicitly required by the user\'s request. Maintain a strictly neutral, objective, and respectful tone.If a query falls outside your knowledge domain, clearly state that you do not have the information and, where appropriate, guide the user toward potential avenues for finding the answer.'            };
+                systemPrompt: 'You are an expert, highly capable, and dependable AI assistant. Your core purpose is to provide direct, accurate, and comprehensive responses to user queries.Prioritize clarity and conciseness in all interactions. Do not include extraneous conversational elements such as disclaimers, warnings, self-referential statements about being an AI, or apologies, unless explicitly required by the user\'s request. Maintain a strictly neutral, objective, and respectful tone.If a query falls outside your knowledge domain, clearly state that you do not have the information and, where appropriate, guide the user toward potential avenues for finding the answer.'
+            };
 
             #elements = {};
             #isStreaming = false;
@@ -288,7 +291,9 @@
                     tokenCount: document.getElementById('tokenCount'),
                     emptyState: document.getElementById('emptyState'),
                     promptSuggestions: document.getElementById('promptSuggestions'),
-                    modelInfo: document.getElementById('modelInfo')
+                    modelInfo: document.getElementById('modelInfo'),
+                    // MODIFIED: Added responseTime element
+                    responseTime: document.getElementById('responseTime')
                 };
             }
 
@@ -379,8 +384,11 @@
                 const prompt = this.#elements.promptInput.value.trim();
                 if (!prompt || this.#isStreaming) return;
 
+                // MODIFIED: Added start timer
+                let startTime; 
                 this.#toggleLoading(true);
                 this.#updateStatus('Sending...', 'processing');
+                this.#elements.responseTime.textContent = ''; // Clear previous time
 
                 await this.#requestWakeLock();
 
@@ -392,6 +400,9 @@
                 this.#updateTokenCount();
 
                 try {
+                    // MODIFIED: Record start time before fetch
+                    startTime = performance.now(); 
+
                     const response = await fetch(this.#config.apiUrl, {
                         method: 'POST',
                         headers: {
@@ -442,6 +453,11 @@
                         }
                     }
 
+                    // MODIFIED: Calculate and display duration
+                    const endTime = performance.now();
+                    const duration = ((endTime - startTime) / 1000).toFixed(2);
+                    this.#elements.responseTime.textContent = `(response took ${duration}s)`;
+
                     this.#updateStreamingMessage(aiMessageWrapper, fullResponse, true);
                     this.#messages.push({ role: 'assistant', content: fullResponse });
                     this.#updateStatus('Ready', 'success');
@@ -450,6 +466,7 @@
                     console.error('Error:', error);
                     this.#addMessage(`**Error:**\n\`\`\`\n${error.message}\n\`\`\``, 'ai');
                     this.#updateStatus('Error', 'error');
+                    this.#elements.responseTime.textContent = ''; // Clear time on error
                 } finally {
                     this.#toggleLoading(false);
                     await this.#releaseWakeLock();
