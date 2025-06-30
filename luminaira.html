@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>LUMINAIRA</title>
     <link rel="icon" href="luminairaicon.png" type="image/png">
-<link rel="apple-touch-icon" href="luminairaicon.png">
+    <link rel="apple-touch-icon" href="luminairaicon.png">
     <meta name="theme-color" content="#0f0f23">
     <meta name="color-scheme" content="dark">
 
@@ -421,14 +421,15 @@
             #elements = {};
             #isStreaming = false;
             #messages = [];
-            #wakeLock = null; // WakeLock sentinel
             #abortController = null;
+            
+            // --- Wake Lock ---
+            #wakeLock = null;
 
             constructor() {
                 this.#initializeElements();
                 this.#bindEvents();
                 this.#updateStatus('Ready', 'success');
-                this.#acquireAndMaintainWakeLock(); // Acquire the lock as soon as the app starts
             }
 
             getModelName() {
@@ -506,6 +507,13 @@
                 this.#elements.cancelConfirmationOverlay.addEventListener('click', (e) => {
                     if (e.target === this.#elements.cancelConfirmationOverlay) {
                         this.#elements.cancelConfirmationOverlay.classList.remove('visible');
+                    }
+                });
+
+                // Re-acquire wake lock if tab becomes visible again
+                document.addEventListener('visibilitychange', () => {
+                    if (this.#wakeLock !== null && document.visibilityState === 'visible') {
+                        this.#requestWakeLock();
                     }
                 });
             }
@@ -590,6 +598,7 @@
                 let startTime;
 
                 this.#toggleLoading(true);
+                this.#requestWakeLock(); // --- Acquire Wake Lock ---
                 this.#updateStatus('Sending...', 'processing');
                 this.#elements.responseTime.textContent = '';
 
@@ -679,6 +688,7 @@
                     }
                 } finally {
                     this.#toggleLoading(false);
+                    this.#releaseWakeLock(); // --- Release Wake Lock ---
                     this.#abortController = null;
                 }
             }
@@ -687,6 +697,32 @@
                 this.#isStreaming = isLoading;
                 this.#elements.promptInput.disabled = isLoading;
                 this.#elements.sendButton.classList.toggle('loading', isLoading);
+            }
+            
+            // --- Screen Wake Lock API Implementation ---
+
+            async #requestWakeLock() {
+              if ('wakeLock' in navigator) {
+                try {
+                  this.#wakeLock = await navigator.wakeLock.request('screen');
+                  this.#wakeLock.addEventListener('release', () => {
+                    console.log('Screen Wake Lock released automatically.');
+                  });
+                  console.log('Screen Wake Lock acquired.');
+                } catch (err) {
+                  console.error(`Failed to acquire Wake Lock: ${err.name}, ${err.message}`);
+                }
+              } else {
+                console.warn('Wake Lock API not supported.');
+              }
+            }
+
+            #releaseWakeLock() {
+              if (this.#wakeLock !== null) {
+                this.#wakeLock.release();
+                this.#wakeLock = null;
+                console.log('Screen Wake Lock released.');
+              }
             }
 
             #renderMarkdown(text) {
@@ -789,34 +825,6 @@
                         button.classList.remove('copied');
                     }, 2000);
                 });
-            }
-
-            /**
-             * [REWORKED] This function now acquires the wake lock and sets it up to be
-             * automatically re-acquired if the system releases it.
-             */
-            async #acquireAndMaintainWakeLock() {
-                if ('wakeLock' in navigator) {
-                    try {
-                        this.#wakeLock = await navigator.wakeLock.request('screen');
-                        console.log('Screen Wake Lock is active. It will remain active as long as this page is open.');
-
-                        // [NEW] Add an event listener to re-acquire the lock if it's released by the system
-                        this.#wakeLock.addEventListener('release', () => {
-                            console.log('Screen Wake Lock was released by the system. Attempting to re-acquire...');
-                            // The lock has been released, so we need to set our sentinel to null
-                            this.#wakeLock = null; 
-                            // And immediately try to acquire it again.
-                            this.#acquireAndMaintainWakeLock();
-                        });
-
-                    } catch (err) {
-                        this.#wakeLock = null;
-                        console.error(`Failed to acquire screen wake lock: ${err.name}, ${err.message}`);
-                    }
-                } else {
-                    console.warn('Screen Wake Lock API not supported in this browser.');
-                }
             }
         }
     </script>
