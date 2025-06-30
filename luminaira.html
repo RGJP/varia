@@ -151,6 +151,7 @@
         .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 2s ease-in-out infinite; }
         .status-dot.error { background: #ef4444; }
         .status-dot.processing { background: #f59e0b; }
+        .status-dot.cancelled { background: #a1a1aa; animation: none;}
         .response-time { margin-left: 0.5rem; }
 
         /* --- Empty State & Prompt Suggestions --- */
@@ -326,7 +327,7 @@
 
     <div id="cancelConfirmationOverlay" class="overlay">
         <div class="confirmation-dialog">
-            <p>Cancel response?</p>
+            <p>Stop response?</p>
             <div class="confirmation-buttons">
                 <button id="confirmCancelBtn" class="confirm-btn yes">YES</button>
                 <button id="denyCancelBtn" class="confirm-btn no">NO</button>
@@ -357,7 +358,7 @@
                     <textarea
                         class="prompt-input"
                         id="promptInput"
-                        placeholder="Message LUMINAIRA..."
+                        placeholder=""
                         rows="1"
                     ></textarea>
                     <button class="send-button" id="sendButton" aria-label="Send Message">
@@ -419,6 +420,7 @@
             #isStreaming = false;
             #messages = [];
             #wakeLock = null;
+            #abortController = null; // NEW: To handle request cancellation
 
             constructor() {
                 this.#initializeElements();
@@ -449,7 +451,6 @@
             }
 
             #bindEvents() {
-                // MODIFIED: Handle click based on streaming state
                 this.#elements.sendButton.addEventListener('click', () => {
                     if (this.#isStreaming) {
                         this.#elements.cancelConfirmationOverlay.classList.add('visible');
@@ -494,10 +495,8 @@
                     });
                 }
                 
-                // NEW: Event listeners for the confirmation dialog
-                this.#elements.confirmCancelBtn.addEventListener('click', () => {
-                    location.reload();
-                });
+                // MODIFIED: "YES" button now calls the cancel method
+                this.#elements.confirmCancelBtn.addEventListener('click', () => this.#cancelStream());
 
                 this.#elements.denyCancelBtn.addEventListener('click', () => {
                     this.#elements.cancelConfirmationOverlay.classList.remove('visible');
@@ -508,6 +507,14 @@
                         this.#elements.cancelConfirmationOverlay.classList.remove('visible');
                     }
                 });
+            }
+            
+            // NEW: Method to cancel the stream
+            #cancelStream() {
+                if (this.#abortController) {
+                    this.#abortController.abort();
+                }
+                this.#elements.cancelConfirmationOverlay.classList.remove('visible');
             }
 
             #autoResizeTextarea() {
@@ -576,8 +583,12 @@
             async #sendMessage() {
                 const prompt = this.#elements.promptInput.value.trim();
                 if (!prompt || this.#isStreaming) return;
-
+                
+                this.#abortController = new AbortController();
+                let aiMessageWrapper = null;
+                let fullResponse = '';
                 let startTime;
+
                 this.#toggleLoading(true);
                 this.#updateStatus('Sending...', 'processing');
                 this.#elements.responseTime.textContent = '';
@@ -600,6 +611,7 @@
                             'Authorization': `Bearer ${this.#config.bearerToken}`,
                             'Content-Type': 'application/json'
                         },
+                        signal: this.#abortController.signal, // MODIFIED: Pass the signal
                         body: JSON.stringify({
                             model: this.#config.model,
                             messages: [
@@ -614,8 +626,7 @@
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
                     this.#updateStatus('Receiving...', 'processing');
-                    const aiMessageWrapper = this.#addMessage('', 'ai');
-                    let fullResponse = '';
+                    aiMessageWrapper = this.#addMessage('', 'ai');
 
                     const reader = response.body.getReader();
                     const decoder = new TextDecoder();
@@ -653,20 +664,31 @@
                     this.#updateStatus('Ready', 'success');
 
                 } catch (error) {
-                    console.error('Error:', error);
-                    this.#addMessage(`**Error:**\n\`\`\`\n${error.message}\n\`\`\``, 'ai');
-                    this.#updateStatus('Error', 'error');
-                    this.#elements.responseTime.textContent = '';
+                    // MODIFIED: Handle cancellation gracefully
+                    if (error.name === 'AbortError') {
+                        console.log('Fetch aborted by user.');
+                        this.#updateStatus('Cancelled', 'cancelled');
+                        if (aiMessageWrapper) {
+                            this.#updateStreamingMessage(aiMessageWrapper, fullResponse, true); // Finalize UI
+                        }
+                        if (fullResponse) { // Save partial response to history
+                            this.#messages.push({ role: 'assistant', content: fullResponse });
+                        }
+                    } else {
+                        console.error('Error:', error);
+                        this.#addMessage(`**Error:**\n\`\`\`\n${error.message}\n\`\`\``, 'ai');
+                        this.#updateStatus('Error', 'error');
+                        this.#elements.responseTime.textContent = '';
+                    }
                 } finally {
                     this.#toggleLoading(false);
                     await this.#releaseWakeLock();
+                    this.#abortController = null; // Clean up controller
                 }
             }
 
             #toggleLoading(isLoading) {
                 this.#isStreaming = isLoading;
-                // Don't disable the button, just change its state.
-                // This allows it to be clicked to show the cancel confirmation.
                 this.#elements.promptInput.disabled = isLoading;
                 this.#elements.sendButton.classList.toggle('loading', isLoading);
             }
