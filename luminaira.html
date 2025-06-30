@@ -100,7 +100,6 @@
         .message-actions { position: absolute; top: 0; right: 0; z-index: 10; padding: 0.5rem; display: flex; gap: 0.5rem; opacity: 0; transition: opacity 0.2s ease-in-out; }
         .message:hover .message-actions { opacity: 1; }
         
-        /* THIS IS THE FIX: This rule prevents the general copy button from appearing on code blocks. */
         .ai-message .message-content-wrapper:has(pre) .message-actions {
             display: none;
         }
@@ -143,6 +142,7 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
+        .send-button.loading:not(:disabled) { cursor: pointer; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* --- Status Bar --- */
@@ -259,6 +259,56 @@
         .overlay.visible .overlay-content {
             transform: scale(1);
         }
+        
+        /* --- Confirmation Dialog Styles --- */
+        .confirmation-dialog {
+            background-color: var(--bg-card);
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            cursor: default;
+        }
+        .overlay.visible .confirmation-dialog {
+             transform: scale(1);
+        }
+        .confirmation-dialog p {
+            font-size: 1.25rem;
+            color: var(--text-primary);
+            margin: 0 0 1.5rem 0;
+        }
+        .confirmation-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        .confirm-btn {
+            border: none;
+            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .confirm-btn.yes {
+            background-color: #ef4444; /* Red */
+            color: white;
+        }
+        .confirm-btn.yes:hover {
+            background-color: #dc2626; /* Darker Red */
+        }
+        .confirm-btn.no {
+            background-color: var(--border);
+            color: var(--text-primary);
+        }
+        .confirm-btn.no:hover {
+            background-color: #4b5563; /* Gray */
+        }
+
     </style>
 </head>
 <body>
@@ -271,6 +321,16 @@
     <div id="overlay" class="overlay">
         <div class="overlay-content">
             <p>LUMINAIRA is a small personal AI assistant side project I created using the <span id="dynamicModelName"></span> model, running entirely locally in LM Studio on a 2013 Dell Latitude E6440 (i5-4310M, 8 GB DDR3 SDRAM), which is available for interaction via this webpage.</p>
+        </div>
+    </div>
+
+    <div id="cancelConfirmationOverlay" class="overlay">
+        <div class="confirmation-dialog">
+            <p>Cancel response?</p>
+            <div class="confirmation-buttons">
+                <button id="confirmCancelBtn" class="confirm-btn yes">YES</button>
+                <button id="denyCancelBtn" class="confirm-btn no">NO</button>
+            </div>
         </div>
     </div>
 
@@ -313,7 +373,7 @@
 
             <footer class="status-bar">
                 <div class="status-indicator">
-                        
+                    
                     <div class="status-dot" id="statusDot"></div>
                     <span id="statusText">Ready</span>
                     <span id="responseTime" class="response-time"></span>
@@ -340,8 +400,10 @@
                 overlay.classList.add('visible');
             });
 
-            overlay.addEventListener('click', () => {
-                overlay.classList.remove('visible');
+            overlay.addEventListener('click', (e) => {
+                if(e.target === overlay) { // Only close if clicking on the backdrop
+                    overlay.classList.remove('visible');
+                }
             });
         });
 
@@ -379,12 +441,23 @@
                     emptyState: document.getElementById('emptyState'),
                     promptSuggestions: document.getElementById('promptSuggestions'),
                     modelInfo: document.getElementById('modelInfo'),
-                    responseTime: document.getElementById('responseTime')
+                    responseTime: document.getElementById('responseTime'),
+                    cancelConfirmationOverlay: document.getElementById('cancelConfirmationOverlay'),
+                    confirmCancelBtn: document.getElementById('confirmCancelBtn'),
+                    denyCancelBtn: document.getElementById('denyCancelBtn')
                 };
             }
 
             #bindEvents() {
-                this.#elements.sendButton.addEventListener('click', () => this.#sendMessage());
+                // MODIFIED: Handle click based on streaming state
+                this.#elements.sendButton.addEventListener('click', () => {
+                    if (this.#isStreaming) {
+                        this.#elements.cancelConfirmationOverlay.classList.add('visible');
+                    } else {
+                        this.#sendMessage();
+                    }
+                });
+
                 this.#elements.promptInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -420,6 +493,21 @@
                         }
                     });
                 }
+                
+                // NEW: Event listeners for the confirmation dialog
+                this.#elements.confirmCancelBtn.addEventListener('click', () => {
+                    location.reload();
+                });
+
+                this.#elements.denyCancelBtn.addEventListener('click', () => {
+                    this.#elements.cancelConfirmationOverlay.classList.remove('visible');
+                });
+                
+                this.#elements.cancelConfirmationOverlay.addEventListener('click', (e) => {
+                    if (e.target === this.#elements.cancelConfirmationOverlay) {
+                        this.#elements.cancelConfirmationOverlay.classList.remove('visible');
+                    }
+                });
             }
 
             #autoResizeTextarea() {
@@ -577,7 +665,8 @@
 
             #toggleLoading(isLoading) {
                 this.#isStreaming = isLoading;
-                this.#elements.sendButton.disabled = isLoading;
+                // Don't disable the button, just change its state.
+                // This allows it to be clicked to show the cancel confirmation.
                 this.#elements.promptInput.disabled = isLoading;
                 this.#elements.sendButton.classList.toggle('loading', isLoading);
             }
