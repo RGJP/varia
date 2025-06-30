@@ -76,7 +76,7 @@
         .chat-container::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--primary), transparent); }
 
         /* --- Chat Output Area --- */
-        .output-area { flex-grow: 1; padding: 1.5rem; overflow-y: auto; border-bottom: 1px solid var(--border); background: linear-gradient(to bottom, transparent, rgba(99, 102, 241, 0.02)); scroll-behavior: smooth; }
+        .output-area { flex-grow: 1; padding: 1.5rem; overflow-y: auto; border-bottom: 1px solid var(--border); background: linear-gradient(to bottom, transparent, rgba(99, 102, 241, 0.02)); scroll-behavior: auto; }
         .output-area::-webkit-scrollbar { width: 8px; }
         .output-area::-webkit-scrollbar-track { background: var(--bg-input); }
         .output-area::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
@@ -534,7 +534,7 @@
                 // Using a timeout ensures the scroll happens after any pending layout changes, making it more reliable.
                 setTimeout(() => {
                     // 'end' aligns the bottom of the input with the bottom of the visible area, which is perfect for this layout.
-                    this.#elements.promptInput.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    this.#elements.promptInput.scrollIntoView({ behavior: 'auto', block: 'end' });
                 }, 0);
             }
 
