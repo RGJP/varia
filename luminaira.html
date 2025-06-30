@@ -688,7 +688,7 @@
 
                 // NEW: Check for an empty response after the stream is done.
                 if (fullResponse.trim() === '') {
-                    throw new Error("The model returned an empty response. This can happen if the prompt is too long or causes a server error.");
+                    throw new Error("Empty response. Prompt too long or unknown error.");
                 }
 
                 const endTime = performance.now();
