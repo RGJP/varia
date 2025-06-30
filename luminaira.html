@@ -462,7 +462,12 @@
                 });
 
                 this.#elements.promptInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
+                    // Check for a coarse pointer (touchscreen) to differentiate mobile from desktop.
+                    const isMobile = window.matchMedia('(pointer: coarse)').matches;
+
+                    // On desktop (!isMobile), send with Enter, but allow Shift+Enter for new lines.
+                    // On mobile (isMobile), the Enter key should just create a new line.
+                    if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
                         e.preventDefault();
                         this.#sendMessage();
                     }
