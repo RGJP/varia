@@ -58,6 +58,12 @@
         /* --- Layout & Main Components --- */
         .container { max-width: 800px; margin: 0 auto; padding: 1rem; position: relative; z-index: 1; display: flex; flex-direction: column; height: 100vh; height: -webkit-fill-available; }
         .header { text-align: center; margin-bottom: 1rem; flex-shrink: 0; }
+        .header-icon {
+            display: block;
+            margin: 0 auto 1rem;
+            width: 80px;
+            height: auto;
+        }
         .title {
             font-size: clamp(2rem, 5vw, 2.5rem);
             font-weight: 800;
@@ -82,9 +88,9 @@
         .output-area::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
 
         /* --- Messages --- */
-        .message { display: flex; gap: 1rem; margin-bottom: 1.5rem; max-width: 95%; animation: messageSlide 0.5s ease-out; position: relative; }
+        .message { display: flex; margin-bottom: 1.5rem; max-width: 100%; animation: messageSlide 0.5s ease-out; position: relative; }
         @keyframes messageSlide { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .message-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+        
         .message-content-wrapper {
             flex: 1;
             position: relative;
@@ -99,11 +105,10 @@
 
         .user-message { margin-left: auto; flex-direction: row-reverse; }
         .user-message .message-content { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3); }
-        .user-message .message-avatar { background: var(--primary-light); }
-
+        
         .ai-message { margin-right: auto; }
         .ai-message .message-content { background: var(--bg-input); border: 1px solid var(--border); }
-        .ai-message .message-avatar { background: var(--border); }
+        
         .streaming-indicator { display: inline-block; width: 8px; height: 8px; background: var(--primary); border-radius: 50%; animation: pulse 1.5s ease-in-out infinite; }
         @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
 
@@ -216,10 +221,10 @@
         @media (min-width: 769px) {
             .container { padding: 2rem; }
             .header { margin-bottom: 2rem; }
+            .header-icon { width: 100px; }
             .title { font-size: 3.5rem; }
             .subtitle { font-size: 1.1rem; }
             .output-area { padding: 2rem; }
-            .message-avatar { width: 40px; height: 40px; font-size: 1.2rem; }
             .message-content { padding: 1rem 1.5rem; }
             .input-section { padding: 1.5rem; }
             .input-container { gap: 1rem; }
@@ -348,6 +353,7 @@
 
     <div class="container">
         <header class="header">
+            <img src="luminairaicon.png" alt="Luminaira Icon" class="header-icon">
             <h1 class="title" id="clickableTitle">LUMINAIRA</h1>
             <p class="subtitle"></p>
             <p class="model-info" id="modelInfo"></p>
@@ -413,9 +419,9 @@
             });
 
             overlay.addEventListener('click', (e) => {
-                if(e.target === overlay) { // Only close if clicking on the backdrop
+               
                     overlay.classList.remove('visible');
-                }
+                
             });
         });
 
@@ -570,7 +576,6 @@
                 const messageWrapper = document.createElement('div');
                 messageWrapper.className = `message ${role}-message`;
 
-                const avatar = role === 'user' ? '👤' : '✨';
                 const renderedContent = this.#renderMarkdown(content);
 
                 const finalContent = role === 'user'
@@ -578,7 +583,6 @@
                     : renderedContent;
 
                 messageWrapper.innerHTML = `
-                    <div class="message-avatar">${avatar}</div>
                     <div class="message-content-wrapper">
                         <div class="message-actions">
                             <button class="copy-message-btn" title="Copy message">
