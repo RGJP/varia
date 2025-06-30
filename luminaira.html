@@ -20,7 +20,7 @@
             --bg-input: #16213e;
             --text-primary: #ffffff;
             --text-secondary: #a1a1aa;
-            --border: #374151;
+            --border: #54637a;
             --code-bg: #0d0d1f;
             --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             --glow: 0 0 20px rgba(99, 102, 241, 0.3);
@@ -94,12 +94,12 @@
         .message-content-wrapper {
             flex: 1;
             position: relative;
-            min-width: 0; /* MODIFICATION: Prevents flex item from pushing container width */
+            min-width: 0; /* Prevents flex item from pushing container width */
         }
         .message-content {
             padding: 0.75rem 1rem;
             border-radius: 16px;
-            overflow-wrap: break-word; /* MODIFICATION: Modern property to break long words and prevent overflow */
+            overflow-wrap: break-word; /* Modern property to break long words and prevent overflow */
             line-height: 1.6;
         }
 
@@ -419,7 +419,7 @@
             });
 
             overlay.addEventListener('click', (e) => {
-               
+                
                     overlay.classList.remove('visible');
                 
             });
@@ -533,13 +533,11 @@
                 });
             }
             
-            // --- MODIFICATION: New helper function to scroll to the input area ---
             #scrollToInputArea() {
                 // Scrolls the main prompt input textarea into the view.
-                // This provides a consistent focal point for the user after submitting or receiving a message.
-                // Using a timeout ensures the scroll happens after any pending layout changes, making it more reliable.
+                // This provides a consistent focal point for the user after submitting a message.
                 setTimeout(() => {
-                    // 'end' aligns the bottom of the input with the bottom of the visible area, which is perfect for this layout.
+                    // 'end' aligns the bottom of the input with the bottom of the visible area.
                     this.#elements.promptInput.scrollIntoView({ behavior: 'auto', block: 'end' });
                 }, 0);
             }
@@ -595,7 +593,7 @@
 
                 this.#elements.outputArea.appendChild(messageWrapper);
                 
-                // --- MODIFICATION: Scroll to the input area instead of the message ---
+                // --- MODIFICATION: Scroll to see the new message. This is the only place auto-scroll is triggered. ---
                 this.#scrollToInputArea();
                 
                 return messageWrapper;
@@ -606,21 +604,15 @@
                 if (!isComplete && content.length > 0) {
                     renderedContent += '<span class="streaming-indicator"></span>';
                 }
-
+            
                 const contentDiv = messageWrapper.querySelector('.message-content');
-                const outputArea = this.#elements.outputArea;
-                
-                // Check if user is scrolled near the bottom before auto-scrolling.
-                const isScrolledToBottom = outputArea.scrollHeight - outputArea.clientHeight <= outputArea.scrollTop + 5; // 5px buffer
-
+            
+                // --- MODIFICATION: Auto-scrolling logic has been removed from this function. ---
+                // Scrolling now only happens once when #addMessage is called, preventing the
+                // view from jumping down while the AI response is streaming.
+            
                 if (contentDiv) {
                     contentDiv.innerHTML = renderedContent;
-                }
-                
-                // --- MODIFICATION: Scroll to the input area if the user is at the bottom ---
-                // This keeps the nice behavior of not scrolling if the user has scrolled up to read.
-                if (isScrolledToBottom) {
-                    this.#scrollToInputArea();
                 }
             }
 
@@ -703,7 +695,6 @@
                     }
                 }
 
-                // NEW: Check for an empty response after the stream is done.
                 if (fullResponse.trim() === '') {
                     throw new Error("Empty response. Prompt too long or unknown error.");
                 }
@@ -728,7 +719,6 @@
                     }
                 } else {
                     console.error('Error:', error);
-                    // This will now catch the empty response error and all others.
                     this.#addMessage(`**Error:**\n\`\`\`\n${error.message}\n\`\`\``, 'ai');
                     this.#updateStatus('Error', 'error');
                     this.#elements.responseTime.textContent = '';
