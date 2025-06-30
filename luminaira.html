@@ -527,6 +527,17 @@
                 });
             }
             
+            // --- MODIFICATION: New helper function to scroll to the input area ---
+            #scrollToInputArea() {
+                // Scrolls the main prompt input textarea into the view.
+                // This provides a consistent focal point for the user after submitting or receiving a message.
+                // Using a timeout ensures the scroll happens after any pending layout changes, making it more reliable.
+                setTimeout(() => {
+                    // 'end' aligns the bottom of the input with the bottom of the visible area, which is perfect for this layout.
+                    this.#elements.promptInput.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }, 0);
+            }
+
             #cancelStream() {
                 if (this.#abortController) {
                     this.#abortController.abort();
@@ -579,8 +590,10 @@
                 `;
 
                 this.#elements.outputArea.appendChild(messageWrapper);
-                // **CHANGE**: Use scrollIntoView for smoother and more reliable scrolling.
-                messageWrapper.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                
+                // --- MODIFICATION: Scroll to the input area instead of the message ---
+                this.#scrollToInputArea();
+                
                 return messageWrapper;
             }
 
@@ -593,17 +606,17 @@
                 const contentDiv = messageWrapper.querySelector('.message-content');
                 const outputArea = this.#elements.outputArea;
                 
-                // **CHANGE**: Check if user is scrolled near the bottom before auto-scrolling.
-                // This prevents the view from jumping if the user has scrolled up to read previous content.
+                // Check if user is scrolled near the bottom before auto-scrolling.
                 const isScrolledToBottom = outputArea.scrollHeight - outputArea.clientHeight <= outputArea.scrollTop + 5; // 5px buffer
 
                 if (contentDiv) {
                     contentDiv.innerHTML = renderedContent;
                 }
                 
-                // **CHANGE**: Only scroll if the user was already at the bottom.
+                // --- MODIFICATION: Scroll to the input area if the user is at the bottom ---
+                // This keeps the nice behavior of not scrolling if the user has scrolled up to read.
                 if (isScrolledToBottom) {
-                    messageWrapper.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    this.#scrollToInputArea();
                 }
             }
 
