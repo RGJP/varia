@@ -7,7 +7,6 @@
     <meta name="theme-color" content="#0f0f23">
     <meta name="color-scheme" content="dark">
 
-
     <style>
         /* --- Global Styles & Variables --- */
         :root {
@@ -39,33 +38,33 @@
         }
 
         /* --- Background Animation --- */
-        .background-animation { 
+        .background-animation {
             position: fixed;
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            pointer-events: none; 
-            z-index: -1; 
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
         }
         .floating-orb { position: absolute; border-radius: 50%; background: linear-gradient(45deg, var(--primary), var(--primary-light)); opacity: 0.1; animation: float 6s ease-in-out infinite; }
         .floating-orb:nth-child(1) { width: 200px; height: 200px; top: 10%; left: 10%; animation-delay: 0s; }
         .floating-orb:nth-child(2) { width: 150px; height: 150px; top: 60%; right: 10%; animation-delay: 2s; }
         .floating-orb:nth-child(3) { width: 100px; height: 100px; bottom: 10%; left: 50%; animation-delay: 4s; }
         @keyframes float { 0%, 100% { transform: translateY(0px) rotate(0deg); } 50% { transform: translateY(-20px) rotate(180deg); } }
-        
+
         /* --- Layout & Main Components --- */
         .container { max-width: 800px; margin: 0 auto; padding: 1rem; position: relative; z-index: 1; display: flex; flex-direction: column; height: 100vh; height: -webkit-fill-available; }
         .header { text-align: center; margin-bottom: 1rem; flex-shrink: 0; }
-        .title { 
-            font-size: clamp(2rem, 5vw, 2.5rem); 
-            font-weight: 800; 
-            background: linear-gradient(135deg, var(--primary-light), var(--primary)); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
-            background-clip: text; 
-            margin-bottom: 0.25rem; 
-            animation: glow 2s ease-in-out infinite alternate; 
+        .title {
+            font-size: clamp(2rem, 5vw, 2.5rem);
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.25rem;
+            animation: glow 2s ease-in-out infinite alternate;
             cursor: pointer;
         }
         @keyframes glow { from { filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.3)); } to { filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.6)); } }
@@ -73,27 +72,53 @@
         .model-info { font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.5rem; }
         .chat-container { display: flex; flex-direction: column; flex-grow: 1; background: var(--bg-card); border-radius: 24px; border: 1px solid var(--border); box-shadow: var(--shadow); backdrop-filter: blur(10px); overflow: hidden; position: relative; }
         .chat-container::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--primary), transparent); }
-        
+
         /* --- Chat Output Area --- */
         .output-area { flex-grow: 1; padding: 1.5rem; overflow-y: auto; border-bottom: 1px solid var(--border); background: linear-gradient(to bottom, transparent, rgba(99, 102, 241, 0.02)); scroll-behavior: smooth; }
         .output-area::-webkit-scrollbar { width: 8px; }
         .output-area::-webkit-scrollbar-track { background: var(--bg-input); }
         .output-area::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 4px; }
-        
+
         /* --- Messages --- */
-        .message { display: flex; gap: 1rem; margin-bottom: 1.5rem; max-width: 95%; animation: messageSlide 0.5s ease-out; }
+        .message { display: flex; gap: 1rem; margin-bottom: 1.5rem; max-width: 95%; animation: messageSlide 0.5s ease-out; position: relative; }
         @keyframes messageSlide { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         .message-avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
-        .message-content { flex: 1; padding: 0.75rem 1rem; border-radius: 16px; word-wrap: break-word; line-height: 1.6; }
+        .message-content-wrapper { flex: 1; position: relative; }
+        .message-content { padding: 0.75rem 1rem; border-radius: 16px; word-wrap: break-word; line-height: 1.6; }
+
         .user-message { margin-left: auto; flex-direction: row-reverse; }
         .user-message .message-content { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3); }
         .user-message .message-avatar { background: var(--primary-light); }
+
         .ai-message { margin-right: auto; }
         .ai-message .message-content { background: var(--bg-input); border: 1px solid var(--border); }
         .ai-message .message-avatar { background: var(--border); }
         .streaming-indicator { display: inline-block; width: 8px; height: 8px; background: var(--primary); border-radius: 50%; animation: pulse 1.5s ease-in-out infinite; }
         @keyframes pulse { 0%, 100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.2); } }
+
+        /* --- Copy Button for Messages --- */
+        .message-actions { position: absolute; top: 0; right: 0; z-index: 10; padding: 0.5rem; display: flex; gap: 0.5rem; opacity: 0; transition: opacity 0.2s ease-in-out; }
+        .message:hover .message-actions { opacity: 1; }
         
+        /* THIS IS THE FIX: This rule prevents the general copy button from appearing on code blocks. */
+        .ai-message .message-content-wrapper:has(pre) .message-actions {
+            display: none;
+        }
+
+        .copy-message-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            font-size: 0.75rem;
+        }
+        .copy-message-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .copy-message-btn.copied { background-color: #22c55e; color: white; border-color: #22c55e; }
+
         /* --- Input Section --- */
         .input-section { padding: 1rem; background: linear-gradient(to top, rgba(26, 26, 46, 0.8), transparent); flex-shrink: 0; }
         .input-container { display: flex; gap: 0.75rem; align-items: flex-end; }
@@ -104,8 +129,8 @@
         .send-button:hover:not(:disabled) { transform: translateY(-2px) scale(1.05); box-shadow: 0 12px 40px rgba(99, 102, 241, 0.4); }
         .send-button:active:not(:disabled) { transform: translateY(0) scale(1); }
         .send-button:disabled { opacity: 0.6; cursor: not-allowed; }
-        
-        /* --- CORRECTED SPINNER STYLES --- */
+
+        /* --- SPINNER STYLES --- */
         .send-button .send-icon { display: flex; align-items: center; justify-content: center; }
         .send-button .loader { display: none; }
         .send-button.loading .send-icon { display: none; }
@@ -119,7 +144,7 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        
+
         /* --- Status Bar --- */
         .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; background: var(--bg-input); border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--text-secondary); flex-shrink: 0; }
         .status-indicator { display: flex; align-items: center; gap: 0.5rem; }
@@ -127,7 +152,7 @@
         .status-dot.error { background: #ef4444; }
         .status-dot.processing { background: #f59e0b; }
         .response-time { margin-left: 0.5rem; }
-        
+
         /* --- Empty State & Prompt Suggestions --- */
         .empty-state { text-align: center; padding: 2rem 1rem; color: var(--text-secondary); display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
         .empty-state-icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: 0.8; }
@@ -139,9 +164,9 @@
         /* --- Markdown and Code Block Styles --- */
         .message-content pre { background-color: var(--code-bg); border: 1px solid var(--border); border-radius: 12px; margin: 1rem 0; position: relative; font-size: 0.9rem; }
         .code-block-header { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; background-color: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); font-size: 0.875rem; color: var(--text-secondary); border-top-left-radius: 11px; border-top-right-radius: 11px; }
-        .copy-btn { background: none; border: 1px solid var(--border); color: var(--text-secondary); padding: 0.25rem 0.5rem; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; font-family: inherit; }
-        .copy-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
-        .copy-btn.copied { background-color: #22c55e; color: white; border-color: #22c55e; }
+        .copy-code-btn { background: none; border: 1px solid var(--border); color: var(--text-secondary); padding: 0.25rem 0.5rem; border-radius: 6px; cursor: pointer; transition: all 0.2s ease; font-family: inherit; }
+        .copy-code-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+        .copy-code-btn.copied { background-color: #22c55e; color: white; border-color: #22c55e; }
         .message-content code { font-family: 'Fira Code', 'Courier New', monospace; }
         .message-content pre code { display: block; padding: 1rem; overflow-x: auto; color: #d1d5db; }
         .message-content :not(pre) > code { background-color: var(--bg-input); padding: 0.2em 0.4em; margin: 0; font-size: 85%; border-radius: 6px; }
@@ -153,6 +178,27 @@
         .message-content p:first-child { margin-top: 0; }
         .message-content p:last-child { margin-bottom: 0; }
 
+        /* --- CSS Styles for Headings --- */
+        .message-content h1,
+        .message-content h2,
+        .message-content h3,
+        .message-content h4,
+        .message-content h5,
+        .message-content h6 {
+            color: var(--primary-light);
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            line-height: 1.3;
+        }
+        .message-content h1 { font-size: 1.75em; }
+        .message-content h2 { font-size: 1.5em; }
+        .message-content h3 { font-size: 1.25em; }
+        .message-content p + h1,
+        .message-content p + h2,
+        .message-content ul + h2,
+        .message-content ol + h2 {
+            margin-top: 2rem;
+        }
 
         /* --- Desktop-Specific Adjustments --- */
         @media (min-width: 769px) {
@@ -188,13 +234,11 @@
             opacity: 0;
             transition: visibility 0s 0.3s, opacity 0.3s ease;
         }
-
         .overlay.visible {
             visibility: visible;
             opacity: 1;
             transition: opacity 0.3s ease;
         }
-
         .overlay-content {
             background-color: var(--bg-card);
             padding: 2rem;
@@ -206,18 +250,15 @@
             box-shadow: var(--shadow);
             transform: scale(0.9);
             transition: transform 0.3s ease;
-            cursor: default; /* So it doesn't look like the text itself is a button */
+            cursor: default;
         }
-        
         .overlay-content #dynamicModelName {
             color: var(--primary-light);
             font-weight: 500;
         }
-
         .overlay.visible .overlay-content {
             transform: scale(1);
         }
-
     </style>
 </head>
 <body>
@@ -229,7 +270,7 @@
 
     <div id="overlay" class="overlay">
         <div class="overlay-content">
-            <p>This is a small personal side project currently using the <span id="dynamicModelName"></span> LLM, running entirely locally in LM Studio on an old 2013 Dell Latitude E6440 (i5-4310M, 8 GB DDR3 SDRAM), which is available for interaction via this webpage.</p>
+            <p>LUMINAIRA is a small personal AI assistant side project I created using the <span id="dynamicModelName"></span> model, running entirely locally in LM Studio on a 2013 Dell Latitude E6440 (i5-4310M, 8 GB DDR3 SDRAM), which is available for interaction via this webpage.</p>
         </div>
     </div>
 
@@ -270,17 +311,18 @@
                 </div>
             </section>
 
-             <footer class="status-bar">
+            <footer class="status-bar">
                 <div class="status-indicator">
+                        
                     <div class="status-dot" id="statusDot"></div>
                     <span id="statusText">Ready</span>
                     <span id="responseTime" class="response-time"></span>
                 </div>
                 <div id="tokenCount">0 tokens</div>
-             </footer>
+            </footer>
         </main>
     </div>
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const chat = new LLMChat();
@@ -290,7 +332,6 @@
             const overlay = document.getElementById('overlay');
             const dynamicModelNameSpan = document.getElementById('dynamicModelName');
 
-            // Dynamically set the model name in the overlay text
             if (dynamicModelNameSpan) {
                 dynamicModelNameSpan.textContent = modelName;
             }
@@ -299,15 +340,12 @@
                 overlay.classList.add('visible');
             });
 
-            // --- THIS IS THE CORRECTED PART ---
-            // A click anywhere on the overlay (background or content) will close it.
             overlay.addEventListener('click', () => {
                 overlay.classList.remove('visible');
             });
         });
 
         class LLMChat {
-            // Private fields for better encapsulation
             #config = {
                 apiUrl: 'https://5cb6-174-88-255-123.ngrok-free.app/v1/chat/completions',
                 model: 'gemma-3n-e2b-it-text',
@@ -325,7 +363,7 @@
                 this.#bindEvents();
                 this.#updateStatus('Ready', 'success');
             }
-            
+
             getModelName() {
                 return this.#config.model;
             }
@@ -359,10 +397,16 @@
                 });
 
                 document.addEventListener('visibilitychange', () => this.#handleVisibilityChange());
-                
+
                 this.#elements.outputArea.addEventListener('click', (e) => {
-                    if (e.target.matches('.copy-btn')) {
-                        this.#handleCopyClick(e.target);
+                    const button = e.target.closest('button');
+                    if (!button) return;
+
+                    if (button.classList.contains('copy-code-btn')) {
+                        this.#handleCopyCodeClick(button);
+                    }
+                    if (button.classList.contains('copy-message-btn')) {
+                        this.#handleCopyMessageClick(button);
                     }
                 });
 
@@ -406,31 +450,46 @@
                 const avatar = role === 'user' ? '👤' : '✨';
                 const renderedContent = this.#renderMarkdown(content);
 
+                const finalContent = role === 'user'
+                    ? `<p>${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
+                    : renderedContent;
+
                 messageWrapper.innerHTML = `
                     <div class="message-avatar">${avatar}</div>
-                    <div class="message-content">${renderedContent}</div>
+                    <div class="message-content-wrapper">
+                        <div class="message-actions">
+                            <button class="copy-message-btn" title="Copy message">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                            </button>
+                        </div>
+                        <div class="message-content">${finalContent}</div>
+                    </div>
                 `;
 
                 this.#elements.outputArea.appendChild(messageWrapper);
                 this.#elements.outputArea.scrollTop = this.#elements.outputArea.scrollHeight;
                 return messageWrapper;
             }
-            
+
             #updateStreamingMessage(messageWrapper, content, isComplete = false) {
                 let renderedContent = this.#renderMarkdown(content);
                 if (!isComplete && content.length > 0) {
                     renderedContent += '<span class="streaming-indicator"></span>';
                 }
-                
-                messageWrapper.querySelector('.message-content').innerHTML = renderedContent;
+
+                const contentDiv = messageWrapper.querySelector('.message-content');
+                if (contentDiv) {
+                    contentDiv.innerHTML = renderedContent;
+                }
                 this.#elements.outputArea.scrollTop = this.#elements.outputArea.scrollHeight;
             }
+
 
             async #sendMessage() {
                 const prompt = this.#elements.promptInput.value.trim();
                 if (!prompt || this.#isStreaming) return;
 
-                let startTime; 
+                let startTime;
                 this.#toggleLoading(true);
                 this.#updateStatus('Sending...', 'processing');
                 this.#elements.responseTime.textContent = '';
@@ -445,7 +504,7 @@
                 this.#updateTokenCount();
 
                 try {
-                    startTime = performance.now(); 
+                    startTime = performance.now();
 
                     const response = await fetch(this.#config.apiUrl, {
                         method: 'POST',
@@ -461,7 +520,6 @@
                             ],
                             temperature: 0.7,
                             stream: true,
-                            
                         })
                     });
 
@@ -485,7 +543,7 @@
                             if (line.startsWith('data: ')) {
                                 const data = line.slice(6);
                                 if (data.trim() === '[DONE]') continue;
-                                
+
                                 try {
                                     const parsed = JSON.parse(data);
                                     const delta = parsed.choices?.[0]?.delta?.content;
@@ -500,7 +558,7 @@
 
                     const endTime = performance.now();
                     const duration = ((endTime - startTime) / 1000).toFixed(2);
-                    this.#elements.responseTime.textContent = `(response took ${duration}s)`;
+                    this.#elements.responseTime.textContent = `(responded in ${duration}s)`;
 
                     this.#updateStreamingMessage(aiMessageWrapper, fullResponse, true);
                     this.#messages.push({ role: 'assistant', content: fullResponse });
@@ -516,14 +574,14 @@
                     await this.#releaseWakeLock();
                 }
             }
-            
+
             #toggleLoading(isLoading) {
                 this.#isStreaming = isLoading;
                 this.#elements.sendButton.disabled = isLoading;
                 this.#elements.promptInput.disabled = isLoading;
                 this.#elements.sendButton.classList.toggle('loading', isLoading);
             }
-            
+
             #renderMarkdown(text) {
                 let html = text
                     .replace(/</g, '&lt;')
@@ -534,7 +592,7 @@
                     const language = lang || 'plaintext';
                     const escapedCode = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                     return `
-                        <pre><div class="code-block-header"><span>${language}</span><button class="copy-btn">Copy</button></div><code class="language-${language}">${escapedCode.trim()}</code></pre>
+                        <pre><div class="code-block-header"><span>${language}</span><button class="copy-code-btn">Copy</button></div><code class="language-${language}">${escapedCode}</code></pre>
                     `;
                 });
 
@@ -558,28 +616,38 @@
                     line = line.replace(/\*\*([^\*]+)\*\*|__([^__]+)__/g, '<strong>$1$2</strong>');
                     line = line.replace(/\*([^\*]+)\*|_([^_]+)_/g, '<em>$1$2</em>');
                     line = line.replace(/`([^`]+)`/g, '<code>$1</code>');
-                    
-                    if (/^\s*[\-\*]\s/.test(line)) {
+
+                    if (line.match(/^#+\s/)) {
+                        if (inList) {
+                            processedHtml += `</${inList}>`;
+                            inList = null;
+                        }
+                        const match = line.match(/^(#+)\s(.*)/);
+                        const level = Math.min(match[1].length, 6);
+                        const text = match[2];
+                        processedHtml += `<h${level}>${text}</h${level}>`;
+                    }
+                    else if (/^\s*[\-\*]\s/.test(line)) {
                         if (inList !== 'ul') {
                             processedHtml += (inList ? `</${inList}>` : '') + '<ul>';
                             inList = 'ul';
                         }
                         processedHtml += `<li>${line.replace(/^\s*[\-\*]\s/, '')}</li>`;
-                    } 
+                    }
                     else if (/^\s*\d\.\s/.test(line)) {
                         if (inList !== 'ol') {
                             processedHtml += (inList ? `</${inList}>` : '') + '<ol>';
                             inList = 'ol';
                         }
                         processedHtml += `<li>${line.replace(/^\s*\d\.\s/, '')}</li>`;
-                    } 
+                    }
                     else {
                         if (inList) {
                             processedHtml += `</${inList}>`;
                             inList = null;
                         }
                         if (line.trim().length > 0) {
-                             processedHtml += `<p>${line}</p>`;
+                                processedHtml += `<p>${line}</p>`;
                         }
                     }
                 }
@@ -588,8 +656,22 @@
                 return processedHtml;
             }
 
+            #handleCopyMessageClick(button) {
+                const messageContent = button.closest('.message-content-wrapper').querySelector('.message-content');
+                if (!messageContent) return;
 
-            #handleCopyClick(button) {
+                navigator.clipboard.writeText(messageContent.innerText).then(() => {
+                    const originalContent = button.innerHTML;
+                    button.innerHTML = 'Copied!';
+                    button.classList.add('copied');
+                    setTimeout(() => {
+                        button.innerHTML = originalContent;
+                        button.classList.remove('copied');
+                    }, 2000);
+                });
+            }
+
+            #handleCopyCodeClick(button) {
                 const pre = button.closest('pre');
                 const code = pre.querySelector('code');
                 navigator.clipboard.writeText(code.innerText).then(() => {
