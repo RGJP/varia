@@ -421,13 +421,14 @@
             #elements = {};
             #isStreaming = false;
             #messages = [];
-            #wakeLock = null;
-            #abortController = null; // NEW: To handle request cancellation
+            #wakeLock = null; // WakeLock sentinel
+            #abortController = null;
 
             constructor() {
                 this.#initializeElements();
                 this.#bindEvents();
                 this.#updateStatus('Ready', 'success');
+                this.#acquireAndMaintainWakeLock(); // Acquire the lock as soon as the app starts
             }
 
             getModelName() {
@@ -462,11 +463,7 @@
                 });
 
                 this.#elements.promptInput.addEventListener('keydown', (e) => {
-                    // Check for a coarse pointer (touchscreen) to differentiate mobile from desktop.
                     const isMobile = window.matchMedia('(pointer: coarse)').matches;
-
-                    // On desktop (!isMobile), send with Enter, but allow Shift+Enter for new lines.
-                    // On mobile (isMobile), the Enter key should just create a new line.
                     if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
                         e.preventDefault();
                         this.#sendMessage();
@@ -476,8 +473,6 @@
                     this.#updateTokenCount();
                     this.#autoResizeTextarea();
                 });
-
-                document.addEventListener('visibilitychange', () => this.#handleVisibilityChange());
 
                 this.#elements.outputArea.addEventListener('click', (e) => {
                     const button = e.target.closest('button');
@@ -502,7 +497,6 @@
                     });
                 }
                 
-                // MODIFIED: "YES" button now calls the cancel method
                 this.#elements.confirmCancelBtn.addEventListener('click', () => this.#cancelStream());
 
                 this.#elements.denyCancelBtn.addEventListener('click', () => {
@@ -516,7 +510,6 @@
                 });
             }
             
-            // NEW: Method to cancel the stream
             #cancelStream() {
                 if (this.#abortController) {
                     this.#abortController.abort();
@@ -600,8 +593,6 @@
                 this.#updateStatus('Sending...', 'processing');
                 this.#elements.responseTime.textContent = '';
 
-                await this.#requestWakeLock();
-
                 this.#addMessage(prompt, 'user');
                 this.#messages.push({ role: 'user', content: prompt });
 
@@ -618,7 +609,7 @@
                             'Authorization': `Bearer ${this.#config.bearerToken}`,
                             'Content-Type': 'application/json'
                         },
-                        signal: this.#abortController.signal, // MODIFIED: Pass the signal
+                        signal: this.#abortController.signal,
                         body: JSON.stringify({
                             model: this.#config.model,
                             messages: [
@@ -671,7 +662,6 @@
                     this.#updateStatus('Ready', 'success');
 
                 } catch (error) {
-                    // MODIFIED: Handle cancellation gracefully
                     if (error.name === 'AbortError') {
                         console.log('Fetch aborted by user.');
                         this.#updateStatus('Cancelled', 'cancelled');
@@ -689,8 +679,7 @@
                     }
                 } finally {
                     this.#toggleLoading(false);
-                    await this.#releaseWakeLock();
-                    this.#abortController = null; // Clean up controller
+                    this.#abortController = null;
                 }
             }
 
@@ -802,41 +791,31 @@
                 });
             }
 
-            async #requestWakeLock() {
+            /**
+             * [REWORKED] This function now acquires the wake lock and sets it up to be
+             * automatically re-acquired if the system releases it.
+             */
+            async #acquireAndMaintainWakeLock() {
                 if ('wakeLock' in navigator) {
                     try {
                         this.#wakeLock = await navigator.wakeLock.request('screen');
-                        console.log('Screen Wake Lock is active.');
+                        console.log('Screen Wake Lock is active. It will remain active as long as this page is open.');
+
+                        // [NEW] Add an event listener to re-acquire the lock if it's released by the system
                         this.#wakeLock.addEventListener('release', () => {
-                            console.log('Screen Wake Lock was released by the system.');
-                            this.#wakeLock = null;
+                            console.log('Screen Wake Lock was released by the system. Attempting to re-acquire...');
+                            // The lock has been released, so we need to set our sentinel to null
+                            this.#wakeLock = null; 
+                            // And immediately try to acquire it again.
+                            this.#acquireAndMaintainWakeLock();
                         });
+
                     } catch (err) {
                         this.#wakeLock = null;
                         console.error(`Failed to acquire screen wake lock: ${err.name}, ${err.message}`);
                     }
                 } else {
                     console.warn('Screen Wake Lock API not supported in this browser.');
-                }
-            }
-
-            async #releaseWakeLock() {
-                if (this.#wakeLock !== null) {
-                    try {
-                        await this.#wakeLock.release();
-                        this.#wakeLock = null;
-                        console.log('Screen Wake Lock released programmatically.');
-                    } catch (err) {
-                        console.error(`Failed to release screen wake lock: ${err.name}, ${err.message}`);
-                        this.#wakeLock = null;
-                    }
-                }
-            }
-
-            async #handleVisibilityChange() {
-                if (document.visibilityState === 'visible' && this.#isStreaming && !this.#wakeLock) {
-                    console.log('Page became visible during streaming, re-acquiring wake lock.');
-                    await this.#requestWakeLock();
                 }
             }
         }
