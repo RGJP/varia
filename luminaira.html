@@ -140,6 +140,15 @@
             cursor: pointer;
         }
 
+        .highlight-ai {
+            background: linear-gradient(135deg, #9aa5ff, #aab3ff);
+            /* slightly lighter than var(--primary-light) */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+
         @keyframes glow {
             from {
                 filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.3));
@@ -905,7 +914,7 @@
     <div class="container">
         <header class="header">
             <img src="luminairaicon.png" alt="Luminaira Icon" class="header-icon">
-            <h1 class="title" id="clickableTitle">LUMINAIRA</h1>
+            <h1 class="title" id="clickableTitle">LUMIN<span class="highlight-ai">AI</span>RA</h1>
             <p class="subtitle"></p>
             <p class="model-info" id="modelInfo"></p>
         </header>
