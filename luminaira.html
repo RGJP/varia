@@ -102,6 +102,17 @@
             overflow-wrap: break-word; /* Modern property to break long words and prevent overflow */
             line-height: 1.6;
         }
+        .message-content a {
+            color: var(--primary-light);
+            text-decoration: underline;
+            text-decoration-color: rgba(129, 140, 248, 0.5);
+            transition: color 0.2s ease, text-decoration-color 0.2s ease;
+        }
+        .message-content a:hover {
+            color: #fff;
+            text-decoration-color: #fff;
+        }
+
 
         .user-message { margin-left: auto; flex-direction: row-reverse; }
         .user-message .message-content { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3); }
@@ -326,6 +337,49 @@
             background-color: #4b5563; /* Gray */
         }
 
+        /* --- New Chat/Reload Button --- */
+        .reload-button {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.3);
+            font-size: 28px;
+            font-weight: 300;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .reload-button:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 12px 40px rgba(99, 102, 241, 0.4);
+        }
+        .reload-button:active {
+            transform: translateY(0) scale(1);
+        }
+        
+        /* MODIFICATION: Remove the old container style */
+        /* .reload-container {
+            display: flex;
+            justify-content: center;
+            padding: 1rem 0;
+        }
+        */
+
+        @media (min-width: 769px) {
+            .reload-button {
+                width: 52px;
+                height: 52px;
+                font-size: 32px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -372,6 +426,7 @@
 
             <section class="input-section">
                 <div class="input-container">
+                    <button class="reload-button" id="reloadButton" aria-label="Reload Page" title="Start New Chat">&#43;</button>
                     <textarea
                         class="prompt-input"
                         id="promptInput"
@@ -399,9 +454,11 @@
                 <div id="tokenCount">0 tokens</div>
             </footer>
         </main>
-    </div>
+        
+        </div>
 
     <script>
+        // Your JavaScript remains the same. The element IDs are preserved.
         document.addEventListener('DOMContentLoaded', () => {
             const chat = new LLMChat();
             const modelName = chat.getModelName();
@@ -409,6 +466,7 @@
             const clickableTitle = document.getElementById('clickableTitle');
             const overlay = document.getElementById('overlay');
             const dynamicModelNameSpan = document.getElementById('dynamicModelName');
+            const reloadButton = document.getElementById('reloadButton');
 
             if (dynamicModelNameSpan) {
                 dynamicModelNameSpan.textContent = modelName;
@@ -420,9 +478,16 @@
 
             overlay.addEventListener('click', (e) => {
                 
+                
                     overlay.classList.remove('visible');
                 
             });
+            
+            if (reloadButton) {
+                reloadButton.addEventListener('click', () => {
+                    location.reload(true);
+                });
+            }
         });
 
         class LLMChat {
@@ -766,6 +831,13 @@
                     .replace(/</g, '&lt;')
                     .replace(/>/g, '&gt;')
                     .trim();
+                
+                // Process Markdown-style links: [text](url)
+                html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+                // Process bare URLs
+                const bareUrlRegex = /(?<!href=")(?<!">)\b(https?:\/\/[^\s<]+)/g;
+                html = html.replace(bareUrlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
 
                 html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
                     const language = lang || 'plaintext';
