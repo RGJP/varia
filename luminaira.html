@@ -997,7 +997,7 @@
         class LLMChat {
             #config = {
                 apiUrl: 'https://2f28-174-88-255-33.ngrok-free.app/v1/chat/completions',
-                model: 'gemma-3n-e2b-it-text',
+                model: 'qwen/qwen3-4b',
                 bearerToken: 'lm-studio',
 systemPrompt: 'Provide direct, accurate, and comprehensive responses. Prioritize clarity and maintain a neutral, objective tone. If you lack information on a topic, state this clearly and suggest alternative resources when appropriate.'
             };
@@ -1223,11 +1223,11 @@ systemPrompt: 'Provide direct, accurate, and comprehensive responses. Prioritize
                                 { role: 'system', content: this.#config.systemPrompt },
                                 ...this.#messages
                             ],
-                            temperature: 1.0,
-                            top_k: 64,
-                            top_p: 0.95,
+                            temperature: 0.7,
+                            top_k: 20,
+                            top_p: 0.8,
                             min_p: 0.01,
-                            repetition_penalty: 1.0,
+                            enable_thinking: false,
                             stream: true,
                         })
                     });
