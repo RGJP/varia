@@ -91,12 +91,10 @@
         }
 
         @keyframes float {
-
             0%,
             100% {
                 transform: translateY(0px) rotate(0deg);
             }
-
             50% {
                 transform: translateY(-20px) rotate(180deg);
             }
@@ -142,18 +140,15 @@
 
         .highlight-ai {
             background: linear-gradient(135deg, #8488fd, #8488fd);
-            /* slightly lighter than var(--primary-light) */
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-
         @keyframes glow {
             from {
                 filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.3));
             }
-
             to {
                 filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.6));
             }
@@ -231,7 +226,6 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -242,14 +236,12 @@
             flex: 1;
             position: relative;
             min-width: 0;
-            /* Prevents flex item from pushing container width */
         }
 
         .message-content {
             padding: 0.75rem 1rem;
             border-radius: 16px;
             overflow-wrap: break-word;
-            /* Modern property to break long words and prevent overflow */
             line-height: 1.6;
         }
 
@@ -264,7 +256,6 @@
             color: #fff;
             text-decoration-color: #fff;
         }
-
 
         .user-message {
             margin-left: auto;
@@ -295,13 +286,11 @@
         }
 
         @keyframes pulse {
-
             0%,
             100% {
                 opacity: 0.4;
                 transform: scale(1);
             }
-
             50% {
                 opacity: 1;
                 transform: scale(1.2);
@@ -376,14 +365,18 @@
             font-size: 1rem;
             font-family: inherit;
             resize: none;
-            overflow-y: auto;
-            /* MODIFICATION: Changed from 'hidden' to 'auto' to allow scrolling */
+            overflow-y: hidden; /* will be toggled to auto via JS when needed */
             transition: all 0.3s ease;
             line-height: 1.5;
-            /* Explicitly set the height */
             height: 48px;
-            max-height: 120px;
-            /* Keep this for when the textarea grows */
+            max-height: 120px; /* desktop: overwritten later */
+            /* Hide scrollbar but keep scroll functionality */
+            scrollbar-width: none; /* Firefox */
+        }
+
+        .prompt-input::-webkit-scrollbar {
+            width: 0;
+            height: 0;
         }
 
         .prompt-input:focus {
@@ -401,7 +394,6 @@
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             border: none;
             border-radius: 50%;
-            /* Make width and height identical to the input box's initial height */
             width: 48px;
             height: 48px;
             display: flex;
@@ -689,49 +681,38 @@
             .container {
                 padding: 2rem;
             }
-
             .header {
                 margin-bottom: 2rem;
             }
-
             .header-icon {
                 width: 100px;
             }
-
             .title {
                 font-size: 3.5rem;
             }
-
             .subtitle {
                 font-size: 1.1rem;
             }
-
             .output-area {
                 padding: 2rem;
             }
-
             .message-content {
                 padding: 1rem 1.5rem;
             }
-
             .input-section {
                 padding: 1.5rem;
             }
-
             .input-container {
                 gap: 1rem;
             }
-
             .prompt-input {
                 padding: 1rem 1.5rem;
                 max-height: 200px;
             }
-
             .send-button {
                 width: 52px;
                 height: 52px;
             }
-
             .status-bar {
                 padding: 0.75rem 1.5rem;
                 font-size: 0.875rem;
@@ -827,13 +808,11 @@
 
         .confirm-btn.yes {
             background-color: #ef4444;
-            /* Red */
             color: white;
         }
 
         .confirm-btn.yes:hover {
             background-color: #dc2626;
-            /* Darker Red */
         }
 
         .confirm-btn.no {
@@ -843,7 +822,6 @@
 
         .confirm-btn.no:hover {
             background-color: #4b5563;
-            /* Gray */
         }
 
         /* --- New Chat/Reload Button --- */
@@ -851,7 +829,6 @@
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             border: none;
             border-radius: 50%;
-            /* Make width and height identical to the input box's initial height */
             width: 48px;
             height: 48px;
             display: flex;
@@ -895,10 +872,7 @@
 
     <div id="overlay" class="overlay">
         <div class="overlay-content">
-            <p>LUMINAIRA is a small personal AI assistant side project I created using the <span
-                    id="dynamicModelName"></span> model, running entirely locally in LM Studio on a 2013 Dell Latitude
-                E6440 (i5-4310M, 8 GB DDR3 SDRAM), which is available for interaction via this webpage. The old meets
-                the new ✨.</p>
+            <p>LUMINAIRA is a small personal AI assistant side project I created using the <span id="dynamicModelName"></span> model, running entirely locally in LM Studio on a 2013 Dell Latitude E6440 (i5-4310M, 8 GB DDR3 SDRAM), which is available for interaction via this webpage. The old meets the new ✨.</p>
         </div>
     </div>
 
@@ -933,15 +907,12 @@
 
             <section class="input-section">
                 <div class="input-container">
-                    <button class="reload-button" id="reloadButton" aria-label="Reload Page"
-                        title="Start New Chat">&#43;</button>
+                    <button class="reload-button" id="reloadButton" aria-label="Reload Page" title="Start New Chat">&#43;</button>
                     <textarea class="prompt-input" id="promptInput" placeholder="" rows="1"></textarea>
                     <button class="send-button" id="sendButton" aria-label="Send Message">
                         <span class="send-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" />
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                         </span>
                         <span class="loader"></span>
@@ -951,7 +922,6 @@
 
             <footer class="status-bar">
                 <div class="status-indicator">
-
                     <div class="status-dot" id="statusDot"></div>
                     <span id="statusText">Ready</span>
                     <span id="responseTime" class="response-time"></span>
@@ -963,7 +933,6 @@
     </div>
 
     <script>
-        // Your JavaScript remains the same. The element IDs are preserved.
         document.addEventListener('DOMContentLoaded', () => {
             const chat = new LLMChat();
             const modelName = chat.getModelName();
@@ -981,11 +950,8 @@
                 overlay.classList.add('visible');
             });
 
-            overlay.addEventListener('click', (e) => {
-
-
+            overlay.addEventListener('click', () => {
                 overlay.classList.remove('visible');
-
             });
 
             if (reloadButton) {
@@ -1008,7 +974,6 @@
             #messages = [];
             #abortController = null;
 
-            // --- Wake Lock ---
             #wakeLock = null;
 
             constructor() {
@@ -1055,35 +1020,11 @@
                         this.#sendMessage();
                     }
                 });
+
                 this.#elements.promptInput.addEventListener('input', () => {
                     this.#updateTokenCount();
                     this.#autoResizeTextarea();
                 });
-
-                // --- MODIFICATION: Added event listener to trap scroll wheel in the textarea ---
-                this.#elements.promptInput.addEventListener('wheel', (event) => {
-                    const textarea = event.currentTarget;
-
-                    // If the textarea doesn't have a scrollbar, let the page scroll normally.
-                    if (textarea.scrollHeight <= textarea.clientHeight) {
-                        return;
-                    }
-
-                    const isScrollingUp = event.deltaY < 0;
-                    const isAtTop = textarea.scrollTop === 0;
-
-                    // A small buffer is used for bottom detection to handle fractional values.
-                    const isAtBottom = textarea.scrollTop + textarea.clientHeight >= textarea.scrollHeight - 1;
-
-                    // Allow page scroll only if scrolling up at the top OR scrolling down at the bottom.
-                    if ((isScrollingUp && isAtTop) || (!isScrollingUp && isAtBottom)) {
-                        return;
-                    }
-
-                    // In all other cases, prevent the default page scroll.
-                    event.preventDefault();
-                });
-
 
                 this.#elements.outputArea.addEventListener('click', (e) => {
                     const button = e.target.closest('button');
@@ -1126,13 +1067,41 @@
                         this.#requestWakeLock();
                     }
                 });
+
+                /*
+                 * --------------------------------------------------------
+                 *  NEW: Prevent page scroll when textarea is focused.
+                 * --------------------------------------------------------
+                 */
+                window.addEventListener('wheel', (e) => {
+                    const textarea = this.#elements.promptInput;
+                    if (document.activeElement === textarea) {
+                        textarea.scrollTop += e.deltaY;
+                        e.preventDefault();
+                    }
+                }, { passive: false });
+
+                // Touch support (mobile)
+                let startY = 0;
+                let startScrollTop = 0;
+                this.#elements.promptInput.addEventListener('touchstart', (e) => {
+                    if (document.activeElement === this.#elements.promptInput) {
+                        startY = e.touches[0].clientY;
+                        startScrollTop = this.#elements.promptInput.scrollTop;
+                    }
+                }, { passive: true });
+
+                this.#elements.promptInput.addEventListener('touchmove', (e) => {
+                    if (document.activeElement === this.#elements.promptInput) {
+                        const deltaY = startY - e.touches[0].clientY;
+                        this.#elements.promptInput.scrollTop = startScrollTop + deltaY;
+                        if (Math.abs(deltaY) > 0) e.stopPropagation();
+                    }
+                }, { passive: true });
             }
 
             #scrollToInputArea() {
-                // Scrolls the main prompt input textarea into the view.
-                // This provides a consistent focal point for the user after submitting a message.
                 setTimeout(() => {
-                    // 'end' aligns the bottom of the input with the bottom of the visible area.
                     this.#elements.statusText.scrollIntoView({ behavior: 'auto', block: 'end' });
                 }, 0);
             }
@@ -1145,8 +1114,15 @@
             }
 
             #autoResizeTextarea() {
-                this.#elements.promptInput.style.height = 'auto';
-                this.#elements.promptInput.style.height = `${this.#elements.promptInput.scrollHeight}px`;
+                const textarea = this.#elements.promptInput;
+                textarea.style.height = 'auto';
+
+                const maxHeight = parseInt(window.getComputedStyle(textarea).maxHeight, 10) || textarea.scrollHeight;
+                const newHeight = Math.min(textarea.scrollHeight, maxHeight);
+                textarea.style.height = `${newHeight}px`;
+
+                // Toggle overflow based on whether content exceeds the visible area
+                textarea.style.overflowY = textarea.scrollHeight > newHeight ? 'auto' : 'hidden';
             }
 
             #updateTokenCount() {
@@ -1187,8 +1163,6 @@
                 `;
 
                 this.#elements.outputArea.appendChild(messageWrapper);
-
-                // --- MODIFICATION: Scroll to see the new message. This is the only place auto-scroll is triggered. ---
                 this.#scrollToInputArea();
 
                 return messageWrapper;
@@ -1201,16 +1175,10 @@
                 }
 
                 const contentDiv = messageWrapper.querySelector('.message-content');
-
-                // --- MODIFICATION: Auto-scrolling logic has been removed from this function. ---
-                // Scrolling now only happens once when #addMessage is called, preventing the
-                // view from jumping down while the AI response is streaming.
-
                 if (contentDiv) {
                     contentDiv.innerHTML = renderedContent;
                 }
             }
-
 
             async #sendMessage() {
                 const prompt = this.#elements.promptInput.value.trim();
@@ -1287,14 +1255,14 @@
                                         this.#updateStreamingMessage(aiMessageWrapper, fullResponse);
                                     }
                                 } catch (e) {
-                                    console.error("Could not parse a chunk of the stream:", data);
+                                    console.error('Could not parse a chunk of the stream:', data);
                                 }
                             }
                         }
                     }
 
                     if (fullResponse.trim() === '') {
-                        throw new Error("Empty response. Prompt too long or unknown error.");
+                        throw new Error('Empty response. Prompt too long or unknown error.');
                     }
 
                     const endTime = performance.now();
@@ -1317,7 +1285,7 @@
                         }
                     } else {
                         console.error('Error:', error);
-                        this.#addMessage(`**Error:**\n\`\`\`\n${error.message}\n\`\`\``, 'ai');
+                        this.#addMessage(`**Error:**\n\u0060\u0060\u0060\n${error.message}\n\u0060\u0060\u0060`, 'ai');
                         this.#updateStatus('Error', 'error');
                         this.#elements.responseTime.textContent = '';
                     }
@@ -1327,6 +1295,7 @@
                     this.#abortController = null;
                 }
             }
+
             #toggleLoading(isLoading) {
                 this.#isStreaming = isLoading;
                 this.#elements.promptInput.disabled = isLoading;
@@ -1334,7 +1303,6 @@
             }
 
             // --- Screen Wake Lock API Implementation ---
-
             async #requestWakeLock() {
                 if ('wakeLock' in navigator) {
                     try {
