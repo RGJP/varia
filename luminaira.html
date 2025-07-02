@@ -946,7 +946,10 @@
 
     <div id="overlay" class="overlay">
         <div class="overlay-content">
-            <p>LUMINAIRA is a small personal AI assistant side project I created using the <span id="dynamicModelName"></span> model, running entirely locally in LM Studio on a 2013 Dell Latitude E6440 (i5-4310M, 8 GB DDR3 SDRAM), which is available for interaction via this webpage. The old meets the new ✨.</p>
+            <p>LUMINAIRA is a small personal AI assistant side project I created using the <span
+                    id="dynamicModelName"></span> model, running entirely locally in LM Studio on a 2013 Dell Latitude
+                E6440 (i5-4310M, 8 GB DDR3 SDRAM), which is available for interaction via this webpage. The old meets
+                the new ✨.</p>
         </div>
     </div>
 
@@ -981,12 +984,15 @@
 
             <section class="input-section">
                 <div class="input-container">
-                    <button class="reload-button" id="reloadButton" aria-label="Reload Page" title="Start New Chat">&#43;</button>
+                    <button class="reload-button" id="reloadButton" aria-label="Reload Page"
+                        title="Start New Chat">&#43;</button>
                     <textarea class="prompt-input" id="promptInput" placeholder="" rows="1"></textarea>
                     <button class="send-button" id="sendButton" aria-label="Send Message">
                         <span class="send-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                         </span>
                         <span class="loader"></span>
@@ -1338,7 +1344,7 @@
                                 if (data === '[DONE]') continue;
                                 try {
                                     const parsed = JSON.parse(data);
-                                    const delta = parsed.choices ? .[0] ? .delta ? .content;
+                                    const delta = parsed.choices?.[0]?.delta?.content;
                                     if (delta) {
                                         fullResponse += delta;
                                         this.#updateStreamingMessage(aiMessageWrapper, fullResponse);
@@ -1380,7 +1386,7 @@
                         }
                     } else {
                         console.error('Error:', error);
-                        this.#addMessage(`**Error:**\n\u0060\u0060\u0060\n${error.message}\n\u0060\u0060\u0060`, 'ai');
+                        this.#addMessage(`**Error:**\n\`\`\`\n${error.message}\n\`\`\``, 'ai');
                         this.#updateStatus('Error', 'error');
                         this.#elements.responseTime.textContent = '';
                     }
@@ -1442,20 +1448,30 @@
                 let processedHtml = '';
                 let inList = null;
                 let inTable = false;
+                let paragraphBuffer = []; // Buffer for paragraph lines
+
+                const flushParagraphBuffer = () => {
+                    if (paragraphBuffer.length > 0) {
+                        processedHtml += `<p>${paragraphBuffer.join('\n')}</p>`;
+                        paragraphBuffer = [];
+                    }
+                };
 
                 for (let i = 0; i < lines.length; i++) {
                     let line = lines[i];
 
-                    // Preserve preformatted blocks
-                    if (line.startsWith('<pre>')) {
+                    // Preserve preformatted blocks (including their HTML structure)
+                    if (line.includes('<pre>')) {
+                        flushParagraphBuffer();
                         if (inList) {
                             processedHtml += `</${inList}>`;
                             inList = null;
                         }
-                        const preEndIndex = html.indexOf('</pre>', html.indexOf(line));
-                        const block = html.substring(html.indexOf(line), preEndIndex + 6);
+                        const preStartIndex = html.indexOf(line);
+                        const preEndIndex = html.indexOf('</pre>', preStartIndex) + 6;
+                        const block = html.substring(preStartIndex, preEndIndex);
                         processedHtml += block;
-                        i += block.split('\n').length - 1;
+                        i += block.split('\n').length - 1; // Advance loop index past the block
                         continue;
                     }
 
@@ -1463,12 +1479,15 @@
 
                     // Table processing
                     const isTableLine = trimmedLine.startsWith('|') && trimmedLine.endsWith('|');
-                    const isTableSeparator = /^\s*\|?(\s*:?-+:?\s*\|)+/.test(trimmedLine);
+                    // Regex for table separator line: e.g., |---|---|
+                    const isTableSeparator = /^\s*\|?(:?-+:?\|)+\s*$/.test(trimmedLine);
+
 
                     if (isTableLine) {
+                        flushParagraphBuffer(); // Flush any pending paragraphs before a table
                         if (!inTable) {
-                            // Check for separator on the next line
-                            if (i + 1 < lines.length && /^\s*\|?(\s*:?-+:?\s*\|)+/.test(lines[i + 1].trim())) {
+                            // Check for separator on the next line to confirm it's a table header
+                            if (i + 1 < lines.length && /^\s*\|?(:?-+:?\|)+\s*$/.test(lines[i + 1].trim())) {
                                 inTable = true;
                                 if (inList) {
                                     processedHtml += `</${inList}>`;
@@ -1477,7 +1496,7 @@
                                 processedHtml += '<table><thead>';
                                 const headers = trimmedLine.split('|').slice(1, -1);
                                 processedHtml += '<tr>';
-                                headers.forEach(h => processedHtml += `<th>${h.trim()}</th>`);
+                                headers.forEach(h => processedHtml += `<th>${this.#parseInlineMarkdown(h.trim())}</th>`);
                                 processedHtml += '</tr></thead><tbody>';
                                 i++; // Skip the separator line
                                 continue;
@@ -1486,7 +1505,7 @@
                             if (isTableSeparator) continue; // Should already be skipped
                             const cells = trimmedLine.split('|').slice(1, -1);
                             processedHtml += '<tr>';
-                            cells.forEach(c => processedHtml += `<td>${c.trim()}</td>`);
+                            cells.forEach(c => processedHtml += `<td>${this.#parseInlineMarkdown(c.trim())}</td>`);
                             processedHtml += '</tr>';
                             continue;
                         }
@@ -1495,14 +1514,9 @@
                         inTable = false;
                     }
 
-                    // Inline elements must be parsed before block elements
-                    line = line.replace(/\*\*\*([^\*]+)\*\*\*|\_\_\_([^_]+)\_\_\_/g, '<strong><em>$1$2</em></strong>')
-                        .replace(/\*\*([^\*]+)\*\*|\_\_([^_]+)\_\_/g, '<strong>$1$2</strong>')
-                        .replace(/\*([^\*]+)\*|\_([^_]+)\_/g, '<em>$1$2</em>')
-                        .replace(/`([^`]+)`/g, '<code>$1</code>');
-
                     const closeListIfNeeded = () => {
                         if (inList) {
+                            flushParagraphBuffer(); // Ensure any buffered paragraphs within a list are flushed
                             processedHtml += `</${inList}>`;
                             inList = null;
                         }
@@ -1510,17 +1524,27 @@
 
                     // Block elements
                     if (line.match(/^#{1,6}\s/)) {
+                        flushParagraphBuffer();
                         closeListIfNeeded();
                         const match = line.match(/^(#+)\s(.*)/);
                         const level = Math.min(match[1].length, 6);
-                        processedHtml += `<h${level}>${match[2]}</h${level}>`;
+                        processedHtml += `<h${level}>${this.#parseInlineMarkdown(match[2])}</h${level}>`;
                     } else if (trimmedLine.match(/^(---|___|\*\*\*)$/)) {
+                        flushParagraphBuffer();
                         closeListIfNeeded();
                         processedHtml += '<hr>';
                     } else if (line.match(/^>\s/)) {
+                        flushParagraphBuffer();
                         closeListIfNeeded();
-                        processedHtml += `<blockquote><p>${line.replace(/^>\s/, '')}</p></blockquote>`;
+                        // For blockquotes, collect consecutive lines and wrap them in a single blockquote
+                        let blockquoteContent = [line.replace(/^>\s/, '')];
+                        while (i + 1 < lines.length && lines[i + 1].match(/^>\s/)) {
+                            i++;
+                            blockquoteContent.push(lines[i].replace(/^>\s/, ''));
+                        }
+                        processedHtml += `<blockquote>${this.#parseInlineMarkdown(blockquoteContent.join('\n'))}</blockquote>`;
                     } else if (line.match(/^\s*([\-\*+])\s/)) {
+                        flushParagraphBuffer();
                         const isTaskItem = /^\s*[\-\*+]\s\[[ x]\]\s/.test(line);
                         const content = line.replace(/^\s*[\-\*+]\s/, '');
 
@@ -1532,32 +1556,48 @@
                         if (isTaskItem) {
                             const checked = content.startsWith('[x]');
                             const text = content.replace(/^\[[ x]\]\s/, '');
-                            processedHtml += `<li class="task-list-item"><input type="checkbox" ${checked ? 'checked' : ''} disabled> ${text}</li>`;
+                            processedHtml += `<li class="task-list-item"><input type="checkbox" ${checked ? 'checked' : ''} disabled> ${this.#parseInlineMarkdown(text)}</li>`;
                         } else {
-                            processedHtml += `<li>${content}</li>`;
+                            processedHtml += `<li>${this.#parseInlineMarkdown(content)}</li>`;
                         }
                     } else if (line.match(/^\s*\d+\.\s/)) {
+                        flushParagraphBuffer();
                         if (inList !== 'ol') {
                             closeListIfNeeded();
                             processedHtml += '<ol>';
                             inList = 'ol';
                         }
-                        processedHtml += `<li>${line.replace(/^\s*\d+\.\s/, '')}</li>`;
+                        processedHtml += `<li>${this.#parseInlineMarkdown(line.replace(/^\s*\d+\.\s/, ''))}</li>`;
+                    } else if (trimmedLine.length > 0) {
+                        paragraphBuffer.push(this.#parseInlineMarkdown(line));
                     } else {
+                        // Empty line, flush the paragraph buffer
+                        flushParagraphBuffer();
                         closeListIfNeeded();
-                        if (trimmedLine.length > 0) {
-                            processedHtml += `<p>${line}</p>`;
-                        }
                     }
                 }
 
+                flushParagraphBuffer(); // Flush any remaining buffered paragraphs
                 if (inList) processedHtml += `</${inList}>`;
                 if (inTable) processedHtml += '</tbody></table>'; // Close table if it's the last element
 
-                // Final pass for links after all other processing
-                processedHtml = processedHtml.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+                // Remove any empty paragraph tags that might have been created
+                return processedHtml.replace(/<p>\s*<\/p>/g, '');
+            }
 
-                return processedHtml.replace(/<p><\/p>/g, ''); // Clean up empty paragraphs
+            #parseInlineMarkdown(text) {
+                let parsedText = text;
+                // Bold and Italic (***bold italic***, ___bold italic___)
+                parsedText = parsedText.replace(/\*\*\*([^\*]+?)\*\*\*|\_\_\_([^_]+?)\_\_\_/g, '<strong><em>$1$2</em></strong>');
+                // Bold (**bold**, __bold__)
+                parsedText = parsedText.replace(/\*\*([^\*]+?)\*\*|\_\_([^_]+?)\_\_/g, '<strong>$1$2</strong>');
+                // Italic (*italic*, _italic_)
+                parsedText = parsedText.replace(/\*([^\*]+?)\*|\_([^_]+?)\_/g, '<em>$1$2</em>');
+                // Inline code (`code`)
+                parsedText = parsedText.replace(/`([^`]+?)`/g, '<code>$1</code>');
+                // Links ([text](url))
+                parsedText = parsedText.replace(/\[([^\]]+?)\]\((https?:\/\/[^)]+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+                return parsedText;
             }
 
             #handleCopyMessageClick(button) {
