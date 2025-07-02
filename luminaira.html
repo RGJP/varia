@@ -949,7 +949,7 @@
             <p>LUMINAIRA is a small personal AI assistant side project I created using the <span
                     id="dynamicModelName"></span> model, running entirely locally in LM Studio on a 12 years-old (!) Dell Latitude
                 E6440 (i5-4310M, 8 GB DDR3 SDRAM), which is available for interaction via this webpage. The old meets
-                the new.<br>🦖✨</p>
+                the new.<br>🦖🤖</p>
         </div>
     </div>
 
@@ -986,7 +986,7 @@
                 <div class="input-container">
                     <button class="reload-button" id="reloadButton" aria-label="Reload Page"
                         title="Start New Chat">&#43;</button>
-                    <textarea class="prompt-input" id="promptInput" placeholder="" rows="1"></textarea>
+                    <textarea class="prompt-input" id="promptInput" placeholder="Ask anything..." rows="1"></textarea>
                     <button class="send-button" id="sendButton" aria-label="Send Message">
                         <span class="send-icon">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -1307,10 +1307,10 @@
                                 },
                                 ...this.#messages
                             ],
-                            temperature: 1.0,
-                            top_k: 64,
-                            top_p: 0.95,
-                            min_p: 0.0,
+                            temperature: 0.5, // Lowered for less randomness and more determinism
+    top_k: 32, // Lowered to consider fewer top tokens
+    top_p: 0.85, // Lowered to restrict sampling pool
+    min_p: 0.01, // Slightly increased to require minimum probability
                             stream: true,
                         })
                     });
