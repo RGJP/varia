@@ -376,7 +376,8 @@
             font-size: 1rem;
             font-family: inherit;
             resize: none;
-            overflow-y: hidden;
+            overflow-y: auto;
+            /* MODIFICATION: Changed from 'hidden' to 'auto' to allow scrolling */
             transition: all 0.3s ease;
             line-height: 1.5;
             /* Explicitly set the height */
@@ -897,7 +898,7 @@
             <p>LUMINAIRA is a small personal AI assistant side project I created using the <span
                     id="dynamicModelName"></span> model, running entirely locally in LM Studio on a 2013 Dell Latitude
                 E6440 (i5-4310M, 8 GB DDR3 SDRAM), which is available for interaction via this webpage. The old meets
-                the new ✨</p>
+                the new ✨.</p>
         </div>
     </div>
 
@@ -1058,6 +1059,31 @@
                     this.#updateTokenCount();
                     this.#autoResizeTextarea();
                 });
+
+                // --- MODIFICATION: Added event listener to trap scroll wheel in the textarea ---
+                this.#elements.promptInput.addEventListener('wheel', (event) => {
+                    const textarea = event.currentTarget;
+
+                    // If the textarea doesn't have a scrollbar, let the page scroll normally.
+                    if (textarea.scrollHeight <= textarea.clientHeight) {
+                        return;
+                    }
+
+                    const isScrollingUp = event.deltaY < 0;
+                    const isAtTop = textarea.scrollTop === 0;
+
+                    // A small buffer is used for bottom detection to handle fractional values.
+                    const isAtBottom = textarea.scrollTop + textarea.clientHeight >= textarea.scrollHeight - 1;
+
+                    // Allow page scroll only if scrolling up at the top OR scrolling down at the bottom.
+                    if ((isScrollingUp && isAtTop) || (!isScrollingUp && isAtBottom)) {
+                        return;
+                    }
+
+                    // In all other cases, prevent the default page scroll.
+                    event.preventDefault();
+                });
+
 
                 this.#elements.outputArea.addEventListener('click', (e) => {
                     const button = e.target.closest('button');
