@@ -91,10 +91,12 @@
         }
 
         @keyframes float {
+
             0%,
             100% {
                 transform: translateY(0px) rotate(0deg);
             }
+
             50% {
                 transform: translateY(-20px) rotate(180deg);
             }
@@ -149,6 +151,7 @@
             from {
                 filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.3));
             }
+
             to {
                 filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.6));
             }
@@ -226,6 +229,7 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -286,11 +290,13 @@
         }
 
         @keyframes pulse {
+
             0%,
             100% {
                 opacity: 0.4;
                 transform: scale(1);
             }
+
             50% {
                 opacity: 1;
                 transform: scale(1.2);
@@ -365,13 +371,16 @@
             font-size: 1rem;
             font-family: inherit;
             resize: none;
-            overflow-y: hidden; /* will be toggled to auto via JS when needed */
+            overflow-y: hidden;
+            /* will be toggled to auto via JS when needed */
             transition: all 0.3s ease;
             line-height: 1.5;
             height: 48px;
-            max-height: 120px; /* desktop: overwritten later */
+            max-height: 120px;
+            /* desktop: overwritten later */
             /* Hide scrollbar but keep scroll functionality */
-            scrollbar-width: none; /* Firefox */
+            scrollbar-width: none;
+            /* Firefox */
         }
 
         .prompt-input::-webkit-scrollbar {
@@ -655,6 +664,7 @@
             margin-top: 1.5rem;
             margin-bottom: 0.75rem;
             line-height: 1.3;
+            font-weight: 600;
         }
 
         .message-content h1 {
@@ -676,43 +686,107 @@
             margin-top: 2rem;
         }
 
+        /* --- ADDED: Styles for other Markdown elements --- */
+        .message-content blockquote {
+            border-left: 4px solid var(--primary);
+            padding-left: 1rem;
+            margin: 1rem 0;
+            color: var(--text-secondary);
+        }
+
+        .message-content hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 1.5rem 0;
+        }
+
+        .message-content li.task-list-item {
+            list-style-type: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .message-content input[type="checkbox"] {
+            margin: 0;
+            width: 1em;
+            height: 1em;
+        }
+
+        .message-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .message-content th,
+        .message-content td {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .message-content th {
+            background-color: var(--code-bg);
+            color: var(--primary-light);
+            font-weight: 600;
+        }
+
+        .message-content tbody tr:nth-child(odd) {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
         /* --- Desktop-Specific Adjustments --- */
         @media (min-width: 769px) {
             .container {
                 padding: 2rem;
             }
+
             .header {
                 margin-bottom: 2rem;
             }
+
             .header-icon {
                 width: 100px;
             }
+
             .title {
                 font-size: 3.5rem;
             }
+
             .subtitle {
                 font-size: 1.1rem;
             }
+
             .output-area {
                 padding: 2rem;
             }
+
             .message-content {
                 padding: 1rem 1.5rem;
             }
+
             .input-section {
                 padding: 1.5rem;
             }
+
             .input-container {
                 gap: 1rem;
             }
+
             .prompt-input {
                 padding: 1rem 1.5rem;
                 max-height: 200px;
             }
+
             .send-button {
                 width: 52px;
                 height: 52px;
             }
+
             .status-bar {
                 padding: 0.75rem 1.5rem;
                 font-size: 0.875rem;
@@ -1068,18 +1142,16 @@
                     }
                 });
 
-                /*
-                 * --------------------------------------------------------
-                 *  NEW: Prevent page scroll when textarea is focused.
-                 * --------------------------------------------------------
-                 */
+
                 window.addEventListener('wheel', (e) => {
                     const textarea = this.#elements.promptInput;
                     if (document.activeElement === textarea) {
                         textarea.scrollTop += e.deltaY;
                         e.preventDefault();
                     }
-                }, { passive: false });
+                }, {
+                    passive: false
+                });
 
                 // Touch support (mobile)
                 let startY = 0;
@@ -1089,7 +1161,9 @@
                         startY = e.touches[0].clientY;
                         startScrollTop = this.#elements.promptInput.scrollTop;
                     }
-                }, { passive: true });
+                }, {
+                    passive: true
+                });
 
                 this.#elements.promptInput.addEventListener('touchmove', (e) => {
                     if (document.activeElement === this.#elements.promptInput) {
@@ -1097,12 +1171,17 @@
                         this.#elements.promptInput.scrollTop = startScrollTop + deltaY;
                         if (Math.abs(deltaY) > 0) e.stopPropagation();
                     }
-                }, { passive: true });
+                }, {
+                    passive: true
+                });
             }
 
             #scrollToInputArea() {
                 setTimeout(() => {
-                    this.#elements.statusText.scrollIntoView({ behavior: 'auto', block: 'end' });
+                    this.#elements.statusText.scrollIntoView({
+                        behavior: 'auto',
+                        block: 'end'
+                    });
                 }, 0);
             }
 
@@ -1147,9 +1226,9 @@
 
                 const renderedContent = this.#renderMarkdown(content);
 
-                const finalContent = role === 'user'
-                    ? `<p>${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`
-                    : renderedContent;
+                const finalContent = role === 'user' ?
+                    `<p>${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>` :
+                    renderedContent;
 
                 messageWrapper.innerHTML = `
                     <div class="message-content-wrapper">
@@ -1195,7 +1274,10 @@
                 this.#elements.responseTime.textContent = '';
 
                 this.#addMessage(prompt, 'user');
-                this.#messages.push({ role: 'user', content: prompt });
+                this.#messages.push({
+                    role: 'user',
+                    content: prompt
+                });
 
                 this.#elements.promptInput.value = '';
                 this.#autoResizeTextarea();
@@ -1213,8 +1295,10 @@
                         signal: this.#abortController.signal,
                         body: JSON.stringify({
                             model: this.#config.model,
-                            messages: [
-                                { role: 'system', content: this.#config.systemPrompt },
+                            messages: [{
+                                    role: 'system',
+                                    content: this.#config.systemPrompt
+                                },
                                 ...this.#messages
                             ],
                             temperature: 1.0,
@@ -1226,7 +1310,9 @@
                     });
 
                     if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({ message: 'An unknown HTTP error occurred.' }));
+                        const errorData = await response.json().catch(() => ({
+                            message: 'An unknown HTTP error occurred.'
+                        }));
                         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
                     }
 
@@ -1237,7 +1323,10 @@
                     const decoder = new TextDecoder();
 
                     while (true) {
-                        const { done, value } = await reader.read();
+                        const {
+                            done,
+                            value
+                        } = await reader.read();
                         if (done) break;
 
                         const chunk = decoder.decode(value);
@@ -1249,7 +1338,7 @@
                                 if (data === '[DONE]') continue;
                                 try {
                                     const parsed = JSON.parse(data);
-                                    const delta = parsed.choices?.[0]?.delta?.content;
+                                    const delta = parsed.choices ? .[0] ? .delta ? .content;
                                     if (delta) {
                                         fullResponse += delta;
                                         this.#updateStreamingMessage(aiMessageWrapper, fullResponse);
@@ -1270,7 +1359,10 @@
                     this.#elements.responseTime.textContent = `(responded in ${duration}s)`;
 
                     this.#updateStreamingMessage(aiMessageWrapper, fullResponse, true);
-                    this.#messages.push({ role: 'assistant', content: fullResponse });
+                    this.#messages.push({
+                        role: 'assistant',
+                        content: fullResponse
+                    });
                     this.#updateStatus('Ready', 'success');
 
                 } catch (error) {
@@ -1281,7 +1373,10 @@
                             this.#updateStreamingMessage(aiMessageWrapper, fullResponse, true);
                         }
                         if (fullResponse) {
-                            this.#messages.push({ role: 'assistant', content: fullResponse });
+                            this.#messages.push({
+                                role: 'assistant',
+                                content: fullResponse
+                            });
                         }
                     } else {
                         console.error('Error:', error);
@@ -1333,79 +1428,136 @@
                     .replace(/>/g, '&gt;')
                     .trim();
 
-                // Process Markdown-style links: [text](url)
-                html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-
-                // Process bare URLs
-                const bareUrlRegex = /(?<!href=")(?<!">)\b(https?:\/\/[^\s<]+)/g;
-                html = html.replace(bareUrlRegex, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
-
+                // Fenced code blocks ```lang\ncode\n```
                 html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
                     const language = lang || 'plaintext';
                     const escapedCode = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
                     return `
-                        <pre><div class="code-block-header"><span>${language}</span><button class="copy-code-btn">Copy</button></div><code class="language-${language}">${escapedCode}</code></pre>
-                    `;
+                    <pre><div class="code-block-header"><span>${language}</span><button class="copy-code-btn">Copy</button></div><code class="language-${language}">${escapedCode}</code></pre>
+                `;
                 });
 
+                // Split by lines to process block-level elements
                 const lines = html.split('\n');
-                let inList = null;
                 let processedHtml = '';
+                let inList = null;
+                let inTable = false;
 
                 for (let i = 0; i < lines.length; i++) {
                     let line = lines[i];
 
+                    // Preserve preformatted blocks
                     if (line.startsWith('<pre>')) {
-                        const preEnd = html.indexOf('</pre>', html.indexOf(line));
-                        const block = html.substring(html.indexOf(line), preEnd + 6);
+                        if (inList) {
+                            processedHtml += `</${inList}>`;
+                            inList = null;
+                        }
+                        const preEndIndex = html.indexOf('</pre>', html.indexOf(line));
+                        const block = html.substring(html.indexOf(line), preEndIndex + 6);
                         processedHtml += block;
-                        const lineCount = block.split('\n').length;
-                        i += lineCount - 1;
-                        inList = null;
+                        i += block.split('\n').length - 1;
                         continue;
                     }
 
-                    line = line.replace(/\*\*([^\*]+)\*\*|__([^__]+)__/g, '<strong>$1$2</strong>');
-                    line = line.replace(/\*([^\*]+)\*|_([^_]+)_/g, '<em>$1$2</em>');
-                    line = line.replace(/`([^`]+)`/g, '<code>$1</code>');
+                    const trimmedLine = line.trim();
 
-                    if (line.match(/^#+\s/)) {
+                    // Table processing
+                    const isTableLine = trimmedLine.startsWith('|') && trimmedLine.endsWith('|');
+                    const isTableSeparator = /^\s*\|?(\s*:?-+:?\s*\|)+/.test(trimmedLine);
+
+                    if (isTableLine) {
+                        if (!inTable) {
+                            // Check for separator on the next line
+                            if (i + 1 < lines.length && /^\s*\|?(\s*:?-+:?\s*\|)+/.test(lines[i + 1].trim())) {
+                                inTable = true;
+                                if (inList) {
+                                    processedHtml += `</${inList}>`;
+                                    inList = null;
+                                }
+                                processedHtml += '<table><thead>';
+                                const headers = trimmedLine.split('|').slice(1, -1);
+                                processedHtml += '<tr>';
+                                headers.forEach(h => processedHtml += `<th>${h.trim()}</th>`);
+                                processedHtml += '</tr></thead><tbody>';
+                                i++; // Skip the separator line
+                                continue;
+                            }
+                        } else {
+                            if (isTableSeparator) continue; // Should already be skipped
+                            const cells = trimmedLine.split('|').slice(1, -1);
+                            processedHtml += '<tr>';
+                            cells.forEach(c => processedHtml += `<td>${c.trim()}</td>`);
+                            processedHtml += '</tr>';
+                            continue;
+                        }
+                    } else if (inTable) {
+                        processedHtml += '</tbody></table>';
+                        inTable = false;
+                    }
+
+                    // Inline elements must be parsed before block elements
+                    line = line.replace(/\*\*\*([^\*]+)\*\*\*|\_\_\_([^_]+)\_\_\_/g, '<strong><em>$1$2</em></strong>')
+                        .replace(/\*\*([^\*]+)\*\*|\_\_([^_]+)\_\_/g, '<strong>$1$2</strong>')
+                        .replace(/\*([^\*]+)\*|\_([^_]+)\_/g, '<em>$1$2</em>')
+                        .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+                    const closeListIfNeeded = () => {
                         if (inList) {
                             processedHtml += `</${inList}>`;
                             inList = null;
                         }
+                    };
+
+                    // Block elements
+                    if (line.match(/^#{1,6}\s/)) {
+                        closeListIfNeeded();
                         const match = line.match(/^(#+)\s(.*)/);
                         const level = Math.min(match[1].length, 6);
-                        const text = match[2];
-                        processedHtml += `<h${level}>${text}</h${level}>`;
-                    }
-                    else if (/^\s*[\-\*]\s/.test(line)) {
+                        processedHtml += `<h${level}>${match[2]}</h${level}>`;
+                    } else if (trimmedLine.match(/^(---|___|\*\*\*)$/)) {
+                        closeListIfNeeded();
+                        processedHtml += '<hr>';
+                    } else if (line.match(/^>\s/)) {
+                        closeListIfNeeded();
+                        processedHtml += `<blockquote><p>${line.replace(/^>\s/, '')}</p></blockquote>`;
+                    } else if (line.match(/^\s*([\-\*+])\s/)) {
+                        const isTaskItem = /^\s*[\-\*+]\s\[[ x]\]\s/.test(line);
+                        const content = line.replace(/^\s*[\-\*+]\s/, '');
+
                         if (inList !== 'ul') {
-                            processedHtml += (inList ? `</${inList}>` : '') + '<ul>';
+                            closeListIfNeeded();
+                            processedHtml += '<ul>';
                             inList = 'ul';
                         }
-                        processedHtml += `<li>${line.replace(/^\s*[\-\*]\s/, '')}</li>`;
-                    }
-                    else if (/^\s*\d\.\s/.test(line)) {
+                        if (isTaskItem) {
+                            const checked = content.startsWith('[x]');
+                            const text = content.replace(/^\[[ x]\]\s/, '');
+                            processedHtml += `<li class="task-list-item"><input type="checkbox" ${checked ? 'checked' : ''} disabled> ${text}</li>`;
+                        } else {
+                            processedHtml += `<li>${content}</li>`;
+                        }
+                    } else if (line.match(/^\s*\d+\.\s/)) {
                         if (inList !== 'ol') {
-                            processedHtml += (inList ? `</${inList}>` : '') + '<ol>';
+                            closeListIfNeeded();
+                            processedHtml += '<ol>';
                             inList = 'ol';
                         }
-                        processedHtml += `<li>${line.replace(/^\s*\d\.\s/, '')}</li>`;
-                    }
-                    else {
-                        if (inList) {
-                            processedHtml += `</${inList}>`;
-                            inList = null;
-                        }
-                        if (line.trim().length > 0) {
+                        processedHtml += `<li>${line.replace(/^\s*\d+\.\s/, '')}</li>`;
+                    } else {
+                        closeListIfNeeded();
+                        if (trimmedLine.length > 0) {
                             processedHtml += `<p>${line}</p>`;
                         }
                     }
                 }
-                if (inList) processedHtml += `</${inList}>`;
 
-                return processedHtml;
+                if (inList) processedHtml += `</${inList}>`;
+                if (inTable) processedHtml += '</tbody></table>'; // Close table if it's the last element
+
+                // Final pass for links after all other processing
+                processedHtml = processedHtml.replace(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+                return processedHtml.replace(/<p><\/p>/g, ''); // Clean up empty paragraphs
             }
 
             #handleCopyMessageClick(button) {
