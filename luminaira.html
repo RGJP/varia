@@ -508,6 +508,27 @@
             margin-left: 0.5rem;
         }
 
+        /* Mute Button Styles */
+        .mute-button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 0.5rem;
+            transition: color 0.2s ease;
+        }
+
+        .mute-button:hover {
+            color: var(--primary-light);
+        }
+
         /* --- Empty State & Prompt Suggestions --- */
         .empty-state {
             text-align: center;
@@ -1006,7 +1027,21 @@
                     <span id="statusText">Ready</span>
                     <span id="responseTime" class="response-time"></span>
                 </div>
-                <div id="tokenCount">0 tokens</div>
+                <div style="display: flex; align-items: center;">
+                    <button id="muteButton" class="mute-button" aria-label="Toggle mute sound" title="Toggle Mute Sound">
+                        <svg id="volumeOnIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                            <path d="M11 5L6 9H2V15H6L11 19V5Z"></path>
+                            <path d="M15.54 8.46A5.47 5.47 0 0 1 18.04 12A5.47 5.47 0 0 1 15.54 15.54"></path>
+                            <path d="M19.07 4.93A10 10 0 0 1 21.57 12A10 10 0 0 1 19.07 19.07"></path>
+                        </svg>
+                        <svg id="volumeOffIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                            <path d="M11 5L6 9H2V15H6L11 19V5Z"></path>
+                            <line x1="23" y1="1" x2="17" y2="7"></line>
+                            <line x1="17" y1="1" x2="23" y2="7"></line>
+                        </svg>
+                    </button>
+                    <div id="tokenCount">0 tokens</div>
+                </div>
             </footer>
         </main>
 
@@ -1055,11 +1090,14 @@
             #abortController = null;
 
             #wakeLock = null;
+            #doneSound = new Audio('done.mp3'); // Load the sound file
+            #isMuted = false; // Mute state for the sound
 
             constructor() {
                 this.#initializeElements();
                 this.#bindEvents();
                 this.#updateStatus('Ready', 'success');
+                this.#loadMuteState(); // Load mute state from local storage
             }
 
             getModelName() {
@@ -1080,7 +1118,10 @@
                     responseTime: document.getElementById('responseTime'),
                     cancelConfirmationOverlay: document.getElementById('cancelConfirmationOverlay'),
                     confirmCancelBtn: document.getElementById('confirmCancelBtn'),
-                    denyCancelBtn: document.getElementById('denyCancelBtn')
+                    denyCancelBtn: document.getElementById('denyCancelBtn'),
+                    muteButton: document.getElementById('muteButton'),
+                    volumeOnIcon: document.getElementById('volumeOnIcon'),
+                    volumeOffIcon: document.getElementById('volumeOffIcon')
                 };
             }
 
@@ -1179,6 +1220,11 @@
                     }
                 }, {
                     passive: true
+                });
+
+                // Mute button event listener
+                this.#elements.muteButton.addEventListener('click', () => {
+                    this.#toggleMute();
                 });
             }
 
@@ -1308,9 +1354,9 @@
                                 ...this.#messages
                             ],
                             temperature: 0.5, // Lowered for less randomness and more determinism
-    top_k: 32, // Lowered to consider fewer top tokens
-    top_p: 0.85, // Lowered to restrict sampling pool
-    min_p: 0.01, // Slightly increased to require minimum probability
+                            top_k: 32, // Lowered to consider fewer top tokens
+                            top_p: 0.85, // Lowered to restrict sampling pool
+                            min_p: 0.01, // Slightly increased to require minimum probability
                             stream: true,
                         })
                     });
@@ -1370,6 +1416,9 @@
                         content: fullResponse
                     });
                     this.#updateStatus('Ready', 'success');
+                    if (!this.#isMuted) { // Play sound only if not muted
+                        this.#doneSound.play();
+                    }
 
                 } catch (error) {
                     if (error.name === 'AbortError') {
@@ -1427,6 +1476,32 @@
                     console.log('Screen Wake Lock released.');
                 }
             }
+
+            // Mute/Unmute functionality
+            #toggleMute() {
+                this.#isMuted = !this.#isMuted;
+                this.#updateMuteButtonIcon();
+                localStorage.setItem('luminaira_mute_state', this.#isMuted); // Save mute state
+            }
+
+            #updateMuteButtonIcon() {
+                if (this.#isMuted) {
+                    this.#elements.volumeOnIcon.style.display = 'none';
+                    this.#elements.volumeOffIcon.style.display = 'block';
+                } else {
+                    this.#elements.volumeOnIcon.style.display = 'block';
+                    this.#elements.volumeOffIcon.style.display = 'none';
+                }
+            }
+
+            #loadMuteState() {
+                const savedMuteState = localStorage.getItem('luminaira_mute_state');
+                if (savedMuteState !== null) {
+                    this.#isMuted = JSON.parse(savedMuteState);
+                }
+                this.#updateMuteButtonIcon();
+            }
+
 
             #renderMarkdown(text) {
                 let html = text
