@@ -1081,7 +1081,7 @@
         class LLMChat {
             #config = {
                 apiUrl: 'https://2f28-174-88-255-33.ngrok-free.app/v1/chat/completions',
-                model: 'ministral-3b-instruct', // BM gemma-3n-e2b-it@q4_k_m
+                model: ' gemma-3n-e2b-it@q4_k_m', // BM
                 bearerToken: 'lm-studio',
                 systemPrompt: 'Answer user queries clearly, accurately, and concisely. Be brief and precise. Omit filler and disclaimers. Use a neutral, professional tone. If unsure, say so and suggest next steps.'
             };
@@ -1355,10 +1355,11 @@
                                 },
                                 ...this.#messages
                             ],
-                            temperature: 0.5, // Lowered for less randomness and more determinism
-                            top_k: 32, // Lowered to consider fewer top tokens
-                            top_p: 0.85, // Lowered to restrict sampling pool
+                            temperature: 1.0, // Lowered for less randomness and more determinism
+                            top_k: 64, // Lowered to consider fewer top tokens
+                            top_p: 0.95, // Lowered to restrict sampling pool
                             min_p: 0.01, // Slightly increased to require minimum probability
+                            repetition_penalty: 1.0, // No penalty for repetition
                             stream: true,
                         })
                     });
