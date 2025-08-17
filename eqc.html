@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rendre Grâce</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* CSS for the entire page */
+
+        /* 1. General & Body Styles */
+        :root {
+            /* Light Theme (Default) */
+            --primary-color: #3a506b;
+            --secondary-color: #6c757d;
+            --background-color: #f8f9fa;
+            --card-background: #ffffff;
+            --text-color: #212529;
+            --accent-color: #5bc0de;
+            --shadow-color: rgba(0, 0, 0, 0.08);
+            --border-color: #e9ecef;
+            --today-bg-color: #e0f7ff;
+            --today-border-color: #007bff;
+        }
+
+        body.dark-mode {
+            /* Dark Theme */
+            --primary-color: #a9d6e5;
+            --secondary-color: #9e9e9e;
+            --background-color: #121212;
+            --card-background: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #89c2d9;
+            --shadow-color: rgba(0, 0, 0, 0.25);
+            --border-color: #333;
+            --today-bg-color: #2a3b4c;
+            --today-border-color: #89c2d9;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* 2. Header & Main Content Area */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            font-weight: 300;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        h2 {
+            font-weight: 400;
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+        }
+
+        /* 3. Controls Section (Search, Toggle, Dropdown) */
+        .controls-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem; /* Adjusted margin */
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex-grow: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--card-background);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(91, 192, 222, 0.25);
+        }
+        
+        .theme-switch-wrapper {
+            display: flex;
+            align-items: center;
+        }
+        .theme-switch {
+            display: inline-block;
+            height: 34px;
+            position: relative;
+            width: 60px;
+        }
+        .theme-switch input {
+            display:none;
+        }
+        .slider {
+            background-color: #ccc;
+            bottom: 0;
+            cursor: pointer;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            transition: .4s;
+        }
+        .slider:before {
+            background-color: #fff;
+            bottom: 4px;
+            content: "";
+            height: 26px;
+            left: 4px;
+            position: absolute;
+            transition: .4s;
+            width: 26px;
+        }
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .slider.round {
+            border-radius: 34px;
+        }
+        .slider.round:before {
+            border-radius: 50%;
+        }
+
+        .prayer-tools-container {
+            margin-bottom: 2rem;
+        }
+
+        .prayer-tools-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--card-background);
+            color: var(--text-color);
+            font-size: 1rem;
+            font-family: 'Lato', sans-serif;
+            cursor: pointer;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236c757d%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: .65em auto;
+        }
+
+        .prayer-tools-select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(91, 192, 222, 0.25);
+        }
+        
+        body.dark-mode .prayer-tools-select {
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239e9e9e%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
+        /* 4. Mass Times Grid (Mobile-First) */
+        .mass-times-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .day-card {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px var(--shadow-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .today-highlight {
+            background-color: var(--today-bg-color);
+            border: 2px solid var(--today-border-color);
+        }
+
+        .day-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .day-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .day-card li {
+            padding: 0.75rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            transition: background-color 0.2s;
+        }
+
+        .day-card li:last-child {
+            border-bottom: none;
+        }
+
+        .day-card .church-name {
+            font-weight: 400;
+            color: var(--secondary-color);
+            margin-right: 1rem;
+        }
+
+        .day-card .church-name a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .day-card .church-name a:hover {
+            text-decoration: underline;
+            color: var(--primary-color);
+        }
+
+        .day-card .mass-time {
+            font-weight: 700;
+            color: var(--primary-color);
+            white-space: nowrap;
+        }
+
+        #no-results {
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.2rem;
+            color: var(--secondary-color);
+            display: none;
+        }
+
+        /* 5. Responsive Design with Media Queries */
+        @media (min-width: 600px) {
+            header h1 {
+                font-size: 3.5rem;
+            }
+            .mass-times-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 992px) {
+            .mass-times-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Rendre Grâce</h1>
+        </header>
+
+        <div class="controls-container">
+            <input type="text" id="search-input" class="search-box" placeholder="Chercher une église...">
+            <div class="theme-switch-wrapper">
+                <label class="theme-switch" for="theme-toggle">
+                    <input type="checkbox" id="theme-toggle" />
+                    <div class="slider round"></div>
+                </label>
+            </div>
+        </div>
+
+        <div class="prayer-tools-container">
+            <label for="prayer-tools-select" class="visually-hidden">Outils</label>
+            <select id="prayer-tools-select" class="prayer-tools-select">
+                <option value="" disabled selected>- Outils -</option>
+                <option value="https://www.aelf.org/">AELF</option>
+                <option value="https://divineoffice.org/">Divine Office</option>
+                <option value="https://prayasyougo.org/">Pray As You Go</option>
+                <option value="https://semainierparoissial.com/semainiers/385.pdf">Semainier Paroissial - SCB</option>
+                <option value="https://semainierparoissial.com/semainiers/271.pdf">Semainier Paroissial - NDDA</option>
+            </select>
+        </div>
+
+        <main>
+            <section class="mass-times-grid">
+                <div class="day-card">
+                    <h2>Lundi</h2>
+                    <ul>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Ambroise%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Ambroise</a></span> <span class="mass-time">8 h 30</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+N.-D.+de+l%E2%80%99Annonciation%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église N.-D. de l’Annonciation</a></span> <span class="mass-time">16 h</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Rodrigue%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Rodrigue</a></span> <span class="mass-time">16 h</span></li>
+                    </ul>
+                </div>
+                
+                <div class="day-card">
+                    <h2>Mardi</h2>
+                    <ul>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Ambroise%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Ambroise</a></span> <span class="mass-time">8 h 30</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Andr%C3%A9%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-André</a></span> <span class="mass-time">8 h 30</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Charles-Borrom%C3%A9e%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Charles-Borromée</a></span> <span class="mass-time">8 h 30</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Fran%C3%A7ois-Xavier%2C+Duberger%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-François-Xavier, Duberger</a></span> <span class="mass-time">16 h</span></li>
+                    </ul>
+                </div>
+
+                <div class="day-card">
+                    <h2>Mercredi</h2>
+                    <ul>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Ambroise%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Ambroise</a></span> <span class="mass-time">8 h 30</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Sainte-C%C3%A9cile%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Sainte-Cécile</a></span> <span class="mass-time">8 h 30</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Sainte-Monique%2C+Les+Saules%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Sainte-Monique, Les Saules</a></span> <span class="mass-time">16 h</span></li>
+                    </ul>
+                </div>
+
+                <div class="day-card">
+                    <h2>Jeudi</h2>
+                    <ul>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-J%C3%A9r%C3%B4me%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Jérôme</a></span> <span class="mass-time">16 h</span></li>
+                    </ul>
+                </div>
+
+                <div class="day-card">
+                    <h2>Vendredi</h2>
+                    <ul>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Charles-Borrom%C3%A9e%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Charles-Borromée</a></span> <span class="mass-time">8 h 30</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-G%C3%A9rard+Majella%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Gérard Majella</a></span> <span class="mass-time">9 h</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Michel+De+Sillery%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Michel De Sillery</a></span> <span class="mass-time">17 h 15</span></li>
+                    </ul>
+                </div>
+
+                <div class="day-card">
+                    <h2>Samedi</h2>
+                    <ul>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Andr%C3%A9%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-André</a></span> <span class="mass-time">16 h</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Charles-Borrom%C3%A9e%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Charles-Borromée</a></span> <span class="mass-time">16 h</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-J%C3%A9r%C3%B4me%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Jérôme</a></span> <span class="mass-time">16 h</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Sainte-Monique%2C+Les+Saules%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Sainte-Monique, Les Saules</a></span> <span class="mass-time">16 h</span></li>
+                    </ul>
+                </div>
+                
+                <div class="day-card today-highlight">
+                    <h2>Dimanche</h2>
+                    <ul>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Ambroise%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Ambroise</a></span> <span class="mass-time">8 h 30 et 10 h 45</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+N.-D.+de+l%E2%80%99Annonciation%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église N.-D. de l’Annonciation</a></span> <span class="mass-time">9 h et 10 h 45</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Gabriel%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Gabriel</a></span> <span class="mass-time">9 h</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Sainte-C%C3%A9cile%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Sainte-Cécile</a></span> <span class="mass-time">9 h</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Rodrigue%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Rodrigue</a></span> <span class="mass-time">9 h 30 et 11 h</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Fran%C3%A7ois-Xavier%2C+Duberger%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-François-Xavier, Duberger</a></span> <span class="mass-time">10 h</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-J%C3%A9r%C3%B4me%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Jérôme</a></span> <span class="mass-time">10 h</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Charles-Borrom%C3%A9e%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Charles-Borromée</a></span> <span class="mass-time">10 h 30</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-G%C3%A9rard+Majella%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Gérard Majella</a></span> <span class="mass-time">10 h 45</span></li>
+                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-%C3%89mile%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Émile</a></span> <span class="mass-time">11 h</span></li>
+                    </ul>
+                </div>
+            </section>
+            
+            <div id="no-results">Aucun résultat trouvé.</div>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- 1. THEME TOGGLE ---
+            const themeToggle = document.getElementById('theme-toggle');
+            
+            const applyTheme = (isDark) => {
+                if (isDark) {
+                    document.body.classList.add('dark-mode');
+                    themeToggle.checked = true;
+                } else {
+                    document.body.classList.remove('dark-mode');
+                    themeToggle.checked = false;
+                }
+            };
+
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                applyTheme(true);
+            } else {
+                applyTheme(false);
+            }
+
+            themeToggle.addEventListener('change', () => {
+                if (themeToggle.checked) {
+                    applyTheme(true);
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    applyTheme(false);
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+
+            // --- 2. CURRENT DAY HIGHLIGHT ---
+            const dayCards = document.querySelectorAll('.day-card');
+            const today = new Date().getDay(); // Sunday: 0, Monday: 1, ..., Saturday: 6
+            const cardIndex = today === 0 ? 6 : today - 1;
+            
+            if (cardIndex >= 0 && cardIndex < dayCards.length) {
+                dayCards[cardIndex].classList.add('today-highlight');
+            }
+            
+            // --- 3. SEARCH FILTER ---
+            const searchInput = document.getElementById('search-input');
+            const noResultsMessage = document.getElementById('no-results');
+
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase().trim();
+                let totalVisibleCards = 0;
+
+                dayCards.forEach(card => {
+                    const churches = card.querySelectorAll('li');
+                    let visibleChurchesInCard = 0;
+
+                    churches.forEach(church => {
+                        const churchName = church.querySelector('.church-name').textContent.toLowerCase();
+                        const isMatch = churchName.includes(searchTerm);
+                        church.style.display = isMatch ? 'flex' : 'none';
+                        if (isMatch) {
+                            visibleChurchesInCard++;
+                        }
+                    });
+
+                    if (visibleChurchesInCard > 0) {
+                        card.style.display = 'block';
+                        totalVisibleCards++;
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+
+                noResultsMessage.style.display = totalVisibleCards === 0 ? 'block' : 'none';
+            });
+
+            // --- 4. PRAYER TOOLS DROPDOWN ---
+            const prayerToolsSelect = document.getElementById('prayer-tools-select');
+
+            prayerToolsSelect.addEventListener('change', (e) => {
+                const url = e.target.value;
+                if (url) {
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                    e.target.selectedIndex = 0;
+                }
+            });
+
+            // --- 5. INITIAL FADE-IN ANIMATION ---
+            const animatedElements = document.querySelectorAll('.day-card');
+            animatedElements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                el.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                setTimeout(() => {
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>
