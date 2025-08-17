@@ -83,12 +83,12 @@
             margin-top: 0;
         }
 
-        /* 3. Controls Section (Search, Toggle, Dropdown) */
+        /* 3. Controls Section (Search, Toggle, Buttons) */
         .controls-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem; /* Adjusted margin */
+            margin-bottom: 1rem;
             gap: 1.5rem;
             flex-wrap: wrap;
         }
@@ -158,36 +158,45 @@
 
         .prayer-tools-container {
             margin-bottom: 2rem;
+            text-align: center;
         }
 
-        .prayer-tools-select {
-            width: 100%;
-            padding: 0.75rem 1rem;
+        .resource-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+
+        .resource-btn {
+            display: inline-block;
+            padding: 0.5rem 1rem;
             border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border-radius: 20px;
             background-color: var(--card-background);
-            color: var(--text-color);
-            font-size: 1rem;
-            font-family: 'Lato', sans-serif;
-            cursor: pointer;
-            transition: border-color 0.3s ease, box-shadow 0.3s ease;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236c757d%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: .65em auto;
+            color: var(--secondary-color);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px var(--shadow-color);
         }
 
-        .prayer-tools-select:focus {
-            outline: none;
+        .resource-btn:hover {
+            background-color: var(--accent-color);
+            color: #ffffff;
             border-color: var(--accent-color);
-            box-shadow: 0 0 0 3px rgba(91, 192, 222, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
-        
-        body.dark-mode .prayer-tools-select {
-            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%239e9e9e%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+
+        body.dark-mode .resource-btn {
+            color: var(--text-color);
+        }
+
+        body.dark-mode .resource-btn:hover {
+            color: var(--background-color);
+            background-color: var(--accent-color);
         }
 
         .visually-hidden {
@@ -299,7 +308,7 @@
 
     <div class="container">
         <header>
-            <h1>Rendre Grâce</h1>
+            <h1>Rendre Grâce ⛪</h1>
         </header>
 
         <div class="controls-container">
@@ -313,15 +322,13 @@
         </div>
 
         <div class="prayer-tools-container">
-            <label for="prayer-tools-select" class="visually-hidden">Outils</label>
-            <select id="prayer-tools-select" class="prayer-tools-select">
-                <option value="" disabled selected>- Outils -</option>
-                <option value="https://www.aelf.org/">AELF</option>
-                <option value="https://divineoffice.org/">Divine Office</option>
-                <option value="https://prayasyougo.org/">Pray As You Go</option>
-                <option value="https://semainierparoissial.com/semainiers/385.pdf">Semainier Paroissial - SCB</option>
-                <option value="https://semainierparoissial.com/semainiers/271.pdf">Semainier Paroissial - NDDA</option>
-            </select>
+            <div class="resource-buttons">
+                <a href="https://www.aelf.org/" target="_blank" rel="noopener noreferrer" class="resource-btn">AELF</a>
+                <a href="https://divineoffice.org/" target="_blank" rel="noopener noreferrer" class="resource-btn">Divine Office</a>
+                <a href="https://prayasyougo.org/" target="_blank" rel="noopener noreferrer" class="resource-btn">Pray As You Go</a>
+                <a href="https://semainierparoissial.com/semainiers/385.pdf" target="_blank" rel="noopener noreferrer" class="resource-btn">Semainier SCB</a>
+                <a href="https://semainierparoissial.com/semainiers/271.pdf" target="_blank" rel="noopener noreferrer" class="resource-btn">Semainier NDDA</a>
+            </div>
         </div>
 
         <main>
@@ -439,6 +446,12 @@
             const today = new Date().getDay(); // Sunday: 0, Monday: 1, ..., Saturday: 6
             const cardIndex = today === 0 ? 6 : today - 1;
             
+            // Remove the hardcoded highlight before applying the dynamic one
+            const currentHighlight = document.querySelector('.today-highlight');
+            if (currentHighlight) {
+                currentHighlight.classList.remove('today-highlight');
+            }
+            
             if (cardIndex >= 0 && cardIndex < dayCards.length) {
                 dayCards[cardIndex].classList.add('today-highlight');
             }
@@ -475,18 +488,7 @@
                 noResultsMessage.style.display = totalVisibleCards === 0 ? 'block' : 'none';
             });
 
-            // --- 4. PRAYER TOOLS DROPDOWN ---
-            const prayerToolsSelect = document.getElementById('prayer-tools-select');
-
-            prayerToolsSelect.addEventListener('change', (e) => {
-                const url = e.target.value;
-                if (url) {
-                    window.open(url, '_blank', 'noopener,noreferrer');
-                    e.target.selectedIndex = 0;
-                }
-            });
-
-            // --- 5. INITIAL FADE-IN ANIMATION ---
+            // --- 4. INITIAL FADE-IN ANIMATION ---
             const animatedElements = document.querySelectorAll('.day-card');
             animatedElements.forEach((el, index) => {
                 el.style.opacity = '0';
