@@ -327,179 +327,185 @@
 </head>
 <body>
 
-    <header class="site-header">
-        <h1 id="site-title">Soaring Witness</h1>
-        <button id="theme-toggle" aria-label="Toggle theme">
-            <!-- Sun Icon -->
-            <svg class="sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="5" fill="var(--icon-fill)"/>
-                <g stroke="var(--icon-fill)" stroke-width="2">
-                    <line x1="12" y1="1" x2="12" y2="4"/>
-                    <line x1="12" y1="20" x2="12" y2="23"/>
-                    <line x1="1" y1="12" x2="4" y2="12"/>
-                    <line x1="20" y1="12" x2="23" y2="12"/>
-                    <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/>
-                    <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
-                    <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/>
-                    <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
-                </g>
-            </svg>
-            <!-- Moon Icon -->
-            <svg class="moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="var(--icon-fill)" d="M10 2c-1.82 0-3.53.5-5 1.35C7.99 5.08 10 8.3 10 12s-2.01 6.92-5 8.65C6.47 21.5 8.18 22 10 22c5.52 0 10-4.48 10-10S15.52 2 10 2z"/></svg>
-        </button>
-        <button id="info-button" aria-label="Open information overlay">
-            i
-        </button>
-    </header>
+<header class="site-header">
+    <h1 id="site-title">Soaring Witness</h1>
+    <button id="theme-toggle" aria-label="Toggle theme">
+        <svg class="sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="5" fill="var(--icon-fill)"/>
+            <g stroke="var(--icon-fill)" stroke-width="2">
+                <line x1="12" y1="1" x2="12" y2="4"/>
+                <line x1="12" y1="20" x2="12" y2="23"/>
+                <line x1="1" y1="12" x2="4" y2="12"/>
+                <line x1="20" y1="12" x2="23" y2="12"/>
+                <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/>
+                <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
+                <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/>
+                <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
+            </g>
+        </svg>
+        <svg class="moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="var(--icon-fill)" d="M10 2c-1.82 0-3.53.5-5 1.35C7.99 5.08 10 8.3 10 12s-2.01 6.92-5 8.65C6.47 21.5 8.18 22 10 22c5.52 0 10-4.48 10-10S15.52 2 10 2z"/></svg>
+    </button>
+    <button id="info-button" aria-label="Open information overlay">
+        i
+    </button>
+</header>
 
-    <main class="gallery">
-
-        <div class="video-container" data-youtube-id="Yc8TTc7jIfw">
-            <img src="https://i.ytimg.com/vi/Yc8TTc7jIfw/maxresdefault.jpg" alt="Drone footage of Norway's coast" class="video-thumbnail">
-            <div class="play-button">
-                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-            </div>
-            <div class="video-embed"></div>
+<main class="gallery">
+    <div class="video-container" data-youtube-id="DfF_PyxW62A">
+        <img src="https://i.ytimg.com/vi/DfF_PyxW62A/maxresdefault.jpg" alt="Rivere St Charles" class="video-thumbnail">
+        <div class="play-button">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
         </div>
-
-        <div class="video-container" data-youtube-id="QzjO8y-aUgQ">
-            <img src="https://i.ytimg.com/vi/QzjO8y-aUgQ/maxresdefault.jpg" alt="Drone footage of the Swiss Alps" class="video-thumbnail">
-            <div class="play-button">
-                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-            </div>
-            <div class="video-embed"></div>
+        <div class="video-embed"></div>
+    </div>
+    <div class="video-container" data-youtube-id="Yc8TTc7jIfw">
+        <img src="https://i.ytimg.com/vi/Yc8TTc7jIfw/maxresdefault.jpg" alt="Chute Kabir Kouba" class="video-thumbnail">
+        <div class="play-button">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
         </div>
-
-    </main>
-
-    <div id="info-overlay" class="overlay">
-        <div class="overlay-content">
-            <button class="overlay-close">&times;</button>
-            <h2></h2>
-            <p>
-                This space is dedicated to sharing my humble experiences of admiring nature’s beauty from above. All footage was captured with a DJI Mini 4K drone. I’m a beginner, currently learning the craft. This simple project was created to explore the world from a fresh perspective, reminding us that we are part of something vast, breathtaking, and beautiful. Like a bird in flight, we soar through nature to witness the wonders of life from the skies. I’ll be posting new videos regularly, so check back from time to time and enjoy the journey!
-            </p>
-            <a href="mailto:raffael.jomphe@gmail.com">Contact</a>
-        </div>
+        <div class="video-embed"></div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- THEME TOGGLE LOGIC ---
-            const themeToggle = document.getElementById('theme-toggle');
-            const body = document.body;
+    <div class="video-container" data-youtube-id="QzjO8y-aUgQ">
+        <img src="https://i.ytimg.com/vi/QzjO8y-aUgQ/maxresdefault.jpg" alt="Plage Gagnon" class="video-thumbnail">
+        <div class="play-button">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+        </div>
+        <div class="video-embed"></div>
+    </div>
 
-            // Function to apply theme based on preference
-            const applyTheme = (theme) => {
-                if (theme === 'dark') {
-                    body.classList.add('dark-mode');
-                } else {
-                    body.classList.remove('dark-mode');
-                }
-            };
 
-            // Check for saved theme in localStorage
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme) {
-                applyTheme(savedTheme);
+
+</main>
+
+<div id="info-overlay" class="overlay">
+    <div class="overlay-content">
+        <button class="overlay-close">&times;</button>
+        <h2></h2>
+        <p>
+            This space is dedicated to sharing my humble experiences of admiring nature’s beauty from above. All footage was captured with a DJI Mini 4K drone. I’m a beginner, currently learning the craft. This simple project was created to explore the world from a fresh perspective, reminding us that we are part of something vast, breathtaking, and beautiful. Like a bird in flight, we soar through nature to witness the wonders of life from the skies. I’ll be posting new videos regularly, so check back from time to time and enjoy the journey!
+        </p>
+        <a href="mailto:raffael.jomphe@gmail.com">Contact</a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- THEME TOGGLE LOGIC ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+
+        // Function to apply theme based on preference
+        const applyTheme = (theme) => {
+            if (theme === 'dark') {
+                body.classList.add('dark-mode');
             } else {
-                // Or check for user's OS preference
-                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-                applyTheme(prefersDark ? 'dark' : 'light');
+                body.classList.remove('dark-mode');
             }
+        };
 
-            // Event listener for the toggle button
-            themeToggle.addEventListener('click', () => {
-                const isDarkMode = body.classList.toggle('dark-mode');
-                localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-            });
+        // Check for saved theme in localStorage
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            applyTheme(savedTheme);
+        } else {
+            // Or check for user's OS preference
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            applyTheme(prefersDark ? 'dark' : 'light');
+        }
+
+        // Event listener for the toggle button
+        themeToggle.addEventListener('click', () => {
+            const isDarkMode = body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+        });
 
 
-            // --- VIDEO PLAYER LOGIC ---
-            const videoContainers = document.querySelectorAll('.video-container');
+        // --- VIDEO PLAYER LOGIC ---
+        const videoContainers = document.querySelectorAll('.video-container');
 
-            videoContainers.forEach(container => {
-                container.addEventListener('click', () => {
-                    // Prevent re-creating the iframe if it's already playing
-                    if (container.classList.contains('playing')) {
-                        return;
+        videoContainers.forEach(container => {
+            container.addEventListener('click', () => {
+                // Prevent re-creating the iframe if it's already playing
+                if (container.classList.contains('playing')) {
+                    return;
+                }
+
+                const videoId = container.dataset.youtubeId;
+                const embedContainer = container.querySelector('.video-embed');
+
+                // Clear any previous iframes in other containers
+                document.querySelectorAll('.video-embed').forEach(embed => embed.innerHTML = '');
+                document.querySelectorAll('.video-container').forEach(c => c.classList.remove('playing'));
+
+                // Create the iframe
+                const iframe = document.createElement('iframe');
+                const videoUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&fs=1&iv_load_policy=3&showinfo=0&playsinline=1`;
+
+                iframe.setAttribute('src', videoUrl);
+                iframe.setAttribute('title', 'YouTube video player');
+                iframe.setAttribute('frameborder', '0');
+                iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
+                iframe.setAttribute('allowfullscreen', 'true');
+
+                // Add the iframe and update the state
+                embedContainer.appendChild(iframe);
+                container.classList.add('playing');
+
+                // Request fullscreen once the iframe has loaded
+                iframe.onload = () => {
+                    if (iframe.requestFullscreen) {
+                        iframe.requestFullscreen();
+                    } else if (iframe.webkitRequestFullscreen) { /* Safari */
+                        iframe.webkitRequestFullscreen();
+                    } else if (iframe.msRequestFullscreen) { /* IE11 */
+                        iframe.msRequestFullscreen();
                     }
-
-                    const videoId = container.dataset.youtubeId;
-                    const embedContainer = container.querySelector('.video-embed');
-
-                    // Clear any previous iframes in other containers
-                    document.querySelectorAll('.video-embed').forEach(embed => embed.innerHTML = '');
-                    document.querySelectorAll('.video-container').forEach(c => c.classList.remove('playing'));
-
-                    // Create the iframe
-                    const iframe = document.createElement('iframe');
-                    const videoUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&fs=1&iv_load_policy=3&showinfo=0&playsinline=1`;
-
-                    iframe.setAttribute('src', videoUrl);
-                    iframe.setAttribute('title', 'YouTube video player');
-                    iframe.setAttribute('frameborder', '0');
-                    iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share');
-                    iframe.setAttribute('allowfullscreen', 'true');
-
-                    // Add the iframe and update the state
-                    embedContainer.appendChild(iframe);
-                    container.classList.add('playing');
-
-                    // Request fullscreen once the iframe has loaded
-                    iframe.onload = () => {
-                        if (iframe.requestFullscreen) {
-                            iframe.requestFullscreen();
-                        } else if (iframe.webkitRequestFullscreen) { /* Safari */
-                            iframe.webkitRequestFullscreen();
-                        } else if (iframe.msRequestFullscreen) { /* IE11 */
-                            iframe.msRequestFullscreen();
-                        }
-                    };
-                });
-            });
-
-            // --- FULLSCREEN EXIT HANDLING ---
-            // Listen for when the user exits fullscreen (e.g., by pressing ESC)
-            document.addEventListener('fullscreenchange', () => {
-                // If there's no element in fullscreen anymore
-                if (!document.fullscreenElement) {
-                    const playingContainer = document.querySelector('.video-container.playing');
-                    if (playingContainer) {
-                        playingContainer.querySelector('.video-embed').innerHTML = '';
-                        playingContainer.classList.remove('playing');
-                    }
-                }
-            });
-
-            // --- OVERLAY LOGIC ---
-            const infoButton = document.getElementById('info-button');
-            const infoOverlay = document.getElementById('info-overlay');
-            const closeButton = document.querySelector('.overlay-close');
-
-            infoButton.addEventListener('click', () => {
-                infoOverlay.classList.add('visible');
-            });
-
-            closeButton.addEventListener('click', () => {
-                infoOverlay.classList.remove('visible');
-            });
-
-            // Close overlay if the user clicks outside the content
-            infoOverlay.addEventListener('click', (e) => {
-                if (e.target.id === 'info-overlay') {
-                    infoOverlay.classList.remove('visible');
-                }
-            });
-
-            // Close overlay on Escape key press
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && infoOverlay.classList.contains('visible')) {
-                    infoOverlay.classList.remove('visible');
-                }
+                };
             });
         });
-    </script>
+
+        // --- FULLSCREEN EXIT HANDLING ---
+        // Listen for when the user exits fullscreen (e.g., by pressing ESC)
+        document.addEventListener('fullscreenchange', () => {
+            // If there's no element in fullscreen anymore
+            if (!document.fullscreenElement) {
+                const playingContainer = document.querySelector('.video-container.playing');
+                if (playingContainer) {
+                    playingContainer.querySelector('.video-embed').innerHTML = '';
+                    playingContainer.classList.remove('playing');
+                }
+            }
+        });
+
+        // --- OVERLAY LOGIC ---
+        const infoButton = document.getElementById('info-button');
+        const infoOverlay = document.getElementById('info-overlay');
+        const closeButton = document.querySelector('.overlay-close');
+
+        infoButton.addEventListener('click', () => {
+            infoOverlay.classList.add('visible');
+        });
+
+        closeButton.addEventListener('click', () => {
+            infoOverlay.classList.remove('visible');
+        });
+
+        // Close overlay if the user clicks outside the content
+        infoOverlay.addEventListener('click', (e) => {
+            if (e.target.id === 'info-overlay') {
+                infoOverlay.classList.remove('visible');
+            }
+        });
+
+        // Close overlay on Escape key press
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && infoOverlay.classList.contains('visible')) {
+                infoOverlay.classList.remove('visible');
+            }
+        });
+    });
+</script>
 
 </body>
 </html>
