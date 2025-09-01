@@ -246,7 +246,21 @@
         .piano-controls { margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: center; justify-content: center; color: #4a5568; font-weight: 500; }
         .piano-controls label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
         .piano-controls select, .piano-controls input { font-size: 1rem; padding: 0.25rem; border-radius: 5px; border: 1px solid #ccc; }
-        .keyboard-wrapper { overflow-x: auto; padding: 8px; width: 100%; max-width: 820px; margin: 0 auto; display: flex; justify-content: flex-start; -webkit-overflow-scrolling: touch; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; background: #f8f9fa; }
+        .keyboard-wrapper { overflow-x: auto; padding: 8px; width: 100%; max-width: 820px; margin: 0 auto; display: flex; justify-content: flex-start; -webkit-overflow-scrolling: touch; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; background: #f8f9fa;  cursor: grab;
+    scrollbar-width: none; /* For Firefox */
+    -ms-overflow-style: none;  /* For IE and Edge */
+}
+
+/* ADD THIS NEW RULE BLOCK 👇 */
+.keyboard-wrapper::-webkit-scrollbar {
+    display: none; /* For Chrome, Safari, and Opera */
+}
+
+/* ADD THIS NEW RULE BLOCK TOO 👇 */
+.keyboard-wrapper.active-drag {
+    cursor: grabbing;
+    cursor: -webkit-grabbing;
+}
         .piano { position: relative; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
         .piano .keys { display: flex; position: relative; }
         .piano .key { height: var(--white-key-height); border: 1px solid #222; border-bottom: 6px solid #222; border-radius: 0 0 var(--border-radius) var(--border-radius); background: white; box-sizing: border-box; display: flex; flex-direction: column-reverse; align-items: center; padding-bottom: 8px; cursor: pointer; flex-shrink: 0; }
@@ -699,6 +713,57 @@
 
             const showOctCheckbox = document.getElementById('showOct');
             const pianoDiv = document.getElementById('piano');
+
+
+            // PASTE THE ENTIRE BLOCK BELOW
+// ==========================================
+
+const keyboardWrapper = document.querySelector('.keyboard-wrapper');
+if (keyboardWrapper) {
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    const startDragging = (e) => {
+        // Only start dragging if the click is not on a key itself
+        if (e.target.closest('.key')) {
+            isDown = false; // Ensure dragging stops if it somehow started
+            keyboardWrapper.classList.remove('active-drag');
+            return;
+        }
+        isDown = true;
+        keyboardWrapper.classList.add('active-drag');
+        startX = (e.pageX || e.touches[0].pageX) - keyboardWrapper.offsetLeft;
+        scrollLeft = keyboardWrapper.scrollLeft;
+    };
+
+    const stopDragging = () => {
+        isDown = false;
+        keyboardWrapper.classList.remove('active-drag');
+    };
+
+    const whileDragging = (e) => {
+        if (!isDown) return;
+        e.preventDefault(); // Prevent text selection
+        const x = (e.pageX || e.touches[0].pageX) - keyboardWrapper.offsetLeft;
+        const walk = (x - startX) * 1.5; // Multiply by 1.5 for a faster scroll
+        keyboardWrapper.scrollLeft = scrollLeft - walk;
+    };
+
+    // Mouse Events
+    keyboardWrapper.addEventListener('mousedown', startDragging);
+    keyboardWrapper.addEventListener('mouseleave', stopDragging);
+    keyboardWrapper.addEventListener('mouseup', stopDragging);
+    keyboardWrapper.addEventListener('mousemove', whileDragging);
+
+    // Touch Events for Mobile
+    keyboardWrapper.addEventListener('touchstart', startDragging, { passive: true });
+    keyboardWrapper.addEventListener('touchend', stopDragging);
+    keyboardWrapper.addEventListener('touchmove', whileDragging, { passive: false });
+}
+// ==========================================
+// END OF THE BLOCK TO PASTE
+
             const octaveNotes = [ { name: 'C', isSharp: false }, { name: 'C#', isSharp: true }, { name: 'D', isSharp: false }, { name: 'D#', isSharp: true }, { name: 'E', isSharp: false }, { name: 'F', isSharp: false }, { name: 'F#', isSharp: true }, { name: 'G', isSharp: false }, { name: 'G#', isSharp: true }, { name: 'A', isSharp: false }, { name: 'A#', isSharp: true }, { name: 'B', isSharp: false } ];
             let pianoAudioCtx = null;
 
