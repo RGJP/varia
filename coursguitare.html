@@ -69,7 +69,7 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
 
-/* Style for the tools button inside the white card */
+        /* Style for the tools button inside the white card */
         .tools-section .tools-button {
             background: linear-gradient(45deg, #667eea, #764ba2);
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
@@ -445,7 +445,7 @@
     <div class="card">
         <h2><span class="step-number">1</span> Tempo et rythme</h2>
         <p>Compter les battements : est-ce en <span class="highlight">4/4, 6/8</span> ou autre?</p>
-        <p>Bien ressentir la <span class="highlight">pulsation régulière</span> avant de jouer (utiliser le tap du métronome).</p>
+        <p>Bien ressentir la <span class="highlight">pulsation régulière</span> avant de jouer (utiliser le tap du métronome). </p>
     </div>
 
     <div class="card">
@@ -717,7 +717,7 @@
                     alert("Impossible d'accéder au microphone. Veuillez autoriser l'accès.");
                 }
             } else {
-                if (audioContext && audioContext.state === 'running') audioContext.suspend();
+                if (audioContext && audioContext.state !== 'closed') audioContext.close();
                 cancelAnimationFrame(animationFrameId);
                 isTunerActive = false;
                 startButton.textContent = "Démarrer l'accordeur";
@@ -725,8 +725,19 @@
                 resetUI();
             }
         }
+
         async function setupAudio() {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            // FIX for Android audio channel issue: Create a context with explicit channel mode
+            audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                channelCountMode: 'explicit',
+                channelCount: 2
+            });
+
+            // Handle the case where the context is suspended (common on mobile)
+            if (audioContext.state === 'suspended') {
+                await audioContext.resume();
+            }
+
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             mediaStreamSource = audioContext.createMediaStreamSource(stream);
             analyserNode = audioContext.createAnalyser();
@@ -734,12 +745,14 @@
             audioBuffer = new Float32Array(analyserNode.fftSize);
             mediaStreamSource.connect(analyserNode);
         }
+
         function update() {
             if (!isTunerActive) return;
             const pitch = getPitch();
             updateUI(pitch);
             animationFrameId = requestAnimationFrame(update);
         }
+
         function getPitch() {
             analyserNode.getFloatTimeDomainData(audioBuffer);
             let rms = 0;
@@ -749,7 +762,7 @@
             const correlations = new Float32Array(audioBuffer.length);
             for (let lag = 0; lag < audioBuffer.length; lag++) { for (let i = 0; i < audioBuffer.length - lag; i++) { correlations[lag] += audioBuffer[i] * audioBuffer[i + lag]; } }
             let d = 0;
-            while (correlations[d] > correlations[d + 1]) d++;
+            while (d < correlations.length - 1 && correlations[d] > correlations[d + 1]) d++;
             let max_val = -1, max_pos = -1;
             for (let i = d; i < audioBuffer.length; i++) { if (correlations[i] > max_val) { max_val = correlations[i]; max_pos = i; } }
             if (max_val / correlations[0] < 0.25) return null;
@@ -760,6 +773,7 @@
             const estimatedLag = T0 - (a ? b / (2 * a) : 0);
             return audioContext.sampleRate / estimatedLag;
         }
+
         function updateUI(frequency) {
             if (frequency) {
                 const midiNum = 12 * (Math.log2(frequency / 440)) + 69;
@@ -777,6 +791,7 @@
                 else noteDisplay.style.color = 'var(--red)';
             } else { resetUI(); }
         }
+
         function resetUI() {
             noteDisplay.textContent = '--';
             freqDisplay.textContent = '--- Hz';
@@ -798,10 +813,18 @@
         let pianoAudioCtx = null;
         const activeNotes = new Map();
 
-        function ensurePianoAudio() { if (!pianoAudioCtx) pianoAudioCtx = new(window.AudioContext || window.webkitAudioContext)(); }
+        // FIX for Android audio channel issue: pass options when creating the context
+        function ensurePianoAudio() {
+            if (!pianoAudioCtx) {
+                pianoAudioCtx = new(window.AudioContext || window.webkitAudioContext)({
+                    channelCountMode: 'explicit',
+                    channelCount: 2
+                });
+            }
+        }
+
         function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 
-        // --- PIANO SOUND FIX START ---
         function playNote(freq, el) {
             if (activeNotes.has(freq)) return;
             ensurePianoAudio();
@@ -998,7 +1021,15 @@
         let tapTimestamps = [];
         const tapTimeout = 2000;
 
-        function initMetroAudioContext() { if (!metroAudioContext) metroAudioContext = new (window.AudioContext || window.webkitAudioContext)(); }
+        // FIX for Android audio channel issue: pass options when creating the context
+        function initMetroAudioContext() {
+            if (!metroAudioContext) {
+                metroAudioContext = new (window.AudioContext || window.webkitAudioContext)({
+                    channelCountMode: 'explicit',
+                    channelCount: 2
+                });
+            }
+        }
 
         function playClick(time) {
             const osc = metroAudioContext.createOscillator();
@@ -1033,9 +1064,19 @@
         }
         function toggleMetronome() {
             initMetroAudioContext();
+            if (metroAudioContext.state === 'suspended') {
+                metroAudioContext.resume().then(() => {
+                    // Start metronome after resume
+                    startStopAction();
+                });
+            } else {
+                startStopAction();
+            }
+        }
+
+        function startStopAction() {
             isRunning = !isRunning;
             if (isRunning) {
-                if (metroAudioContext.state === 'suspended') metroAudioContext.resume();
                 startStopBtn.textContent = 'Arrêter';
                 startStopBtn.classList.add('stop-state');
                 nextNoteTime = metroAudioContext.currentTime + 0.1;
@@ -1046,6 +1087,7 @@
                 clearInterval(scheduler);
             }
         }
+
         function updateTempo(newTempo) {
             tempo = newTempo;
             bpmDisplay.textContent = Math.round(newTempo);
