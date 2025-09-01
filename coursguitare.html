@@ -236,7 +236,7 @@
         .piano-controls { margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: center; justify-content: center; color: #4a5568; font-weight: 500; }
         .piano-controls label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
         .piano-controls select, .piano-controls input { font-size: 1rem; padding: 0.25rem; border-radius: 5px; border: 1px solid #ccc; }
-        .keyboard-wrapper { overflow-x: auto; padding-bottom: 8px; width: 100%; max-width: 820px; margin: 0 auto; display: flex; justify-content: flex-start; -webkit-overflow-scrolling: touch; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; background: #f8f9fa; }
+        .keyboard-wrapper { overflow-x: auto; padding: 8px; width: 100%; max-width: 820px; margin: 0 auto; display: flex; justify-content: flex-start; -webkit-overflow-scrolling: touch; border: 1px solid rgba(0,0,0,0.1); border-radius: 10px; background: #f8f9fa; }
         .piano { position: relative; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
         .piano .keys { display: flex; position: relative; }
         .piano .key { height: var(--white-key-height); border: 1px solid #222; border-bottom: 6px solid #222; border-radius: 0 0 var(--border-radius) var(--border-radius); background: white; box-sizing: border-box; display: flex; flex-direction: column-reverse; align-items: center; padding-bottom: 8px; cursor: pointer; flex-shrink: 0; }
@@ -342,7 +342,7 @@
             .container { padding: 0 15px; }
             .card { padding: 1.5rem; margin: 1.5rem 0; }
             .tool-nav-button { flex-basis: calc(50% - 0.5rem); } 
-            .piano-tool { --white-key-width: 10vw; --white-key-height: 40vw; --black-key-width: 6.5vw; --black-key-height: 25vw; }
+            .piano-tool { --white-key-width: 12vw; --white-key-height: 48vw; --black-key-width: 8vw; --black-key-height: 30vw; }
         }
         
         /* Responsive adjustments for Chord Wheel */
@@ -449,7 +449,7 @@
 
                 <div id="piano-content" class="tool-content">
                     <div class="piano-tool">
-                        <h3>Piano Virtuel</h3>
+                        <h3>Piano</h3>
                         <div class="piano-controls">
                             <label>Octave de départ: <select id="startOct">
                                     <option value="2">C2</option>
@@ -570,6 +570,9 @@
                         }
                     });
 
+                    // --- REFACTORED PIANO CALL ---
+                    // If the piano tab is opened, build the keyboard.
+                    // A short timeout ensures the container is visible and has dimensions.
                     if (toolName === 'piano' && typeof buildPianoKeyboard === 'function') {
                         setTimeout(buildPianoKeyboard, 10);
                     }
@@ -712,11 +715,15 @@
                 }
             }
             
-            // --- REBUILT PIANO KEYBOARD LOGIC ---
+            // --- FULLY REBUILT PIANO KEYBOARD LOGIC ---
             buildPianoKeyboard = function() {
-                if (!pianoDiv) return;
-                pianoDiv.innerHTML = ''; 
+                // Do nothing if the piano container doesn't exist or is not visible.
+                // This prevents errors when building on resize while a different tab is active.
+                if (!pianoDiv || pianoDiv.offsetParent === null) {
+                    return;
+                }
 
+                pianoDiv.innerHTML = ''; 
                 const keysContainer = document.createElement('div');
                 keysContainer.className = 'keys';
                 pianoDiv.appendChild(keysContainer);
@@ -725,14 +732,15 @@
                 const showOctaves = showOctCheckbox.checked;
 
                 const notes = [];
+                // Generate 2 octaves + C (25 notes total)
                 for (let i = 0; i < 25; i++) {
                     const noteData = octaveNotes[i % 12];
                     const octaveNumber = startOct + Math.floor(i / 12);
-                    const midi = (12 * startOct) + i + 12; // Adjusted for more standard MIDI numbering
+                    const midi = (12 * startOct) + i + 12; // C4=60
                     notes.push({ ...noteData, octave: octaveNumber, midi: midi });
                 }
 
-                // First, create and add all the white keys to establish the base layout
+                // First Pass: Create and add all the white keys to establish the base layout.
                 notes.forEach(note => {
                     if (!note.isSharp) {
                         const keyEl = document.createElement('div');
@@ -743,33 +751,39 @@
                     }
                 });
 
-                // Use a timeout to ensure the white keys have been rendered and have a width
-                setTimeout(() => {
-                    const firstWhiteKey = keysContainer.querySelector('.key.white');
-                    if (!firstWhiteKey || firstWhiteKey.offsetWidth === 0) {
-                        console.error("Could not calculate piano key width.");
-                        return;
-                    }
-                    const whiteW = firstWhiteKey.offsetWidth;
-                    const blackW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--black-key-width'));
+                // Second Pass: Now that white keys are rendered, calculate positions for and add black keys.
+                const firstWhiteKey = keysContainer.querySelector('.key.white');
+                if (!firstWhiteKey || firstWhiteKey.offsetWidth === 0) {
+                    console.error("Piano keys have no width. Cannot build sharps.");
+                    return;
+                }
+                const whiteW = firstWhiteKey.offsetWidth;
 
-                    let whiteKeyCounter = 0;
-                    notes.forEach(note => {
-                        if (note.isSharp) {
-                            const blackKey = document.createElement('div');
-                            blackKey.className = 'key black';
-                            blackKey._freq = midiToFreq(note.midi);
-                            blackKey.innerHTML = `<span class="note-label">${showOctaves ? note.name + note.octave : note.name}</span>`;
-                            
-                            // Position the black key halfway between the white keys it sits on
-                            blackKey.style.left = `${(whiteKeyCounter * whiteW) - (blackW / 2)}px`;
-                            
-                            keysContainer.appendChild(blackKey);
-                        } else {
-                            whiteKeyCounter++;
-                        }
-                    });
-                }, 0);
+                const pianoToolEl = pianoDiv.closest('.piano-tool');
+                const blackKeyWidthValue = getComputedStyle(pianoToolEl).getPropertyValue('--black-key-width').trim();
+                const blackW = parseFloat(blackKeyWidthValue);
+                
+                if (isNaN(whiteW) || isNaN(blackW)) {
+                    console.error("Could not parse key widths.");
+                    return;
+                }
+
+                let whiteKeyCounter = 0;
+                notes.forEach(note => {
+                    if (note.isSharp) {
+                        const blackKey = document.createElement('div');
+                        blackKey.className = 'key black';
+                        blackKey._freq = midiToFreq(note.midi);
+                        blackKey.innerHTML = `<span class="note-label">${showOctaves ? note.name + note.octave : note.name}</span>`;
+                        
+                        // Position the black key centered over the gap between the white keys.
+                        blackKey.style.left = `${(whiteKeyCounter * whiteW) - (blackW / 2)}px`;
+                        
+                        keysContainer.appendChild(blackKey);
+                    } else {
+                        whiteKeyCounter++;
+                    }
+                });
             };
 
             startOctSelect.addEventListener('change', buildPianoKeyboard);
@@ -778,7 +792,7 @@
             pianoDiv.addEventListener('mousedown', handleNoteOn);
             pianoDiv.addEventListener('touchstart', handleNoteOn, { passive: false });
 
-            buildPianoKeyboard();
+            // No initial build on page load; it will be built when the tab becomes visible.
         }
 
         function initMetronome() {
