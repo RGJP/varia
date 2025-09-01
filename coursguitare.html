@@ -212,7 +212,7 @@
         .tool-content.active {
             display: block;
         }
-        
+
         .tool-content h3 {
             font-size: 1.5rem;
             font-weight: 700;
@@ -463,7 +463,7 @@
 
         <div class="tool-nav">
             <button class="tool-nav-button active" data-tool="tuner">🎵 Accordeur</button>
-            <button class="tool-nav-button" data-tool="piano">🎹 Piano</button>
+            <button class="tool-nav-button" data-tool="piano">🎹 Clavier</button>
             <button class="tool-nav-button" data-tool="metronome">⏱️ Métronome</button>
             <button class="tool-nav-button" data-tool="chord-wheel">🔄 Cercle des quintes</button>
         </div>
@@ -916,18 +916,26 @@
         const tapTimeout = 2000;
 
         function initMetroAudioContext() { if (!metroAudioContext) metroAudioContext = new (window.AudioContext || window.webkitAudioContext)(); }
+
         function playClick(time) {
             const osc = metroAudioContext.createOscillator();
             const gain = metroAudioContext.createGain();
+
+            // A simple, pure sine wave for a consistent sound.
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, time);
+            osc.frequency.setValueAtTime(880, time); // A consistent A5 note.
+
+            // Create a short volume envelope to make it a "click".
             gain.gain.setValueAtTime(1, time);
-            gain.gain.exponentialRampToValueAtTime(0.00001, time + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
+
             osc.connect(gain);
             gain.connect(metroAudioContext.destination);
+
             osc.start(time);
-            osc.stop(time + 0.05);
+            osc.stop(time + 0.1);
         }
+
         function visualBeat() {
             visualIndicator.classList.add('beat-flash');
             setTimeout(() => { visualIndicator.classList.remove('beat-flash'); }, 100);
