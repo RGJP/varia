@@ -155,61 +155,74 @@
             color: #2d3748;
         }
 
-        /* Tools Section */
+        /* --- REFACTORED TOOLS SECTION --- */
         .tools-section {
             margin-top: 3rem;
         }
 
-        .tools-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-
-        .tool-card {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 1.5rem;
-            text-align: center;
-            transition: all 0.3s ease;
-            animation: fadeInUp 1s ease-out;
-            animation-fill-mode: both;
+        /* Tool Navigation Tabs */
+        .tool-nav {
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-decoration: none;
-            color: inherit;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 1rem;
         }
-
-        .tool-card:hover {
-            transform: scale(1.02);
-            text-decoration: none;
-        }
-
-        .tool-card h3 {
-            font-size: 1.3rem;
-            margin-bottom: 1rem;
-            color: #2d3748;
+        .tool-nav-button {
+            padding: 0.75rem 1.25rem;
+            font-size: 1rem;
             font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            background-color: #f1f5f9;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-grow: 1; /* For mobile, buttons will take up space */
+            text-align: center;
+        }
+        .tool-nav-button:hover {
+            background-color: #e2e8f0;
+            transform: translateY(-2px);
+        }
+        .tool-nav-button.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Tool Content Panes */
+        .tool-content {
+            display: none;
+            padding-top: 1rem;
+            animation: fadeInUp 0.5s ease-out;
+        }
+        .tool-content.active {
+            display: block;
         }
         
+        .tool-content h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
         /* Styles for Integrated Tuner */
         .tuner-tool {
             --green: #98c379;
             --red: #e06c75;
             --yellow: #e5c07b;
-            padding: 2rem;
-            grid-column: 1 / -1;
+            text-align: center;
         }
-        
-        .tuner-tool h3 { color: #2d3748; font-weight: 700; font-size: 1.5rem; }
         .tuner-tool #startButton { background: linear-gradient(45deg, #667eea, #764ba2); color: white; border: none; padding: 15px 30px; font-size: 18px; border-radius: 50px; cursor: pointer; transition: all 0.3s ease; margin-bottom: 30px; font-weight: 600; }
         .tuner-tool #startButton:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .tuner-tool #startButton.active { background: var(--red); }
         .tuner-tool #startButton.active:hover { background: #d85c66; }
-        .tuner-tool .output { margin-top: 20px; width: 100%; max-width: 400px; }
+        .tuner-tool .output { margin: 20px auto 0; width: 100%; max-width: 400px; }
         .tuner-tool .note-display { font-size: clamp(4rem, 20vw, 6rem); font-weight: bold; height: 120px; line-height: 120px; color: #4a5568; transition: color 0.2s ease; }
         .tuner-tool .frequency-display { font-size: 1.5rem; color: #718096; height: 30px; line-height: 30px; }
         .tuner-tool .detune-container { position: relative; height: 40px; width: 100%; background: linear-gradient(to right, var(--red), var(--yellow), var(--green), var(--yellow), var(--red)); border-radius: 5px; margin-top: 30px; overflow: hidden; border: 1px solid #e2e8f0; }
@@ -218,10 +231,8 @@
 
         /* Styles for Integrated Piano */
         .piano-tool {
-            grid-column: 1 / -1; padding: 2rem;
             --white-key-width: 56px; --white-key-height: 220px; --black-key-width: 36px; --black-key-height: 140px; --border-radius: 5px;
         }
-        .piano-tool h3 { color: #2d3748; font-weight: 700; font-size: 1.5rem; }
         .piano-controls { margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 1rem 1.5rem; align-items: center; justify-content: center; color: #4a5568; font-weight: 500; }
         .piano-controls label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; }
         .piano-controls select, .piano-controls input { font-size: 1rem; padding: 0.25rem; border-radius: 5px; border: 1px solid #ccc; }
@@ -236,8 +247,6 @@
         .piano .note-label { pointer-events: none; font-size: 12px; font-weight: 500; }
 
         /* Styles for Integrated Metronome */
-        .metronome-tool { grid-column: 1 / -1; }
-        .metronome-tool h3 { font-size: 1.5rem; font-weight: 700; color: #2d3748; }
         .metronome-wrapper {
             background-color: #1f2937; /* gray-800 */
             color: white;
@@ -246,7 +255,7 @@
             padding: 1.5rem;
             width: 100%;
             max-width: 384px; /* max-w-sm */
-            margin: 1rem auto 0;
+            margin: 0 auto;
             display: flex;
             flex-direction: column;
             gap: 1.5rem; /* space-y-6 */
@@ -276,138 +285,37 @@
 
         /* Styles for Integrated Chord Wheel */
         .chord-wheel-tool {
-            grid-column: 1 / -1;
-            padding: 2rem;
             --wheel-bg-color: #f8f9fa;
             --text-color: #4a5568;
             --border-color: #e2e8f0;
             --accent-color: #6d28d9;
             --wheel-size: 400px;
             --slot-size: 80px;
-
-            /* NEW: 7 distinct colors for each chord slot */
-            --chord-1-color: #ef4444; /* Red */
-            --chord-2-color: #f97316; /* Orange */
-            --chord-3-color: #eab308; /* Yellow */
-            --chord-4-color: #22c55e; /* Green */
-            --chord-5-color: #3b82f6; /* Blue */
-            --chord-6-color: #6366f1; /* Indigo */
-            --chord-7-color: #a855f7; /* Violet */
+            --chord-1-color: #ef4444; --chord-2-color: #f97316; --chord-3-color: #eab308;
+            --chord-4-color: #22c55e; --chord-5-color: #3b82f6; --chord-6-color: #6366f1;
+            --chord-7-color: #a855f7;
         }
-        .chord-wheel-tool h3 { color: #2d3748; font-weight: 700; font-size: 1.5rem; margin-bottom: 1.5rem; }
-        .chord-wheel-tool .chord-wheel-app-container {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
-            width: 100%;
-        }
-        .chord-wheel-tool .controls {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-color);
-        }
+        .chord-wheel-tool .chord-wheel-app-container { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1.5rem; width: 100%; }
+        .chord-wheel-tool .controls { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; color: var(--text-color); }
         .chord-wheel-tool .controls label { font-weight: 600; }
-        .chord-wheel-tool #key-select {
-            font-size: 1.1rem;
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            background-color: white;
-            color: #333;
-            cursor: pointer;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 14px;
-            padding-right: 35px;
-        }
-        .chord-wheel-tool #key-select:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
-        }
+        .chord-wheel-tool #key-select { font-size: 1.1rem; padding: 8px 12px; border-radius: 8px; border: 1px solid #ccc; background-color: white; color: #333; cursor: pointer; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 14px; padding-right: 35px; }
+        .chord-wheel-tool #key-select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3); }
+        /* REFACTORED: Responsive wheel container */
         .chord-wheel-tool .wheel-container {
-            width: var(--wheel-size);
-            height: var(--wheel-size);
-            position: relative;
-            margin-top: 1rem;
-        }
-        .chord-wheel-tool .wheel {
             width: 100%;
-            height: 100%;
-            border: 3px solid var(--border-color);
-            border-radius: 50%;
+            max-width: var(--wheel-size);
+            height: auto;
+            aspect-ratio: 1; /* This makes it a perfect, responsive square */
             position: relative;
-            background-color: var(--wheel-bg-color);
+            margin: 1rem auto 0;
         }
-        .chord-wheel-tool .center-circle {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: calc(var(--slot-size) * 1.6);
-            height: calc(var(--slot-size) * 1.6);
-            background-color: white;
-            border: 3px solid var(--border-color);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            font-size: 1.5rem;
-            font-weight: bold;
-            z-index: 1;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-        .chord-wheel-tool .center-circle .key-name {
-            font-size: 2.5rem;
-            color: var(--accent-color);
-        }
-        .chord-wheel-tool .center-circle .key-type {
-            font-size: 1rem;
-            font-weight: 400;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-color);
-        }
-        .chord-wheel-tool .chord-slot {
-            position: absolute;
-            top: calc(50% - var(--slot-size) / 2);
-            left: calc(50% - var(--slot-size) / 2);
-            width: var(--slot-size);
-            height: var(--slot-size);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.3rem;
-            font-weight: 600;
-            transition: background-color 0.3s ease, transform 0.5s ease;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-            color: white;
-        }
-        .chord-wheel-tool .slot-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-        }
-        .chord-wheel-tool .chord-slot .roman-numeral {
-            font-size: 0.8rem;
-            opacity: 0.8;
-            font-weight: 400;
-        }
-
-        /* NEW: Apply the 7 distinct colors to each slot by its ID */
+        .chord-wheel-tool .wheel { width: 100%; height: 100%; border: 3px solid var(--border-color); border-radius: 50%; position: relative; background-color: var(--wheel-bg-color); }
+        .chord-wheel-tool .center-circle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: calc(var(--slot-size) * 1.6); height: calc(var(--slot-size) * 1.6); background-color: white; border: 3px solid var(--border-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-direction: column; font-size: 1.5rem; font-weight: bold; z-index: 1; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        .chord-wheel-tool .center-circle .key-name { font-size: 2.5rem; color: var(--accent-color); }
+        .chord-wheel-tool .center-circle .key-type { font-size: 1rem; font-weight: 400; text-transform: uppercase; letter-spacing: 1px; color: var(--text-color); }
+        .chord-wheel-tool .chord-slot { position: absolute; top: calc(50% - var(--slot-size) / 2); left: calc(50% - var(--slot-size) / 2); width: var(--slot-size); height: var(--slot-size); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.3rem; font-weight: 600; transition: background-color 0.3s ease, transform 0.5s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.15); color: white; }
+        .chord-wheel-tool .slot-content { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; }
+        .chord-wheel-tool .chord-slot .roman-numeral { font-size: 0.8rem; opacity: 0.8; font-weight: 400; }
         .chord-wheel-tool #chord-0 { background-color: var(--chord-1-color); }
         .chord-wheel-tool #chord-1 { background-color: var(--chord-2-color); }
         .chord-wheel-tool #chord-2 { background-color: var(--chord-3-color); color: #1f2937; } /* Dark text for yellow */
@@ -416,11 +324,6 @@
         .chord-wheel-tool #chord-5 { background-color: var(--chord-6-color); }
         .chord-wheel-tool #chord-6 { background-color: var(--chord-7-color); }
         
-        /* REMOVED: Old coloring system based on major/minor/diminished */
-        /* .chord-wheel-tool .major { background-color: var(--major-color); } */
-        /* .chord-wheel-tool .minor { background-color: var(--minor-color); } */
-        /* .chord-wheel-tool .diminished { background-color: var(--diminished-color); } */
-
         /* Animations */
         @keyframes slideDown { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
@@ -433,14 +336,14 @@
         @media (max-width: 768px) {
             .container { padding: 0 15px; }
             .card { padding: 1.5rem; margin: 1.5rem 0; }
-            .tools-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+            .tool-nav-button { flex-basis: calc(50% - 0.5rem); } /* Two buttons per row on medium screens */
             .piano-tool { --white-key-width: 10vw; --white-key-height: 40vw; --black-key-width: 6.5vw; --black-key-height: 25vw; }
         }
         
         /* Responsive adjustments for Chord Wheel */
         @media (max-width: 600px) {
             .chord-wheel-tool {
-                --wheel-size: 300px;
+                --wheel-size: 320px; /* Adjust max-width */
                 --slot-size: 65px;
             }
             .chord-wheel-tool h3 { font-size: 1.3rem; }
@@ -516,77 +419,92 @@
         <div id="outils" class="card tools-section">
             <h2>🛠️ Outils utiles</h2>
             
-            <div class="tools-grid">
+            <div class="tool-nav">
+                <button class="tool-nav-button active" data-tool="tuner">🎵 Accordeur</button>
+                <button class="tool-nav-button" data-tool="piano">🎹 Piano</button>
+                <button class="tool-nav-button" data-tool="metronome">⏱️ Métronome</button>
+                <button class="tool-nav-button" data-tool="chord-wheel">🔄 Roue d'accords</button>
+            </div>
+
+            <div class="tool-content-area">
                 
-                <div class="tool-card tuner-tool">
-                    <h3>🎵 Accordeur Chromatique</h3>
-                    <button id="startButton">Démarrer l'accordeur</button>
-                    <div class="output">
-                        <div id="note" class="note-display">--</div>
-                        <div id="frequency" class="frequency-display">--- Hz</div>
-                        <div class="detune-container">
-                            <div class="detune-indicator" id="detuneIndicator"></div>
+                <div id="tuner-content" class="tool-content active">
+                    <div class="tuner-tool">
+                        <h3>Accordeur Chromatique</h3>
+                        <button id="startButton">Démarrer l'accordeur</button>
+                        <div class="output">
+                            <div id="note" class="note-display">--</div>
+                            <div id="frequency" class="frequency-display">--- Hz</div>
+                            <div class="detune-container">
+                                <div class="detune-indicator" id="detuneIndicator"></div>
+                            </div>
+                            <div id="cents" class="cents-display">--- cents</div>
                         </div>
-                        <div id="cents" class="cents-display">--- cents</div>
                     </div>
                 </div>
 
-                <div class="tool-card piano-tool">
-                    <h3>🎹 Piano Virtuel</h3>
-                    <div class="piano-controls">
-                        <label>Octave de départ: <select id="startOct">
-                                <option value="2">C2</option>
-                                <option value="3">C3</option>
-                                <option value="4" selected>C4 (Do central)</option>
-                                <option value="5">C5</option>
-                            </select></label>
-                        <label><input type="checkbox" id="showOct" checked> Afficher les octaves</label>
-                    </div>
-                    <div class="keyboard-wrapper">
-                        <div id="piano" class="piano" aria-label="Piano virtuel à deux octaves"></div>
+                <div id="piano-content" class="tool-content">
+                    <div class="piano-tool">
+                        <h3>Piano Virtuel</h3>
+                        <div class="piano-controls">
+                            <label>Octave de départ: <select id="startOct">
+                                    <option value="2">C2</option>
+                                    <option value="3">C3</option>
+                                    <option value="4" selected>C4 (Do central)</option>
+                                    <option value="5">C5</option>
+                                </select></label>
+                            <label><input type="checkbox" id="showOct" checked> Afficher les octaves</label>
+                        </div>
+                        <div class="keyboard-wrapper">
+                            <div id="piano" class="piano" aria-label="Piano virtuel à deux octaves"></div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="tool-card metronome-tool">
-                    <h3>⏱️ Métronome</h3>
-                    <div class="metronome-wrapper">
-                        <div class="metronome-indicator-area">
-                            <div id="visual-indicator" class="metronome-visual-indicator"></div>
-                            <div class="metronome-bpm-display-wrapper">
-                                <span id="bpm-display" class="metronome-bpm-text">120</span>
-                                <span class="metronome-bpm-label">BPM</span>
+                <div id="metronome-content" class="tool-content">
+                    <div class="metronome-tool">
+                        <h3>Métronome</h3>
+                        <div class="metronome-wrapper">
+                            <div class="metronome-indicator-area">
+                                <div id="visual-indicator" class="metronome-visual-indicator"></div>
+                                <div class="metronome-bpm-display-wrapper">
+                                    <span id="bpm-display" class="metronome-bpm-text">120</span>
+                                    <span class="metronome-bpm-label">BPM</span>
+                                </div>
+                            </div>
+                            <div class="metronome-tempo-controls">
+                                <div class="metronome-slider-container">
+                                    <button id="decrease-tempo" class="metronome-button metronome-adjust-button">-</button>
+                                    <input type="range" id="tempo-slider" min="30" max="240" value="120" class="metronome-slider">
+                                    <button id="increase-tempo" class="metronome-button metronome-adjust-button">+</button>
+                                </div>
+                            </div>
+                            <div class="metronome-action-buttons">
+                                <button id="start-stop-btn" class="metronome-button metronome-main-button metronome-start-button">
+                                    Démarrer
+                                </button>
+                                <button id="tap-tempo-btn" class="metronome-button metronome-main-button metronome-tap-button">
+                                    Tap Tempo
+                                </button>
                             </div>
                         </div>
-                        <div class="metronome-tempo-controls">
-                            <div class="metronome-slider-container">
-                                <button id="decrease-tempo" class="metronome-button metronome-adjust-button">-</button>
-                                <input type="range" id="tempo-slider" min="30" max="240" value="120" class="metronome-slider">
-                                <button id="increase-tempo" class="metronome-button metronome-adjust-button">+</button>
-                            </div>
-                        </div>
-                        <div class="metronome-action-buttons">
-                            <button id="start-stop-btn" class="metronome-button metronome-main-button metronome-start-button">
-                                Démarrer
-                            </button>
-                            <button id="tap-tempo-btn" class="metronome-button metronome-main-button metronome-tap-button">
-                                Tap Tempo
-                            </button>
-                        </div>
                     </div>
                 </div>
 
-                <div class="tool-card chord-wheel-tool">
-                    <h3>🔄 Roue d'accords (Cercle des quintes)</h3>
-                    <div class="chord-wheel-app-container">
-                        <div class="controls">
-                            <label for="key-select">Sélectionnez la Tonalité :</label>
-                            <select id="key-select"></select>
-                        </div>
-                        <div class="wheel-container">
-                            <div class="wheel"></div>
-                            <div class="center-circle">
-                                <span id="center-key-name">C</span>
-                                <span id="center-key-type">Majeur</span>
+                <div id="chord-wheel-content" class="tool-content">
+                    <div class="chord-wheel-tool">
+                        <h3>Roue d'accords (Cercle des quintes)</h3>
+                        <div class="chord-wheel-app-container">
+                            <div class="controls">
+                                <label for="key-select">Sélectionnez la Tonalité :</label>
+                                <select id="key-select"></select>
+                            </div>
+                            <div class="wheel-container">
+                                <div class="wheel"></div>
+                                <div class="center-circle">
+                                    <span id="center-key-name">C</span>
+                                    <span id="center-key-type">Majeur</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -612,6 +530,7 @@
             cards.forEach(card => { observer.observe(card); });
 
             // Initialize all tools
+            initToolTabs();
             initTuner();
             initPiano();
             initMetronome();
@@ -627,6 +546,40 @@
                 note.style.transform = `translate(${x * speed * 10}px, ${y * speed * 10}px) rotate(${x * 360}deg)`;
             });
         });
+
+        // --- NEW: SCRIPT FOR TOOL TABS ---
+        function initToolTabs() {
+            const navButtons = document.querySelectorAll('.tool-nav-button');
+            const toolContents = document.querySelectorAll('.tool-content');
+
+            if (!navButtons.length || !toolContents.length) return;
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const toolName = button.dataset.tool;
+                    
+                    // Update active state on buttons
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    // Update visible content pane
+                    toolContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === `${toolName}-content`) {
+                            content.classList.add('active');
+                        }
+                    });
+
+                    // Special case for chord wheel, which needs to recalculate size on display
+                    if (toolName === 'chord-wheel') {
+                       // A small delay ensures the element is visible before recalculating
+                       setTimeout(() => {
+                           window.dispatchEvent(new Event('resize'));
+                       }, 50);
+                    }
+                });
+            });
+        }
 
         // --- SCRIPT DE L'ACCORDEUR INTÉGRÉ ---
         function initTuner() {
@@ -924,7 +877,6 @@
             function populateSelect() {
                 keysInOrder.forEach(key => {
                     const option = document.createElement('option');
-                    // Use Gb instead of F# in the dropdown for consistency with flat keys
                     const displayKey = key === 'F#' ? 'Gb' : key;
                     option.value = key;
                     option.textContent = displayKey;
@@ -968,7 +920,6 @@
                     const angle = -90 + (i * (360 / 7));
                     const textRotation = -angle;
 
-                    // The JS still adds a quality class for semantics, but color is handled by ID in CSS now
                     slot.className = 'chord-slot ' + quality;
                     slot.innerHTML = `
                         <div class="slot-content" style="transform: rotate(${textRotation}deg);">
