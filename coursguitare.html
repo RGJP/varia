@@ -108,6 +108,7 @@
         .card:nth-child(4) { animation-delay: 0.6s; }
         .card:nth-child(5) { animation-delay: 0.8s; }
         .card:nth-child(6) { animation-delay: 1.0s; }
+        .card:nth-child(7) { animation-delay: 1.2s; } /* Added delay for the new card */
 
         .card h2 {
             font-size: 1.8rem;
@@ -365,6 +366,34 @@
         .chord-wheel-tool #chord-5 { background-color: var(--chord-7-color); }
         .chord-wheel-tool #chord-6 { background-color: var(--chord-6-color); }
 
+        /* Video Embed Styles */
+        .chant-section h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+        .video-wrapper {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            background: #000;
+            margin-bottom: 1.5rem;
+        }
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+
+
         /* Animations */
         @keyframes slideDown { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
@@ -414,13 +443,13 @@
 
 
     <div class="card">
-        <h2><span class="step-number">1</span> Trouver le tempo et le rythme</h2>
+        <h2><span class="step-number">1</span> Tempo et rythme</h2>
         <p>Compter les battements : est-ce en <span class="highlight">4/4, 6/8</span> ou autre?</p>
         <p>Bien ressentir la <span class="highlight">pulsation régulière</span> avant de jouer (utiliser le tap du métronome).</p>
     </div>
 
     <div class="card">
-        <h2><span class="step-number">2</span> Trouver la tonique de la mélodie</h2>
+        <h2><span class="step-number">2</span> Tonique de la mélodie</h2>
         <p>Identifier la <span class="highlight">tonique / note de base</span> (celle sur laquelle tout "repose" / "résolution").</p>
         <p>Déterminer si la mélodie est majeure ou mineure :</p>
         <ul>
@@ -429,7 +458,7 @@
         </ul>
     </div>
     <div class="card">
-        <h2><span class="step-number">3</span> Utiliser le cercle des quintes</h2>
+        <h2><span class="step-number">3</span> Le cercle des quintes</h2>
         <p>À partir de la tonique, retrouver tous les <span class="highlight">accords possibles</span> dans la gamme en utilisant le cercle des quintes.</p>
         <p><strong>Exemple :</strong> si la tonique est C (Do) → on prend cette gamme et ses accords pour accompagner la mélodie. </p>
         <p>*Ne pas oublier qu'on peut utiliser un CAPO pour aider à jouer dans une tonalité différente avec des accords faciles.</p>
@@ -462,7 +491,7 @@
         <h2>🛠️ Outils</h2>
 
         <div class="tool-nav">
-            <button class="tool-nav-button active" data-tool="tuner">🎵 Accordeur</button>
+            <button class="tool-nav-button active" data-tool="tuner">🎸 Accordeur</button>
             <button class="tool-nav-button" data-tool="piano">🎹 Clavier</button>
             <button class="tool-nav-button" data-tool="metronome">⏱️ Métronome</button>
             <button class="tool-nav-button" data-tool="chord-wheel">🔄 Cercle des quintes</button>
@@ -556,6 +585,42 @@
         <a href="https://www.all-guitar-chords.com/" target="_blank" rel="noopener noreferrer" class="tools-button" style="margin-top: 2rem; display: block; text-align: center;">
             🔢 Accords et gammes
         </a>
+    </div>
+
+    <div class="card chant-section">
+        <h2>🎶 Chants faciles à jouer</h2>
+        <p>Voici quelques chants avec des accords simples pour vous pratiquer. Écoutez, ressentez le rythme et essayez de trouver les accords !</p>
+
+        <h3>'Jaya Shiva Shambho'</h3>
+        <div class="video-wrapper">
+            <iframe src="https://www.youtube.com/embed/RNBB2aIwUR8" title="Jaya Shiva Shambho" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        </div>
+
+        <h3>'Om Gam Ganapataye Namah'</h3>
+        <div class="video-wrapper">
+            <iframe src="https://www.youtube.com/embed/F6BcPj42bUg" title="Om Gam Ganapataye Namah" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        </div>
+
+        <h3>'Om Namo Narayani'</h3>
+        <div class="video-wrapper">
+            <iframe src="https://www.youtube.com/embed/WkRc0icV7j8" title="Om Namo Narayani" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        </div>
+
+        <h3>'Gayatri'</h3>
+        <div class="video-wrapper">
+            <iframe src="https://www.youtube.com/embed/qdpTx7nqwc0" title="Gayatri Mantra" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        </div>
+
+        <h3>'Narayani Ma'</h3>
+        <div class="video-wrapper">
+            <iframe src="https://www.youtube.com/embed/Q-N1s6KvWb4" title="Narayani Ma" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        </div>
+
+        <h3>'Om Guru (Amma)'</h3>
+        <div class="video-wrapper">
+            <iframe src="https://www.youtube.com/embed/qal-7WIY3X4?si=geAdLPO9twOqhrVU" title="Om Guru" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        </div>
+
 
     </div>
 </div>
@@ -736,6 +801,7 @@
         function ensurePianoAudio() { if (!pianoAudioCtx) pianoAudioCtx = new(window.AudioContext || window.webkitAudioContext)(); }
         function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 
+        // --- PIANO SOUND FIX START ---
         function playNote(freq, el) {
             if (activeNotes.has(freq)) return;
             ensurePianoAudio();
@@ -745,11 +811,21 @@
             const osc = pianoAudioCtx.createOscillator();
             const gainNode = pianoAudioCtx.createGain();
 
-            osc.type = 'sawtooth'; // More reed-like sound
+            // Using a 'triangle' wave for a softer, more pleasant tone than 'sawtooth'
+            osc.type = 'triangle';
             osc.frequency.setValueAtTime(freq, now);
 
+            // A more complete ADSR (Attack, Decay, Sustain, Release) envelope for a natural sound
+            const attackTime = 0.015;
+            const decayTime = 0.2;
+            const sustainLevel = 0.4;
+            const peakLevel = 0.6;
+
             gainNode.gain.setValueAtTime(0, now);
-            gainNode.gain.linearRampToValueAtTime(0.6, now + 0.02); // Quick attack
+            // Attack: rapid rise to peak volume
+            gainNode.gain.linearRampToValueAtTime(peakLevel, now + attackTime);
+            // Decay: fall from peak to sustain level
+            gainNode.gain.exponentialRampToValueAtTime(sustainLevel, now + attackTime + decayTime);
 
             osc.connect(gainNode);
             gainNode.connect(pianoAudioCtx.destination);
@@ -763,14 +839,21 @@
             const note = activeNotes.get(freq);
             if (note) {
                 const now = pianoAudioCtx.currentTime;
+                const releaseTime = 0.4; // A more natural, slightly longer release
+
+                // It's crucial to cancel any scheduled changes (like the decay) when the key is released
                 note.gainNode.gain.cancelScheduledValues(now);
+                // Set the gain to its current value to start the release smoothly
                 note.gainNode.gain.setValueAtTime(note.gainNode.gain.value, now);
-                note.gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.2); // Quick release
-                note.osc.stop(now + 0.2);
+                // Release: fade out naturally
+                note.gainNode.gain.exponentialRampToValueAtTime(0.0001, now + releaseTime);
+
+                note.osc.stop(now + releaseTime);
                 activeNotes.delete(freq);
                 if (el) el.classList.remove('active');
             }
         }
+        // --- PIANO SOUND FIX END ---
 
         // --- Multi-touch and scrolling logic using Pointer Events ---
         if (keyboardWrapper) {
