@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cours de Guitare</title>
+    <title data-lang-key="pageTitle">Cours de Guitare</title>
     <style>
         * {
             margin: 0;
@@ -31,6 +31,7 @@
 
         /* Header */
         .header {
+            position: relative;
             text-align: center;
             padding: 3rem 0;
             background: rgba(255, 255, 255, 0.1);
@@ -38,6 +39,41 @@
             margin-bottom: 2rem;
             animation: slideDown 1s ease-out;
         }
+
+        /* Language Switcher Button */
+        .lang-switcher {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 10;
+        }
+
+        #lang-toggle-btn {
+            padding: 0.6rem 1.2rem;
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+        }
+
+        #lang-toggle-btn:hover {
+            background-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .lang-switcher {
+                top: 1rem;
+                right: 1rem;
+            }
+        }
+
 
         .header h1 {
             font-size: clamp(2.5rem, 8vw, 4rem);
@@ -436,51 +472,54 @@
 
 <div class="container">
     <header class="header">
-        <h1>Cours de Guitare</h1>
-        <a href="#outils" class="tools-button">Outils 🛠️</a>
+        <div class="lang-switcher">
+            <button id="lang-toggle-btn">EN</button>
+        </div>
+        <h1 data-lang-key="mainTitle">Cours de Guitare</h1>
+        <a href="#outils" class="tools-button" data-lang-key="toolsBtnHeader">Outils 🛠️</a>
     </header>
 
 
 
     <div class="card">
-        <h2><span class="step-number">1</span> Tempo et rythme</h2>
-        <p>Compter les battements : est-ce en <span class="highlight">4/4, 6/8</span> ou autre?</p>
-        <p>Bien ressentir la <span class="highlight">pulsation régulière</span> avant de jouer (utiliser le tap du métronome). </p>
+        <h2 data-lang-key="card1Title"><span class="step-number">1</span> Tempo et rythme</h2>
+        <p data-lang-key="card1P1">Compter les battements : est-ce en <span class="highlight">4/4, 6/8</span> ou autre?</p>
+        <p data-lang-key="card1P2">Bien ressentir la <span class="highlight">pulsation régulière</span> avant de jouer (utiliser le tap du métronome). </p>
     </div>
 
     <div class="card">
-        <h2><span class="step-number">2</span> Tonique de la mélodie</h2>
-        <p>Identifier la <span class="highlight">tonique / note de base</span> (celle sur laquelle tout "repose" / "résolution").</p>
-        <p>Déterminer si la mélodie est majeure ou mineure :</p>
+        <h2 data-lang-key="card2Title"><span class="step-number">2</span> Tonique de la mélodie</h2>
+        <p data-lang-key="card2P1">Identifier la <span class="highlight">tonique / note de base</span> (celle sur laquelle tout "repose" / "résolution").</p>
+        <p data-lang-key="card2P2">Déterminer si la mélodie est majeure ou mineure :</p>
         <ul>
-            <li><span class="highlight">sonorité joyeuse, lumineuse</span> → souvent majeur</li>
-            <li><span class="highlight">sonorité plus mélancolique, mystérieuse</span> → souvent mineur</li>
+            <li data-lang-key="card2li1"><span class="highlight">sonorité joyeuse, lumineuse</span> → souvent majeur</li>
+            <li data-lang-key="card2li2"><span class="highlight">sonorité plus mélancolique, mystérieuse</span> → souvent mineur</li>
         </ul>
     </div>
     <div class="card">
-        <h2><span class="step-number">3</span> Le cercle des quintes</h2>
-        <p>À partir de la tonique, retrouver tous les <span class="highlight">accords possibles</span> dans la gamme en utilisant le cercle des quintes.</p>
-        <p><strong>Exemple :</strong> si la tonique est C (Do) → on prend cette gamme et ses accords pour accompagner la mélodie. </p>
-        <p>*Ne pas oublier qu'on peut utiliser un CAPO pour aider à jouer dans une tonalité différente avec des accords faciles.</p>
+        <h2 data-lang-key="card3Title"><span class="step-number">3</span> Le cercle des quintes</h2>
+        <p data-lang-key="card3P1">À partir de la tonique, retrouver tous les <span class="highlight">accords possibles</span> dans la gamme en utilisant le cercle des quintes.</p>
+        <p data-lang-key="card3P2"><strong>Exemple :</strong> si la tonique est C (Do) → on prend cette gamme et ses accords pour accompagner la mélodie. </p>
+        <p data-lang-key="card3P3">*Ne pas oublier qu'on peut utiliser un CAPO pour aider à jouer dans une tonalité différente avec des accords faciles.</p>
         <p style="margin-top: 1rem; font-weight: 600; color: #764ba2;">Aide-mémoire : <span class="highlight">C→Do, D→Ré, E→Mi, F→Fa, G→Sol, A→La, B→Si</span></p>
     </div>
 
     <div class="card">
-        <h2><span class="step-number">4</span> Expérimenter et s'amuser !</h2>
+        <h2 data-lang-key="card4Title"><span class="step-number">4</span> Expérimenter et s'amuser !</h2>
         <ul>
-            <li>Tester différentes <span class="highlight">combinaisons d'accords</span>.</li>
-            <li>Improviser de petites <span class="highlight">phrases mélodiques</span> dans la gamme.</li>
-            <li>Toujours garder le <span class="highlight">plaisir de jouer</span> avant tout.</li>
+            <li data-lang-key="card4li1">Tester différentes <span class="highlight">combinaisons d'accords</span>.</li>
+            <li data-lang-key="card4li2">Improviser de petites <span class="highlight">phrases mélodiques</span> dans la gamme.</li>
+            <li data-lang-key="card4li3">Toujours garder le <span class="highlight">plaisir de jouer</span> avant tout.</li>
         </ul>
     </div>
 
     <div class="card">
-        <h2>🖐️ Exercices pratiques</h2>
+        <h2 data-lang-key="card5Title">🖐️ Exercices pratiques</h2>
         <ul>
-            <li><strong>Arpèges :</strong> jouer les cordes d'un accord une par une.</li>
-            <li><strong>Strumming :</strong> gratter les cordes avec le pouce et/ou les doigts, toujours en respectant le rythme.</li>
-            <li><strong>Solo simple :</strong> improviser avec les notes de la gamme majeure ou mineure en lien avec la mélodie.</li>
-            <li><strong>Défi :</strong> prendre un chant sur YouTube et trouver comment le jouer.</li>
+            <li data-lang-key="card5li1"><strong>Arpèges :</strong> jouer les cordes d'un accord une par une.</li>
+            <li data-lang-key="card5li2"><strong>Strumming :</strong> gratter les cordes avec le pouce et/ou les doigts, toujours en respectant le rythme.</li>
+            <li data-lang-key="card5li3"><strong>Solo simple :</strong> improviser avec les notes de la gamme majeure ou mineure en lien avec la mélodie.</li>
+            <li data-lang-key="card5li4"><strong>Défi :</strong> prendre un chant sur YouTube et trouver comment le jouer.</li>
         </ul>
         <p style="margin-top: 1.5rem; font-style: italic; color: #667eea; font-weight: 600;">
 
@@ -488,21 +527,20 @@
     </div>
 
     <div id="outils" class="card tools-section">
-        <h2>🛠️ Outils</h2>
+        <h2 data-lang-key="toolsTitle">🛠️ Outils</h2>
 
         <div class="tool-nav">
-            <button class="tool-nav-button active" data-tool="tuner">🎸 Accordeur</button>
-            <button class="tool-nav-button" data-tool="piano">🎹 Clavier</button>
-            <button class="tool-nav-button" data-tool="metronome">⏱️ Métronome</button>
-            <button class="tool-nav-button" data-tool="chord-wheel">🔄 Cercle des quintes</button>
+            <button class="tool-nav-button active" data-tool="tuner" data-lang-key="toolNavTuner">🎸 Accordeur</button>
+            <button class="tool-nav-button" data-tool="piano" data-lang-key="toolNavPiano">🎹 Clavier</button>
+            <button class="tool-nav-button" data-tool="metronome" data-lang-key="toolNavMetronome">⏱️ Métronome</button>
+            <button class="tool-nav-button" data-tool="chord-wheel" data-lang-key="toolNavChordWheel">🔄 Cercle des quintes</button>
         </div>
 
         <div class="tool-content-area">
 
             <div id="tuner-content" class="tool-content active">
                 <div class="tuner-tool">
-
-                    <button id="startButton">Démarrer l'accordeur</button>
+                    <button id="startButton" data-lang-key="tunerBtnStart">Démarrer l'accordeur</button>
                     <div class="output">
                         <div id="note" class="note-display">--</div>
                         <div id="frequency" class="frequency-display">--- Hz</div>
@@ -516,15 +554,14 @@
 
             <div id="piano-content" class="tool-content">
                 <div class="piano-tool">
-
                     <div class="piano-controls">
-                        <label>Octave de départ: <select id="startOct">
+                        <label><span data-lang-key="pianoOctaveLabel">Octave de départ:</span> <select id="startOct">
                             <option value="2">C2</option>
                             <option value="3" selected>C3</option>
                             <option value="4" >C4</option>
                             <option value="5">C5</option>
                         </select></label>
-                        <label><input type="checkbox" id="showOct" checked> Afficher les octaves</label>
+                        <label><input type="checkbox" id="showOct" checked><span data-lang-key="pianoCheckboxLabel"> Afficher les octaves</span></label>
                     </div>
                     <div class="keyboard-wrapper">
                         <div id="piano" class="piano" aria-label="Piano virtuel à deux octaves"></div>
@@ -534,7 +571,6 @@
 
             <div id="metronome-content" class="tool-content">
                 <div class="metronome-tool">
-
                     <div class="metronome-wrapper">
                         <div class="metronome-indicator-area">
                             <div id="visual-indicator" class="metronome-visual-indicator"></div>
@@ -551,10 +587,10 @@
                             </div>
                         </div>
                         <div class="metronome-action-buttons">
-                            <button id="start-stop-btn" class="metronome-button metronome-main-button metronome-start-button">
+                            <button id="start-stop-btn" class="metronome-button metronome-main-button metronome-start-button" data-lang-key="metronomeBtnStart">
                                 Démarrer
                             </button>
-                            <button id="tap-tempo-btn" class="metronome-button metronome-main-button metronome-tap-button">
+                            <button id="tap-tempo-btn" class="metronome-button metronome-main-button metronome-tap-button" data-lang-key="metronomeBtnTap">
                                 Tap Tempo
                             </button>
                         </div>
@@ -564,10 +600,9 @@
 
             <div id="chord-wheel-content" class="tool-content">
                 <div class="chord-wheel-tool">
-
                     <div class="chord-wheel-app-container">
                         <div class="controls">
-                            <label for="key-select">Tonalité :</label>
+                            <label for="key-select" data-lang-key="chordWheelLabel">Tonalité :</label>
                             <select id="key-select"></select>
                         </div>
                         <div class="wheel-container">
@@ -579,19 +614,18 @@
                     </div>
                 </div>
             </div>
-
         </div>
 
         <div style="text-align: center; margin-top: 2rem;">
-            <a href="https://www.all-guitar-chords.com/" target="_blank" rel="noopener noreferrer" class="tools-button" style="width: 100%; max-width: 400px; display: inline-block;">
+            <a href="https://www.all-guitar-chords.com/" target="_blank" rel="noopener noreferrer" class="tools-button" style="width: 100%; max-width: 400px; display: inline-block;" data-lang-key="chordsAndScalesLink">
                 🔢 Accords et gammes
             </a>
         </div>
     </div>
 
     <div class="card chant-section">
-        <h2>🎶 Chants à explorer</h2>
-        <p>Voici quelques chants avec des accords simples, très agréables à jouer. Écouter, ressentir, avoir du plaisir! 🙌</p>
+        <h2 data-lang-key="chantsTitle">🎶 Chants à explorer</h2>
+        <p data-lang-key="chantsP1">Voici quelques chants avec des accords simples, très agréables à jouer. Écouter, ressentir, avoir du plaisir! 🙌</p>
 
         <h3>'Jaya Shiva Shambho'</h3>
         <div class="video-wrapper">
@@ -636,14 +670,91 @@
         <div class="video-wrapper">
             <iframe src="https://www.youtube.com/embed/NYirllZ4ly4" title="Sri Ram Jai Ram Jai Jai Ram" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
         </div>
-
     </div>
 </div>
 
 <script>
     let buildPianoKeyboard;
+    let currentLang = 'fr';
+
+    // --- LANGUAGE TRANSLATION LOGIC ---
+    const translations = {
+        pageTitle: { fr: 'Cours de Guitare', en: 'Guitar Lessons' },
+        mainTitle: { fr: 'Cours de Guitare', en: 'Guitar Lessons' },
+        toolsBtnHeader: { fr: 'Outils 🛠️', en: 'Tools 🛠️' },
+        card1Title: { fr: '<span class="step-number">1</span> Tempo et rythme', en: '<span class="step-number">1</span> Tempo and Rhythm' },
+        card1P1: { fr: 'Compter les battements : est-ce en <span class="highlight">4/4, 6/8</span> ou autre?', en: 'Count the beats: is it in <span class="highlight">4/4, 6/8</span> or something else?' },
+        card1P2: { fr: 'Bien ressentir la <span class="highlight">pulsation régulière</span> avant de jouer (utiliser le tap du métronome).', en: 'Feel the <span class="highlight">steady pulse</span> before playing (use the metronome tap feature).' },
+        card2Title: { fr: '<span class="step-number">2</span> Tonique de la mélodie', en: '<span class="step-number">2</span> Tonic of the Melody' },
+        card2P1: { fr: 'Identifier la <span class="highlight">tonique / note de base</span> (celle sur laquelle tout "repose" / "résolution").', en: 'Identify the <span class="highlight">tonic / root note</span> (the one on which everything "rests" / "resolves").' },
+        card2P2: { fr: 'Déterminer si la mélodie est majeure ou mineure :', en: 'Determine if the melody is major or minor:' },
+        card2li1: { fr: '<span class="highlight">sonorité joyeuse, lumineuse</span> → souvent majeur', en: '<span class="highlight">joyful, bright sound</span> → often major' },
+        card2li2: { fr: '<span class="highlight">sonorité plus mélancolique, mystérieuse</span> → souvent mineur', en: '<span class="highlight">more melancholic, mysterious sound</span> → often minor' },
+        card3Title: { fr: '<span class="step-number">3</span> Le cercle des quintes', en: '<span class="step-number">3</span> The Circle of Fifths' },
+        card3P1: { fr: 'À partir de la tonique, retrouver tous les <span class="highlight">accords possibles</span> dans la gamme en utilisant le cercle des quintes.', en: 'From the tonic, find all <span class="highlight">possible chords</span> in the scale using the circle of fifths.' },
+        card3P2: { fr: '<strong>Exemple :</strong> si la tonique est C (Do) → on prend cette gamme et ses accords pour accompagner la mélodie.', en: '<strong>Example:</strong> if the tonic is C → we take that scale and its chords to accompany the melody.' },
+        card3P3: { fr: '*Ne pas oublier qu\'on peut utiliser un CAPO pour aider à jouer dans une tonalité différente avec des accords faciles.', en: '*Don\'t forget you can use a CAPO to help play in a different key with easy chords.' },
+        card4Title: { fr: '<span class="step-number">4</span> Expérimenter et s\'amuser !', en: '<span class="step-number">4</span> Experiment and Have Fun!' },
+        card4li1: { fr: 'Tester différentes <span class="highlight">combinaisons d\'accords</span>.', en: 'Test different <span class="highlight">chord combinations</span>.' },
+        card4li2: { fr: 'Improviser de petites <span class="highlight">phrases mélodiques</span> dans la gamme.', en: 'Improvise small <span class="highlight">melodic phrases</span> within the scale.' },
+        card4li3: { fr: 'Toujours garder le <span class="highlight">plaisir de jouer</span> avant tout.', en: 'Always keep the <span class="highlight">pleasure of playing</span> first and foremost.' },
+        card5Title: { fr: '🖐️ Exercices pratiques', en: '🖐️ Practical Exercises' },
+        card5li1: { fr: '<strong>Arpèges :</strong> jouer les cordes d\'un accord une par une.', en: '<strong>Arpeggios:</strong> play the strings of a chord one by one.' },
+        card5li2: { fr: '<strong>Strumming :</strong> gratter les cordes avec le pouce et/ou les doigts, toujours en respectant le rythme.', en: '<strong>Strumming:</strong> strum the strings with the thumb and/or fingers, always following the rhythm.' },
+        card5li3: { fr: '<strong>Solo simple :</strong> improviser avec les notes de la gamme majeure ou mineure en lien avec la mélodie.', en: '<strong>Simple solo:</strong> improvise with the notes of the major or minor scale related to the melody.' },
+        card5li4: { fr: '<strong>Défi :</strong> prendre un chant sur YouTube et trouver comment le jouer.', en: '<strong>Challenge:</strong> take a song on YouTube and figure out how to play it.' },
+        toolsTitle: { fr: '🛠️ Outils', en: '🛠️ Tools' },
+        toolNavTuner: { fr: '🎸 Accordeur', en: '🎸 Tuner' },
+        toolNavPiano: { fr: '🎹 Clavier', en: '🎹 Keyboard' },
+        toolNavMetronome: { fr: '⏱️ Métronome', en: '⏱️ Metronome' },
+        toolNavChordWheel: { fr: '🔄 Cercle des quintes', en: '🔄 Circle of Fifths' },
+        tunerBtnStart: { fr: "Démarrer l'accordeur", en: 'Start Tuner' },
+        tunerBtnStop: { fr: "Arrêter l'accordeur", en: 'Stop Tuner' },
+        pianoOctaveLabel: { fr: 'Octave de départ:', en: 'Starting Octave:' },
+        pianoCheckboxLabel: { fr: ' Afficher les octaves', en: ' Show Octaves' },
+        metronomeBtnStart: { fr: 'Démarrer', en: 'Start' },
+        metronomeBtnStop: { fr: 'Arrêter', en: 'Stop' },
+        metronomeBtnTap: { fr: 'Tap Tempo', en: 'Tap Tempo' },
+        chordWheelLabel: { fr: 'Tonalité :', en: 'Key:' },
+        chordsAndScalesLink: { fr: '🔢 Accords et gammes', en: '🔢 Chords and Scales' },
+        chantsTitle: { fr: '🎶 Chants à explorer', en: '🎶 Songs to Explore' },
+        chantsP1: { fr: 'Voici quelques chants avec des accords simples, très agréables à jouer. Écouter, ressentir, avoir du plaisir! 🙌', en: 'Here are a few songs with simple chords that are very enjoyable to play. Listen, feel, and have fun! 🙌' }
+    };
+
+    function setLanguage(lang) {
+        currentLang = lang;
+        document.documentElement.lang = lang;
+        const langToggleBtn = document.getElementById('lang-toggle-btn');
+        if (langToggleBtn) {
+            langToggleBtn.textContent = lang === 'fr' ? 'EN' : 'FR';
+        }
+
+        const elements = document.querySelectorAll('[data-lang-key]');
+        elements.forEach(el => {
+            const key = el.dataset.langKey;
+            if (translations[key] && translations[key][lang]) {
+                const translation = translations[key][lang];
+                // Use innerHTML if the translation contains HTML tags, otherwise use textContent
+                if (/<[a-z][\s\S]*>/i.test(translation)) {
+                    el.innerHTML = translation;
+                } else {
+                    el.textContent = translation;
+                }
+            }
+        });
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // --- NEW LANGUAGE TOGGLE ---
+        const langToggleBtn = document.getElementById('lang-toggle-btn');
+        if (langToggleBtn) {
+            langToggleBtn.addEventListener('click', () => {
+                const newLang = currentLang === 'fr' ? 'en' : 'fr';
+                setLanguage(newLang);
+            });
+        }
+        // --- END NEW LANGUAGE TOGGLE ---
+
         const cards = document.querySelectorAll('.card');
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
@@ -693,9 +804,6 @@
                     }
                 });
 
-                // --- REFACTORED PIANO CALL ---
-                // If the piano tab is opened, build the keyboard.
-                // A short timeout ensures the container is visible and has dimensions.
                 if (toolName === 'piano' && typeof buildPianoKeyboard === 'function') {
                     setTimeout(buildPianoKeyboard, 10);
                 }
@@ -724,31 +832,29 @@
                 try {
                     await setupAudio();
                     isTunerActive = true;
-                    startButton.textContent = "Arrêter l'accordeur";
+                    startButton.textContent = translations.tunerBtnStop[currentLang];
                     startButton.classList.add('active');
                     update();
                 } catch (err) {
                     console.error("Error initializing audio.", err);
-                    alert("Impossible d'accéder au microphone. Veuillez autoriser l'accès.");
+                    alert("Could not access the microphone. Please allow access.");
                 }
             } else {
                 if (audioContext && audioContext.state !== 'closed') audioContext.close();
                 cancelAnimationFrame(animationFrameId);
                 isTunerActive = false;
-                startButton.textContent = "Démarrer l'accordeur";
+                startButton.textContent = translations.tunerBtnStart[currentLang];
                 startButton.classList.remove('active');
                 resetUI();
             }
         }
 
         async function setupAudio() {
-            // FIX for Android audio channel issue: Create a context with explicit channel mode
             audioContext = new (window.AudioContext || window.webkitAudioContext)({
                 channelCountMode: 'explicit',
                 channelCount: 2
             });
 
-            // Handle the case where the context is suspended (common on mobile)
             if (audioContext.state === 'suspended') {
                 await audioContext.resume();
             }
@@ -828,7 +934,6 @@
         let pianoAudioCtx = null;
         const activeNotes = new Map();
 
-        // FIX for Android audio channel issue: pass options when creating the context
         function ensurePianoAudio() {
             if (!pianoAudioCtx) {
                 pianoAudioCtx = new(window.AudioContext || window.webkitAudioContext)({
@@ -848,21 +953,12 @@
             const now = pianoAudioCtx.currentTime;
             const osc = pianoAudioCtx.createOscillator();
             const gainNode = pianoAudioCtx.createGain();
-
-            // Using a 'triangle' wave for a softer, more pleasant tone than 'sawtooth'
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(freq, now);
 
-            // A more complete ADSR (Attack, Decay, Sustain, Release) envelope for a natural sound
-            const attackTime = 0.015;
-            const decayTime = 0.2;
-            const sustainLevel = 0.4;
-            const peakLevel = 0.6;
-
+            const attackTime = 0.015, decayTime = 0.2, sustainLevel = 0.4, peakLevel = 0.6;
             gainNode.gain.setValueAtTime(0, now);
-            // Attack: rapid rise to peak volume
             gainNode.gain.linearRampToValueAtTime(peakLevel, now + attackTime);
-            // Decay: fall from peak to sustain level
             gainNode.gain.exponentialRampToValueAtTime(sustainLevel, now + attackTime + decayTime);
 
             osc.connect(gainNode);
@@ -877,13 +973,10 @@
             const note = activeNotes.get(freq);
             if (note) {
                 const now = pianoAudioCtx.currentTime;
-                const releaseTime = 0.4; // A more natural, slightly longer release
+                const releaseTime = 0.4;
 
-                // It's crucial to cancel any scheduled changes (like the decay) when the key is released
                 note.gainNode.gain.cancelScheduledValues(now);
-                // Set the gain to its current value to start the release smoothly
                 note.gainNode.gain.setValueAtTime(note.gainNode.gain.value, now);
-                // Release: fade out naturally
                 note.gainNode.gain.exponentialRampToValueAtTime(0.0001, now + releaseTime);
 
                 note.osc.stop(now + releaseTime);
@@ -891,33 +984,22 @@
                 if (el) el.classList.remove('active');
             }
         }
-        // --- PIANO SOUND FIX END ---
 
-        // --- Multi-touch and scrolling logic using Pointer Events ---
         if (keyboardWrapper) {
             const pointerState = new Map();
-
             keyboardWrapper.addEventListener('pointerdown', e => {
                 keyboardWrapper.setPointerCapture(e.pointerId);
                 const keyElement = e.target.closest('.key');
-                const state = {
-                    keyElement: null,
-                    isDragging: false,
-                    startX: e.pageX,
-                    scrollLeft: keyboardWrapper.scrollLeft
-                };
-
+                const state = { keyElement: null, isDragging: false, startX: e.pageX, scrollLeft: keyboardWrapper.scrollLeft };
                 if (keyElement && typeof keyElement._freq !== 'undefined') {
                     state.keyElement = keyElement;
                     playNote(keyElement._freq, keyElement);
                 }
                 pointerState.set(e.pointerId, state);
             });
-
             keyboardWrapper.addEventListener('pointermove', e => {
                 const state = pointerState.get(e.pointerId);
                 if (!state || !e.pressure > 0) return;
-
                 const walk = e.pageX - state.startX;
                 if (!state.isDragging && Math.abs(walk) > 10) {
                     state.isDragging = true;
@@ -931,42 +1013,32 @@
                     keyboardWrapper.scrollLeft = state.scrollLeft - walk;
                 }
             });
-
             const pointerUpHandler = e => {
                 if (keyboardWrapper.hasPointerCapture(e.pointerId)) {
                     keyboardWrapper.releasePointerCapture(e.pointerId);
                 }
                 const state = pointerState.get(e.pointerId);
                 if (!state) return;
-
                 if (state.keyElement && !state.isDragging) {
                     stopNote(state.keyElement._freq, state.keyElement);
                 }
                 pointerState.delete(e.pointerId);
-
                 if (pointerState.size === 0) {
                     keyboardWrapper.classList.remove('active-drag');
                 }
             };
-
             keyboardWrapper.addEventListener('pointerup', pointerUpHandler);
             keyboardWrapper.addEventListener('pointercancel', pointerUpHandler);
         }
 
-        // --- PIANO KEYBOARD BUILD LOGIC ---
         buildPianoKeyboard = function() {
-            if (!pianoDiv || pianoDiv.offsetParent === null) {
-                return;
-            }
-
+            if (!pianoDiv || pianoDiv.offsetParent === null) return;
             pianoDiv.innerHTML = '';
             const keysContainer = document.createElement('div');
             keysContainer.className = 'keys';
             pianoDiv.appendChild(keysContainer);
-
             const startOct = parseInt(startOctSelect.value, 10);
             const showOctaves = showOctCheckbox.checked;
-
             const notes = [];
             for (let i = 0; i < 25; i++) {
                 const noteData = octaveNotes[i % 12];
@@ -974,7 +1046,6 @@
                 const midi = (12 * startOct) + i + 12;
                 notes.push({ ...noteData, octave: octaveNumber, midi: midi });
             }
-
             notes.forEach(note => {
                 if (!note.isSharp) {
                     const keyEl = document.createElement('div');
@@ -984,21 +1055,13 @@
                     keysContainer.appendChild(keyEl);
                 }
             });
-
             const firstWhiteKey = keysContainer.querySelector('.key.white');
-            if (!firstWhiteKey || firstWhiteKey.offsetWidth === 0) {
-                return;
-            }
+            if (!firstWhiteKey || firstWhiteKey.offsetWidth === 0) return;
             const whiteW = firstWhiteKey.offsetWidth;
-
             const pianoToolEl = pianoDiv.closest('.piano-tool');
             const blackKeyWidthValue = getComputedStyle(pianoToolEl).getPropertyValue('--black-key-width').trim();
             const blackW = parseFloat(blackKeyWidthValue);
-
-            if (isNaN(whiteW) || isNaN(blackW)) {
-                return;
-            }
-
+            if (isNaN(whiteW) || isNaN(blackW)) return;
             let whiteKeyCounter = 0;
             notes.forEach(note => {
                 if (note.isSharp) {
@@ -1036,7 +1099,6 @@
         let tapTimestamps = [];
         const tapTimeout = 2000;
 
-        // FIX for Android audio channel issue: pass options when creating the context
         function initMetroAudioContext() {
             if (!metroAudioContext) {
                 metroAudioContext = new (window.AudioContext || window.webkitAudioContext)({
@@ -1049,18 +1111,12 @@
         function playClick(time) {
             const osc = metroAudioContext.createOscillator();
             const gain = metroAudioContext.createGain();
-
-            // A simple, pure sine wave for a consistent sound.
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, time); // A consistent A5 note.
-
-            // Create a short volume envelope to make it a "click".
+            osc.frequency.setValueAtTime(880, time);
             gain.gain.setValueAtTime(1, time);
             gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
-
             osc.connect(gain);
             gain.connect(metroAudioContext.destination);
-
             osc.start(time);
             osc.stop(time + 0.1);
         }
@@ -1081,7 +1137,6 @@
             initMetroAudioContext();
             if (metroAudioContext.state === 'suspended') {
                 metroAudioContext.resume().then(() => {
-                    // Start metronome after resume
                     startStopAction();
                 });
             } else {
@@ -1092,12 +1147,12 @@
         function startStopAction() {
             isRunning = !isRunning;
             if (isRunning) {
-                startStopBtn.textContent = 'Arrêter';
+                startStopBtn.textContent = translations.metronomeBtnStop[currentLang];
                 startStopBtn.classList.add('stop-state');
                 nextNoteTime = metroAudioContext.currentTime + 0.1;
                 scheduler = setInterval(scheduleNextClicks, lookahead);
             } else {
-                startStopBtn.textContent = 'Démarrer';
+                startStopBtn.textContent = translations.metronomeBtnStart[currentLang];
                 startStopBtn.classList.remove('stop-state');
                 clearInterval(scheduler);
             }
@@ -1131,48 +1186,27 @@
         tapTempoBtn.addEventListener('click', handleTap);
     }
 
-    // --- SCRIPT DE LA Cercle des quintes INTÉGRÉE ---
     function initChordWheel() {
         const toolContainer = document.querySelector('.chord-wheel-tool');
         if (!toolContainer) return;
 
-        // Map of major keys to their relative minors
-        const relativeMinors = {
-            'C': 'Am', 'G': 'Em', 'D': 'Bm', 'A': 'F#m', 'E': 'C#m', 'B': 'G#m',
-            'F#': 'D#m', 'Gb': 'Ebm', 'Db': 'Bbm', 'Ab': 'Fm', 'Eb': 'Cm', 'Bb': 'Gm', 'F': 'Dm'
-        };
-
-        const keyData = {
-            'C':  ['C', 'D', 'E', 'F', 'G', 'A', 'B'], 'G':  ['G', 'A', 'B', 'C', 'D', 'E', 'F#'],
-            'D':  ['D', 'E', 'F#', 'G', 'A', 'B', 'C#'], 'A':  ['A', 'B', 'C#', 'D', 'E', 'F#', 'G#'],
-            'E':  ['E', 'F#', 'G#', 'A', 'B', 'C#', 'D#'], 'B':  ['B', 'C#', 'D#', 'E', 'F#', 'G#', 'A#'],
-            'F#': ['F#', 'G#', 'A#', 'B', 'C#', 'D#', 'E#'], 'Gb': ['Gb', 'Ab', 'Bb', 'Cb', 'Db', 'Eb', 'F'],
-            'Db': ['Db', 'Eb', 'F', 'Gb', 'Ab', 'Bb', 'C'], 'Ab': ['Ab', 'Bb', 'C', 'Db', 'Eb', 'F', 'G'],
-            'Eb': ['Eb', 'F', 'G', 'Ab', 'Bb', 'C', 'D'], 'Bb': ['Bb', 'C', 'D', 'Eb', 'F', 'G', 'A'],
-            'F':  ['F', 'G', 'A', 'Bb', 'C', 'D', 'E']
-        };
-
+        const relativeMinors = { 'C': 'Am', 'G': 'Em', 'D': 'Bm', 'A': 'F#m', 'E': 'C#m', 'B': 'G#m', 'F#': 'D#m', 'Gb': 'Ebm', 'Db': 'Bbm', 'Ab': 'Fm', 'Eb': 'Cm', 'Bb': 'Gm', 'F': 'Dm' };
+        const keyData = { 'C': ['C', 'D', 'E', 'F', 'G', 'A', 'B'], 'G': ['G', 'A', 'B', 'C', 'D', 'E', 'F#'], 'D': ['D', 'E', 'F#', 'G', 'A', 'B', 'C#'], 'A': ['A', 'B', 'C#', 'D', 'E', 'F#', 'G#'], 'E': ['E', 'F#', 'G#', 'A', 'B', 'C#', 'D#'], 'B': ['B', 'C#', 'D#', 'E', 'F#', 'G#', 'A#'], 'F#': ['F#', 'G#', 'A#', 'B', 'C#', 'D#', 'E#'], 'Gb': ['Gb', 'Ab', 'Bb', 'Cb', 'Db', 'Eb', 'F'], 'Db': ['Db', 'Eb', 'F', 'Gb', 'Ab', 'Bb', 'C'], 'Ab': ['Ab', 'Bb', 'C', 'Db', 'Eb', 'F', 'G'], 'Eb': ['Eb', 'F', 'G', 'Ab', 'Bb', 'C', 'D'], 'Bb': ['Bb', 'C', 'D', 'Eb', 'F', 'G', 'A'], 'F': ['F', 'G', 'A', 'Bb', 'C', 'D', 'E'] };
         const chordQualities = ['major', 'minor', 'minor', 'major', 'major', 'minor', 'diminished'];
         const chordSuffixes = ['', 'm', 'm', '', '', 'm', '°'];
         const romanNumerals = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii°'];
-
         const selectElement = toolContainer.querySelector('#key-select');
         const wheelElement = toolContainer.querySelector('.wheel');
         const centerKeyDisplay = toolContainer.querySelector('#center-key-display');
+        if (!selectElement || !wheelElement || !centerKeyDisplay) return;
 
-        if (!selectElement || !wheelElement || !centerKeyDisplay) {
-            console.error("Chord wheel elements not found!");
-            return;
-        }
-
-        // MODIFICATION: Changed key order to chromatic
         const keysInOrder = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
 
         function populateSelect() {
             keysInOrder.forEach(key => {
                 const option = document.createElement('option');
                 const displayKey = key === 'F#' ? 'Gb' : key;
-                const relativeMinor = relativeMinors[key]; // Get the relative minor
+                const relativeMinor = relativeMinors[key];
                 option.value = key;
                 option.textContent = `${displayKey}/${relativeMinor}`;
                 selectElement.appendChild(option);
@@ -1184,7 +1218,6 @@
             const wheelSize = wheelElement.offsetWidth;
             if (wheelSize === 0) return;
             const radius = (wheelSize / 2) * 0.7;
-
             for (let i = 0; i < 7; i++) {
                 const slot = document.createElement('div');
                 slot.classList.add('chord-slot');
@@ -1199,13 +1232,8 @@
             const notes = keyData[key];
             if (!notes) return;
 
-            // Update the center display with Major/Relative Minor
             const relativeMinor = relativeMinors[key];
-            if (relativeMinor) {
-                centerKeyDisplay.textContent = `${key}/${relativeMinor}`;
-            } else {
-                centerKeyDisplay.textContent = key; // Fallback
-            }
+            centerKeyDisplay.textContent = relativeMinor ? `${key}/${relativeMinor}` : key;
 
             notes.forEach((note, i) => {
                 const slot = toolContainer.querySelector(`#chord-${i}`);
@@ -1216,25 +1244,17 @@
                 const angle = -90 + (i * (360 / 7));
                 const textRotation = -angle;
                 slot.className = 'chord-slot ' + quality;
-                slot.innerHTML = `
-                    <div class="slot-content" style="transform: rotate(${textRotation}deg);">
-                        <span class="chord-name">${note}${suffix}</span>
-                        <span class="roman-numeral">${roman}</span>
-                    </div>
-                `;
+                slot.innerHTML = `<div class="slot-content" style="transform: rotate(${textRotation}deg);"><span class="chord-name">${note}${suffix}</span><span class="roman-numeral">${roman}</span></div>`;
             });
         }
 
-        selectElement.addEventListener('change', (event) => {
-            updateWheel(event.target.value);
-        });
+        selectElement.addEventListener('change', (event) => { updateWheel(event.target.value); });
 
         function initialize() {
             populateSelect();
             createWheelSlots();
             updateWheel('C');
         }
-
         initialize();
 
         let resizeTimeout;
