@@ -42,10 +42,9 @@
 
         /* Language Switcher Button */
         .lang-switcher {
-            position: absolute;
-            top: 1.5rem;
-            right: 1.5rem;
-            z-index: 10;
+          z-index: 10;
+    /* Add a small margin to separate it from the H1 */
+    margin-bottom: 1rem;
         }
 
         #lang-toggle-btn {
@@ -473,7 +472,7 @@
 <div class="container">
     <header class="header">
         <div class="lang-switcher">
-            <button id="lang-toggle-btn">EN</button>
+            <button id="lang-toggle-btn">🌐 EN</button>
         </div>
         <h1 data-lang-key="mainTitle">Cours de Guitare</h1>
         <a href="#outils" class="tools-button" data-lang-key="toolsBtnHeader">Outils 🛠️</a>
@@ -726,7 +725,7 @@
         document.documentElement.lang = lang;
         const langToggleBtn = document.getElementById('lang-toggle-btn');
         if (langToggleBtn) {
-            langToggleBtn.textContent = lang === 'fr' ? 'EN' : 'FR';
+         langToggleBtn.textContent = lang === 'fr' ? '🌐 EN' : '🌐 FR';
         }
 
         const elements = document.querySelectorAll('[data-lang-key]');
