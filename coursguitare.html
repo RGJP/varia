@@ -300,29 +300,34 @@
         .chord-wheel-tool .controls label { font-weight: 600; }
         .chord-wheel-tool #key-select { font-size: 1.1rem; padding: 8px 12px; border-radius: 8px; border: 1px solid #ccc; background-color: white; color: #333; cursor: pointer; -webkit-appearance: none; -moz-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23333' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; background-size: 14px; padding-right: 35px; }
         .chord-wheel-tool #key-select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3); }
-        /* REFACTORED: Responsive wheel container */
         .chord-wheel-tool .wheel-container {
             width: 100%;
             max-width: var(--wheel-size);
             height: auto;
-            aspect-ratio: 1; /* This makes it a perfect, responsive square */
+            aspect-ratio: 1; 
             position: relative;
             margin: 1rem auto 0;
         }
         .chord-wheel-tool .wheel { width: 100%; height: 100%; border: 3px solid var(--border-color); border-radius: 50%; position: relative; background-color: var(--wheel-bg-color); }
-        .chord-wheel-tool .center-circle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: calc(var(--slot-size) * 1.6); height: calc(var(--slot-size) * 1.6); background-color: white; border: 3px solid var(--border-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-direction: column; font-size: 1.5rem; font-weight: bold; z-index: 1; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-        .chord-wheel-tool .center-circle .key-name { font-size: 2.5rem; color: var(--accent-color); }
-        .chord-wheel-tool .center-circle .key-type { font-size: 1rem; font-weight: 400; text-transform: uppercase; letter-spacing: 1px; color: var(--text-color); }
+        .chord-wheel-tool .center-circle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: calc(var(--slot-size) * 1.6); height: calc(var(--slot-size) * 1.6); background-color: white; border: 3px solid var(--border-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 1; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        /* MODIFIED: Styles for the new center display */
+        .chord-wheel-tool .center-circle #center-key-display {
+            font-size: clamp(1rem, 5vw, 1.5rem);
+            color: var(--accent-color);
+            font-weight: bold;
+            line-height: 1.1;
+            text-align: center;
+        }
         .chord-wheel-tool .chord-slot { position: absolute; top: calc(50% - var(--slot-size) / 2); left: calc(50% - var(--slot-size) / 2); width: var(--slot-size); height: var(--slot-size); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 1.3rem; font-weight: 600; transition: background-color 0.3s ease, transform 0.5s ease; box-shadow: 0 2px 5px rgba(0,0,0,0.15); color: white; }
         .chord-wheel-tool .slot-content { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; }
         .chord-wheel-tool .chord-slot .roman-numeral { font-size: 0.8rem; opacity: 0.8; font-weight: 400; }
         .chord-wheel-tool #chord-0 { background-color: var(--chord-1-color); }
         .chord-wheel-tool #chord-1 { background-color: var(--chord-2-color); }
-        .chord-wheel-tool #chord-2 { background-color: var(--chord-3-color); color: #1f2937; } /* Dark text for yellow */
+        .chord-wheel-tool #chord-2 { background-color: var(--chord-3-color); color: #1f2937; } 
         .chord-wheel-tool #chord-3 { background-color: var(--chord-4-color); }
         .chord-wheel-tool #chord-4 { background-color: var(--chord-5-color); }
-        .chord-wheel-tool #chord-5 { background-color: var(--chord-6-color); }
-        .chord-wheel-tool #chord-6 { background-color: var(--chord-7-color); }
+        .chord-wheel-tool #chord-5 { background-color: var(--chord-7-color); } 
+        .chord-wheel-tool #chord-6 { background-color: var(--chord-6-color); } 
         
         /* Animations */
         @keyframes slideDown { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
@@ -336,19 +341,18 @@
         @media (max-width: 768px) {
             .container { padding: 0 15px; }
             .card { padding: 1.5rem; margin: 1.5rem 0; }
-            .tool-nav-button { flex-basis: calc(50% - 0.5rem); } /* Two buttons per row on medium screens */
+            .tool-nav-button { flex-basis: calc(50% - 0.5rem); } 
             .piano-tool { --white-key-width: 10vw; --white-key-height: 40vw; --black-key-width: 6.5vw; --black-key-height: 25vw; }
         }
         
         /* Responsive adjustments for Chord Wheel */
         @media (max-width: 600px) {
             .chord-wheel-tool {
-                --wheel-size: 320px; /* Adjust max-width */
+                --wheel-size: 320px;
                 --slot-size: 65px;
             }
             .chord-wheel-tool h3 { font-size: 1.3rem; }
             .chord-wheel-tool #key-select { font-size: 1rem; }
-            .chord-wheel-tool .center-circle .key-name { font-size: 2rem; }
             .chord-wheel-tool .chord-slot { font-size: 1rem; }
             .chord-wheel-tool .chord-slot .roman-numeral { font-size: 0.7rem; }
         }
@@ -423,7 +427,7 @@
                 <button class="tool-nav-button active" data-tool="tuner">🎵 Accordeur</button>
                 <button class="tool-nav-button" data-tool="piano">🎹 Piano</button>
                 <button class="tool-nav-button" data-tool="metronome">⏱️ Métronome</button>
-                <button class="tool-nav-button" data-tool="chord-wheel">🔄 Roue d'accords</button>
+                <button class="tool-nav-button" data-tool="chord-wheel">🔄 Cercle des quintes</button>
             </div>
 
             <div class="tool-content-area">
@@ -493,7 +497,7 @@
 
                 <div id="chord-wheel-content" class="tool-content">
                     <div class="chord-wheel-tool">
-                        <h3>Roue d'accords (Cercle des quintes)</h3>
+                        <h3>Cercle des quintes</h3>
                         <div class="chord-wheel-app-container">
                             <div class="controls">
                                 <label for="key-select">Sélectionnez la Tonalité :</label>
@@ -502,8 +506,7 @@
                             <div class="wheel-container">
                                 <div class="wheel"></div>
                                 <div class="center-circle">
-                                    <span id="center-key-name">C</span>
-                                    <span id="center-key-type">Majeur</span>
+                                    <span id="center-key-display">C/Am</span>
                                 </div>
                             </div>
                         </div>
@@ -515,7 +518,8 @@
     </div>
 
     <script>
-        // --- SCRIPT DE LA PAGE PRINCIPALE ---
+        let buildPianoKeyboard; 
+
         document.addEventListener('DOMContentLoaded', function() {
             const cards = document.querySelectorAll('.card');
             const observer = new IntersectionObserver((entries) => {
@@ -529,7 +533,6 @@
             }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
             cards.forEach(card => { observer.observe(card); });
 
-            // Initialize all tools
             initToolTabs();
             initTuner();
             initPiano();
@@ -547,7 +550,6 @@
             });
         });
 
-        // --- NEW: SCRIPT FOR TOOL TABS ---
         function initToolTabs() {
             const navButtons = document.querySelectorAll('.tool-nav-button');
             const toolContents = document.querySelectorAll('.tool-content');
@@ -558,11 +560,9 @@
                 button.addEventListener('click', () => {
                     const toolName = button.dataset.tool;
                     
-                    // Update active state on buttons
                     navButtons.forEach(btn => btn.classList.remove('active'));
                     button.classList.add('active');
 
-                    // Update visible content pane
                     toolContents.forEach(content => {
                         content.classList.remove('active');
                         if (content.id === `${toolName}-content`) {
@@ -570,18 +570,16 @@
                         }
                     });
 
-                    // Special case for chord wheel, which needs to recalculate size on display
+                    if (toolName === 'piano' && typeof buildPianoKeyboard === 'function') {
+                        setTimeout(buildPianoKeyboard, 10);
+                    }
                     if (toolName === 'chord-wheel') {
-                       // A small delay ensures the element is visible before recalculating
-                       setTimeout(() => {
-                           window.dispatchEvent(new Event('resize'));
-                       }, 50);
+                       setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 50);
                     }
                 });
             });
         }
 
-        // --- SCRIPT DE L'ACCORDEUR INTÉGRÉ ---
         function initTuner() {
             const startButton = document.getElementById('startButton');
             if (!startButton) return;
@@ -677,7 +675,6 @@
             }
         }
 
-        // --- SCRIPT DU PIANO VIRTUEL INTÉGRÉ ---
         function initPiano() {
             const startOctSelect = document.getElementById('startOct');
             if (!startOctSelect) return;
@@ -689,44 +686,7 @@
 
             function ensurePianoAudio() { if (!pianoAudioCtx) pianoAudioCtx = new(window.AudioContext || window.webkitAudioContext)(); }
             function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
-            function buildKeyboard() {
-                if (!pianoDiv) return;
-                pianoDiv.innerHTML = '';
-                const startOct = parseInt(startOctSelect.value, 10);
-                const whiteContainer = document.createElement('div');
-                whiteContainer.className = 'keys';
-                pianoDiv.appendChild(whiteContainer);
-                const notes = [];
-                for (let i = 0; i < 24; i++) {
-                    const noteData = octaveNotes[i % 12];
-                    const octaveNumber = startOct + Math.floor(i / 12);
-                    notes.push({ ...noteData, octave: octaveNumber });
-                }
-                notes.forEach((note, idx) => { if (!note.isSharp) { const el = document.createElement('div'); el.className = 'key white'; el.dataset.index = idx; whiteContainer.appendChild(el); } });
-                const whiteKeyElement = pianoDiv.querySelector('.key.white');
-                if (!whiteKeyElement) return;
-                const whiteW = whiteKeyElement.offsetWidth;
-                const blackW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--black-key-width'));
-                let whiteIndex = 0;
-                notes.forEach((note, idx) => {
-                    if (note.isSharp) {
-                        const black = document.createElement('div');
-                        black.className = 'key black';
-                        black.dataset.index = idx;
-                        black.style.left = `${(whiteIndex * whiteW) - (blackW / 2) - 2}px`;
-                        pianoDiv.appendChild(black);
-                    } else { whiteIndex++; }
-                });
-                [...pianoDiv.querySelectorAll('.key')].forEach(keyEl => {
-                    const idx = parseInt(keyEl.dataset.index, 10);
-                    const note = notes[idx];
-                    const midi = 12 * (startOct + 1) + idx;
-                    keyEl._freq = midiToFreq(midi);
-                    keyEl.innerHTML = `<span class="note-label">${showOctCheckbox.checked ? (note.name + note.octave) : note.name}</span>`;
-                    keyEl.addEventListener('mousedown', handleNoteOn);
-                    keyEl.addEventListener('touchstart', handleNoteOn, { passive: false });
-                });
-            }
+            
             function playTone(freq, el) {
                 ensurePianoAudio();
                 const now = pianoAudioCtx.currentTime;
@@ -743,15 +703,84 @@
                 osc.stop(now + 1.3);
                 if (el) { el.classList.add('active'); setTimeout(() => el.classList.remove('active'), 250); }
             }
-            function handleNoteOn(e) { e.preventDefault(); const el = e.currentTarget; if (el._freq) playTone(el._freq, el); }
 
-            startOctSelect.addEventListener('change', buildKeyboard);
-            showOctCheckbox.addEventListener('change', buildKeyboard);
-            window.addEventListener('resize', buildKeyboard);
-            buildKeyboard();
+            function handleNoteOn(e) {
+                const keyEl = e.target.closest('.key');
+                if (keyEl && typeof keyEl._freq !== 'undefined') {
+                    e.preventDefault();
+                    playTone(keyEl._freq, keyEl);
+                }
+            }
+            
+            // --- REBUILT PIANO KEYBOARD LOGIC ---
+            buildPianoKeyboard = function() {
+                if (!pianoDiv) return;
+                pianoDiv.innerHTML = ''; 
+
+                const keysContainer = document.createElement('div');
+                keysContainer.className = 'keys';
+                pianoDiv.appendChild(keysContainer);
+
+                const startOct = parseInt(startOctSelect.value, 10);
+                const showOctaves = showOctCheckbox.checked;
+
+                const notes = [];
+                for (let i = 0; i < 25; i++) {
+                    const noteData = octaveNotes[i % 12];
+                    const octaveNumber = startOct + Math.floor(i / 12);
+                    const midi = (12 * startOct) + i + 12; // Adjusted for more standard MIDI numbering
+                    notes.push({ ...noteData, octave: octaveNumber, midi: midi });
+                }
+
+                // First, create and add all the white keys to establish the base layout
+                notes.forEach(note => {
+                    if (!note.isSharp) {
+                        const keyEl = document.createElement('div');
+                        keyEl.className = 'key white';
+                        keyEl._freq = midiToFreq(note.midi);
+                        keyEl.innerHTML = `<span class="note-label">${showOctaves ? note.name + note.octave : note.name}</span>`;
+                        keysContainer.appendChild(keyEl);
+                    }
+                });
+
+                // Use a timeout to ensure the white keys have been rendered and have a width
+                setTimeout(() => {
+                    const firstWhiteKey = keysContainer.querySelector('.key.white');
+                    if (!firstWhiteKey || firstWhiteKey.offsetWidth === 0) {
+                        console.error("Could not calculate piano key width.");
+                        return;
+                    }
+                    const whiteW = firstWhiteKey.offsetWidth;
+                    const blackW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--black-key-width'));
+
+                    let whiteKeyCounter = 0;
+                    notes.forEach(note => {
+                        if (note.isSharp) {
+                            const blackKey = document.createElement('div');
+                            blackKey.className = 'key black';
+                            blackKey._freq = midiToFreq(note.midi);
+                            blackKey.innerHTML = `<span class="note-label">${showOctaves ? note.name + note.octave : note.name}</span>`;
+                            
+                            // Position the black key halfway between the white keys it sits on
+                            blackKey.style.left = `${(whiteKeyCounter * whiteW) - (blackW / 2)}px`;
+                            
+                            keysContainer.appendChild(blackKey);
+                        } else {
+                            whiteKeyCounter++;
+                        }
+                    });
+                }, 0);
+            };
+
+            startOctSelect.addEventListener('change', buildPianoKeyboard);
+            showOctCheckbox.addEventListener('change', buildPianoKeyboard);
+            window.addEventListener('resize', buildPianoKeyboard);
+            pianoDiv.addEventListener('mousedown', handleNoteOn);
+            pianoDiv.addEventListener('touchstart', handleNoteOn, { passive: false });
+
+            buildPianoKeyboard();
         }
 
-        // --- SCRIPT DU MÉTRONOME INTÉGRÉ ---
         function initMetronome() {
             const startStopBtn = document.getElementById('start-stop-btn');
             if (!startStopBtn) return;
@@ -837,24 +866,24 @@
             tapTempoBtn.addEventListener('click', handleTap);
         }
 
-        // --- SCRIPT DE LA ROUE D'ACCORDS INTÉGRÉE ---
+        // --- SCRIPT DE LA Cercle des quintes INTÉGRÉE ---
         function initChordWheel() {
             const toolContainer = document.querySelector('.chord-wheel-tool');
             if (!toolContainer) return;
 
+            // Map of major keys to their relative minors
+            const relativeMinors = {
+                'C': 'Am', 'G': 'Em', 'D': 'Bm', 'A': 'F#m', 'E': 'C#m', 'B': 'G#m',
+                'F#': 'D#m', 'Gb': 'Ebm', 'Db': 'Bbm', 'Ab': 'Fm', 'Eb': 'Cm', 'Bb': 'Gm', 'F': 'Dm'
+            };
+
             const keyData = {
-                'C':  ['C', 'D', 'E', 'F', 'G', 'A', 'B'],
-                'G':  ['G', 'A', 'B', 'C', 'D', 'E', 'F#'],
-                'D':  ['D', 'E', 'F#', 'G', 'A', 'B', 'C#'],
-                'A':  ['A', 'B', 'C#', 'D', 'E', 'F#', 'G#'],
-                'E':  ['E', 'F#', 'G#', 'A', 'B', 'C#', 'D#'],
-                'B':  ['B', 'C#', 'D#', 'E', 'F#', 'G#', 'A#'],
-                'F#': ['F#', 'G#', 'A#', 'B', 'C#', 'D#', 'E#'],
-                'Gb': ['Gb', 'Ab', 'Bb', 'Cb', 'Db', 'Eb', 'F'],
-                'Db': ['Db', 'Eb', 'F', 'Gb', 'Ab', 'Bb', 'C'],
-                'Ab': ['Ab', 'Bb', 'C', 'Db', 'Eb', 'F', 'G'],
-                'Eb': ['Eb', 'F', 'G', 'Ab', 'Bb', 'C', 'D'],
-                'Bb': ['Bb', 'C', 'D', 'Eb', 'F', 'G', 'A'],
+                'C':  ['C', 'D', 'E', 'F', 'G', 'A', 'B'], 'G':  ['G', 'A', 'B', 'C', 'D', 'E', 'F#'],
+                'D':  ['D', 'E', 'F#', 'G', 'A', 'B', 'C#'], 'A':  ['A', 'B', 'C#', 'D', 'E', 'F#', 'G#'],
+                'E':  ['E', 'F#', 'G#', 'A', 'B', 'C#', 'D#'], 'B':  ['B', 'C#', 'D#', 'E', 'F#', 'G#', 'A#'],
+                'F#': ['F#', 'G#', 'A#', 'B', 'C#', 'D#', 'E#'], 'Gb': ['Gb', 'Ab', 'Bb', 'Cb', 'Db', 'Eb', 'F'],
+                'Db': ['Db', 'Eb', 'F', 'Gb', 'Ab', 'Bb', 'C'], 'Ab': ['Ab', 'Bb', 'C', 'Db', 'Eb', 'F', 'G'],
+                'Eb': ['Eb', 'F', 'G', 'Ab', 'Bb', 'C', 'D'], 'Bb': ['Bb', 'C', 'D', 'Eb', 'F', 'G', 'A'],
                 'F':  ['F', 'G', 'A', 'Bb', 'C', 'D', 'E']
             };
 
@@ -864,22 +893,23 @@
 
             const selectElement = toolContainer.querySelector('#key-select');
             const wheelElement = toolContainer.querySelector('.wheel');
-            const centerKeyName = toolContainer.querySelector('#center-key-name');
-            const centerKeyType = toolContainer.querySelector('#center-key-type');
+            const centerKeyDisplay = toolContainer.querySelector('#center-key-display');
             
-            if (!selectElement || !wheelElement || !centerKeyName || !centerKeyType) {
+            if (!selectElement || !wheelElement || !centerKeyDisplay) {
                 console.error("Chord wheel elements not found!");
                 return;
             }
 
+            // MODIFICATION: Changed key order to chromatic
             const keysInOrder = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
 
             function populateSelect() {
                 keysInOrder.forEach(key => {
                     const option = document.createElement('option');
                     const displayKey = key === 'F#' ? 'Gb' : key;
+                    const relativeMinor = relativeMinors[key]; // Get the relative minor
                     option.value = key;
-                    option.textContent = displayKey;
+                    option.textContent = `${displayKey}/${relativeMinor}`;
                     selectElement.appendChild(option);
                 });
             }
@@ -887,17 +917,15 @@
             function createWheelSlots() {
                 wheelElement.innerHTML = '';
                 const wheelSize = wheelElement.offsetWidth;
-                if (wheelSize === 0) return; // Don't build if not visible
+                if (wheelSize === 0) return;
                 const radius = (wheelSize / 2) * 0.7;
                 
                 for (let i = 0; i < 7; i++) {
                     const slot = document.createElement('div');
                     slot.classList.add('chord-slot');
                     slot.id = `chord-${i}`;
-                    
                     const angle = -90 + (i * (360 / 7));
                     slot.style.transform = `rotate(${angle}deg) translateX(${radius}px)`;
-                    
                     wheelElement.appendChild(slot);
                 }
             }
@@ -906,20 +934,22 @@
                 const notes = keyData[key];
                 if (!notes) return;
 
-                centerKeyName.textContent = key;
-                centerKeyType.textContent = 'Majeur';
+                // Update the center display with Major/Relative Minor
+                const relativeMinor = relativeMinors[key];
+                if (relativeMinor) {
+                    centerKeyDisplay.textContent = `${key}/${relativeMinor}`;
+                } else {
+                    centerKeyDisplay.textContent = key; // Fallback
+                }
 
                 notes.forEach((note, i) => {
                     const slot = toolContainer.querySelector(`#chord-${i}`);
                     if (!slot) return;
-
                     const quality = chordQualities[i];
                     const suffix = chordSuffixes[i];
                     const roman = romanNumerals[i];
-                    
                     const angle = -90 + (i * (360 / 7));
                     const textRotation = -angle;
-
                     slot.className = 'chord-slot ' + quality;
                     slot.innerHTML = `
                         <div class="slot-content" style="transform: rotate(${textRotation}deg);">
