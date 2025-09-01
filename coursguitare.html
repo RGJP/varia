@@ -69,6 +69,16 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
 
+/* Style for the tools button inside the white card */
+        .tools-section .tools-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .tools-section .tools-button:hover {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            filter: brightness(1.1);
+        }
+
         @keyframes glow {
             from { text-shadow: 0 4px 20px rgba(255,255,255,0.3); }
             to { text-shadow: 0 4px 30px rgba(255,255,255,0.6); }
@@ -380,8 +390,8 @@
             <p>Identifier la <span class="highlight">note de base</span> (celle sur laquelle tout "repose").</p>
             <p>Déterminer si la mélodie est majeure ou mineure :</p>
             <ul>
-                <li><span class="highlight">sonorité joyeuse, lumineuse</span> → majeur</li>
-                <li><span class="highlight">sonorité plus triste, mélancolique</span> → mineur</li>
+                <li><span class="highlight">sonorité joyeuse, lumineuse</span> → souvent majeur</li>
+                <li><span class="highlight">sonorité plus triste, mélancolique</span> → souvent mineur</li>
             </ul>
         </div>
 
@@ -393,10 +403,10 @@
 
         <div class="card">
             <h2><span class="step-number">3</span> Utiliser le cercle des quintes</h2>
-            <p>À partir de la tonique, retrouver tous les <span class="highlight">accords possibles</span> dans la gamme.</p>
-            <p><strong>Exemple :</strong> si la tonique est Do (C) → on prend la gamme de Do majeur et ses accords pour accompagner. </p>
-            <p>*Ne pas oublier qu'on peut utiliser un CAPO pour aider à jouer dans une tonalité différente.</p>
-            <p style="margin-top: 1rem; font-weight: 600; color: #764ba2;">Aide-mémoire : <span class="highlight">C=Do, D=Ré, E=Mi, F=Fa, G=Sol, A=La, B=Si</span></p>
+            <p>À partir de la tonique, retrouver tous les <span class="highlight">accords possibles</span> dans la gamme en utilisant le cercle des quintes.</p>
+            <p><strong>Exemple :</strong> si la tonique est C (Do) → on prend cette gamme et ses accords pour accompagner la mélodie. </p>
+            <p>*Ne pas oublier qu'on peut utiliser un CAPO pour aider à jouer dans une tonalité différente avec des accords faciles.</p>
+            <p style="margin-top: 1rem; font-weight: 600; color: #764ba2;">Aide-mémoire : <span class="highlight">C→Do, D→Ré, E→Mi, F→Fa, G→Sol, A→La, B→Si</span></p>
         </div>
 
         <div class="card">
@@ -421,7 +431,7 @@
         </div>
 
         <div id="outils" class="card tools-section">
-            <h2>🛠️ Outils utiles</h2>
+            <h2>🛠️ Outils</h2>
             
             <div class="tool-nav">
                 <button class="tool-nav-button active" data-tool="tuner">🎵 Accordeur</button>
@@ -514,6 +524,11 @@
                 </div>
 
             </div>
+            
+            <a href="https://www.all-guitar-chords.com/" target="_blank" rel="noopener noreferrer" class="tools-button" style="margin-top: 2rem; display: block; text-align: center;">
+                Accords visuels
+            </a>
+            
         </div>
     </div>
 
