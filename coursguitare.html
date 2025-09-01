@@ -261,6 +261,7 @@
             cursor: grab;
             scrollbar-width: none; /* For Firefox */
             -ms-overflow-style: none;  /* For IE and Edge */
+            touch-action: pan-x; /* Allow horizontal scrolling */
         }
 
         .keyboard-wrapper::-webkit-scrollbar {
@@ -410,8 +411,16 @@
         <a href="#outils" class="tools-button">Accéder aux Outils 🛠️</a>
     </header>
 
+
+
     <div class="card">
-        <h2><span class="step-number">1</span> Trouver la tonique de la mélodie</h2>
+        <h2><span class="step-number">1</span> Trouver le tempo et le rythme</h2>
+        <p>Compter les battements : est-ce en <span class="highlight">4/4, 6/8</span> ou autre?</p>
+        <p>Bien ressentir la <span class="highlight">pulsation régulière</span> avant de jouer (utiliser le tap du métronome).</p>
+    </div>
+
+    <div class="card">
+        <h2><span class="step-number">2</span> Trouver la tonique de la mélodie</h2>
         <p>Identifier la <span class="highlight">tonique / note de base</span> (celle sur laquelle tout "repose" / "résolution").</p>
         <p>Déterminer si la mélodie est majeure ou mineure :</p>
         <ul>
@@ -419,13 +428,6 @@
             <li><span class="highlight">sonorité plus mélancolique, mystérieuse</span> → souvent mineur</li>
         </ul>
     </div>
-
-    <div class="card">
-        <h2><span class="step-number">2</span> Trouver le rythme</h2>
-        <p>Compter les battements : est-ce en <span class="highlight">4/4, 6/8</span> ou autre?</p>
-        <p>Bien ressentir la <span class="highlight">pulsation régulière</span> avant de jouer.</p>
-    </div>
-
     <div class="card">
         <h2><span class="step-number">3</span> Utiliser le cercle des quintes</h2>
         <p>À partir de la tonique, retrouver tous les <span class="highlight">accords possibles</span> dans la gamme en utilisant le cercle des quintes.</p>
@@ -449,7 +451,7 @@
             <li><strong>Arpèges :</strong> jouer les cordes d'un accord une par une.</li>
             <li><strong>Strumming :</strong> gratter les cordes avec le pouce et/ou les doigts, toujours en respectant le rythme.</li>
             <li><strong>Solo simple :</strong> improviser avec les notes de la gamme majeure ou mineure en lien avec la mélodie.</li>
-            <li><strong>Défi :</strong> prendre un chant sur YouTube et trouver la tonique, les accords, etc. et le jouer.</li>
+            <li><strong>Défi :</strong> prendre un chant sur YouTube et trouver comment le jouer.</li>
         </ul>
         <p style="margin-top: 1.5rem; font-style: italic; color: #667eea; font-weight: 600;">
             Le plus important dans tout cela est de rester curieux et de prendre du plaisir. Bonne musique !
@@ -726,90 +728,109 @@
         const showOctCheckbox = document.getElementById('showOct');
         const pianoDiv = document.getElementById('piano');
         const keyboardWrapper = document.querySelector('.keyboard-wrapper');
-
         const octaveNotes = [ { name: 'C', isSharp: false }, { name: 'C#', isSharp: true }, { name: 'D', isSharp: false }, { name: 'D#', isSharp: true }, { name: 'E', isSharp: false }, { name: 'F', isSharp: false }, { name: 'F#', isSharp: true }, { name: 'G', isSharp: false }, { name: 'G#', isSharp: true }, { name: 'A', isSharp: false }, { name: 'A#', isSharp: true }, { name: 'B', isSharp: false } ];
+
         let pianoAudioCtx = null;
+        const activeNotes = new Map();
 
         function ensurePianoAudio() { if (!pianoAudioCtx) pianoAudioCtx = new(window.AudioContext || window.webkitAudioContext)(); }
         function midiToFreq(m) { return 440 * Math.pow(2, (m - 69) / 12); }
 
-        function playTone(freq, el) {
+        function playNote(freq, el) {
+            if (activeNotes.has(freq)) return;
             ensurePianoAudio();
+            if (pianoAudioCtx.state === 'suspended') pianoAudioCtx.resume();
+
             const now = pianoAudioCtx.currentTime;
             const osc = pianoAudioCtx.createOscillator();
-            const gain = pianoAudioCtx.createGain();
-            osc.type = 'sine';
+            const gainNode = pianoAudioCtx.createGain();
+
+            osc.type = 'sawtooth'; // More reed-like sound
             osc.frequency.setValueAtTime(freq, now);
-            gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(0.8, now + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
-            osc.connect(gain);
-            gain.connect(pianoAudioCtx.destination);
+
+            gainNode.gain.setValueAtTime(0, now);
+            gainNode.gain.linearRampToValueAtTime(0.6, now + 0.02); // Quick attack
+
+            osc.connect(gainNode);
+            gainNode.connect(pianoAudioCtx.destination);
             osc.start(now);
-            osc.stop(now + 1.3);
-            if (el) { el.classList.add('active'); setTimeout(() => el.classList.remove('active'), 250); }
+
+            activeNotes.set(freq, { osc, gainNode });
+            if (el) el.classList.add('active');
         }
 
-        // --- START: NEW UNIFIED DRAG AND CLICK LOGIC ---
+        function stopNote(freq, el) {
+            const note = activeNotes.get(freq);
+            if (note) {
+                const now = pianoAudioCtx.currentTime;
+                note.gainNode.gain.cancelScheduledValues(now);
+                note.gainNode.gain.setValueAtTime(note.gainNode.gain.value, now);
+                note.gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.2); // Quick release
+                note.osc.stop(now + 0.2);
+                activeNotes.delete(freq);
+                if (el) el.classList.remove('active');
+            }
+        }
+
+        // --- Multi-touch and scrolling logic using Pointer Events ---
         if (keyboardWrapper) {
-            let isDown = false;
-            let isDragging = false;
-            let startX;
-            let scrollLeft;
-            let targetKeyElement = null;
+            const pointerState = new Map();
 
-            const startInteraction = (e) => {
-                isDown = true;
-                isDragging = false;
-                startX = (e.pageX || e.touches[0].pageX) - keyboardWrapper.offsetLeft;
-                scrollLeft = keyboardWrapper.scrollLeft;
-                targetKeyElement = e.target.closest('.key');
-            };
+            keyboardWrapper.addEventListener('pointerdown', e => {
+                keyboardWrapper.setPointerCapture(e.pointerId);
+                const keyElement = e.target.closest('.key');
+                const state = {
+                    keyElement: null,
+                    isDragging: false,
+                    startX: e.pageX,
+                    scrollLeft: keyboardWrapper.scrollLeft
+                };
 
-            const moveInteraction = (e) => {
-                if (!isDown) return;
-
-                const x = (e.pageX || e.touches[0].pageX) - keyboardWrapper.offsetLeft;
-                const walk = x - startX;
-
-                if (Math.abs(walk) > 5) { // Threshold to confirm drag
-                    isDragging = true;
+                if (keyElement && typeof keyElement._freq !== 'undefined') {
+                    state.keyElement = keyElement;
+                    playNote(keyElement._freq, keyElement);
                 }
+                pointerState.set(e.pointerId, state);
+            });
 
-                if (isDragging) {
-                    if(e.cancelable) e.preventDefault();
+            keyboardWrapper.addEventListener('pointermove', e => {
+                const state = pointerState.get(e.pointerId);
+                if (!state || !e.pressure > 0) return;
+
+                const walk = e.pageX - state.startX;
+                if (!state.isDragging && Math.abs(walk) > 10) {
+                    state.isDragging = true;
+                    if (state.keyElement) {
+                        stopNote(state.keyElement._freq, state.keyElement);
+                        state.keyElement = null;
+                    }
+                }
+                if (state.isDragging) {
                     keyboardWrapper.classList.add('active-drag');
-                    keyboardWrapper.scrollLeft = scrollLeft - (walk * 1.5);
-                }
-            };
-
-            const endInteraction = () => {
-                if (!isDown) return;
-                isDown = false;
-                keyboardWrapper.classList.remove('active-drag');
-
-                if (!isDragging && targetKeyElement && typeof targetKeyElement._freq !== 'undefined') {
-                    playTone(targetKeyElement._freq, targetKeyElement);
-                }
-
-                targetKeyElement = null;
-            };
-
-            keyboardWrapper.addEventListener('mousedown', startInteraction);
-            keyboardWrapper.addEventListener('mousemove', moveInteraction);
-            window.addEventListener('mouseup', endInteraction);
-            keyboardWrapper.addEventListener('mouseleave', () => {
-                if (isDown) {
-                    // If mouse leaves while down, keep dragging state but remove grabbing cursor for aesthetics
-                    keyboardWrapper.classList.remove('active-drag');
+                    keyboardWrapper.scrollLeft = state.scrollLeft - walk;
                 }
             });
 
-            keyboardWrapper.addEventListener('touchstart', startInteraction, { passive: true });
-            keyboardWrapper.addEventListener('touchmove', moveInteraction, { passive: false });
-            window.addEventListener('touchend', endInteraction);
+            const pointerUpHandler = e => {
+                if (keyboardWrapper.hasPointerCapture(e.pointerId)) {
+                    keyboardWrapper.releasePointerCapture(e.pointerId);
+                }
+                const state = pointerState.get(e.pointerId);
+                if (!state) return;
+
+                if (state.keyElement && !state.isDragging) {
+                    stopNote(state.keyElement._freq, state.keyElement);
+                }
+                pointerState.delete(e.pointerId);
+
+                if (pointerState.size === 0) {
+                    keyboardWrapper.classList.remove('active-drag');
+                }
+            };
+
+            keyboardWrapper.addEventListener('pointerup', pointerUpHandler);
+            keyboardWrapper.addEventListener('pointercancel', pointerUpHandler);
         }
-        // --- END: NEW UNIFIED DRAG AND CLICK LOGIC ---
 
         // --- PIANO KEYBOARD BUILD LOGIC ---
         buildPianoKeyboard = function() {
