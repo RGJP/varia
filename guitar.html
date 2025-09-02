@@ -786,13 +786,13 @@
 
             <div id="transposer-content" class="tool-content">
                 <div class="transposer-tool">
-                    <label class="tool-label" data-lang-key="transposerSelectTitle">1. Sélectionner les accords</label>
+                    <label class="tool-label" data-lang-key="transposerSelectTitle">Sélectionner les accords</label>
                     <div id="chordSelector" class="chord-selector"></div>
 
-                    <label class="tool-label" data-lang-key="transposerSelectedLabel">2. Vos accords</label>
+                    <label class="tool-label" data-lang-key="transposerSelectedLabel">Vos accords</label>
                     <div id="selectedChordsDisplay" class="display-area">...</div>
 
-                    <label class="tool-label" data-lang-key="transposerTransposeLabel">3. Transposer & Résultat</label>
+                    <label class="tool-label" data-lang-key="transposerTransposeLabel">Résultat transposition</label>
                     <div class="controls">
                         <button id="transposeDown" class="control-btn">–</button>
                         <div id="resultDisplay" class="display-area"></div>
@@ -810,20 +810,20 @@
                     <table>
                         <thead>
                         <tr>
-                            <th>Mode</th>
-                            <th>Semitone Shift from Mode Root to Major Key Root</th>
-                            <th>Example Mode Root</th>
-                            <th>Equivalent Major Key</th>
+                            <th data-lang-key="modesThMode">Mode</th>
+                            <th data-lang-key="modesThShift">Semitone Shift from Mode Root to Major Key Root</th>
+                            <th data-lang-key="modesThExample">Example Mode Root</th>
+                            <th data-lang-key="modesThEquivalent">Equivalent Major Key</th>
                         </tr>
                         </thead>
                         <tbody>
-                        <tr><td>Ionian</td><td>0</td><td>C</td><td>C major</td></tr>
-                        <tr><td>Dorian</td><td>-2</td><td>B</td><td>A major</td></tr>
-                        <tr><td>Phrygian</td><td>-4</td><td>E</td><td>C major</td></tr>
-                        <tr><td>Lydian</td><td>-5</td><td>F</td><td>C major</td></tr>
-                        <tr><td>Mixolydian</td><td>-7</td><td>C</td><td>F major</td></tr>
-                        <tr><td>Aeolian</td><td>-9</td><td>A</td><td>C major</td></tr>
-                        <tr><td>Locrian</td><td>-11</td><td>B</td><td>C major</td></tr>
+                        <tr><td>Ionian</td><td>0</td><td>C</td><td data-lang-key="modeKeyCMajor">C major</td></tr>
+                        <tr><td>Dorian</td><td>-2</td><td>B</td><td data-lang-key="modeKeyAMajor">A major</td></tr>
+                        <tr><td>Phrygian</td><td>-4</td><td>E</td><td data-lang-key="modeKeyCMajor">C major</td></tr>
+                        <tr><td>Lydian</td><td>-5</td><td>F</td><td data-lang-key="modeKeyCMajor">C major</td></tr>
+                        <tr><td>Mixolydian</td><td>-7</td><td>C</td><td data-lang-key="modeKeyFMajor">F major</td></tr>
+                        <tr><td>Aeolian</td><td>-9</td><td>A</td><td data-lang-key="modeKeyCMajor">C major</td></tr>
+                        <tr><td>Locrian</td><td>-11</td><td>B</td><td data-lang-key="modeKeyCMajor">C major</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -893,6 +893,10 @@
     </div>
 </div>
 
+<div style="text-align: center; padding: 1rem 0 3rem 0;">
+    <a href="mailto:raffael.jomphe@gmail.com" class="tools-button" data-lang-key="contactBtn">Contacter</a>
+</div>
+
 <script>
     let buildPianoKeyboard;
     let currentLang = 'fr';
@@ -939,15 +943,23 @@
         metronomeBtnTap: { fr: 'Tap Tempo', en: 'Tap Tempo' },
         chordWheelLabel: { fr: 'Tonalité :', en: 'Key:' },
         modesTitle: { fr: 'Modes', en: 'Modes' },
-        transposerSelectTitle: { fr: '1. Sélectionner les accords', en: '1. Select Chords' },
-        transposerSelectedLabel: { fr: '2. Vos accords', en: '2. Your Chords' },
-        transposerTransposeLabel: { fr: '3. Résultat Transposition', en: '3. Transposition Result' },
+        transposerSelectTitle: { fr: 'Sélectionner les accords', en: 'Select Chords' },
+        transposerSelectedLabel: { fr: 'Vos accords', en: 'Your Chords' },
+        transposerTransposeLabel: { fr: 'Résultat transposition', en: 'Transposition result' },
         transposerResetBtn: { fr: 'RÉINITIALISER', en: 'RESET' },
         transposerDefaultText: { fr: '...', en: '...' },
         chordsAndScalesLink: { fr: '🔢 Accords & Gammes', en: '🔢 Chords & Scales' },
         chordAiLink: { fr: '📊 Chord AI', en: '📊 Chord AI' },
         chantsTitle: { fr: '🎶 Chants à explorer', en: '🎶 Songs to Explore' },
-        chantsP1: { fr: 'Voici quelques chants avec des accords simples, très agréables à jouer. Écouter, ressentir, avoir du plaisir! 🙌', en: 'Here are a few songs with simple chords that are very enjoyable to play. Listen, feel, and have fun! 🙌' }
+        chantsP1: { fr: 'Voici quelques chants avec des accords simples, très agréables à jouer. Écouter, ressentir, avoir du plaisir! 🙌', en: 'Here are a few songs with simple chords that are very enjoyable to play. Listen, feel, and have fun! 🙌' },
+        modesThMode: { fr: 'Mode', en: 'Mode' },
+        modesThShift: { fr: 'Décalage demi-tons (Racine Mode → Tonalité Maj)', en: 'Semitone Shift (Mode Root → Major Key Root)' },
+        modesThExample: { fr: 'Exemple Racine Mode', en: 'Example Mode Root' },
+        modesThEquivalent: { fr: 'Tonalité Majeure Équivalente', en: 'Equivalent Major Key' },
+        modeKeyCMajor: { fr: 'Do majeur', en: 'C major' },
+        modeKeyAMajor: { fr: 'La majeur', en: 'A major' },
+        modeKeyFMajor: { fr: 'Fa majeur', en: 'F major' },
+        contactBtn: { fr: 'Contacter', en: 'Contact' }
     };
 
     function setLanguage(lang) {
