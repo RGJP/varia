@@ -286,6 +286,16 @@
         .tuner-tool .detune-container { position: relative; height: 40px; width: 100%; background: linear-gradient(to right, var(--red), var(--yellow), var(--green), var(--yellow), var(--red)); border-radius: 5px; margin-top: 30px; overflow: hidden; border: 1px solid #e2e8f0; }
         .tuner-tool .detune-indicator { position: absolute; top: 0; left: 50%; width: 4px; height: 100%; background-color: #2d3748; transform: translateX(-50%); transition: left 0.1s linear; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
         .tuner-tool .cents-display { margin-top: 10px; font-size: 1.1rem; color: #718096; }
+        .tuner-reminder {
+            margin-top: 15px;
+            font-size: 0.85rem;
+            color: #718096;
+            font-style: italic;
+            line-height: 1.4;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
 
         /* Styles for Integrated Piano */
         .piano-tool {
@@ -700,6 +710,7 @@
                             <div class="detune-indicator" id="detuneIndicator"></div>
                         </div>
                         <div id="cents" class="cents-display">--- cents</div>
+                        <p class="tuner-reminder">Guitar: E2 (82.41 Hz), A2 (110.00 Hz), D3 (146.83 Hz), G3 (196.00 Hz), B3 (246.94 Hz), E4 (329.63 Hz)</p>
                     </div>
                 </div>
             </div>
