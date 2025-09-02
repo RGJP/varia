@@ -525,6 +525,12 @@
             margin-left: 0.5rem;
         }
 
+/* Add this new CSS block anywhere in your <style> tag */
+.transposer-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+}
 
         /* --- NEW: Modes Table (in-tool) Styles --- */
         #modes-content h3 {
@@ -791,6 +797,8 @@
                         <button id="transposeDown" class="control-btn">–</button>
                         <div id="resultDisplay" class="display-area"></div>
                         <button id="transposeUp" class="control-btn">+</button>
+                    </div>
+                    <div class="transposer-footer">
                         <button id="resetBtn" class="control-btn" data-lang-key="transposerResetBtn">RÉINITIALISER</button>
                     </div>
                 </div>
@@ -933,9 +941,9 @@
         modesTitle: { fr: 'Modes', en: 'Modes' },
         transposerSelectTitle: { fr: '1. Sélectionner les accords', en: '1. Select Chords' },
         transposerSelectedLabel: { fr: '2. Vos accords', en: '2. Your Chords' },
-        transposerTransposeLabel: { fr: '3. Transposer & Résultat', en: '3. Transpose & Result' },
+        transposerTransposeLabel: { fr: '3. Résultat Transposition', en: '3. Transposition Result' },
         transposerResetBtn: { fr: 'RÉINITIALISER', en: 'RESET' },
-        transposerDefaultText: { fr: 'Sélectionnez des accords pour commencer...', en: 'Select chords above to begin...' },
+        transposerDefaultText: { fr: '...', en: '...' },
         chordsAndScalesLink: { fr: '🔢 Accords & Gammes', en: '🔢 Chords & Scales' },
         chordAiLink: { fr: '📊 Chord AI', en: '📊 Chord AI' },
         chantsTitle: { fr: '🎶 Chants à explorer', en: '🎶 Songs to Explore' },
