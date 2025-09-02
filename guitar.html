@@ -342,174 +342,207 @@
         .piano .note-label { pointer-events: none; font-size: 12px; font-weight: 500; }
 
         /* Styles for Integrated Metronome */
-       /* Styles for Integrated Metronome */
-.metronome-wrapper {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: 1.5rem;
-    width: 100%;
-    max-width: 384px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-}
+       .metronome-wrapper {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 384px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
 
-.metronome-indicator-area {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
+        .metronome-indicator-area {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
 
-.metronome-visual-indicator {
-    width: 96px;
-    height: 96px;
-    background-color: #f1f5f9;
-    border-radius: 9999px;
-    transition: all 100ms ease-in-out;
-    border: 1px solid #e2e8f0;
-}
+        .metronome-visual-indicator {
+            width: 96px;
+            height: 96px;
+            background-color: #f1f5f9;
+            border-radius: 9999px;
+            transition: all 100ms ease-in-out;
+            border: 1px solid #e2e8f0;
+        }
 
-.metronome-visual-indicator.beat-flash {
-    transition: background-color 50ms ease-in-out, box-shadow 50ms ease-in-out;
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    box-shadow: 0 0 20px 5px rgba(102, 126, 234, 0.7);
-}
+        .metronome-visual-indicator.beat-flash {
+            transition: background-color 50ms ease-in-out, box-shadow 50ms ease-in-out;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            box-shadow: 0 0 20px 5px rgba(102, 126, 234, 0.7);
+        }
 
-.metronome-bpm-display-wrapper {
-    position: absolute;
-    text-align: center;
-}
+        .metronome-visual-indicator.beat-flash-accent {
+            transition: background-color 50ms ease-in-out, box-shadow 50ms ease-in-out;
+            background: linear-gradient(45deg, #a855f7, #ec4899);
+            box-shadow: 0 0 25px 8px rgba(168, 85, 247, 0.8);
+        }
 
-.metronome-bpm-text {
-    font-size: 3rem;
-    line-height: 1;
-    font-weight: 700;
-    letter-spacing: -0.025em;
-    color: #333;
-}
+        .metronome-bpm-display-wrapper {
+            position: absolute;
+            text-align: center;
+        }
 
-.metronome-bpm-label {
-    display: block;
-    font-size: 0.875rem;
-    color: #4a5568;
-}
+        .metronome-bpm-text {
+            font-size: 3rem;
+            line-height: 1;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            color: #333;
+        }
 
-.metronome-slider-container {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-}
+        .metronome-bpm-label {
+            display: block;
+            font-size: 0.875rem;
+            color: #4a5568;
+        }
 
-.metronome-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 100%;
-    cursor: pointer;
-    background-color: transparent;
-}
+        .metronome-slider-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
 
-.metronome-slider::-webkit-slider-runnable-track {
-    height: 6px;
-    background: #e2e8f0;
-    border-radius: 3px;
-}
+        .metronome-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            cursor: pointer;
+            background-color: transparent;
+        }
 
-.metronome-slider::-moz-range-track {
-    height: 6px;
-    background: #e2e8f0;
-    border-radius: 3px;
-}
+        .metronome-slider::-webkit-slider-runnable-track {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+        }
 
-.metronome-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    margin-top: -7px;
-    width: 20px;
-    height: 20px;
-    background: #667eea;
-    border-radius: 50%;
-    border: 2px solid #fff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
+        .metronome-slider::-moz-range-track {
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 3px;
+        }
 
-.metronome-slider::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    background: #667eea;
-    border-radius: 50%;
-    border: 2px solid #fff;
-}
+        .metronome-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -7px;
+            width: 20px;
+            height: 20px;
+            background: #667eea;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
 
-.metronome-action-buttons {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
-}
+        .metronome-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #667eea;
+            border-radius: 50%;
+            border: 2px solid #fff;
+        }
 
-.metronome-button {
-    font-weight: 700;
-    padding: 1rem 0;
-    border-radius: 0.5rem;
-    font-size: 1.125rem;
-    transition: background-color 0.2s;
-    border: none;
-    cursor: pointer;
-}
+        /* NEW: Styles for Accent Control */
+        .metronome-accent-control {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .metronome-accent-control .tool-label {
+            margin-bottom: 0;
+            font-size: 0.9rem;
+        }
+        .metronome-accent-control input {
+            width: 80px;
+            padding: 0.5rem;
+            font-size: 1.2rem;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            -moz-appearance: textfield; /* Hide arrows in Firefox */
+        }
+        .metronome-accent-control input::-webkit-outer-spin-button,
+        .metronome-accent-control input::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        /* END NEW */
 
-.metronome-adjust-button {
-    width: 48px;
-    height: 48px;
-    background-color: #f1f5f9;
-    border: 1px solid #e2e8f0;
-    border-radius: 9999px;
-    font-size: 1.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #4a5568;
-    padding: 0;
-}
+        .metronome-action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+        }
 
-.metronome-adjust-button:active {
-    background-color: #e2e8f0;
-}
+        .metronome-button {
+            font-weight: 700;
+            padding: 1rem 0;
+            border-radius: 0.5rem;
+            font-size: 1.125rem;
+            transition: background-color 0.2s;
+            border: none;
+            cursor: pointer;
+        }
 
-.metronome-main-button {
-    width: 100%;
-    color: white;
-    background: linear-gradient(45deg, #667eea, #764ba2);
-    border: none;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-}
+        .metronome-adjust-button {
+            width: 48px;
+            height: 48px;
+            background-color: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 9999px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4a5568;
+            padding: 0;
+        }
 
-.metronome-start-button.stop-state {
-    background-color: #ef4444;
-}
+        .metronome-adjust-button:active {
+            background-color: #e2e8f0;
+        }
 
-.metronome-start-button:hover {
-    filter: brightness(1.1);
-}
+        .metronome-main-button {
+            width: 100%;
+            color: white;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
 
-.metronome-tap-button {
-    background-color: #f1f5f9;
-    color: #4a5568;
-    border: 1px solid #e2e8f0;
-}
+        .metronome-start-button.stop-state {
+            background-color: #ef4444;
+        }
 
-.metronome-tap-button {
-    background-color: #4b5563;
-    color: white;
-}
-.metronome-tap-button:hover {
-    background-color: #6b7280;
-}
+        .metronome-start-button:hover {
+            filter: brightness(1.1);
+        }
+
+        .metronome-tap-button {
+            background-color: #f1f5f9;
+            color: #4a5568;
+            border: 1px solid #e2e8f0;
+        }
+
+        .metronome-tap-button {
+            background-color: #4b5563;
+            color: white;
+        }
+        .metronome-tap-button:hover {
+            background-color: #6b7280;
+        }
 
         /* Styles for Integrated Chord Wheel */
         .chord-wheel-tool {
@@ -889,6 +922,10 @@
                                 <button id="increase-tempo" class="metronome-button metronome-adjust-button">+</button>
                             </div>
                         </div>
+                        <div class="metronome-accent-control">
+                            <label for="accent-interval" class="tool-label" data-lang-key="metronomeAccentLabel">Accent tous les (temps)</label>
+                            <input type="number" id="accent-interval" min="0" max="16" placeholder="ex: 4">
+                        </div>
                         <div class="metronome-action-buttons">
                             <button id="start-stop-btn" class="metronome-button metronome-main-button metronome-start-button" data-lang-key="metronomeBtnStart">
                                 Démarrer
@@ -1079,8 +1116,8 @@
         metronomeBtnStart: { fr: 'Démarrer', en: 'Start' },
         metronomeBtnStop: { fr: 'Arrêter', en: 'Stop' },
         metronomeBtnTap: { fr: 'Tap Tempo', en: 'Tap Tempo' },
+        metronomeAccentLabel: { fr: 'Accent tous les (temps)', en: 'Accent every (beats)' },
         chordWheelLabel: { fr: 'Tonalité :', en: 'Key:' },
-
         transposerSelectTitle: { fr: 'Sélectionner les accords', en: 'Select Chords' },
         transposerSelectedLabel: { fr: 'Vos accords', en: 'Your Chords' },
         transposerTransposeLabel: { fr: 'Résultat transposition', en: 'Transposition result' },
@@ -1526,8 +1563,10 @@
         const increaseTempoBtn = document.getElementById('increase-tempo');
         const tapTempoBtn = document.getElementById('tap-tempo-btn');
         const visualIndicator = document.getElementById('visual-indicator');
+        const accentIntervalInput = document.getElementById('accent-interval'); // New element
         let metroAudioContext, scheduler, isRunning = false;
         let tempo = 120.0;
+        let beatCount = 1; // New state for accent
         const lookahead = 25.0, scheduleAheadTime = 0.1;
         let nextNoteTime = 0.0;
         let tapTimestamps = [];
@@ -1543,11 +1582,11 @@
             }
         }
 
-        function playClick(time) {
+        function playClick(time, isAccent = false) {
             const osc = metroAudioContext.createOscillator();
             const gain = metroAudioContext.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(880, time);
+            osc.frequency.setValueAtTime(isAccent ? 1200 : 880, time);
             gain.gain.setValueAtTime(1, time);
             gain.gain.exponentialRampToValueAtTime(0.001, time + 0.1);
             osc.connect(gain);
@@ -1556,18 +1595,33 @@
             osc.stop(time + 0.1);
         }
 
-        function visualBeat() {
-            visualIndicator.classList.add('beat-flash');
-            setTimeout(() => { visualIndicator.classList.remove('beat-flash'); }, 100);
+        function visualBeat(isAccent = false) {
+            visualIndicator.classList.add(isAccent ? 'beat-flash-accent' : 'beat-flash');
+            setTimeout(() => {
+                visualIndicator.classList.remove('beat-flash', 'beat-flash-accent');
+            }, 100);
         }
+
         function scheduleNextClicks() {
             while (nextNoteTime < metroAudioContext.currentTime + scheduleAheadTime) {
-                playClick(nextNoteTime);
+                const accentInterval = parseInt(accentIntervalInput.value, 10) || 0;
+                const isAccentBeat = accentInterval > 1 && beatCount === 1;
+
+                playClick(nextNoteTime, isAccentBeat);
                 const visualTime = (nextNoteTime - metroAudioContext.currentTime) * 1000;
-                setTimeout(visualBeat, visualTime);
+                setTimeout(() => visualBeat(isAccentBeat), visualTime);
+
                 nextNoteTime += 60.0 / tempo;
+
+                if (accentInterval > 1) {
+                    beatCount++;
+                    if (beatCount > accentInterval) {
+                        beatCount = 1;
+                    }
+                }
             }
         }
+
         function toggleMetronome() {
             initMetroAudioContext();
             if (metroAudioContext.state === 'suspended') {
@@ -1582,6 +1636,7 @@
         function startStopAction() {
             isRunning = !isRunning;
             if (isRunning) {
+                beatCount = 1; // Reset beat count on start
                 startStopBtn.textContent = translations.metronomeBtnStop[currentLang];
                 startStopBtn.classList.add('stop-state');
                 nextNoteTime = metroAudioContext.currentTime + 0.1;
