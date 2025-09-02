@@ -1060,7 +1060,22 @@
         });
     }
 
+// Function to switch audio back to media mode
+function setAudioToMediaMode() {
+    const silentAudio = document.getElementById('silent-audio');
+    if (silentAudio) {
+        silentAudio.volume = 0;
+        silentAudio.muted = true;
+        silentAudio.play().then(() => {
+            console.log("Switched audio back to media mode.");
+        }).catch(e => {
+            console.error("Failed to switch audio mode:", e);
+        });
+    }
+}
+
     // --- ORIGINAL WORKING TUNER CODE (UNTOUCHED) ---
+
     function initTuner() {
         const startButton = document.getElementById('startButton');
         if (!startButton) return;
@@ -1093,6 +1108,9 @@
                 startButton.textContent = translations.tunerBtnStart[currentLang];
                 startButton.classList.remove('active');
                 resetUI();
+
+                // ADD THIS LINE
+                setAudioToMediaMode();
             }
         }
 
