@@ -286,13 +286,7 @@
         .tuner-tool .detune-container { position: relative; height: 40px; width: 100%; background: linear-gradient(to right, var(--red), var(--yellow), var(--green), var(--yellow), var(--red)); border-radius: 5px; margin-top: 30px; overflow: hidden; border: 1px solid #e2e8f0; }
         .tuner-tool .detune-indicator { position: absolute; top: 0; left: 50%; width: 4px; height: 100%; background-color: #2d3748; transform: translateX(-50%); transition: left 0.1s linear; box-shadow: 0 0 5px rgba(0,0,0,0.5); }
         .tuner-tool .cents-display { margin-top: 10px; font-size: 1.1rem; color: #718096; }
-.tuner-tool .tuner-reminder {
-            font-size: 0.8rem;
-            color: #a0aec0; /* A lighter gray */
-            margin-top: 15px;
-            line-height: 1.4;
-            font-weight: 500;
-        }
+
         /* Styles for Integrated Piano */
         .piano-tool {
             --white-key-width: 56px; --white-key-height: 220px; --black-key-width: 36px; --black-key-height: 140px; --border-radius: 5px;
@@ -706,9 +700,6 @@
                             <div class="detune-indicator" id="detuneIndicator"></div>
                         </div>
                         <div id="cents" class="cents-display">--- cents</div>
-                        <p class="tuner-reminder">E2 (82.41 Hz), A2 (110.00 Hz), D3 (146.83 Hz), G3 (196.00 Hz), B3 (246.94 Hz), E4 (329.63 Hz)</p>                    </div>
-                </div>
-            </div>
                     </div>
                 </div>
             </div>
@@ -1060,22 +1051,7 @@
         });
     }
 
-// Function to switch audio back to media mode
-function setAudioToMediaMode() {
-    const silentAudio = document.getElementById('silent-audio');
-    if (silentAudio) {
-        silentAudio.volume = 0;
-        silentAudio.muted = true;
-        silentAudio.play().then(() => {
-            console.log("Switched audio back to media mode.");
-        }).catch(e => {
-            console.error("Failed to switch audio mode:", e);
-        });
-    }
-}
-
     // --- ORIGINAL WORKING TUNER CODE (UNTOUCHED) ---
-
     function initTuner() {
         const startButton = document.getElementById('startButton');
         if (!startButton) return;
@@ -1108,9 +1084,6 @@ function setAudioToMediaMode() {
                 startButton.textContent = translations.tunerBtnStart[currentLang];
                 startButton.classList.remove('active');
                 resetUI();
-
-                // ADD THIS LINE
-                setAudioToMediaMode();
             }
         }
 
