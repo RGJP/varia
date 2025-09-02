@@ -452,7 +452,7 @@
             border: 2px solid #fff;
         }
 
-        /* NEW: Styles for Accent Control */
+        /* Styles for Accent Control */
         .metronome-accent-control {
             display: flex;
             flex-direction: column;
@@ -478,7 +478,27 @@
           -webkit-appearance: none;
           margin: 0;
         }
-        /* END NEW */
+
+        /* NEW: Visual Beat Dots */
+        .metronome-beat-dots {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.75rem; /* 12px */
+            min-height: 20px; /* Reserve space to prevent layout shift */
+        }
+        .beat-dot {
+            width: 1rem; /* 16px */
+            height: 1rem; /* 16px */
+            background-color: #e2e8f0; /* Light gray, inactive */
+            border-radius: 50%;
+            transition: all 0.1s ease-in-out;
+        }
+        .beat-dot.active {
+            background: #764ba2; /* Accent color */
+            transform: scale(1.25);
+            box-shadow: 0 0 10px rgba(118, 75, 162, 0.6);
+        }
 
         .metronome-action-buttons {
             display: grid;
@@ -926,6 +946,7 @@
                             <label for="accent-interval" class="tool-label" data-lang-key="metronomeAccentLabel">Accent tous les (temps)</label>
                             <input type="number" id="accent-interval" min="0" max="16" placeholder="ex: 4">
                         </div>
+                        <div id="beat-dots-container" class="metronome-beat-dots"></div>
                         <div class="metronome-action-buttons">
                             <button id="start-stop-btn" class="metronome-button metronome-main-button metronome-start-button" data-lang-key="metronomeBtnStart">
                                 Démarrer
@@ -1563,14 +1584,27 @@
         const increaseTempoBtn = document.getElementById('increase-tempo');
         const tapTempoBtn = document.getElementById('tap-tempo-btn');
         const visualIndicator = document.getElementById('visual-indicator');
-        const accentIntervalInput = document.getElementById('accent-interval'); // New element
+        const accentIntervalInput = document.getElementById('accent-interval');
+        const beatDotsContainer = document.getElementById('beat-dots-container');
         let metroAudioContext, scheduler, isRunning = false;
         let tempo = 120.0;
-        let beatCount = 1; // New state for accent
+        let beatCount = 1;
         const lookahead = 25.0, scheduleAheadTime = 0.1;
         let nextNoteTime = 0.0;
         let tapTimestamps = [];
         const tapTimeout = 2000;
+
+        function updateBeatDots(count) {
+            if (!beatDotsContainer) return;
+            beatDotsContainer.innerHTML = ''; // Clear existing dots
+            if (count > 1 && count <= 16) { // Add a reasonable limit
+                for (let i = 0; i < count; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'beat-dot';
+                    beatDotsContainer.appendChild(dot);
+                }
+            }
+        }
 
         function initMetroAudioContext() {
             primeAudioContext();
@@ -1608,8 +1642,18 @@
                 const isAccentBeat = accentInterval > 1 && beatCount === 1;
 
                 playClick(nextNoteTime, isAccentBeat);
+
                 const visualTime = (nextNoteTime - metroAudioContext.currentTime) * 1000;
                 setTimeout(() => visualBeat(isAccentBeat), visualTime);
+
+                const currentBeatIndex = beatCount - 1;
+                const dots = beatDotsContainer.querySelectorAll('.beat-dot');
+                if (dots.length > 0 && currentBeatIndex < dots.length) {
+                    setTimeout(() => {
+                        dots.forEach(dot => dot.classList.remove('active'));
+                        dots[currentBeatIndex].classList.add('active');
+                    }, visualTime);
+                }
 
                 nextNoteTime += 60.0 / tempo;
 
@@ -1645,6 +1689,10 @@
                 startStopBtn.textContent = translations.metronomeBtnStart[currentLang];
                 startStopBtn.classList.remove('stop-state');
                 clearInterval(scheduler);
+                const dots = beatDotsContainer.querySelectorAll('.beat-dot');
+                if (dots.length > 0) {
+                     dots.forEach(dot => dot.classList.remove('active'));
+                }
             }
         }
 
@@ -1674,6 +1722,12 @@
         decreaseTempoBtn.addEventListener('click', () => { if (tempo > 30) updateTempo(tempo - 1); });
         increaseTempoBtn.addEventListener('click', () => { if (tempo < 240) updateTempo(tempo + 1); });
         tapTempoBtn.addEventListener('click', handleTap);
+        accentIntervalInput.addEventListener('input', (e) => {
+            const count = parseInt(e.target.value, 10) || 0;
+            updateBeatDots(count);
+        });
+
+        updateBeatDots(0); // Initial call
     }
 
     function initChordWheel() {
