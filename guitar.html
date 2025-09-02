@@ -1062,7 +1062,7 @@
         });
     }
 
-    // --- ORIGINAL WORKING TUNER CODE (UNTOUCHED) ---
+    // --- REVISED TUNER CODE WITH MOBILE AUDIO FIX ---
     function initTuner() {
         const startButton = document.getElementById('startButton');
         if (!startButton) return;
@@ -1071,7 +1071,7 @@
         const freqDisplay = document.getElementById('frequency');
         const centsDisplay = document.getElementById('cents');
         const detuneIndicator = document.getElementById('detuneIndicator');
-        let audioContext, analyserNode, mediaStreamSource, audioBuffer, animationFrameId, isTunerActive = false;
+        let audioContext, analyserNode, mediaStreamSource, audioBuffer, animationFrameId, isTunerActive = false, mediaStream = null;
         const noteStrings = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
         startButton.addEventListener('click', toggleTuner);
@@ -1089,26 +1089,51 @@
                     alert("Could not access the microphone. Please allow access.");
                 }
             } else {
-                if (audioContext && audioContext.state !== 'closed') audioContext.close();
+                // --- STOP LOGIC ---
+                // 1. Stop the microphone stream tracks to release the hardware.
+                if (mediaStream) {
+                    mediaStream.getTracks().forEach(track => track.stop());
+                    mediaStream = null;
+                }
+
+                // 2. Stop the analysis loop and close the audio context.
                 cancelAnimationFrame(animationFrameId);
+                if (audioContext && audioContext.state !== 'closed') {
+                    audioContext.close().catch(e => console.error("Error closing AudioContext", e));
+                    audioContext = null;
+                }
+
+                // 3. Update UI state.
                 isTunerActive = false;
                 startButton.textContent = translations.tunerBtnStart[currentLang];
                 startButton.classList.remove('active');
                 resetUI();
+
+                // 4. (THE FIX) Play a silent audio track to force the browser
+                //    back into "media" playback mode from "call" mode.
+                const silentAudio = document.getElementById('silent-audio');
+                if (silentAudio) {
+                    silentAudio.play().catch(e => console.warn("Silent audio play for reset failed, but this is okay.", e));
+                }
             }
         }
 
         async function setupAudio() {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)({
-                channelCountMode: 'explicit',
-                channelCount: 2
-            });
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
             if (audioContext.state === 'suspended') {
                 await audioContext.resume();
             }
 
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // Request a raw audio stream without voice-processing features.
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false
+                }
+            });
+            mediaStream = stream; // Store the stream to stop it later.
             mediaStreamSource = audioContext.createMediaStreamSource(stream);
             analyserNode = audioContext.createAnalyser();
             analyserNode.fftSize = 2048 * 2;
@@ -1124,6 +1149,7 @@
         }
 
         function getPitch() {
+            if (!analyserNode) return null;
             analyserNode.getFloatTimeDomainData(audioBuffer);
             let rms = 0;
             for (let i = 0; i < audioBuffer.length; i++) { const val = audioBuffer[i]; rms += val * val; }
