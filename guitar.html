@@ -228,6 +228,7 @@
             transition: all 0.3s ease;
             flex-grow: 1; /* For mobile, buttons will take up space */
             text-align: center;
+            text-decoration: none;
         }
         .tool-nav-button:hover {
             background-color: #e2e8f0;
@@ -383,7 +384,6 @@
         }
         .chord-wheel-tool .wheel { width: 100%; height: 100%; border: 3px solid var(--border-color); border-radius: 50%; position: relative; background-color: var(--wheel-bg-color); }
         .chord-wheel-tool .center-circle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: calc(var(--slot-size) * 1.6); height: calc(var(--slot-size) * 1.6); background-color: white; border: 3px solid var(--border-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; flex-direction: column; z-index: 1; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-        /* MODIFIED: Styles for the new center display */
         .chord-wheel-tool .center-circle #center-key-display {
             font-size: clamp(1rem, 5vw, 1.5rem);
             color: var(--accent-color);
@@ -401,6 +401,118 @@
         .chord-wheel-tool #chord-4 { background-color: var(--chord-5-color); }
         .chord-wheel-tool #chord-5 { background-color: var(--chord-7-color); }
         .chord-wheel-tool #chord-6 { background-color: var(--chord-6-color); }
+
+        /* --- NEW: Chord Transposer Styles --- */
+        .transposer-tool {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            align-items: center;
+        }
+        .chord-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+            gap: 0.75rem;
+            width: 100%;
+            max-width: 500px;
+        }
+        .chord-selector-btn {
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 1.1rem;
+            padding: 0.75rem 0.5rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background-color: #f9fafb;
+            color: #374151;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .chord-selector-btn:hover {
+            background-color: #f3f4f6;
+            border-color: #9ca3af;
+        }
+        .chord-selector-btn.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transform: translateY(-2px);
+        }
+        .transpose-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            width: 100%;
+            max-width: 500px;
+            background-color: #f1f5f9;
+            padding: 0.75rem;
+            border-radius: 50px;
+        }
+        .transpose-btn {
+            width: 48px;
+            height: 48px;
+            font-size: 2rem;
+            font-weight: 300;
+            line-height: 1;
+            border: none;
+            border-radius: 50%;
+            background-color: #e2e8f0;
+            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+        .transpose-btn:hover {
+            background-color: #cbd5e1;
+            transform: scale(1.05);
+        }
+        .transpose-result {
+            flex-grow: 1;
+            text-align: center;
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: #1e293b;
+        }
+        .transpose-result .result-label {
+            font-weight: 600;
+            color: #4a5568;
+            margin-right: 0.5rem;
+        }
+        .transpose-result .result-offset {
+            color: #64748b;
+            font-weight: 400;
+            margin-left: 0.5rem;
+        }
+
+        /* --- NEW: Modes Table (in-tool) Styles --- */
+        #modes-content h3 {
+            text-align:center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        #modes-content table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+        #modes-content th, #modes-content td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        #modes-content th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        #modes-content tr:last-child td {
+            border-bottom: none;
+        }
+        #modes-content tr:hover {
+            background-color: #f1f5f9;
+        }
 
         /* Video Embed Styles */
         .chant-section h3 {
@@ -429,65 +541,6 @@
             border: 0;
         }
 
-        /* --- NEW: Modes Overlay Styles --- */
-        #modes-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-            display: none; /* Hidden by default */
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            cursor: pointer;
-            animation: fadeIn 0.3s ease;
-        }
-        #modes-overlay.active {
-            display: flex; /* Show when active */
-        }
-        #modes-content {
-            background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            max-width: 90%;
-            width: 700px;
-            cursor: default;
-            animation: slideUp 0.4s ease-out;
-            overflow-x: auto;
-        }
-        #modes-content h2 {
-            margin-top: 0;
-            margin-bottom: 1.5rem;
-            text-align: center;
-            color: #2d3748;
-        }
-        #modes-content table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 0.95rem;
-        }
-        #modes-content th, #modes-content td {
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        #modes-content th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-            color: #4a5568;
-        }
-        #modes-content tr:last-child td {
-            border-bottom: none;
-        }
-        #modes-content tr:hover {
-            background-color: #f1f5f9;
-        }
-
-
         /* Animations */
         @keyframes slideDown { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
@@ -504,7 +557,6 @@
             .card { padding: 1.5rem; margin: 1.5rem 0; }
             .tool-nav-button { flex-basis: calc(50% - 0.5rem); }
             .piano-tool { --white-key-width: 12vw; --white-key-height: 48vw; --black-key-width: 8vw; --black-key-height: 30vw; }
-            #modes-content { padding: 1.5rem; }
             #modes-content th, #modes-content td { padding: 0.5rem; font-size: 0.8rem; }
         }
 
@@ -526,6 +578,9 @@
 </head>
 <body>
 <div class="gradient-overlay"></div>
+<audio id="silent-audio" playsinline style="display:none;">
+    <source src="data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vVGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBvZiB0aGUgU291bmQgUmVmb3JtZXIAV0FDSAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAA==" type="audio/mpeg">
+</audio>
 
 <div class="floating-note" style="top: 10%; left: 10%;">🎵</div>
 <div class="floating-note" style="top: 20%; right: 15%; animation-delay: -2s;">🎶</div>
@@ -596,7 +651,12 @@
             <button class="tool-nav-button" data-tool="piano" data-lang-key="toolNavPiano">🎹 Clavier</button>
             <button class="tool-nav-button" data-tool="metronome" data-lang-key="toolNavMetronome">⏱️ Métronome</button>
             <button class="tool-nav-button" data-tool="chord-wheel" data-lang-key="toolNavChordWheel">🔄 Cercle des quintes</button>
+            <button class="tool-nav-button" data-tool="transposer" data-lang-key="toolNavTransposer">+/- Transposer</button>
+            <button class="tool-nav-button" data-tool="modes" data-lang-key="toolNavModes">ℹ️ Modes</button>
+            <a href="https://www.all-guitar-chords.com/" target="_blank" rel="noopener noreferrer" class="tool-nav-button" data-lang-key="chordsAndScalesLink">🔢 Accords & Gammes</a>
+            <a href="https://chordai.net/" target="_blank" rel="noopener noreferrer" class="tool-nav-button" data-lang-key="chordAiLink">🤖 Chord AI</a>
         </div>
+
 
         <div class="tool-content-area">
 
@@ -676,15 +736,49 @@
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div style="text-align: center; margin-top: 2rem;">
-            <button id="modes-btn" class="tools-button" style="width: 100%; max-width: 400px; display: inline-block; margin-top: 0; margin-bottom: 1rem;" data-lang-key="modesBtn">
-                ℹ️ Modes
-            </button>
-            <a href="https://www.all-guitar-chords.com/" target="_blank" rel="noopener noreferrer" class="tools-button" style="width: 100%; max-width: 400px; display: inline-block; margin-top: 0;" data-lang-key="chordsAndScalesLink">
-                🔢 Accords et gammes
-            </a>
+            <div id="transposer-content" class="tool-content">
+                <div class="transposer-tool">
+                    <h3 data-lang-key="transposerSelectTitle">Sélectionner les accords</h3>
+                    <div id="chord-selection-grid" class="chord-selection-grid">
+                    </div>
+                    <div class="transpose-controls">
+                        <button id="transpose-down" class="transpose-btn" aria-label="Transpose Down">-</button>
+                        <div id="transpose-result" class="transpose-result">
+                            <span class="result-label" data-lang-key="transposerResultLabel">Résultat :</span>
+                            <span class="result-chords">--</span>
+                            <span class="result-offset">(0)</span>
+                        </div>
+                        <button id="transpose-up" class="transpose-btn" aria-label="Transpose Up">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="modes-content" class="tool-content">
+                <h3 data-lang-key="modesTitle">Modes</h3>
+                <div style="overflow-x: auto; padding-bottom: 5px;">
+                    <table>
+                        <thead>
+                        <tr>
+                            <th>Mode</th>
+                            <th>Semitone Shift from Mode Root to Major Key Root</th>
+                            <th>Example Mode Root</th>
+                            <th>Equivalent Major Key</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr><td>Ionian</td><td>0</td><td>C</td><td>C major</td></tr>
+                        <tr><td>Dorian</td><td>-2</td><td>B</td><td>A major</td></tr>
+                        <tr><td>Phrygian</td><td>-4</td><td>E</td><td>C major</td></tr>
+                        <tr><td>Lydian</td><td>-5</td><td>F</td><td>C major</td></tr>
+                        <tr><td>Mixolydian</td><td>-7</td><td>C</td><td>F major</td></tr>
+                        <tr><td>Aeolian</td><td>-9</td><td>A</td><td>C major</td></tr>
+                        <tr><td>Locrian</td><td>-11</td><td>B</td><td>C major</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -749,31 +843,6 @@
     </div>
 </div>
 
-<div id="modes-overlay">
-    <div id="modes-content">
-        <h2 data-lang-key="modesTitle">Modes</h2>
-        <table>
-            <thead>
-            <tr>
-                <th>Mode</th>
-                <th>Semitone Shift from Mode Root to Major Key Root</th>
-                <th>Example Mode Root</th>
-                <th>Equivalent Major Key</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr><td>Ionian</td><td>0</td><td>C</td><td>C major</td></tr>
-            <tr><td>Dorian</td><td>-2</td><td>B</td><td>A major</td></tr>
-            <tr><td>Phrygian</td><td>-4</td><td>E</td><td>C major</td></tr>
-            <tr><td>Lydian</td><td>-5</td><td>F</td><td>C major</td></tr>
-            <tr><td>Mixolydian</td><td>-7</td><td>C</td><td>F major</td></tr>
-            <tr><td>Aeolian</td><td>-9</td><td>A</td><td>C major</td></tr>
-            <tr><td>Locrian</td><td>-11</td><td>B</td><td>C major</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
 <script>
     let buildPianoKeyboard;
     let currentLang = 'fr';
@@ -809,6 +878,8 @@
         toolNavPiano: { fr: '🎹 Clavier', en: '🎹 Keyboard' },
         toolNavMetronome: { fr: '⏱️ Métronome', en: '⏱️ Metronome' },
         toolNavChordWheel: { fr: '🔄 Cercle des quintes', en: '🔄 Circle of Fifths' },
+        toolNavTransposer: { fr: '+/- Transposer', en: '+/- Transposer' },
+        toolNavModes: { fr: 'ℹ️ Modes', en: 'ℹ️ Modes' },
         tunerBtnStart: { fr: "Démarrer l'accordeur", en: 'Start Tuner' },
         tunerBtnStop: { fr: "Arrêter l'accordeur", en: 'Stop Tuner' },
         pianoOctaveLabel: { fr: 'Octave de départ:', en: 'Starting Octave:' },
@@ -817,9 +888,11 @@
         metronomeBtnStop: { fr: 'Arrêter', en: 'Stop' },
         metronomeBtnTap: { fr: 'Tap Tempo', en: 'Tap Tempo' },
         chordWheelLabel: { fr: 'Tonalité :', en: 'Key:' },
-        modesBtn: { fr: 'ℹ️ Modes', en: 'ℹ️ Modes' },
         modesTitle: { fr: 'Modes', en: 'Modes' },
-        chordsAndScalesLink: { fr: '🔢 Accords et gammes', en: '🔢 Chords and Scales' },
+        transposerSelectTitle: { fr: 'Sélectionner les accords', en: 'Select Chords' },
+        transposerResultLabel: { fr: 'Résultat :', en: 'Result:' },
+        chordsAndScalesLink: { fr: '🔢 Accords & Gammes', en: '🔢 Chords & Scales' },
+        chordAiLink: { fr: '🤖 Chord AI', en: '🤖 Chord AI' },
         chantsTitle: { fr: '🎶 Chants à explorer', en: '🎶 Songs to Explore' },
         chantsP1: { fr: 'Voici quelques chants avec des accords simples, très agréables à jouer. Écouter, ressentir, avoir du plaisir! 🙌', en: 'Here are a few songs with simple chords that are very enjoyable to play. Listen, feel, and have fun! 🙌' }
     };
@@ -847,8 +920,25 @@
         });
     }
 
+    // --- NEW: Audio Context Priming for Mobile ---
+    let isAudioPrimed = false;
+    async function primeAudioContext() {
+        if (isAudioPrimed) return;
+        const silentAudio = document.getElementById('silent-audio');
+        if (silentAudio) {
+            try {
+                await silentAudio.play();
+                isAudioPrimed = true;
+                console.log("Audio session primed for media playback.");
+            } catch (error) {
+                // This can fail if user hasn't interacted yet, but subsequent calls will succeed.
+                console.warn("Could not prime audio context. A user interaction is likely required.", error);
+            }
+        }
+    }
+
+
     document.addEventListener('DOMContentLoaded', function() {
-        // --- NEW LANGUAGE TOGGLE ---
         const langToggleBtn = document.getElementById('lang-toggle-btn');
         if (langToggleBtn) {
             langToggleBtn.addEventListener('click', () => {
@@ -856,7 +946,6 @@
                 setLanguage(newLang);
             });
         }
-        // --- END NEW LANGUAGE TOGGLE ---
 
         const cards = document.querySelectorAll('.card');
         const observer = new IntersectionObserver((entries) => {
@@ -875,7 +964,7 @@
         initPiano();
         initMetronome();
         initChordWheel();
-        initModesOverlay(); // Initialize the new overlay
+        initTransposer(); // Initialize the new transposer tool
     });
 
     document.addEventListener('mousemove', (e) => {
@@ -895,6 +984,11 @@
         if (!navButtons.length || !toolContents.length) return;
 
         navButtons.forEach(button => {
+            // Skip event listener for anchor tags to allow default navigation
+            if (button.tagName === 'A') {
+                return;
+            }
+
             button.addEventListener('click', () => {
                 const toolName = button.dataset.tool;
 
@@ -932,6 +1026,7 @@
         startButton.addEventListener('click', toggleTuner);
 
         async function toggleTuner() {
+            await primeAudioContext(); // Ensure media playback mode
             if (!isTunerActive) {
                 try {
                     await setupAudio();
@@ -954,11 +1049,7 @@
         }
 
         async function setupAudio() {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)({
-                channelCountMode: 'explicit',
-                channelCount: 2
-            });
-
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
             if (audioContext.state === 'suspended') {
                 await audioContext.resume();
             }
@@ -1039,11 +1130,9 @@
         const activeNotes = new Map();
 
         function ensurePianoAudio() {
+            primeAudioContext(); // Ensure media playback mode
             if (!pianoAudioCtx) {
-                pianoAudioCtx = new(window.AudioContext || window.webkitAudioContext)({
-                    channelCountMode: 'explicit',
-                    channelCount: 2
-                });
+                pianoAudioCtx = new(window.AudioContext || window.webkitAudioContext)();
             }
         }
 
@@ -1204,11 +1293,9 @@
         const tapTimeout = 2000;
 
         function initMetroAudioContext() {
+            primeAudioContext(); // Ensure media playback mode
             if (!metroAudioContext) {
-                metroAudioContext = new (window.AudioContext || window.webkitAudioContext)({
-                    channelCountMode: 'explicit',
-                    channelCount: 2
-                });
+                metroAudioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
         }
 
@@ -1371,27 +1458,89 @@
         });
     }
 
-    // --- NEW: Modes Overlay Logic ---
-    function initModesOverlay() {
-        const modesBtn = document.getElementById('modes-btn');
-        const modesOverlay = document.getElementById('modes-overlay');
-        const modesContent = document.getElementById('modes-content');
+    // --- NEW: Chord Transposer Logic ---
+    function initTransposer() {
+        const grid = document.getElementById('chord-selection-grid');
+        const resultChordsEl = document.querySelector('.transpose-result .result-chords');
+        const resultOffsetEl = document.querySelector('.transpose-result .result-offset');
+        const transposeUpBtn = document.getElementById('transpose-up');
+        const transposeDownBtn = document.getElementById('transpose-down');
 
-        if (!modesBtn || !modesOverlay || !modesContent) return;
+        if (!grid) return;
 
-        modesBtn.addEventListener('click', () => {
-            modesOverlay.classList.add('active');
+        const notesSharp = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        const notesFlat = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+        const displayNotes = ['C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭', 'A', 'A♯/B♭', 'B'];
+        const notesForButtons = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+        let selectedChords = new Set();
+        let transposeOffset = 0;
+
+        // Create chord selection buttons
+        notesForButtons.forEach((note, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'chord-selector-btn';
+            // Display with sharps for simplicity in the UI button text
+            btn.textContent = note.replace('#', '♯');
+            btn.dataset.note = note;
+            btn.addEventListener('click', () => {
+                btn.classList.toggle('active');
+                if (selectedChords.has(note)) {
+                    selectedChords.delete(note);
+                } else {
+                    selectedChords.add(note);
+                }
+                updateTransposition();
+            });
+            grid.appendChild(btn);
         });
 
-        // Close when clicking on the background
-        modesOverlay.addEventListener('click', () => {
-            modesOverlay.classList.remove('active');
+        function getNoteIndex(note) {
+            let index = notesSharp.indexOf(note);
+            if (index !== -1) return index;
+            return notesFlat.indexOf(note);
+        }
+
+        function transposeNote(note, semitones) {
+            const index = getNoteIndex(note);
+            if (index === -1) return note; // Should not happen
+            const newIndex = (index + semitones % 12 + 12) % 12;
+
+            // Prefer sharp notation, except for common flat keys
+            const commonFlatKeys = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'];
+            const transposedRootForContext = transposeNote('C', semitones); // Find what key we are in
+
+            if (commonFlatKeys.includes(transposedRootForContext) || note.includes('b')) {
+                 return notesFlat[newIndex];
+            }
+            return notesSharp[newIndex];
+        }
+
+        function updateTransposition() {
+            if (selectedChords.size === 0) {
+                resultChordsEl.textContent = '--';
+                resultOffsetEl.textContent = `(${transposeOffset > 0 ? '+' : ''}${transposeOffset})`;
+                return;
+            }
+
+            const orderedSelected = notesForButtons.filter(note => selectedChords.has(note));
+            const transposed = orderedSelected.map(note => transposeNote(note, transposeOffset));
+
+            resultChordsEl.textContent = transposed.join(' ');
+            resultOffsetEl.textContent = `(${transposeOffset > 0 ? '+' : ''}${transposeOffset})`;
+        }
+
+        transposeUpBtn.addEventListener('click', () => {
+            transposeOffset++;
+            updateTransposition();
         });
 
-        // Prevent closing when clicking inside the content
-        modesContent.addEventListener('click', (e) => {
-            e.stopPropagation();
+        transposeDownBtn.addEventListener('click', () => {
+            transposeOffset--;
+            updateTransposition();
         });
+
+        updateTransposition(); // Initial call
     }
 
 </script>
