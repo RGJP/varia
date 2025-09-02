@@ -341,41 +341,174 @@
         .piano .note-label { pointer-events: none; font-size: 12px; font-weight: 500; }
 
         /* Styles for Integrated Metronome */
-        .metronome-wrapper {
-            background-color: #1f2937; /* gray-800 */
-            color: white;
-            border-radius: 1rem; /* rounded-2xl */
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            padding: 1.5rem;
-            width: 100%;
-            max-width: 384px; /* max-w-sm */
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem; /* space-y-6 */
-        }
-        .metronome-indicator-area { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .metronome-visual-indicator { width: 96px; height: 96px; background-color: #374151; border-radius: 9999px; transition: all 100ms ease-in-out; }
-        .metronome-visual-indicator.beat-flash { transition: background-color 50ms ease-in-out, box-shadow 50ms ease-in-out; background-color: #667eea; box-shadow: 0 0 20px 5px rgba(102, 126, 234, 0.7); }
-        .metronome-bpm-display-wrapper { position: absolute; text-align: center; }
-        .metronome-bpm-text { font-size: 3rem; line-height: 1; font-weight: 700; letter-spacing: -0.025em; }
-        .metronome-bpm-label { display: block; font-size: 0.875rem; color: #9ca3af; }
-        .metronome-slider-container { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
-        .metronome-slider { -webkit-appearance: none; appearance: none; width: 100%; cursor: pointer; background-color: transparent; }
-        .metronome-slider::-webkit-slider-runnable-track { height: 6px; background: #4b5563; border-radius: 3px; }
-        .metronome-slider::-moz-range-track { height: 6px; background: #4b5563; border-radius: 3px; }
-        .metronome-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; margin-top: -7px; width: 20px; height: 20px; background: #667eea; border-radius: 50%; border: 2px solid #1f2937; }
-        .metronome-slider::-moz-range-thumb { width: 20px; height: 20px; background: #667eea; border-radius: 50%; border: 2px solid #1f2937; }
-        .metronome-action-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-        .metronome-button { font-weight: 700; padding: 1rem 0; border-radius: 0.5rem; font-size: 1.125rem; transition: background-color 0.2s; border: none; cursor: pointer; }
-        .metronome-adjust-button { width: 48px; height: 48px; background-color: #374151; border-radius: 9999px; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; color: white; padding: 0; }
-        .metronome-adjust-button:active { background-color: #4b5563; }
-        .metronome-main-button { width: 100%; color: #1f2937; }
-        .metronome-start-button { background-color: #667eea; color: white; }
-        .metronome-start-button.stop-state { background-color: #ef4444; }
-        .metronome-start-button:hover { filter: brightness(1.1); }
-        .metronome-tap-button { background-color: #4b5563; color: white; }
-        .metronome-tap-button:hover { background-color: #6b7280; }
+       /* Styles for Integrated Metronome */
+.metronome-wrapper {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 384px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.metronome-indicator-area {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.metronome-visual-indicator {
+    width: 96px;
+    height: 96px;
+    background-color: #f1f5f9;
+    border-radius: 9999px;
+    transition: all 100ms ease-in-out;
+    border: 1px solid #e2e8f0;
+}
+
+.metronome-visual-indicator.beat-flash {
+    transition: background-color 50ms ease-in-out, box-shadow 50ms ease-in-out;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    box-shadow: 0 0 20px 5px rgba(102, 126, 234, 0.7);
+}
+
+.metronome-bpm-display-wrapper {
+    position: absolute;
+    text-align: center;
+}
+
+.metronome-bpm-text {
+    font-size: 3rem;
+    line-height: 1;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: #333;
+}
+
+.metronome-bpm-label {
+    display: block;
+    font-size: 0.875rem;
+    color: #4a5568;
+}
+
+.metronome-slider-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.metronome-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    cursor: pointer;
+    background-color: transparent;
+}
+
+.metronome-slider::-webkit-slider-runnable-track {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+}
+
+.metronome-slider::-moz-range-track {
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
+}
+
+.metronome-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    margin-top: -7px;
+    width: 20px;
+    height: 20px;
+    background: #667eea;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.metronome-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: #667eea;
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+
+.metronome-action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.metronome-button {
+    font-weight: 700;
+    padding: 1rem 0;
+    border-radius: 0.5rem;
+    font-size: 1.125rem;
+    transition: background-color 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.metronome-adjust-button {
+    width: 48px;
+    height: 48px;
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4a5568;
+    padding: 0;
+}
+
+.metronome-adjust-button:active {
+    background-color: #e2e8f0;
+}
+
+.metronome-main-button {
+    width: 100%;
+    color: white;
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    border: none;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.metronome-start-button.stop-state {
+    background-color: #ef4444;
+}
+
+.metronome-start-button:hover {
+    filter: brightness(1.1);
+}
+
+.metronome-tap-button {
+    background-color: #f1f5f9;
+    color: #4a5568;
+    border: 1px solid #e2e8f0;
+}
+
+.metronome-tap-button {
+    background-color: #4b5563;
+    color: white;
+}
+.metronome-tap-button:hover {
+    background-color: #6b7280;
+}
 
         /* Styles for Integrated Chord Wheel */
         .chord-wheel-tool {
@@ -726,11 +859,10 @@
                     <div class="piano-controls">
                         <label><span data-lang-key="pianoOctaveLabel">Octave de départ:</span> <select id="startOct">
                             <option value="2">C2</option>
-                            <option value="3" selected>C3</option>
-                            <option value="4" >C4</option>
+                            <option value="3" >C3</option>
+                            <option value="4" selected>C4</option>
                             <option value="5">C5</option>
                         </select></label>
-                        <label><input type="checkbox" id="showOct" checked><span data-lang-key="pianoCheckboxLabel"> Afficher les octaves</span></label>
                     </div>
                     <div class="keyboard-wrapper">
                         <div id="piano" class="piano" aria-label="Piano virtuel à deux octaves"></div>
@@ -1222,7 +1354,6 @@
         const startOctSelect = document.getElementById('startOct');
         if (!startOctSelect) return;
 
-        const showOctCheckbox = document.getElementById('showOct');
         const pianoDiv = document.getElementById('piano');
         const keyboardWrapper = document.querySelector('.keyboard-wrapper');
         const octaveNotes = [ { name: 'C', isSharp: false }, { name: 'C#', isSharp: true }, { name: 'D', isSharp: false }, { name: 'D#', isSharp: true }, { name: 'E', isSharp: false }, { name: 'F', isSharp: false }, { name: 'F#', isSharp: true }, { name: 'G', isSharp: false }, { name: 'G#', isSharp: true }, { name: 'A', isSharp: false }, { name: 'A#', isSharp: true }, { name: 'B', isSharp: false } ];
@@ -1335,7 +1466,7 @@
             keysContainer.className = 'keys';
             pianoDiv.appendChild(keysContainer);
             const startOct = parseInt(startOctSelect.value, 10);
-            const showOctaves = showOctCheckbox.checked;
+            const showOctaves = true; // Always show octaves
             const notes = [];
             for (let i = 0; i < 25; i++) {
                 const noteData = octaveNotes[i % 12];
@@ -1375,7 +1506,6 @@
         };
 
         startOctSelect.addEventListener('change', buildPianoKeyboard);
-        showOctCheckbox.addEventListener('change', buildPianoKeyboard);
         window.addEventListener('resize', buildPianoKeyboard);
     }
 
