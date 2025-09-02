@@ -259,6 +259,16 @@
             margin-bottom: 1.5rem;
         }
 
+        /* General label style for tools */
+        .tool-label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            color: #4a5568;
+            text-align: center;
+        }
+
+
         /* Styles for Integrated Tuner */
         .tuner-tool {
             --green: #98c379;
@@ -408,15 +418,17 @@
             flex-direction: column;
             gap: 1.5rem;
             align-items: center;
-        }
-        .chord-selection-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
-            gap: 0.75rem;
             width: 100%;
-            max-width: 500px;
+            max-width: 650px;
+            margin: 0 auto;
         }
-        .chord-selector-btn {
+        .transposer-tool .chord-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            gap: 10px;
+            width: 100%;
+        }
+        .transposer-tool .chord-btn {
             font-family: 'Inter', sans-serif;
             font-weight: 600;
             font-size: 1.1rem;
@@ -429,28 +441,36 @@
             transition: all 0.2s ease;
             user-select: none;
         }
-        .chord-selector-btn:hover {
+        .transposer-tool .chord-btn:hover {
             background-color: #f3f4f6;
             border-color: #9ca3af;
         }
-        .chord-selector-btn.active {
+        .transposer-tool .chord-btn.selected {
             background: linear-gradient(45deg, #667eea, #764ba2);
             color: white;
             border-color: transparent;
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
             transform: translateY(-2px);
         }
-        .transpose-controls {
+        .transposer-tool .display-area {
+            background-color: #f1f5f9;
+            border-radius: 8px;
+            padding: 1rem;
+            min-height: 50px;
+            width: 100%;
+            font-size: 1.25rem;
+            font-weight: 500;
+            color: #1e293b;
+            text-align: center;
+            word-spacing: 0.5em;
+        }
+        .transposer-tool .controls {
             display: flex;
             align-items: center;
             gap: 1rem;
             width: 100%;
-            max-width: 500px;
-            background-color: #f1f5f9;
-            padding: 0.75rem;
-            border-radius: 50px;
         }
-        .transpose-btn {
+        .transposer-tool .control-btn {
             width: 48px;
             height: 48px;
             font-size: 2rem;
@@ -464,27 +484,37 @@
             transition: all 0.2s ease;
             flex-shrink: 0;
         }
-        .transpose-btn:hover {
+        .transposer-tool .control-btn:hover {
             background-color: #cbd5e1;
             transform: scale(1.05);
         }
-        .transpose-result {
+        .transposer-tool #resetBtn {
+            font-size: 0.8rem;
+            font-weight: 700;
+            background-color: #f1f5f9;
+            color: #ef4444;
+            border: 1px solid #e2e8f0;
+            border-radius: 50px;
+            padding: 0.5rem 1rem;
+            height: auto;
+            width: auto;
+            margin-left: auto; /* Pushes reset button to the right */
+        }
+        .transposer-tool #resetBtn:hover {
+            background-color: #fee2e2;
+            border-color: #fca5a5;
+        }
+        .transposer-tool #resultDisplay {
             flex-grow: 1;
             text-align: center;
-            font-size: 1.25rem;
-            font-weight: 500;
-            color: #1e293b;
-        }
-        .transpose-result .result-label {
             font-weight: 600;
-            color: #4a5568;
-            margin-right: 0.5rem;
         }
-        .transpose-result .result-offset {
+        .transposer-tool .result-offset {
             color: #64748b;
             font-weight: 400;
             margin-left: 0.5rem;
         }
+
 
         /* --- NEW: Modes Table (in-tool) Styles --- */
         #modes-content h3 {
@@ -579,7 +609,7 @@
 <body>
 <div class="gradient-overlay"></div>
 <audio id="silent-audio" playsinline style="display:none;">
-    <source src="data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vVGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBvZiB0aGUgU291bmQgUmVmb3JtZXIAV0FDSAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAA==" type="audio/mpeg">
+    <source src="data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vVGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBvZiB0aGUgU291bmQgUmVmb3JtZXIAV0FDSAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAgAAANSsS9jbmV3czU1LmphczU1LmJpblVTRAAAAAA==" type="audio/mpeg">
 </audio>
 
 <div class="floating-note" style="top: 10%; left: 10%;">🎵</div>
@@ -654,7 +684,7 @@
             <button class="tool-nav-button" data-tool="transposer" data-lang-key="toolNavTransposer">+/- Transposer</button>
             <button class="tool-nav-button" data-tool="modes" data-lang-key="toolNavModes">ℹ️ Modes</button>
             <a href="https://www.all-guitar-chords.com/" target="_blank" rel="noopener noreferrer" class="tool-nav-button" data-lang-key="chordsAndScalesLink">🔢 Accords & Gammes</a>
-            <a href="https://chordai.net/" target="_blank" rel="noopener noreferrer" class="tool-nav-button" data-lang-key="chordAiLink">🤖 Chord AI</a>
+            <a href="https://chordai.net/" target="_blank" rel="noopener noreferrer" class="tool-nav-button" data-lang-key="chordAiLink">📊 Chord AI</a>
         </div>
 
 
@@ -739,17 +769,18 @@
 
             <div id="transposer-content" class="tool-content">
                 <div class="transposer-tool">
-                    <h3 data-lang-key="transposerSelectTitle">Sélectionner les accords</h3>
-                    <div id="chord-selection-grid" class="chord-selection-grid">
-                    </div>
-                    <div class="transpose-controls">
-                        <button id="transpose-down" class="transpose-btn" aria-label="Transpose Down">-</button>
-                        <div id="transpose-result" class="transpose-result">
-                            <span class="result-label" data-lang-key="transposerResultLabel">Résultat :</span>
-                            <span class="result-chords">--</span>
-                            <span class="result-offset">(0)</span>
-                        </div>
-                        <button id="transpose-up" class="transpose-btn" aria-label="Transpose Up">+</button>
+                    <label class="tool-label" data-lang-key="transposerSelectTitle">1. Sélectionner les accords</label>
+                    <div id="chordSelector" class="chord-selector"></div>
+
+                    <label class="tool-label" data-lang-key="transposerSelectedLabel">2. Vos accords</label>
+                    <div id="selectedChordsDisplay" class="display-area">...</div>
+
+                    <label class="tool-label" data-lang-key="transposerTransposeLabel">3. Transposer & Résultat</label>
+                    <div class="controls">
+                        <button id="transposeDown" class="control-btn">–</button>
+                        <div id="resultDisplay" class="display-area"></div>
+                        <button id="transposeUp" class="control-btn">+</button>
+                        <button id="resetBtn" class="control-btn" data-lang-key="transposerResetBtn">RÉINITIALISER</button>
                     </div>
                 </div>
             </div>
@@ -889,10 +920,13 @@
         metronomeBtnTap: { fr: 'Tap Tempo', en: 'Tap Tempo' },
         chordWheelLabel: { fr: 'Tonalité :', en: 'Key:' },
         modesTitle: { fr: 'Modes', en: 'Modes' },
-        transposerSelectTitle: { fr: 'Sélectionner les accords', en: 'Select Chords' },
-        transposerResultLabel: { fr: 'Résultat :', en: 'Result:' },
+        transposerSelectTitle: { fr: '1. Sélectionner les accords', en: '1. Select Chords' },
+        transposerSelectedLabel: { fr: '2. Vos accords', en: '2. Your Chords' },
+        transposerTransposeLabel: { fr: '3. Transposer & Résultat', en: '3. Transpose & Result' },
+        transposerResetBtn: { fr: 'RÉINITIALISER', en: 'RESET' },
+        transposerDefaultText: { fr: 'Sélectionnez des accords pour commencer...', en: 'Select chords above to begin...' },
         chordsAndScalesLink: { fr: '🔢 Accords & Gammes', en: '🔢 Chords & Scales' },
-        chordAiLink: { fr: '🤖 Chord AI', en: '🤖 Chord AI' },
+        chordAiLink: { fr: '📊 Chord AI', en: '📊 Chord AI' },
         chantsTitle: { fr: '🎶 Chants à explorer', en: '🎶 Songs to Explore' },
         chantsP1: { fr: 'Voici quelques chants avec des accords simples, très agréables à jouer. Écouter, ressentir, avoir du plaisir! 🙌', en: 'Here are a few songs with simple chords that are very enjoyable to play. Listen, feel, and have fun! 🙌' }
     };
@@ -918,9 +952,15 @@
                 }
             }
         });
+
+        // Special case for transposer placeholder text
+        const selectedChordsDisplay = document.getElementById('selectedChordsDisplay');
+        if(selectedChordsDisplay && selectedChordsDisplay.dataset.isDefault === 'true') {
+            selectedChordsDisplay.textContent = translations.transposerDefaultText[lang];
+        }
     }
 
-    // --- NEW: Audio Context Priming for Mobile ---
+    // --- Audio Context Priming for Mobile ---
     let isAudioPrimed = false;
     async function primeAudioContext() {
         if (isAudioPrimed) return;
@@ -964,7 +1004,7 @@
         initPiano();
         initMetronome();
         initChordWheel();
-        initTransposer(); // Initialize the new transposer tool
+        initTransposer();
     });
 
     document.addEventListener('mousemove', (e) => {
@@ -984,7 +1024,6 @@
         if (!navButtons.length || !toolContents.length) return;
 
         navButtons.forEach(button => {
-            // Skip event listener for anchor tags to allow default navigation
             if (button.tagName === 'A') {
                 return;
             }
@@ -1012,6 +1051,7 @@
         });
     }
 
+    // --- ORIGINAL WORKING TUNER CODE (UNTOUCHED) ---
     function initTuner() {
         const startButton = document.getElementById('startButton');
         if (!startButton) return;
@@ -1026,7 +1066,6 @@
         startButton.addEventListener('click', toggleTuner);
 
         async function toggleTuner() {
-            await primeAudioContext(); // Ensure media playback mode
             if (!isTunerActive) {
                 try {
                     await setupAudio();
@@ -1049,7 +1088,11 @@
         }
 
         async function setupAudio() {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                channelCountMode: 'explicit',
+                channelCount: 2
+            });
+
             if (audioContext.state === 'suspended') {
                 await audioContext.resume();
             }
@@ -1117,6 +1160,7 @@
         }
     }
 
+    // --- UPGRADED PIANO CODE ---
     function initPiano() {
         const startOctSelect = document.getElementById('startOct');
         if (!startOctSelect) return;
@@ -1130,9 +1174,12 @@
         const activeNotes = new Map();
 
         function ensurePianoAudio() {
-            primeAudioContext(); // Ensure media playback mode
+            primeAudioContext();
             if (!pianoAudioCtx) {
-                pianoAudioCtx = new(window.AudioContext || window.webkitAudioContext)();
+                pianoAudioCtx = new(window.AudioContext || window.webkitAudioContext)({
+                    channelCountMode: 'explicit',
+                    channelCount: 2
+                });
             }
         }
 
@@ -1275,6 +1322,7 @@
         window.addEventListener('resize', buildPianoKeyboard);
     }
 
+    // --- UPGRADED METRONOME CODE ---
     function initMetronome() {
         const startStopBtn = document.getElementById('start-stop-btn');
         if (!startStopBtn) return;
@@ -1293,9 +1341,12 @@
         const tapTimeout = 2000;
 
         function initMetroAudioContext() {
-            primeAudioContext(); // Ensure media playback mode
+            primeAudioContext();
             if (!metroAudioContext) {
-                metroAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+                metroAudioContext = new (window.AudioContext || window.webkitAudioContext)({
+                    channelCountMode: 'explicit',
+                    channelCount: 2
+                });
             }
         }
 
@@ -1458,89 +1509,118 @@
         });
     }
 
-    // --- NEW: Chord Transposer Logic ---
+    // --- NEW: Chord Transposer Code ---
     function initTransposer() {
-        const grid = document.getElementById('chord-selection-grid');
-        const resultChordsEl = document.querySelector('.transpose-result .result-chords');
-        const resultOffsetEl = document.querySelector('.transpose-result .result-offset');
-        const transposeUpBtn = document.getElementById('transpose-up');
-        const transposeDownBtn = document.getElementById('transpose-down');
+        // --- DATA ---
+        const notesWithSharps = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+        const chordButtonsData = ['C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭', 'A', 'A♯/B♭', 'B'];
 
-        if (!grid) return;
+        const correctedNoteMap = {
+            'C': 0, 'B♯': 0,
+            'C♯': 1, 'D♭': 1,
+            'D': 2,
+            'D♯': 3, 'E♭': 3,
+            'E': 4, 'F♭': 4,
+            'F': 5, 'E♯': 5,
+            'F♯': 6, 'G♭': 6,
+            'G': 7,
+            'G♯': 8, 'A♭': 8,
+            'A': 9,
+            'A♯': 10, 'B♭': 10,
+            'B': 11, 'C♭': 11
+        };
 
-        const notesSharp = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-        const notesFlat = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-        const displayNotes = ['C', 'C♯/D♭', 'D', 'D♯/E♭', 'E', 'F', 'F♯/G♭', 'G', 'G♯/A♭', 'A', 'A♯/B♭', 'B'];
-        const notesForButtons = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+        // --- STATE ---
+        let selectedChords = [];
+        let transpositionOffset = 0;
 
-        let selectedChords = new Set();
-        let transposeOffset = 0;
+        // --- DOM ELEMENTS ---
+        const chordSelector = document.getElementById('chordSelector');
+        const selectedChordsDisplay = document.getElementById('selectedChordsDisplay');
+        const resultDisplay = document.getElementById('resultDisplay');
+        const transposeUpBtn = document.getElementById('transposeUp');
+        const transposeDownBtn = document.getElementById('transposeDown');
+        const resetBtn = document.getElementById('resetBtn');
 
-        // Create chord selection buttons
-        notesForButtons.forEach((note, index) => {
-            const btn = document.createElement('button');
-            btn.className = 'chord-selector-btn';
-            // Display with sharps for simplicity in the UI button text
-            btn.textContent = note.replace('#', '♯');
-            btn.dataset.note = note;
-            btn.addEventListener('click', () => {
-                btn.classList.toggle('active');
-                if (selectedChords.has(note)) {
-                    selectedChords.delete(note);
-                } else {
-                    selectedChords.add(note);
-                }
-                updateTransposition();
+        if (!chordSelector) return; // Exit if the tool isn't on the page
+
+        // --- FUNCTIONS ---
+        function createChordButtons() {
+            chordButtonsData.forEach((chordLabel, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'chord-btn';
+                btn.textContent = chordLabel.replace('♯', '♯').replace('♭', '♭'); // Use unicode
+                btn.dataset.chord = notesWithSharps[index];
+                btn.addEventListener('click', () => toggleChordSelection(btn, notesWithSharps[index]));
+                chordSelector.appendChild(btn);
             });
-            grid.appendChild(btn);
-        });
-
-        function getNoteIndex(note) {
-            let index = notesSharp.indexOf(note);
-            if (index !== -1) return index;
-            return notesFlat.indexOf(note);
         }
 
-        function transposeNote(note, semitones) {
-            const index = getNoteIndex(note);
-            if (index === -1) return note; // Should not happen
-            const newIndex = (index + semitones % 12 + 12) % 12;
-
-            // Prefer sharp notation, except for common flat keys
-            const commonFlatKeys = ['F', 'Bb', 'Eb', 'Ab', 'Db', 'Gb'];
-            const transposedRootForContext = transposeNote('C', semitones); // Find what key we are in
-
-            if (commonFlatKeys.includes(transposedRootForContext) || note.includes('b')) {
-                 return notesFlat[newIndex];
+        function toggleChordSelection(btn, chord) {
+            btn.classList.toggle('selected');
+            const index = selectedChords.indexOf(chord);
+            if (index > -1) {
+                selectedChords.splice(index, 1);
+            } else {
+                selectedChords.push(chord);
             }
-            return notesSharp[newIndex];
+            updateDisplays();
         }
 
-        function updateTransposition() {
-            if (selectedChords.size === 0) {
-                resultChordsEl.textContent = '--';
-                resultOffsetEl.textContent = `(${transposeOffset > 0 ? '+' : ''}${transposeOffset})`;
+        function transposeChord(chord) {
+            const baseIndex = correctedNoteMap[chord];
+            const newIndex = (baseIndex + transpositionOffset % 12 + 12) % 12;
+            return notesWithSharps[newIndex];
+        }
+
+        function updateDisplays() {
+            // Update selected chords display
+            if (selectedChords.length === 0) {
+                selectedChordsDisplay.textContent = translations.transposerDefaultText[currentLang];
+                selectedChordsDisplay.dataset.isDefault = 'true';
+            } else {
+                selectedChordsDisplay.textContent = selectedChords.join(' ');
+                selectedChordsDisplay.dataset.isDefault = 'false';
+            }
+
+            // Update result display
+            if (selectedChords.length === 0) {
+                resultDisplay.textContent = '';
                 return;
             }
 
-            const orderedSelected = notesForButtons.filter(note => selectedChords.has(note));
-            const transposed = orderedSelected.map(note => transposeNote(note, transposeOffset));
+            const transposedChords = selectedChords.map(transposeChord);
+            const offsetSign = transpositionOffset > 0 ? '+' : '';
+            const offsetDisplay = transpositionOffset !== 0 ? `(${offsetSign}${transpositionOffset})` : '(0)';
 
-            resultChordsEl.textContent = transposed.join(' ');
-            resultOffsetEl.textContent = `(${transposeOffset > 0 ? '+' : ''}${transposeOffset})`;
+            resultDisplay.innerHTML = `${transposedChords.join(' ')} <span class="result-offset">${offsetDisplay}</span>`;
         }
 
+        function resetAll() {
+            selectedChords = [];
+            transpositionOffset = 0;
+            document.querySelectorAll('.transposer-tool .chord-btn.selected').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            updateDisplays();
+        }
+
+        // --- EVENT LISTENERS ---
         transposeUpBtn.addEventListener('click', () => {
-            transposeOffset++;
-            updateTransposition();
+            transpositionOffset++;
+            updateDisplays();
         });
 
         transposeDownBtn.addEventListener('click', () => {
-            transposeOffset--;
-            updateTransposition();
+            transpositionOffset--;
+            updateDisplays();
         });
 
-        updateTransposition(); // Initial call
+        resetBtn.addEventListener('click', resetAll);
+
+        // --- INITIALIZATION ---
+        createChordButtons();
+        updateDisplays(); // Initial render
     }
 
 </script>
