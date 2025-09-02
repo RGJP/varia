@@ -96,6 +96,7 @@
             transition: all 0.3s ease;
             backdrop-filter: blur(5px);
             border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
         }
 
         .tools-button:hover {
@@ -428,10 +429,70 @@
             border: 0;
         }
 
+        /* --- NEW: Modes Overlay Styles --- */
+        #modes-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: none; /* Hidden by default */
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            cursor: pointer;
+            animation: fadeIn 0.3s ease;
+        }
+        #modes-overlay.active {
+            display: flex; /* Show when active */
+        }
+        #modes-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            max-width: 90%;
+            width: 700px;
+            cursor: default;
+            animation: slideUp 0.4s ease-out;
+            overflow-x: auto;
+        }
+        #modes-content h2 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: #2d3748;
+        }
+        #modes-content table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+        #modes-content th, #modes-content td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        #modes-content th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #4a5568;
+        }
+        #modes-content tr:last-child td {
+            border-bottom: none;
+        }
+        #modes-content tr:hover {
+            background-color: #f1f5f9;
+        }
+
 
         /* Animations */
         @keyframes slideDown { from { opacity: 0; transform: translateY(-50px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         /* Floating elements */
         .floating-note { position: fixed; font-size: 2rem; opacity: 0.1; pointer-events: none; animation: float 6s ease-in-out infinite; z-index: -1; }
@@ -443,6 +504,8 @@
             .card { padding: 1.5rem; margin: 1.5rem 0; }
             .tool-nav-button { flex-basis: calc(50% - 0.5rem); }
             .piano-tool { --white-key-width: 12vw; --white-key-height: 48vw; --black-key-width: 8vw; --black-key-height: 30vw; }
+            #modes-content { padding: 1.5rem; }
+            #modes-content th, #modes-content td { padding: 0.5rem; font-size: 0.8rem; }
         }
 
         /* Responsive adjustments for Chord Wheel */
@@ -616,7 +679,10 @@
         </div>
 
         <div style="text-align: center; margin-top: 2rem;">
-            <a href="https://www.all-guitar-chords.com/" target="_blank" rel="noopener noreferrer" class="tools-button" style="width: 100%; max-width: 400px; display: inline-block;" data-lang-key="chordsAndScalesLink">
+            <button id="modes-btn" class="tools-button" style="width: 100%; max-width: 400px; display: inline-block; margin-top: 0; margin-bottom: 1rem;" data-lang-key="modesBtn">
+                ℹ️ Modes
+            </button>
+            <a href="https://www.all-guitar-chords.com/" target="_blank" rel="noopener noreferrer" class="tools-button" style="width: 100%; max-width: 400px; display: inline-block; margin-top: 0;" data-lang-key="chordsAndScalesLink">
                 🔢 Accords et gammes
             </a>
         </div>
@@ -672,6 +738,31 @@
     </div>
 </div>
 
+<div id="modes-overlay">
+    <div id="modes-content">
+        <h2 data-lang-key="modesTitle">Modes</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Mode</th>
+                <th>Semitone Shift from Mode Root to Major Key Root</th>
+                <th>Example Mode Root</th>
+                <th>Equivalent Major Key</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr><td>Ionian</td><td>0</td><td>C</td><td>C major</td></tr>
+            <tr><td>Dorian</td><td>-2</td><td>B</td><td>A major</td></tr>
+            <tr><td>Phrygian</td><td>-4</td><td>E</td><td>C major</td></tr>
+            <tr><td>Lydian</td><td>-5</td><td>F</td><td>C major</td></tr>
+            <tr><td>Mixolydian</td><td>-7</td><td>C</td><td>F major</td></tr>
+            <tr><td>Aeolian</td><td>-9</td><td>A</td><td>C major</td></tr>
+            <tr><td>Locrian</td><td>-11</td><td>B</td><td>C major</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <script>
     let buildPianoKeyboard;
     let currentLang = 'fr';
@@ -715,6 +806,8 @@
         metronomeBtnStop: { fr: 'Arrêter', en: 'Stop' },
         metronomeBtnTap: { fr: 'Tap Tempo', en: 'Tap Tempo' },
         chordWheelLabel: { fr: 'Tonalité :', en: 'Key:' },
+        modesBtn: { fr: 'ℹ️ Modes', en: 'ℹ️ Modes' },
+        modesTitle: { fr: 'Modes', en: 'Modes' },
         chordsAndScalesLink: { fr: '🔢 Accords et gammes', en: '🔢 Chords and Scales' },
         chantsTitle: { fr: '🎶 Chants à explorer', en: '🎶 Songs to Explore' },
         chantsP1: { fr: 'Voici quelques chants avec des accords simples, très agréables à jouer. Écouter, ressentir, avoir du plaisir! 🙌', en: 'Here are a few songs with simple chords that are very enjoyable to play. Listen, feel, and have fun! 🙌' }
@@ -771,6 +864,7 @@
         initPiano();
         initMetronome();
         initChordWheel();
+        initModesOverlay(); // Initialize the new overlay
     });
 
     document.addEventListener('mousemove', (e) => {
@@ -1265,6 +1359,30 @@
             }, 100);
         });
     }
+
+    // --- NEW: Modes Overlay Logic ---
+    function initModesOverlay() {
+        const modesBtn = document.getElementById('modes-btn');
+        const modesOverlay = document.getElementById('modes-overlay');
+        const modesContent = document.getElementById('modes-content');
+
+        if (!modesBtn || !modesOverlay || !modesContent) return;
+
+        modesBtn.addEventListener('click', () => {
+            modesOverlay.classList.add('active');
+        });
+
+        // Close when clicking on the background
+        modesOverlay.addEventListener('click', () => {
+            modesOverlay.classList.remove('active');
+        });
+
+        // Prevent closing when clicking inside the content
+        modesContent.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    }
+
 </script>
 </body>
 </html>
