@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rendre Grâce</title>
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
-    
+
     <style>
         /* CSS for the entire page */
 
@@ -318,216 +318,113 @@
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1>Rendre Grâce ⛪</h1>
-        </header>
+<div class="container">
+    <header>
+        <h1>Rendre Grâce ⛪</h1>
+    </header>
 
-        <div class="controls-container">
-            <input type="text" id="search-input" class="search-box" placeholder="Chercher une église...">
-            <div class="theme-switch-wrapper">
-                <label class="theme-switch" for="theme-toggle">
-                    <input type="checkbox" id="theme-toggle" />
-                    <div class="slider round"></div>
-                </label>
-            </div>
+    <div class="controls-container">
+        <input type="text" id="search-input" class="search-box" placeholder="Chercher une église...">
+        <div class="theme-switch-wrapper">
+            <label class="theme-switch" for="theme-toggle">
+                <input type="checkbox" id="theme-toggle" />
+                <div class="slider round"></div>
+            </label>
         </div>
-
-        <div class="prayer-tools-container">
-            <div class="resource-buttons">
-                <button id="today-btn" class="resource-btn">Aujourd'hui 🗓️</button>
-                <a href="https://www.aelf.org/" target="_blank" rel="noopener noreferrer" class="resource-btn">AELF</a>
-                <a href="https://www.regnumchristi.fr/meditation-du-jour/" target="_blank" rel="noopener noreferrer" class="resource-btn">Regnum Christi</a>
-                <a href="https://divineoffice.org/" target="_blank" rel="noopener noreferrer" class="resource-btn">Divine Office</a>
-                <a href="https://prayasyougo.org/" target="_blank" rel="noopener noreferrer" class="resource-btn">Pray As You Go</a>
-                <a href="lit.pdf" target="_blank" rel="noopener noreferrer" class="resource-btn">Liturgie</a>
-                <a href="https://www.prionseneglise.ca/" target="_blank" rel="noopener noreferrer" class="resource-btn">Prions</a>
-                <a href="https://cdn.shopify.com/s/files/1/0064/1564/6787/files/Prieres_du_chapelet_en_pdf.pdf?9572856574916796837" target="_blank" rel="noopener noreferrer" class="resource-btn">Chapelet</a>
-                <a href="https://semainierparoissial.com/semainiers/385.pdf" target="_blank" rel="noopener noreferrer" class="resource-btn">Semainier SCB</a>
-                <a href="https://semainierparoissial.com/semainiers/271.pdf" target="_blank" rel="noopener noreferrer" class="resource-btn">Semainier NDDA</a>
-                <a href="https://semainierparoissial.com/paroisse-eglise.php" target="_blank" rel="noopener noreferrer" class="resource-btn">Semainiers</a>
-            </div>
-        </div>
-
-        <main>
-            <section class="mass-times-grid">
-                <div class="day-card">
-                    <h2>Lundi</h2>
-                    <ul>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Ambroise%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Ambroise</a></span> <span class="mass-time">8 h 30</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+N.-D.+de+l%E2%80%99Annonciation%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église N.-D. de l’Annonciation</a></span> <span class="mass-time">16 h</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Rodrigue%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Rodrigue</a></span> <span class="mass-time">16 h</span></li>
-                    </ul>
-                </div>
-                
-                <div class="day-card">
-                    <h2>Mardi</h2>
-                    <ul>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Ambroise%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Ambroise</a></span> <span class="mass-time">8 h 30</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Andr%C3%A9%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-André</a></span> <span class="mass-time">8 h 30</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Charles-Borrom%C3%A9e%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Charles-Borromée</a></span> <span class="mass-time">8 h 30</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Fran%C3%A7ois-Xavier%2C+Duberger%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-François-Xavier, Duberger</a></span> <span class="mass-time">16 h</span></li>
-                    </ul>
-                </div>
-
-                <div class="day-card">
-                    <h2>Mercredi</h2>
-                    <ul>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Ambroise%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Ambroise</a></span> <span class="mass-time">8 h 30</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Sainte-C%C3%A9cile%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Sainte-Cécile</a></span> <span class="mass-time">8 h 30</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Sainte-Monique%2C+Les+Saules%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Sainte-Monique, Les Saules</a></span> <span class="mass-time">16 h</span></li>
-                    </ul>
-                </div>
-
-                <div class="day-card">
-                    <h2>Jeudi</h2>
-                    <ul>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-J%C3%A9r%C3%B4me%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Jérôme</a></span> <span class="mass-time">16 h</span></li>
-                    </ul>
-                </div>
-
-                <div class="day-card">
-                    <h2>Vendredi</h2>
-                    <ul>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Charles-Borrom%C3%A9e%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Charles-Borromée</a></span> <span class="mass-time">8 h 30</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-G%C3%A9rard+Majella%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Gérard Majella</a></span> <span class="mass-time">9 h</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Michel+De+Sillery%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Michel De Sillery</a></span> <span class="mass-time">17 h 15</span></li>
-                    </ul>
-                </div>
-
-                <div class="day-card">
-                    <h2>Samedi</h2>
-                    <ul>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Andr%C3%A9%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-André</a></span> <span class="mass-time">16 h</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Charles-Borrom%C3%A9e%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Charles-Borromée</a></span> <span class="mass-time">16 h</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-J%C3%A9r%C3%B4me%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Jérôme</a></span> <span class="mass-time">16 h</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Sainte-Monique%2C+Les+Saules%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Sainte-Monique, Les Saules</a></span> <span class="mass-time">16 h</span></li>
-                    </ul>
-                </div>
-                
-                <div class="day-card">
-                    <h2>Dimanche</h2>
-                    <ul>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Ambroise%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Ambroise</a></span> <span class="mass-time">8 h 30 et 10 h 45</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+N.-D.+de+l%E2%80%99Annonciation%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église N.-D. de l’Annonciation</a></span> <span class="mass-time">9 h et 10 h 45</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Gabriel%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Gabriel</a></span> <span class="mass-time">9 h</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Sainte-C%C3%A9cile%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Sainte-Cécile</a></span> <span class="mass-time">9 h</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Rodrigue%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Rodrigue</a></span> <span class="mass-time">9 h 30 et 11 h</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Fran%C3%A7ois-Xavier%2C+Duberger%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-François-Xavier, Duberger</a></span> <span class="mass-time">10 h</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-J%C3%A9r%C3%B4me%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Jérôme</a></span> <span class="mass-time">10 h</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Charles-Borrom%C3%A9e%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Charles-Borromée</a></span> <span class="mass-time">10 h 30</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-G%C3%A9rard+Majella%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Gérard Majella</a></span> <span class="mass-time">10 h 45</span></li>
-                        <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-%C3%89mile%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Émile</a></span> <span class="mass-time">11 h</span></li>
-                    </ul>
-                </div>
-            </section>
-            
-            <div id="no-results">Aucun résultat trouvé.</div>
-
-        </main>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // --- 1. THEME TOGGLE ---
-            const themeToggle = document.getElementById('theme-toggle');
-            
-            const applyTheme = (isDark) => {
-                if (isDark) {
-                    document.body.classList.add('dark-mode');
-                    themeToggle.checked = true;
-                } else {
-                    document.body.classList.remove('dark-mode');
-                    themeToggle.checked = false;
-                }
-            };
+    <div class="prayer-tools-container">
+        <div class="resource-buttons">
+            <button id="today-btn" class="resource-btn">Aujourd'hui 🗓️</button>
+            <a href="https://www.aelf.org/" target="_blank" rel="noopener noreferrer" class="resource-btn">AELF</a>
+            <a href="https://www.regnumchristi.fr/meditation-du-jour/" target="_blank" rel="noopener noreferrer" class="resource-btn">Regnum Christi</a>
+            <a href="https://divineoffice.org/" target="_blank" rel="noopener noreferrer" class="resource-btn">Divine Office</a>
+            <a href="https://prayasyougo.org/" target="_blank" rel="noopener noreferrer" class="resource-btn">Pray As You Go</a>
+            <a href="lit.pdf" target="_blank" rel="noopener noreferrer" class="resource-btn">Liturgie</a>
+            <a href="https://www.prionseneglise.ca/" target="_blank" rel="noopener noreferrer" class="resource-btn">Prions</a>
+            <a href="https://cdn.shopify.com/s/files/1/0064/1564/6787/files/Prieres_du_chapelet_en_pdf.pdf?9572856574916796837" target="_blank" rel="noopener noreferrer" class="resource-btn">Chapelet</a>
+            <a href="https://semainierparoissial.com/semainiers/385.pdf" target="_blank" rel="noopener noreferrer" class="resource-btn">Semainier SCB</a>
+            <a href="https://semainierparoissial.com/semainiers/271.pdf" target="_blank" rel="noopener noreferrer" class="resource-btn">Semainier NDDA</a>
+            <a href="https://semainierparoissial.com/paroisse-eglise.php" target="_blank" rel="noopener noreferrer" class="resource-btn">Semainiers</a>
+            <a href="https://radiogalilee.com/ecoute-a-la-carte/" target="_blank" rel="noopener noreferrer" class="resource-btn">Radio Galilée</a>
+            <a href="https://rgjp.github.io/varia/homelie.html" target="_blank" rel="noopener noreferrer" class="resource-btn">Homélie</a>
+        </div>
+    </div>
 
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark') {
-                applyTheme(true);
-            } else {
-                applyTheme(false);
-            }
+    <main>
+        <section class="mass-times-grid">
+            <div class="day-card">
+                <h2>Lundi</h2>
+                <ul>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Ambroise%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Ambroise</a></span> <span class="mass-time">8 h 30</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+N.-D.+de+l%E2%80%99Annonciation%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église N.-D. de l’Annonciation</a></span> <span class="mass-time">16 h</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Rodrigue%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Rodrigue</a></span> <span class="mass-time">16 h</span></li>
+                </ul>
+            </div>
 
-            themeToggle.addEventListener('change', () => {
-                if (themeToggle.checked) {
-                    applyTheme(true);
-                    localStorage.setItem('theme', 'dark');
-                } else {
-                    applyTheme(false);
-                    localStorage.setItem('theme', 'light');
-                }
-            });
+            <div class="day-card">
+                <h2>Mardi</h2>
+                <ul>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Ambroise%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Ambroise</a></span> <span class="mass-time">8 h 30</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Andr%C3%A9%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-André</a></span> <span class="mass-time">8 h 30</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Charles-Borrom%C3%A9e%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Charles-Borromée</a></span> <span class="mass-time">8 h 30</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Fran%C3%A7ois-Xavier%2C+Duberger%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-François-Xavier, Duberger</a></span> <span class="mass-time">16 h</span></li>
+                </ul>
+            </div>
 
-            // --- 2. CURRENT DAY HIGHLIGHT ---
-            const dayCards = document.querySelectorAll('.day-card');
-            const today = new Date().getDay(); // Sunday: 0, Monday: 1, ..., Saturday: 6
-            const cardIndex = today === 0 ? 6 : today - 1;
-            
-            // Remove any hardcoded highlight before applying the dynamic one
-            const currentHighlight = document.querySelector('.today-highlight');
-            if (currentHighlight) {
-                currentHighlight.classList.remove('today-highlight');
-            }
-            
-            if (cardIndex >= 0 && cardIndex < dayCards.length) {
-                dayCards[cardIndex].classList.add('today-highlight');
-            }
-            
-            // --- 3. SEARCH FILTER ---
-            const searchInput = document.getElementById('search-input');
-            const noResultsMessage = document.getElementById('no-results');
+            <div class="day-card">
+                <h2>Mercredi</h2>
+                <ul>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Ambroise%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Ambroise</a></span> <span class="mass-time">8 h 30</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Sainte-C%C3%A9cile%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Sainte-Cécile</a></span> <span class="mass-time">8 h 30</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Sainte-Monique%2C+Les+Saules%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Sainte-Monique, Les Saules</a></span> <span class="mass-time">16 h</span></li>
+                </ul>
+            </div>
 
-            searchInput.addEventListener('input', (e) => {
-                const searchTerm = e.target.value.toLowerCase().trim();
-                let totalVisibleCards = 0;
+            <div class="day-card">
+                <h2>Jeudi</h2>
+                <ul>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-J%C3%A9r%C3%B4me%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Jérôme</a></span> <span class="mass-time">16 h</span></li>
+                </ul>
+            </div>
 
-                dayCards.forEach(card => {
-                    const churches = card.querySelectorAll('li');
-                    let visibleChurchesInCard = 0;
+            <div class="day-card">
+                <h2>Vendredi</h2>
+                <ul>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Charles-Borrom%C3%A9e%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Charles-Borromée</a></span> <span class="mass-time">8 h 30</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-G%C3%A9rard+Majella%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Gérard Majella</a></span> <span class="mass-time">9 h</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Michel+De+Sillery%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Michel De Sillery</a></span> <span class="mass-time">17 h 15</span></li>
+                </ul>
+            </div>
 
-                    churches.forEach(church => {
-                        const churchName = church.querySelector('.church-name').textContent.toLowerCase();
-                        const isMatch = churchName.includes(searchTerm);
-                        church.style.display = isMatch ? 'flex' : 'none';
-                        if (isMatch) {
-                            visibleChurchesInCard++;
-                        }
-                    });
+            <div class="day-card">
+                <h2>Samedi</h2>
+                <ul>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Andr%C3%A9%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-André</a></span> <span class="mass-time">16 h</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Charles-Borrom%C3%A9e%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Charles-Borromée</a></span> <span class="mass-time">16 h</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-J%C3%A9r%C3%B4me%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Jérôme</a></span> <span class="mass-time">16 h</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Sainte-Monique%2C+Les+Saules%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Sainte-Monique, Les Saules</a></span> <span class="mass-time">16 h</span></li>
+                </ul>
+            </div>
 
-                    if (visibleChurchesInCard > 0) {
-                        card.style.display = 'block';
-                        totalVisibleCards++;
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
+            <div class="day-card">
+                <h2>Dimanche</h2>
+                <ul>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Ambroise%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Ambroise</a></span> <span class="mass-time">8 h 30 et 10 h 45</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+N.-D.+de+l%E2%80%99Annonciation%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église N.-D. de l’Annonciation</a></span> <span class="mass-time">9 h et 10 h 45</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Gabriel%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Gabriel</a></span> <span class="mass-time">9 h</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Sainte-C%C3%A9cile%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Sainte-Cécile</a></span> <span class="mass-time">9 h</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Rodrigue%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Rodrigue</a></span> <span class="mass-time">9 h 30 et 11 h</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Fran%C3%A7ois-Xavier%2C+Duberger%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-François-Xavier, Duberger</a></span> <span class="mass-time">10 h</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-J%C3%A9r%C3%B4me%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Jérôme</a></span> <span class="mass-time">10 h</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-Charles-Borrom%C3%A9e%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Charles-Borromée</a></span> <span class="mass-time">10 h 30</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-G%C3%A9rard+Majella%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Gérard Majella</a></span> <span class="mass-time">10 h 45</span></li>
+                    <li><span class="church-name"><a href="https://www.google.com/maps/search/?api=1&query=%C3%89glise+Saint-%C3%89mile%2C+Qu%C3%A9bec" target="_blank" rel="noopener noreferrer">Église Saint-Émile</a></span> <span class="mass-time">11 h</span></li>
+                </ul>
+            </div>
+        </section>
+    </main>
+</div>
 
-                noResultsMessage.style.display = totalVisibleCards === 0 ? 'block' : 'none';
-            });
-
-            // --- 4. SCROLL TO TODAY BUTTON ---
-            const todayBtn = document.getElementById('today-btn');
-            
-            todayBtn.addEventListener('click', () => {
-                const todayCard = document.querySelector('.today-highlight');
-                if(todayCard) {
-                    todayCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-
-            // --- 5. INITIAL FADE-IN ANIMATION ---
-            const animatedElements = document.querySelectorAll('.day-card');
-            animatedElements.forEach((el, index) => {
-                el.style.opacity = '0';
-                el.style.transform = 'translateY(20px)';
-                el.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
-                setTimeout(() => {
-                    el.style.opacity = '1';
-                    el.style.transform = 'translateY(0)';
-                }, index * 100);
-            });
-        });
-    </script>
 </body>
 </html>
