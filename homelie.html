@@ -385,6 +385,10 @@
 </div>
 
 <script>
+
+    // --- GLOBAL VARIABLES ---
+    const modelName = 'gpt-5';
+
     document.addEventListener('DOMContentLoaded', () => {
         // --- DOM ELEMENT REFERENCES ---
         const generateBtn = document.getElementById('generateBtn');
@@ -400,7 +404,6 @@
         const toggleAelfBtn = document.getElementById('toggleAelfBtn');
         const aelfFrameContainer = document.getElementById('aelfFrameContainer');
 
-
         let lastFetchedHtml = "";
 
         // --- INITIALIZATION ---
@@ -408,6 +411,8 @@
             const todaysDate = getTodaysDateString();
             document.getElementById('date-display').textContent = `${new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
             aelfFrame.src = `https://www.aelf.org/${todaysDate}/romain/messe`;
+            // Set the initial button text with the model name
+            setLoadingState(false);
         }
 
         // --- EVENT LISTENERS ---
@@ -451,13 +456,14 @@
                 const systemPrompt = `Tu es un prêtre catholique expérimenté qui rédige des homélies pour la messe. Rédige l'homélie uniquement en français. Ton style doit être pastoral, profond, et accessible. Ancre ton propos solidement dans les textes liturgiques que tu extrairas du code HTML fourni. L'homélie doit comprendre une très brève prière d'ouverture, un corps de 3 à 5 paragraphes, et se terminer par une simple phrase de bénédiction. Structure ta réponse en utilisant le format Markdown (titres avec #, gras avec **, italique avec *) pour une meilleure lisibilité. Évite tout langage politique ou polémique. Concentre-toi sur la foi, l'espérance et la charité, en reliant les Écritures à la vie concrète des fidèles.`;
                 const userInstructions = `Voici le code source HTML complet de la page des lectures du jour de aelf.org. Ta première tâche est d'extraire de ce code les textes liturgiques pertinents (première lecture, psaume, évangile, etc.). Ignore tout le reste (menus, scripts, styles, etc.).\n\n---DEBUT DU CODE HTML---\n${lastFetchedHtml}\n---FIN DU CODE HTML---\n\nUne fois les textes extraits, utilise-les pour rédiger une homélie d'un ton "${tone}" et d'une longueur approximative de ${length} mots. Ne fournis que le texte final de l'homélie, sans aucun commentaire ou en-tête technique.`;
 
+
                 const stream = await puter.ai.chat(
                     [
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userInstructions }
                     ],
                     {
-                        model: 'gpt-5',
+                        model: modelName,
                         stream: true
                     }
                 );
@@ -524,10 +530,9 @@
             if (isLoading) {
                 generateBtn.innerHTML = `<span></span><div class="loader"></div>`;
             } else {
-                generateBtn.innerHTML = `<span>Générer l’homélie</span>`;
+                generateBtn.innerHTML = `<span>Générer l’homélie (${modelName})</span>`;
             }
         }
-
         function showStatus(message, isError = false) {
             statusMessage.textContent = message;
             statusMessage.className = isError ? 'error' : 'success';
