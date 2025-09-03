@@ -406,7 +406,7 @@
         // --- INITIALIZATION ---
         function initializePage() {
             const todaysDate = getTodaysDateString();
-            document.getElementById('date-display').textContent = `Lectures du ${new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
+            document.getElementById('date-display').textContent = `${new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`;
             aelfFrame.src = `https://www.aelf.org/${todaysDate}/romain/messe`;
         }
 
@@ -456,7 +456,10 @@
                         { role: 'system', content: systemPrompt },
                         { role: 'user', content: userInstructions }
                     ],
-                    { stream: true }
+                    {
+                        model: 'gpt-5',
+                        stream: true
+                    }
                 );
 
                 let fullResponseMarkdown = "";
@@ -519,7 +522,7 @@
             buttons.forEach(btn => btn.disabled = isLoading);
 
             if (isLoading) {
-                generateBtn.innerHTML = `<span>Génération...</span><div class="loader"></div>`;
+                generateBtn.innerHTML = `<span></span><div class="loader"></div>`;
             } else {
                 generateBtn.innerHTML = `<span>Générer l’homélie</span>`;
             }
