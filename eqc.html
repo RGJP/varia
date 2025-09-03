@@ -113,20 +113,23 @@
             border-color: var(--accent-color);
             box-shadow: 0 0 0 3px rgba(91, 192, 222, 0.25);
         }
-        
+
         .theme-switch-wrapper {
             display: flex;
             align-items: center;
         }
+
         .theme-switch {
             display: inline-block;
             height: 34px;
             position: relative;
             width: 60px;
         }
+
         .theme-switch input {
-            display:none;
+            display: none;
         }
+
         .slider {
             background-color: #ccc;
             bottom: 0;
@@ -137,6 +140,7 @@
             top: 0;
             transition: .4s;
         }
+
         .slider:before {
             background-color: #fff;
             bottom: 4px;
@@ -147,15 +151,19 @@
             transition: .4s;
             width: 26px;
         }
-        input:checked + .slider {
+
+        input:checked+.slider {
             background-color: var(--primary-color);
         }
-        input:checked + .slider:before {
+
+        input:checked+.slider:before {
             transform: translateX(26px);
         }
+
         .slider.round {
             border-radius: 34px;
         }
+
         .slider.round:before {
             border-radius: 50%;
         }
@@ -195,6 +203,7 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         }
+
         .resource-btn:focus,
         .resource-btn:visited,
         .resource-btn:focus-visible {
@@ -235,10 +244,10 @@
             border-radius: 8px;
             padding: 1.5rem;
             box-shadow: 0 4px 12px var(--shadow-color);
-            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
             border: 2px solid transparent;
         }
-        
+
         .today-highlight {
             background-color: var(--today-bg-color);
             border: 2px solid var(--today-border-color);
@@ -303,6 +312,7 @@
             header h1 {
                 font-size: 3.5rem;
             }
+
             .mass-times-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
@@ -313,7 +323,6 @@
                 grid-template-columns: repeat(3, 1fr);
             }
         }
-
     </style>
 </head>
 <body>
@@ -328,7 +337,7 @@
         <div class="theme-switch-wrapper">
             <label class="theme-switch" for="theme-toggle">
                 <input type="checkbox" id="theme-toggle" />
-                <div class="slider round"></div>
+                <span class="slider round" title="Toggle dark mode"></span>
             </label>
         </div>
     </div>
@@ -423,8 +432,97 @@
                 </ul>
             </div>
         </section>
+        <p id="no-results">Aucun résultat trouvé.</p>
     </main>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- 1. Theme Toggle Functionality ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const body = document.body;
+
+        // Function to apply the saved or preferred theme on page load
+        const applyTheme = () => {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                body.classList.add('dark-mode');
+                themeToggle.checked = true;
+            } else {
+                body.classList.remove('dark-mode');
+                themeToggle.checked = false;
+            }
+        };
+
+        // Event listener for the theme toggle to change theme and save preference
+        themeToggle.addEventListener('change', () => {
+            if (themeToggle.checked) {
+                body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.remove('dark-mode');
+                localStorage.setItem('theme', 'light');
+            }
+        });
+
+        // Apply the correct theme when the page first loads
+        applyTheme();
+
+        // --- 2. Highlight Today's Card & "Aujourd'hui" Button ---
+        const todayBtn = document.getElementById('today-btn');
+        const dayCards = document.querySelectorAll('.day-card');
+
+        // Map JS getDay() index (0=Sun, 1=Mon, ...) to French day names
+        const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+        const todayName = dayNames[new Date().getDay()];
+        let todayCard = null;
+
+        // Find today's card, highlight it, and assign it a unique ID for scrolling
+        dayCards.forEach(card => {
+            const cardTitle = card.querySelector('h2').textContent.trim();
+            if (cardTitle === todayName) {
+                card.classList.add('today-highlight');
+                card.id = 'today'; // Add ID for easy targeting
+                todayCard = card;
+            }
+        });
+
+        // "Aujourd'hui" button click event listener to scroll to today's card
+        todayBtn.addEventListener('click', () => {
+            if (todayCard) {
+                todayCard.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+        });
+
+        // --- 3. (Improvement) Live Search Functionality ---
+        const searchInput = document.getElementById('search-input');
+        const noResultsMessage = document.getElementById('no-results');
+
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase().trim();
+            let visibleCardsCount = 0;
+
+            dayCards.forEach(card => {
+                const cardText = card.textContent.toLowerCase();
+                if (cardText.includes(searchTerm)) {
+                    card.style.display = ''; // Show card if it contains the search term
+                    visibleCardsCount++;
+                } else {
+                    card.style.display = 'none'; // Hide card if it doesn't
+                }
+            });
+
+            // Show or hide the "no results" message based on search outcome
+            noResultsMessage.style.display = visibleCardsCount === 0 ? 'block' : 'none';
+        });
+    });
+</script>
 
 </body>
 </html>
