@@ -471,7 +471,9 @@
             border: 1px solid #e2e8f0;
             border-radius: 8px;
             background-color: #f8f9fa;
-            -moz-appearance: textfield; /* Hide arrows in Firefox */
+            appearance: textfield;        /* Standard */
+-moz-appearance: textfield;   /* Firefox */
+
         }
         .metronome-accent-control input::-webkit-outer-spin-button,
         .metronome-accent-control input::-webkit-inner-spin-button {
