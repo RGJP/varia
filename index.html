@@ -31,74 +31,92 @@
             z-index: -1; /* Send particles to the background */
             pointer-events: none; /* Allow clicks to pass through */
         }
+
+        /* Custom styles for the square grid layout */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem; /* Smaller gap for mobile */
+        }
+
+        @media (min-width: 640px) { /* sm breakpoint */
+            .grid-container {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 1.5rem; /* Standard gap for larger screens */
+            }
+        }
+
+        .grid-item {
+            aspect-ratio: 1 / 1; /* Make items perfectly square */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgba(107, 114, 128, 0.6);
+            background-color: rgba(31, 41, 55, 0.5);
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* Ensure content fits within the viewport on small screens */
+        .viewport-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        @media (max-width: 639px) { /* Adjust font size on smaller screens for better fit */
+            .grid-item span {
+                font-size: 0.875rem; /* text-sm */
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white antialiased">
     <div id="particles-js"></div>
 
-    <div class="flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 relative z-0">
-        <div class="w-full max-w-2xl text-center">
-            <div class="mb-8 flex justify-center">
-            </div>
+    <div class="viewport-container relative z-0">
+        <div class="w-full max-w-4xl text-center">
+            <h1 class="text-4xl sm:text-5xl font-bold text-indigo-500 mb-8">RGJP GitHub</h1>
             
-            <div class="space-y-4">
+            <div class="grid-container">
+               
+                
+                <a href="eqc.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
+                    <span class="font-medium text-gray-200">Rendre grâce</span>
+                </a>
 
-                <a href="cv.html" rel="noopener noreferrer" class="link-card bg-gray-800/50 border border-gray-700/60 p-5 rounded-xl flex items-center justify-between w-full transition-all duration-300 ease-in-out transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-lg text-gray-200">CV</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
+                <a href="guitar.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
+                    <span class="font-medium text-gray-200">Guitar</span>
+                </a>
+
+                <a href="homelie.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
+                    <span class="font-medium text-gray-200">Homélie</span>
                 </a>
                 
-                <a href="eqc.html" rel="noopener noreferrer" class="link-card bg-gray-800/50 border border-gray-700/60 p-5 rounded-xl flex items-center justify-between w-full transition-all duration-300 ease-in-out transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-lg text-gray-200">Rendre grâce</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
+                <a href="luminaira.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
+                    <span class="font-medium text-gray-200">Luminaira</span>
                 </a>
 
-                <a href="guitar.html" rel="noopener noreferrer" class="link-card bg-gray-800/50 border border-gray-700/60 p-5 rounded-xl flex items-center justify-between w-full transition-all duration-300 ease-in-out transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-lg text-gray-200">Guitar</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
+                <a href="https://mariusjomphe.com" target="_blank" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
+                    <span class="font-medium text-gray-200">Marius Jomphe Photography</span>
                 </a>
 
-                <a href="homelie.html" rel="noopener noreferrer" class="link-card bg-gray-800/50 border border-gray-700/60 p-5 rounded-xl flex items-center justify-between w-full transition-all duration-300 ease-in-out transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-lg text-gray-200">Homélie</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                </a>
-                
-                <a href="luminaira.html" rel="noopener noreferrer" class="link-card bg-gray-800/50 border border-gray-700/60 p-5 rounded-xl flex items-center justify-between w-full transition-all duration-300 ease-in-out transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-lg text-gray-200">Luminaira</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
+                <a href="mindfulpause.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
+                    <span class="font-medium text-gray-200">Mindfulness Pause</span>
                 </a>
 
-                <a href="https://mariusjomphe.com" target="_blank" rel="noopener noreferrer" class="link-card bg-gray-800/50 border border-gray-700/60 p-5 rounded-xl flex items-center justify-between w-full transition-all duration-300 ease-in-out transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-lg text-gray-200">Marius Jomphe Photography</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
+                <a href="mooji.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
+                    <span class="font-medium text-gray-200">Mooji Satsangs</span>
                 </a>
-
-                <a href="mindfulpause.html" rel="noopener noreferrer" class="link-card bg-gray-800/50 border border-gray-700/60 p-5 rounded-xl flex items-center justify-between w-full transition-all duration-300 ease-in-out transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-lg text-gray-200">Mindfulness Pause</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
+                 <a href="cv.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
+                    <span class="font-medium text-gray-200">CV</span>
                 </a>
-
-                <a href="mooji.html" rel="noopener noreferrer" class="link-card bg-gray-800/50 border border-gray-700/60 p-5 rounded-xl flex items-center justify-between w-full transition-all duration-300 ease-in-out transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-lg text-gray-200">Mooji Satsangs</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                </a>
-
             </div>
         </div>
     </div>
@@ -181,6 +199,7 @@
                         "mode": "push"
                     },
                     "resize": true
+                    
                 },
                 "modes": {
                     "grab": {
