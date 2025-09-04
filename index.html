@@ -13,9 +13,10 @@
         /* Apply the Inter font family */
         body {
             font-family: 'Inter', sans-serif;
-            overflow-x: hidden; /* Prevent horizontal scrollbar due to particles */
+            overflow: hidden; /* Prevent horizontal and vertical scrollbars */
             position: relative; /* Needed for absolute positioning of particles */
         }
+
         /* Style for the subtle glow effect on hover */
         .link-card:hover {
             box-shadow: 0 0 15px rgba(79, 70, 229, 0.5), 0 0 5px rgba(79, 70, 229, 0.4);
@@ -36,13 +37,13 @@
         .grid-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 1rem; /* Smaller gap for mobile */
+            gap: 0.75rem; /* Smaller gap for mobile */
         }
 
         @media (min-width: 640px) { /* sm breakpoint */
             .grid-container {
                 grid-template-columns: repeat(4, 1fr);
-                gap: 1.5rem; /* Standard gap for larger screens */
+                gap: 1rem; /* Standard gap for larger screens */
             }
         }
 
@@ -53,26 +54,32 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 1rem;
+            padding: 0.5rem; /* Reduced padding to help content fit */
             border-radius: 0.75rem;
             border: 1px solid rgba(107, 114, 128, 0.6);
             background-color: rgba(31, 41, 55, 0.5);
             transition: all 0.3s ease-in-out;
         }
 
-        /* Ensure content fits within the viewport on small screens */
+        /* Ensure content fits within the viewport on all screens */
         .viewport-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            padding: 1rem;
+            height: 100dvh; /* Use dynamic viewport height to fit on screen */
+            padding: 0.75rem; /* Reduced padding */
         }
 
-        @media (max-width: 639px) { /* Adjust font size on smaller screens for better fit */
-            .grid-item span {
-                font-size: 0.875rem; /* text-sm */
+        /* New custom class for text size */
+        .link-text {
+            font-size: 1.1rem; /* Increase this value to make text bigger */
+            line-height: 1.5; /* Adjust line-height for better spacing */
+        }
+
+        @media (min-width: 640px) {
+            .link-text {
+                font-size: 1.25rem; /* Adjust font size for larger screens */
             }
         }
     </style>
@@ -82,40 +89,39 @@
 
     <div class="viewport-container relative z-0">
         <div class="w-full max-w-4xl text-center">
-            <h1 class="text-4xl sm:text-5xl font-bold text-indigo-500 mb-8">RGJP GitHub</h1>
             
             <div class="grid-container">
-               
                 
                 <a href="eqc.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-gray-200">Rendre grâce</span>
+                    <h3 class="link-text font-medium text-gray-200">🙏 Rendre grâce</h3>
                 </a>
 
                 <a href="guitar.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-gray-200">Guitar</span>
+                    <h3 class="link-text font-medium text-gray-200">🎸 Guitar</h3>
                 </a>
 
                 <a href="homelie.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-gray-200">Homélie</span>
+                    <h3 class="link-text font-medium text-gray-200">📖 Homélie</h3>
                 </a>
                 
                 <a href="luminaira.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-gray-200">Luminaira</span>
+                    <h3 class="link-text font-medium text-gray-200">✨ Luminaira</h3>
                 </a>
 
                 <a href="https://mariusjomphe.com" target="_blank" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-gray-200">Marius Jomphe Photography</span>
+                    <h3 class="link-text font-medium text-gray-200">📸 Marius Jomphe Photography</h3>
                 </a>
 
                 <a href="mindfulpause.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-gray-200">Mindfulness Pause</span>
+                    <h3 class="link-text font-medium text-gray-200">🧘 Mindfulness Pause</h3>
                 </a>
 
                 <a href="mooji.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-gray-200">Mooji Satsangs</span>
+                    <h3 class="link-text font-medium text-gray-200">🕉️ Mooji Satsangs</h3>
                 </a>
-                 <a href="cv.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
-                    <span class="font-medium text-gray-200">CV</span>
+                
+                <a href="cv.html" rel="noopener noreferrer" class="link-card grid-item transform hover:scale-105 hover:border-indigo-500">
+                    <h3 class="link-text font-medium text-gray-200">📄 CV</h3>
                 </a>
             </div>
         </div>
