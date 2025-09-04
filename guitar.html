@@ -1171,7 +1171,7 @@
         modeMixolydian: { fr: 'Mixolydien', en: 'Mixolydian' },
         modeAeolian: { fr: 'Éolien', en: 'Aeolian' },
         modeLocrian: { fr: 'Locrien', en: 'Locrian' },
-        contactBtn: { fr: 'Contact', en: 'Contact' }
+        contactBtn: { fr: 'Contact 📧', en: 'Contact 📧' }
     };
 
     function setLanguage(lang) {
@@ -1248,6 +1248,7 @@
         initMetronome();
         initChordWheel();
         initTransposer();
+        setLanguage('fr'); // Default language
     });
 
     document.addEventListener('mousemove', (e) => {
