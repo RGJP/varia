@@ -188,54 +188,31 @@
             font-size: 0.9rem;
             font-weight: 600;
             text-decoration: none;
-            transition: all 0.3s ease;
+            /* transition removed to prevent animations */
             box-shadow: 0 2px 4px var(--shadow-color);
             cursor: pointer;
             font-family: inherit;
         }
 
-        .resource-btn:hover {
-            background-color: var(--accent-color);
-            color: #ffffff;
-            border-color: var(--accent-color);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-        }
+        /* All :hover pseudo-classes for buttons have been removed */
 
-        /* Style for the primary "Aujourd'hui" button */
-        #today-btn {
-            background-color: var(--accent-color);
-            color: #ffffff;
-            border-color: var(--accent-color);
-        }
         
-        #today-btn:hover {
-            filter: brightness(90%);
-        }
-
+        
+        /* This rule now includes :active to prevent any visual change on click */
         .resource-btn:focus,
+        .resource-btn:active,
         .resource-btn:visited,
         .resource-btn:focus-visible {
             outline: none;
-            box-shadow: none;
+            box-shadow: none; /* Keeps original shadow if desired, or removes focus shadow */
         }
 
         body.dark-mode .resource-btn {
             color: var(--text-color);
         }
 
-        body.dark-mode .resource-btn:hover {
-            color: var(--background-color);
-            background-color: var(--accent-color);
-        }
-        
         body.dark-mode #today-btn {
             color: #121212; /* Dark text for light blue background */
-        }
-        
-        body.dark-mode #today-btn:hover {
-            color: #121212;
-            filter: brightness(110%);
         }
 
         .visually-hidden {
