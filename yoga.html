@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,9 +17,12 @@
             --color-background: #F8F5F2;
             --color-text-primary: #3D405B;
             --color-text-secondary: #5c6081;
-            --color-primary-accent: #E07A5F; /* Terracotta orange */
-            --color-primary-accent-dark: #c9684c; /* Darker orange */
-            --color-secondary-accent: #E9C46A; /* Saffron/gold */
+            --color-primary-accent: #E07A5F;
+            /* Terracotta orange */
+            --color-primary-accent-dark: #c9684c;
+            /* Darker orange */
+            --color-secondary-accent: #E9C46A;
+            /* Saffron/gold */
             --color-card-background: #FFFFFF;
             --color-border: #ddd;
             --color-input-background: #fff;
@@ -28,7 +32,7 @@
             --border-radius: 12px;
             --font-family-main: 'Inter', sans-serif;
         }
-        
+
         html.dark-theme {
             --color-background: #1A1A2E;
             --color-text-primary: #EAEAEA;
@@ -62,9 +66,10 @@
             -moz-osx-font-smoothing: grayscale;
             transition: background-color 0.3s ease, color 0.3s ease;
         }
-        
+
         body.overlay-open {
-            overflow: hidden; /* Prevent scrolling when overlay is open */
+            overflow: hidden;
+            /* Prevent scrolling when overlay is open */
         }
 
         .container {
@@ -81,13 +86,14 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            margin-bottom: 1rem; /* Space between toggler and title */
+            margin-bottom: 1rem;
+            /* Space between toggler and title */
         }
 
         .theme-label {
-             font-weight: 500;
-             font-size: 1.1rem;
-             color: var(--color-text-secondary);
+            font-weight: 500;
+            font-size: 1.1rem;
+            color: var(--color-text-secondary);
         }
 
         .theme-switch {
@@ -131,15 +137,16 @@
             border-radius: 50%;
         }
 
-        input:checked + .slider {
+        input:checked+.slider {
             background-color: var(--color-primary-accent);
         }
 
-        input:checked + .slider:before {
+        input:checked+.slider:before {
             transform: translateX(22px);
         }
-        
-        .sun-icon, .moon-icon {
+
+        .sun-icon,
+        .moon-icon {
             font-size: 14px;
         }
 
@@ -147,14 +154,19 @@
             opacity: 0;
             transition: opacity 0.3s ease;
         }
-        
+
         .sun-icon {
             opacity: 1;
             transition: opacity 0.3s ease;
         }
 
-        html.dark-theme .moon-icon { opacity: 1; }
-        html.dark-theme .sun-icon { opacity: 0; }
+        html.dark-theme .moon-icon {
+            opacity: 1;
+        }
+
+        html.dark-theme .sun-icon {
+            opacity: 0;
+        }
 
 
         /* ------------------- */
@@ -176,7 +188,7 @@
             margin-bottom: 0.5rem;
             text-align: center;
         }
-        
+
         h1 .logo-highlight {
             color: var(--color-primary-accent);
         }
@@ -279,12 +291,14 @@
 
         .sequence-btn {
             flex-grow: 1;
-            flex-basis: calc(50% - 1rem); /* Allow more space for text */
+            flex-basis: calc(50% - 1rem);
+            /* Allow more space for text */
             padding: 0.75rem 1rem;
-            min-height: 60px; /* Match number button height */
+            min-height: 60px;
+            /* Match number button height */
             font-size: 0.95rem;
             font-weight: 500;
-         color: var(--color-primary-accent);
+            color: var(--color-primary-accent);
             background-color: var(--color-input-background);
             border: 1px solid var(--color-border);
             border-radius: 8px;
@@ -313,7 +327,8 @@
             gap: 1.5rem;
         }
 
-        .pose-card, .controls {
+        .pose-card,
+        .controls {
             transition: background-color 0.3s ease;
         }
 
@@ -327,11 +342,12 @@
             transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s ease;
             animation: popIn 0.5s ease-out forwards;
         }
-        
+
         .pose-card:hover {
             transform: translateY(-8px);
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
         }
+
         html.dark-theme .pose-card:hover {
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
         }
@@ -340,14 +356,14 @@
             position: relative;
             width: 100%;
             height: 200px;
-            background-color: rgba(0,0,0,0.05);
+            background-color: rgba(0, 0, 0, 0.05);
             display: flex;
             justify-content: center;
             align-items: center;
         }
-        
+
         html.dark-theme .card-image-container {
-             background-color: rgba(255,255,255,0.05);
+            background-color: rgba(255, 255, 255, 0.05);
         }
 
         .pose-image {
@@ -357,7 +373,7 @@
             transition: opacity 0.5s ease-in-out;
             cursor: pointer;
         }
-        
+
         .pose-name {
             font-size: 1.1rem;
             font-weight: 600;
@@ -365,13 +381,13 @@
             text-align: center;
             text-transform: capitalize;
         }
-        
+
         .pose-name a {
             color: inherit;
             text-decoration: none;
             transition: color 0.3s ease;
         }
-        
+
         .pose-name a:hover {
             color: var(--color-primary-accent);
             text-decoration: underline;
@@ -396,7 +412,7 @@
             visibility: hidden;
             transition: opacity 0.3s ease, visibility 0.3s ease;
         }
-        
+
         .image-overlay.show {
             opacity: 1;
             visibility: visible;
@@ -457,25 +473,51 @@
         /* --- General Animations --- */
         /* ------------------- */
         @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @keyframes popIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         @keyframes zoomIn {
-            from { transform: scale(0.8); }
-            to { transform: scale(1); }
+            from {
+                transform: scale(0.8);
+            }
+
+            to {
+                transform: scale(1);
+            }
         }
-        
+
         /* ------------------- */
         /* --- Footer --- */
         /* ------------------- */
@@ -489,11 +531,11 @@
             animation: fadeInUp 0.8s 0.4s ease-out backwards;
             transition: border-color 0.3s ease;
         }
-        
+
         footer p {
             margin-bottom: 1rem;
         }
-        
+
         footer a {
             color: var(--color-primary-accent);
             text-decoration: none;
@@ -532,7 +574,8 @@
             }
 
             .sequence-btn {
-                flex-basis: auto; /* Allow buttons to size to content */
+                flex-basis: auto;
+                /* Allow buttons to size to content */
                 flex-grow: 0;
             }
 
@@ -549,7 +592,7 @@
     </style>
     <script>
         // IIFE to set theme instantly, preventing FOUC
-        (function() {
+        (function () {
             const savedTheme = localStorage.getItem('theme');
             const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
             if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
@@ -558,9 +601,10 @@
         })();
     </script>
 </head>
+
 <body>
     <div class="container">
-        
+
         <header>
             <div class="theme-switch-container">
                 <span class="theme-label">🌓</span>
@@ -596,10 +640,10 @@
                     </div>
                     <input type="hidden" id="pose-count-value" value="">
                 </div>
-                 <div class="control-group">
-                    <label>Or select a sequence</label>
+                <div class="control-group">
+                    <label>Or explore a sequence</label>
                     <div class="sequence-buttons" id="sequence-buttons">
-                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -608,10 +652,11 @@
         </main>
 
         <footer>
-       <p>
-    Created with love for well-being. Images are sourced from freely available public content via Google, and are used solely for the purpose of illustrating the poses 🙏
-    <span id="version-number"></span>
-</p>
+            <p>
+                Created with love for well-being. Images are sourced from freely available public content via Google,
+                and are used solely for the purpose of illustrating the poses 🙏
+                <span id="version-number"></span>
+            </p>
             <a href="mailto:raffael.jomphe@gmail.com" class="about-button">Contact 📧</a>
         </footer>
     </div>
@@ -622,7 +667,14 @@
 
     <div id="about-overlay" class="about-overlay">
         <div class="about-content">
-            <p>"Serendipity Yoga" is a minimalistic random yoga session generator designed to bring variety and playfulness to your practice. Simply choose how many poses you'd like, breathe deeply, and enjoy exploring the sequence.<br><br> This tool celebrates the spirit of serendipity—finding joy in the unexpected—so the sequences may obviously sometimes be too challenging or not suited to your personal needs or physical limitations. You can regenerate them as often as you like to discover new or better combinations.<br><br> Think of it as an exploration tool, offering endless unique sessions drawn from a curated library of nearly 200 yoga poses and a few sequences. Enjoy your practice, stay curious, and above all, remember to listen to your body.</p>
+            <p>"Serendipity Yoga" is a minimalistic random yoga session generator designed to bring variety and
+                playfulness to your practice. Simply choose how many poses you'd like, breathe deeply, and enjoy
+                exploring the sequence.<br><br> This tool celebrates the spirit of serendipity—finding joy in the
+                unexpected—so the sequences may obviously sometimes be too challenging or not suited to your personal
+                needs or physical limitations. You can regenerate them as often as you like to discover new or better
+                combinations.<br><br> Think of it as an exploration tool, offering endless unique sessions drawn from a
+                curated library of nearly 200 yoga poses and a few sequences. Enjoy your practice, stay curious, and
+                above all, remember to listen to your body.</p>
         </div>
     </div>
 
@@ -653,7 +705,7 @@
             // ------------------- //
             const localImageFiles = [
                 'yogaposes/accomplished-pose-siddhasana.jpg',
-                    'yogaposes/knee to chest apanasana.jpg',
+                'yogaposes/knee to chest apanasana.jpg',
                 'yogaposes/auspicious-pose-swastikasana.jpg',
                 'yogaposes/awkward-pose-utkatasana.jpg',
                 'yogaposes/baby-cobra-pose-ardha-bhujangasana.jpg',
@@ -661,7 +713,6 @@
                 'yogaposes/beam-pose.jpg',
                 'yogaposes/beginner-vinyasa-flow-sequence.jpg',
                 'yogaposes/bharadvajas-twist-bharadvajasana.jpg',
-                'yogaposes/bird-of-paradise-pose-svarga-dvijasana.jpg',
                 'yogaposes/boat-pose-navasana.jpg',
                 'yogaposes/bound-angle-pose-baddha-konasana.jpg',
                 'yogaposes/bow-pose-dhanurasana.jpg',
@@ -719,7 +770,6 @@
                 'yogaposes/hamstrings-stretch-sequence.jpg',
                 'yogaposes/happy-baby-pose-ananda-balasana.jpg',
                 'yogaposes/head-to-knee-forward-bend-janu-sirsasana.jpg',
-                'yogaposes/head-to-knee-pose-janu-sirsasana.jpg',
                 'yogaposes/headstand-pose-sirsasana.jpg',
                 'yogaposes/hero-pose-virasana.jpg',
                 'yogaposes/heron-pose-krounchasana.jpg',
@@ -732,7 +782,6 @@
                 'yogaposes/lion-pose-simhasana.jpg',
                 'yogaposes/lizard-pose-utthan-pristhasana.jpg',
                 'yogaposes/locust-pose-salabhasana.jpg',
-                'yogaposes/lord-of-the-dance-pose-natarajasana.jpg',
                 'yogaposes/low-lunge-pose-anjaneyasana.jpg',
                 'yogaposes/lunge-pose.jpg',
                 'yogaposes/marichis-pose-marichyasana.jpg',
@@ -881,7 +930,7 @@
                     }
                 }
             });
-            
+
             sessionDisplay.addEventListener('click', (e) => {
                 if (e.target.classList.contains('pose-image')) {
                     overlayImg.src = e.target.src;
@@ -918,7 +967,7 @@
 
                     const fileName = filePath.split('/').pop();
                     const sequenceName = fileName.substring(0, fileName.lastIndexOf('.')).replace(/-/g, ' ');
-                    
+
                     button.textContent = sequenceName;
                     sequenceButtonsContainer.appendChild(button);
                 });
@@ -928,7 +977,7 @@
                 const poseCount = parseInt(poseCountValueInput.value);
                 if (isNaN(poseCount) || poseCount <= 0) return;
 
-                sessionDisplay.innerHTML = ''; 
+                sessionDisplay.innerHTML = '';
 
                 const shuffledFiles = [...poseFiles];
                 for (let i = shuffledFiles.length - 1; i > 0; i--) {
@@ -943,7 +992,7 @@
                     sessionDisplay.appendChild(card);
                 });
             }
-            
+
             function createPoseCard(filePath, index) {
                 const card = document.createElement('article');
                 card.className = 'pose-card';
@@ -961,7 +1010,7 @@
                 img.loading = 'lazy';
                 img.className = 'pose-image';
                 imageContainer.appendChild(img);
-                
+
                 const nameHeader = document.createElement('h3');
                 nameHeader.className = 'pose-name';
 
@@ -976,7 +1025,7 @@
                 nameHeader.appendChild(link);
                 card.appendChild(imageContainer);
                 card.appendChild(nameHeader);
-                
+
                 return card;
             }
 
@@ -992,4 +1041,5 @@
         });
     </script>
 </body>
+
 </html>
