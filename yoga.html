@@ -270,6 +270,40 @@
             transform: translateY(0);
         }
 
+        .sequence-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: center;
+        }
+
+        .sequence-btn {
+            flex-grow: 1;
+            flex-basis: calc(50% - 1rem); /* Allow more space for text */
+            padding: 0.75rem 1rem;
+            min-height: 60px; /* Match number button height */
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--color-secondary-accent); /* Use the other accent color */
+            background-color: var(--color-input-background);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: capitalize;
+            line-height: 1.2;
+        }
+
+        .sequence-btn:hover {
+            border-color: var(--color-secondary-accent);
+            background-color: var(--color-secondary-accent);
+            color: #3D405B;
+            transform: translateY(-2px);
+        }
+
         /* ------------------- */
         /* --- Session Display & Pose Cards --- */
         /* ------------------- */
@@ -332,6 +366,17 @@
             text-transform: capitalize;
         }
         
+        .pose-name a {
+            color: inherit;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .pose-name a:hover {
+            color: var(--color-primary-accent);
+            text-decoration: underline;
+        }
+
         /* ------------------- */
         /* --- Image Overlay --- */
         /* ------------------- */
@@ -486,6 +531,11 @@
                 max-width: 450px;
             }
 
+            .sequence-btn {
+                flex-basis: auto; /* Allow buttons to size to content */
+                flex-grow: 0;
+            }
+
             .session-grid {
                 gap: 2rem;
             }
@@ -546,6 +596,11 @@
                     </div>
                     <input type="hidden" id="pose-count-value" value="">
                 </div>
+                 <div class="control-group">
+                    <label>Or select a sequence</label>
+                    <div class="sequence-buttons" id="sequence-buttons">
+                        </div>
+                </div>
             </section>
 
             <section id="session-display" class="session-grid">
@@ -596,197 +651,208 @@
             // ------------------- //
             // --- LOCAL IMAGE DATABASE --- //
             // ------------------- //
-         // ------------------- //
-// --- LOCAL IMAGE DATABASE --- //
+            const localImageFiles = [
+                'yogaposes/accomplished-pose-siddhasana.jpg',
+                    'yogaposes/knee to chest apanasana.jpg',
+                'yogaposes/auspicious-pose-swastikasana.jpg',
+                'yogaposes/awkward-pose-utkatasana.jpg',
+                'yogaposes/baby-cobra-pose-ardha-bhujangasana.jpg',
+                'yogaposes/balancing-table-pose-dandayamana-bharmanasana.jpg',
+                'yogaposes/beam-pose.jpg',
+                'yogaposes/beginner-vinyasa-flow-sequence.jpg',
+                'yogaposes/bharadvajas-twist-bharadvajasana.jpg',
+                'yogaposes/bird-of-paradise-pose-svarga-dvijasana.jpg',
+                'yogaposes/boat-pose-navasana.jpg',
+                'yogaposes/bound-angle-pose-baddha-konasana.jpg',
+                'yogaposes/bow-pose-dhanurasana.jpg',
+                'yogaposes/bridge-pose-setu-bandhasana.jpg',
+                'yogaposes/butterfly-pose-baddha-konasana.jpg',
+                'yogaposes/camel-pose-ustrasana.jpg',
+                'yogaposes/cat-cow-pose-marjaryasana-bitilasana.jpg',
+                'yogaposes/cat-pulling-its-tail-pose.jpg',
+                'yogaposes/caterpillar-pose-paschimottanasana.jpg',
+                'yogaposes/chair-pose-utkatasana.jpg',
+                'yogaposes/childs-pose-balasana.jpg',
+                'yogaposes/cobra-pose-bhujangasana.jpg',
+                'yogaposes/corpse-pose-savasana.jpg',
+                'yogaposes/cow-face-pose-gomukhasana.jpg',
+                'yogaposes/cow-pose-bitilasana.jpg',
+                'yogaposes/cradle-the-baby-pose-hindolasana.jpg',
+                'yogaposes/crane-pose-bakasana.jpg',
+                'yogaposes/crescent-lunge-ashta-chandrasana.jpg',
+                'yogaposes/crocodile-pose-makarasana.jpg',
+                'yogaposes/crow-pose-bakasana.jpg',
+                'yogaposes/cycling-pose-pada-sanchalanasana.jpg',
+                'yogaposes/dancer-pose-natarajasana.jpg',
+                'yogaposes/dancing-shiva-pose-tandavasana.jpg',
+                'yogaposes/dangling-pose-uttanasana-variation.jpg',
+                'yogaposes/deer-pose.jpg',
+                'yogaposes/dolphin-plank-pose-makara-adho-mukha-svanasana.jpg',
+                'yogaposes/downward-facing-dog-adho-mukha-svanasana.jpg',
+                'yogaposes/dragon-pose.jpg',
+                'yogaposes/dragonfly-pose-upavistha-konasana-variation.jpg',
+                'yogaposes/eagle-pose-garudasana.jpg',
+                'yogaposes/easy-pose-sukhasana.jpg',
+                'yogaposes/extended-hand-to-big-toe-utthita-hasta-padangusthasana.jpg',
+                'yogaposes/extended-puppy-pose-uttana-shishosana.jpg',
+                'yogaposes/extended-side-angle-pose-utthita-parsvakonasana.jpg',
+                'yogaposes/extended-triangle-pose-utthita-trikonasana.jpg',
+                'yogaposes/fallen-triangle-pose-patita-tarasana.jpg',
+                'yogaposes/fire-log-pose-agnistambhasana.jpg',
+                'yogaposes/firefly-pose-tittibhasana.jpg',
+                'yogaposes/fish-pose-matsyasana.jpg',
+                'yogaposes/five-pointed-star-pose-utthita-tadasana.jpg',
+                'yogaposes/forearm-plank-pose.jpg',
+                'yogaposes/four-limbed-staff-pose-chaturanga-dandasana.jpg',
+                'yogaposes/full-locust-pose-poorna-salabhasana.jpg',
+                'yogaposes/garland-pose-malasana.jpg',
+                'yogaposes/gate-pose-parighasana.jpg',
+                'yogaposes/goddess-pose-utkata-konasana.jpg',
+                'yogaposes/gorilla-pose-padahastasana.jpg',
+                'yogaposes/half-boat-pose-ardha-navasana.jpg',
+                'yogaposes/half-butterfly-pose-ardha-baddha-konasana.jpg',
+                'yogaposes/half-frog-pose-ardha-bhekasana.jpg',
+                'yogaposes/half-lord-of-the-fishes-pose-ardha-matsyendrasana.jpg',
+                'yogaposes/half-moon-pose-ardha-chandrasana.jpg',
+                'yogaposes/half-splits-pose-ardha-hanumanasana.jpg',
+                'yogaposes/half-standing-forward-bend-ardha-uttanasana.jpg',
+                'yogaposes/hamstrings-stretch-sequence.jpg',
+                'yogaposes/happy-baby-pose-ananda-balasana.jpg',
+                'yogaposes/head-to-knee-forward-bend-janu-sirsasana.jpg',
+                'yogaposes/head-to-knee-pose-janu-sirsasana.jpg',
+                'yogaposes/headstand-pose-sirsasana.jpg',
+                'yogaposes/hero-pose-virasana.jpg',
+                'yogaposes/heron-pose-krounchasana.jpg',
+                'yogaposes/high-lunge-pose-ashta-chandrasana.jpg',
+                'yogaposes/high-lunge-variation-ashta-chandrasana.jpg',
+                'yogaposes/horse-pose-vatayanasana.jpg',
+                'yogaposes/humble-warrior-pose-baddha-virabhadrasana.jpg',
+                'yogaposes/king-cobra-pose-raja-bhujangasana.jpg',
+                'yogaposes/legs-up-the-wall-pose-viparita-karani.jpg',
+                'yogaposes/lion-pose-simhasana.jpg',
+                'yogaposes/lizard-pose-utthan-pristhasana.jpg',
+                'yogaposes/locust-pose-salabhasana.jpg',
+                'yogaposes/lord-of-the-dance-pose-natarajasana.jpg',
+                'yogaposes/low-lunge-pose-anjaneyasana.jpg',
+                'yogaposes/lunge-pose.jpg',
+                'yogaposes/marichis-pose-marichyasana.jpg',
+                'yogaposes/mermaid-pose-eka-pada-rajakapotasana-variation.jpg',
+                'yogaposes/monkey-pose-hanumanasana.jpg',
+                'yogaposes/moon-salutation-chandra-namaskar.jpg',
+                'yogaposes/mountain-pose-tadasana.jpg',
+                'yogaposes/neck-rolls-exercise.jpg',
+                'yogaposes/noose-pose-pasasana.jpg',
+                'yogaposes/one-legged-bridge-pose-eka-pada-setu-bandhasana.jpg',
+                'yogaposes/one-legged-king-pigeon-eka-pada-rajakapotasana.jpg',
+                'yogaposes/one-legged-mountain-pose-eka-pada-tadasana.jpg',
+                'yogaposes/one-legged-plank-pose-eka-pada-phalakasana.jpg',
+                'yogaposes/one-legged-seated-forward-bend-janu-sirsasana.jpg',
+                'yogaposes/one-legged-wheel-pose-eka-pada-urdhva-dhanurasana.jpg',
+                'yogaposes/palm-tree-pose-urdhva-hastasana.jpg',
+                'yogaposes/peacock-pose-mayurasana.jpg',
+                'yogaposes/pendant-pose-lolasana.jpg',
+                'yogaposes/pigeon-pose-eka-pada-rajakapotasana.jpg',
+                'yogaposes/plank-pose-phalakasana.jpg',
+                'yogaposes/plow-pose-halasana.jpg',
+                'yogaposes/prone-savasana-makarasana.jpg',
+                'yogaposes/pyramid-pose-parsvottanasana.jpg',
+                'yogaposes/rabbit-pose-sasangasana.jpg',
+                'yogaposes/reclined-bound-angle-pose-supta-baddha-konasana.jpg',
+                'yogaposes/reclined-spinal-twist-supta-matsyendrasana.jpg',
+                'yogaposes/reclining-hand-to-big-toe-pose-supta-padangusthasana.jpg',
+                'yogaposes/reclining-hero-pose-supta-virasana.jpg',
+                'yogaposes/reclining-staff-pose.jpg',
+                'yogaposes/reverse-table-top-pose-ardha-purvottanasana.jpg',
+                'yogaposes/reverse-warrior-pose-viparita-virabhadrasana.jpg',
+                'yogaposes/revolved-bound-angle-pose-parivrtta-baddha-konasana.jpg',
+                'yogaposes/revolved-chair-pose-parivrtta-utkatasana.jpg',
+                'yogaposes/revolved-half-moon-pose-parivrtta-ardha-chandrasana.jpg',
+                'yogaposes/revolved-hand-to-big-toe-pose-parivrtta-hasta-padangusthasana.jpg',
+                'yogaposes/revolved-head-to-knee-pose-parivrtta-janu-sirsasana.jpg',
+                'yogaposes/revolved-lunge-pose-parivrtta-parsvakonasana.jpg',
+                'yogaposes/revolved-triangle-pose-parivrtta-trikonasana.jpg',
+                'yogaposes/revolved-wide-legged-forward-bend-parivrtta-prasarita-padottanasana.jpg',
+                'yogaposes/saddle-pose-supta-virasana-variation.jpg',
+                'yogaposes/scale-pose-tolasana.jpg',
+                'yogaposes/seated-forward-bend-paschimottanasana.jpg',
+                'yogaposes/seated-spinal-twist-ardha-matsyendrasana.jpg',
+                'yogaposes/seated-twist-ardha-matsyendrasana.jpg',
+                'yogaposes/shoulder-pressing-pose-bhujapidasana.jpg',
+                'yogaposes/shoulder-rolls-exercise.jpg',
+                'yogaposes/shoulder-stand-pose-sarvangasana.jpg',
+                'yogaposes/side-bend-bananasana.jpg',
+                'yogaposes/side-lunge-pose-skandasana.jpg',
+                'yogaposes/side-plank-pose-vasisthasana.jpg',
+                'yogaposes/side-reclining-leg-lift-anantasana.jpg',
+                'yogaposes/simple-seated-twist.jpg',
+                'yogaposes/sleeping-swan-pose.jpg',
+                'yogaposes/sleeping-vishnu-pose-anantasana.jpg',
+                'yogaposes/snail-pose-halasana-variation.jpg',
+                'yogaposes/sphinx-pose-salamba-bhujangasana.jpg',
+                'yogaposes/staff-pose-dandasana.jpg',
+                'yogaposes/standing-big-toe-pose-padangusthasana.jpg',
+                'yogaposes/standing-forward-bend-uttanasana.jpg',
+                'yogaposes/standing-pigeon-pose-eka-pada-galavasana-prep.jpg',
+                'yogaposes/standing-side-bend-pose-ardha-kati-chakrasana.jpg',
+                'yogaposes/standing-split-pose-urdhva-prasarita-eka-padasana.jpg',
+                'yogaposes/standing-strong-sequence.jpg',
+                'yogaposes/sugarcane-pose-ardha-chandra-chapasana.jpg',
+                'yogaposes/sun-salutation-surya-namaskar.jpg',
+                'yogaposes/superman-pose-viparita-shalabhasana.jpg',
+                'yogaposes/swan-pose.jpg',
+                'yogaposes/table-top-pose-bharmanasana.jpg',
+                'yogaposes/thread-the-needle-pose-urdhva-mukha-pasasana.jpg',
+                'yogaposes/three-legged-downward-dog-eka-pada-adho-mukha-svanasana.jpg',
+                'yogaposes/three-legged-side-plank.jpg',
+                'yogaposes/thunderbolt-pose-vajrasana.jpg',
+                'yogaposes/tiger-pose-vyaghrasana.jpg',
+                'yogaposes/tiptoe-pose-prapadasana.jpg',
+                'yogaposes/tree-pose-vrksasana.jpg',
+                'yogaposes/triangle-pose-trikonasana.jpg',
+                'yogaposes/twisted-roots-pose.jpg',
+                'yogaposes/universal-spinal-twist-jathara-parivartanasana.jpg',
+                'yogaposes/upward-extended-feet-pose-urdhva-prasarita-padasana.jpg',
+                'yogaposes/upward-facing-dog-urdhva-mukha-svanasana.jpg',
+                'yogaposes/upward-facing-seated-forward-bend-urdhva-mukha-paschimottanasana.jpg',
+                'yogaposes/upward-plank-pose-purvottanasana.jpg',
+                'yogaposes/upward-salute-pose-urdhva-hastasana.jpg',
+                'yogaposes/vamadevas-pose-vamadevasana.jpg',
+                'yogaposes/wall-squat-exercise.jpg',
+                'yogaposes/warrior-i-pose-virabhadrasana-i.jpg',
+                'yogaposes/warrior-ii-pose-virabhadrasana-ii.jpg',
+                'yogaposes/warrior-iii-pose-virabhadrasana-iii.jpg',
+                'yogaposes/wheel-pose-chakrasana.jpg',
+                'yogaposes/wide-angle-seated-forward-bend-upavistha-konasana.jpg',
+                'yogaposes/wide-legged-forward-bend-prasarita-padottanasana.jpg',
+                'yogaposes/wild-thing-pose-camatkarasana.jpg',
+                'yogaposes/wind-relieving-pose-pavanamuktasana.jpg',
+                'yogaposes/yin-yoga-sequence.jpg'
+            ];
 
-const localImageFiles = [
-    'yogaposes/accomplished-pose-siddhasana.jpg',
-    'yogaposes/auspicious-pose-swastikasana.jpg',
-    'yogaposes/awkward-pose-utkatasana.jpg',
-    'yogaposes/baby-cobra-pose-ardha-bhujangasana.jpg',
-    'yogaposes/balancing-table-pose-dandayamana-bharmanasana.jpg',
-    'yogaposes/beam-pose.jpg',
-    'yogaposes/beginner-vinyasa-flow-sequence.jpg',
-    'yogaposes/bharadvajas-twist-bharadvajasana.jpg',
-    'yogaposes/bird-of-paradise-pose-svarga-dvijasana.jpg',
-    'yogaposes/boat-pose-navasana.jpg',
-    'yogaposes/bound-angle-pose-baddha-konasana.jpg',
-    'yogaposes/bow-pose-dhanurasana.jpg',
-    'yogaposes/bridge-pose-setu-bandhasana.jpg',
-    'yogaposes/butterfly-pose-baddha-konasana.jpg',
-    'yogaposes/camel-pose-ustrasana.jpg',
-    'yogaposes/cat-cow-pose-marjaryasana-bitilasana.jpg',
-    'yogaposes/cat-pulling-its-tail-pose.jpg',
-    'yogaposes/caterpillar-pose-paschimottanasana.jpg',
-    'yogaposes/chair-pose-utkatasana.jpg',
-    'yogaposes/childs-pose-balasana.jpg',
-    'yogaposes/cobra-pose-bhujangasana.jpg',
-    'yogaposes/corpse-pose-savasana.jpg',
-    'yogaposes/cow-face-pose-gomukhasana.jpg',
-    'yogaposes/cow-pose-bitilasana.jpg',
-    'yogaposes/cradle-the-baby-pose-hindolasana.jpg',
-    'yogaposes/crane-pose-bakasana.jpg',
-    'yogaposes/crescent-lunge-ashta-chandrasana.jpg',
-    'yogaposes/crocodile-pose-makarasana.jpg',
-    'yogaposes/crow-pose-bakasana.jpg',
-    'yogaposes/cycling-pose-pada-sanchalanasana.jpg',
-    'yogaposes/dancer-pose-natarajasana.jpg',
-    'yogaposes/dancing-shiva-pose-tandavasana.jpg',
-    'yogaposes/dangling-pose-uttanasana-variation.jpg',
-    'yogaposes/deer-pose.jpg',
-    'yogaposes/dolphin-plank-pose-makara-adho-mukha-svanasana.jpg',
-    'yogaposes/downward-facing-dog-adho-mukha-svanasana.jpg',
-    'yogaposes/dragon-pose.jpg',
-    'yogaposes/dragonfly-pose-upavistha-konasana-variation.jpg',
-    'yogaposes/eagle-pose-garudasana.jpg',
-    'yogaposes/easy-pose-sukhasana.jpg',
-    'yogaposes/extended-hand-to-big-toe-utthita-hasta-padangusthasana.jpg',
-    'yogaposes/extended-puppy-pose-uttana-shishosana.jpg',
-    'yogaposes/extended-side-angle-pose-utthita-parsvakonasana.jpg',
-    'yogaposes/extended-triangle-pose-utthita-trikonasana.jpg',
-    'yogaposes/fallen-triangle-pose-patita-tarasana.jpg',
-    'yogaposes/fire-log-pose-agnistambhasana.jpg',
-    'yogaposes/firefly-pose-tittibhasana.jpg',
-    'yogaposes/fish-pose-matsyasana.jpg',
-    'yogaposes/five-pointed-star-pose-utthita-tadasana.jpg',
-    'yogaposes/forearm-plank-pose.jpg',
-    'yogaposes/four-limbed-staff-pose-chaturanga-dandasana.jpg',
-    'yogaposes/full-locust-pose-poorna-salabhasana.jpg',
-    'yogaposes/garland-pose-malasana.jpg',
-    'yogaposes/gate-pose-parighasana.jpg',
-    'yogaposes/goddess-pose-utkata-konasana.jpg',
-    'yogaposes/gorilla-pose-padahastasana.jpg',
-    'yogaposes/half-boat-pose-ardha-navasana.jpg',
-    'yogaposes/half-butterfly-pose-ardha-baddha-konasana.jpg',
-    'yogaposes/half-frog-pose-ardha-bhekasana.jpg',
-    'yogaposes/half-lord-of-the-fishes-pose-ardha-matsyendrasana.jpg',
-    'yogaposes/half-moon-pose-ardha-chandrasana.jpg',
-    'yogaposes/half-splits-pose-ardha-hanumanasana.jpg',
-    'yogaposes/half-standing-forward-bend-ardha-uttanasana.jpg',
-    'yogaposes/hamstrings-stretch-sequence.jpg',
-    'yogaposes/happy-baby-pose-ananda-balasana.jpg',
-    'yogaposes/head-to-knee-forward-bend-janu-sirsasana.jpg',
-    'yogaposes/head-to-knee-pose-janu-sirsasana.jpg',
-    'yogaposes/headstand-pose-sirsasana.jpg',
-    'yogaposes/hero-pose-virasana.jpg',
-    'yogaposes/heron-pose-krounchasana.jpg',
-    'yogaposes/high-lunge-pose-ashta-chandrasana.jpg',
-    'yogaposes/high-lunge-variation-ashta-chandrasana.jpg',
-    'yogaposes/horse-pose-vatayanasana.jpg',
-    'yogaposes/humble-warrior-pose-baddha-virabhadrasana.jpg',
-    'yogaposes/king-cobra-pose-raja-bhujangasana.jpg',
-    'yogaposes/legs-up-the-wall-pose-viparita-karani.jpg',
-    'yogaposes/lion-pose-simhasana.jpg',
-    'yogaposes/lizard-pose-utthan-pristhasana.jpg',
-    'yogaposes/locust-pose-salabhasana.jpg',
-    'yogaposes/lord-of-the-dance-pose-natarajasana.jpg',
-    'yogaposes/low-lunge-pose-anjaneyasana.jpg',
-    'yogaposes/lunge-pose.jpg',
-    'yogaposes/marichis-pose-marichyasana.jpg',
-    'yogaposes/mermaid-pose-eka-pada-rajakapotasana-variation.jpg',
-    'yogaposes/monkey-pose-hanumanasana.jpg',
-    'yogaposes/moon-salutation-chandra-namaskar.jpg',
-    'yogaposes/mountain-pose-tadasana.jpg',
-    'yogaposes/neck-rolls-exercise.jpg',
-    'yogaposes/noose-pose-pasasana.jpg',
-    'yogaposes/one-legged-bridge-pose-eka-pada-setu-bandhasana.jpg',
-    'yogaposes/one-legged-king-pigeon-eka-pada-rajakapotasana.jpg',
-    'yogaposes/one-legged-mountain-pose-eka-pada-tadasana.jpg',
-    'yogaposes/one-legged-plank-pose-eka-pada-phalakasana.jpg',
-    'yogaposes/one-legged-seated-forward-bend-janu-sirsasana.jpg',
-    'yogaposes/one-legged-wheel-pose-eka-pada-urdhva-dhanurasana.jpg',
-    'yogaposes/palm-tree-pose-urdhva-hastasana.jpg',
-    'yogaposes/peacock-pose-mayurasana.jpg',
-    'yogaposes/pendant-pose-lolasana.jpg',
-    'yogaposes/pigeon-pose-eka-pada-rajakapotasana.jpg',
-    'yogaposes/plank-pose-phalakasana.jpg',
-    'yogaposes/plow-pose-halasana.jpg',
-    'yogaposes/prone-savasana-makarasana.jpg',
-    'yogaposes/pyramid-pose-parsvottanasana.jpg',
-    'yogaposes/rabbit-pose-sasangasana.jpg',
-    'yogaposes/reclined-bound-angle-pose-supta-baddha-konasana.jpg',
-    'yogaposes/reclined-spinal-twist-supta-matsyendrasana.jpg',
-    'yogaposes/reclining-hand-to-big-toe-pose-supta-padangusthasana.jpg',
-    'yogaposes/reclining-hero-pose-supta-virasana.jpg',
-    'yogaposes/reclining-staff-pose.jpg',
-    'yogaposes/reverse-table-top-pose-ardha-purvottanasana.jpg',
-    'yogaposes/reverse-warrior-pose-viparita-virabhadrasana.jpg',
-    'yogaposes/revolved-bound-angle-pose-parivrtta-baddha-konasana.jpg',
-    'yogaposes/revolved-chair-pose-parivrtta-utkatasana.jpg',
-    'yogaposes/revolved-half-moon-pose-parivrtta-ardha-chandrasana.jpg',
-    'yogaposes/revolved-hand-to-big-toe-pose-parivrtta-hasta-padangusthasana.jpg',
-    'yogaposes/revolved-head-to-knee-pose-parivrtta-janu-sirsasana.jpg',
-    'yogaposes/revolved-lunge-pose-parivrtta-parsvakonasana.jpg',
-    'yogaposes/revolved-triangle-pose-parivrtta-trikonasana.jpg',
-    'yogaposes/revolved-wide-legged-forward-bend-parivrtta-prasarita-padottanasana.jpg',
-    'yogaposes/saddle-pose-supta-virasana-variation.jpg',
-    'yogaposes/scale-pose-tolasana.jpg',
-    'yogaposes/seated-forward-bend-paschimottanasana.jpg',
-    'yogaposes/seated-spinal-twist-ardha-matsyendrasana.jpg',
-    'yogaposes/seated-twist-ardha-matsyendrasana.jpg',
-    'yogaposes/shoulder-pressing-pose-bhujapidasana.jpg',
-    'yogaposes/shoulder-rolls-exercise.jpg',
-    'yogaposes/shoulder-stand-pose-sarvangasana.jpg',
-    'yogaposes/side-bend-bananasana.jpg',
-    'yogaposes/side-lunge-pose-skandasana.jpg',
-    'yogaposes/side-plank-pose-vasisthasana.jpg',
-    'yogaposes/side-reclining-leg-lift-anantasana.jpg',
-    'yogaposes/simple-seated-twist.jpg',
-    'yogaposes/sleeping-swan-pose.jpg',
-    'yogaposes/sleeping-vishnu-pose-anantasana.jpg',
-    'yogaposes/snail-pose-halasana-variation.jpg',
-    'yogaposes/sphinx-pose-salamba-bhujangasana.jpg',
-    'yogaposes/staff-pose-dandasana.jpg',
-    'yogaposes/standing-big-toe-pose-padangusthasana.jpg',
-    'yogaposes/standing-forward-bend-uttanasana.jpg',
-    'yogaposes/standing-pigeon-pose-eka-pada-galavasana-prep.jpg',
-    'yogaposes/standing-side-bend-pose-ardha-kati-chakrasana.jpg',
-    'yogaposes/standing-split-pose-urdhva-prasarita-eka-padasana.jpg',
-    'yogaposes/standing-strong-sequence.jpg',
-    'yogaposes/sugarcane-pose-ardha-chandra-chapasana.jpg',
-    'yogaposes/sun-salutation-surya-namaskar.jpg',
-    'yogaposes/superman-pose-viparita-shalabhasana.jpg',
-    'yogaposes/swan-pose.jpg',
-    'yogaposes/table-top-pose-bharmanasana.jpg',
-    'yogaposes/thread-the-needle-pose-urdhva-mukha-pasasana.jpg',
-    'yogaposes/three-legged-downward-dog-eka-pada-adho-mukha-svanasana.jpg',
-    'yogaposes/three-legged-side-plank.jpg',
-    'yogaposes/thunderbolt-pose-vajrasana.jpg',
-    'yogaposes/tiger-pose-vyaghrasana.jpg',
-    'yogaposes/tiptoe-pose-prapadasana.jpg',
-    'yogaposes/tree-pose-vrksasana.jpg',
-    'yogaposes/triangle-pose-trikonasana.jpg',
-    'yogaposes/twisted-roots-pose.jpg',
-    'yogaposes/universal-spinal-twist-jathara-parivartanasana.jpg',
-    'yogaposes/upward-extended-feet-pose-urdhva-prasarita-padasana.jpg',
-    'yogaposes/upward-facing-dog-urdhva-mukha-svanasana.jpg',
-    'yogaposes/upward-facing-seated-forward-bend-urdhva-mukha-paschimottanasana.jpg',
-    'yogaposes/upward-plank-pose-purvottanasana.jpg',
-    'yogaposes/upward-salute-pose-urdhva-hastasana.jpg',
-    'yogaposes/vamadevas-pose-vamadevasana.jpg',
-    'yogaposes/wall-squat-exercise.jpg',
-    'yogaposes/warrior-i-pose-virabhadrasana-i.jpg',
-    'yogaposes/warrior-ii-pose-virabhadrasana-ii.jpg',
-    'yogaposes/warrior-iii-pose-virabhadrasana-iii.jpg',
-    'yogaposes/wheel-pose-chakrasana.jpg',
-    'yogaposes/wide-angle-seated-forward-bend-upavistha-konasana.jpg',
-    'yogaposes/wide-legged-forward-bend-prasarita-padottanasana.jpg',
-    'yogaposes/wild-thing-pose-camatkarasana.jpg',
-    'yogaposes/wind-relieving-pose-pavanamuktasana.jpg',
-    'yogaposes/yin-yoga-sequence.jpg'
-];
+            // --- Separate poses from sequences --- //
+            const sequenceKeywords = ['sequence', 'flow', 'salutation'];
+            const poseFiles = [];
+            const sequenceFiles = [];
+            localImageFiles.forEach(file => {
+                if (sequenceKeywords.some(keyword => file.includes(keyword))) {
+                    sequenceFiles.push(file);
+                } else {
+                    poseFiles.push(file);
+                }
+            });
+
             // ------------------- //
             // --- DOM ELEMENTS --- //
             // ------------------- //
             const sessionDisplay = document.getElementById('session-display');
             const poseCountButtonsContainer = document.getElementById('pose-count-buttons');
+            const sequenceButtonsContainer = document.getElementById('sequence-buttons');
             const poseCountValueInput = document.getElementById('pose-count-value');
             const imageOverlay = document.getElementById('image-overlay');
             const overlayImg = document.getElementById('overlay-img');
             const aboutBtn = document.getElementById('about-btn');
             const aboutOverlay = document.getElementById('about-overlay');
             const aboutContent = document.querySelector('.about-content');
-
             const versionNumberSpan = document.getElementById('version-number');
 
             // ------------------- //
@@ -801,23 +867,34 @@ const localImageFiles = [
                     generateSession();
                 }
             });
+
+            sequenceButtonsContainer.addEventListener('click', (e) => {
+                const targetButton = e.target.closest('.sequence-btn');
+                if (targetButton) {
+                    const imageSrc = targetButton.dataset.src;
+                    if (imageSrc) {
+                        overlayImg.src = imageSrc;
+                        overlayImg.alt = targetButton.textContent;
+                        imageOverlay.classList.add('show');
+                        document.body.classList.add('overlay-open');
+                    }
+                }
+            });
             
-            // Event delegation for opening the image overlay
             sessionDisplay.addEventListener('click', (e) => {
                 if (e.target.classList.contains('pose-image')) {
                     overlayImg.src = e.target.src;
+                    overlayImg.alt = e.target.alt;
                     imageOverlay.classList.add('show');
                     document.body.classList.add('overlay-open');
                 }
             });
 
-            // Event listener for closing the image overlay
             imageOverlay.addEventListener('click', () => {
                 imageOverlay.classList.remove('show');
                 document.body.classList.remove('overlay-open');
             });
 
-            // --- About Overlay Listeners ---
             aboutBtn.addEventListener('click', () => {
                 aboutOverlay.classList.add('show');
                 document.body.classList.add('overlay-open');
@@ -828,23 +905,31 @@ const localImageFiles = [
                 document.body.classList.remove('overlay-open');
             });
 
-            
-if (versionNumberSpan) {
-    versionNumberSpan.textContent = `v.${localImageFiles.length}`;
-}
-
             // ------------------- //
             // --- CORE FUNCTIONS --- //
             // ------------------- //
+            function populateSequenceButtons() {
+                sequenceFiles.forEach(filePath => {
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'sequence-btn';
+                    button.dataset.src = filePath;
+
+                    const fileName = filePath.split('/').pop();
+                    const sequenceName = fileName.substring(0, fileName.lastIndexOf('.')).replace(/-/g, ' ');
+                    
+                    button.textContent = sequenceName;
+                    sequenceButtonsContainer.appendChild(button);
+                });
+            }
 
             function generateSession() {
                 const poseCount = parseInt(poseCountValueInput.value);
-                if (isNaN(poseCount) || poseCount <= 0) return; // Don't generate if count is invalid
+                if (isNaN(poseCount) || poseCount <= 0) return;
 
-                sessionDisplay.innerHTML = ''; // Clear the display
+                sessionDisplay.innerHTML = ''; 
 
-                // Fisher-Yates shuffle for a truly random sequence
-                const shuffledFiles = [...localImageFiles];
+                const shuffledFiles = [...poseFiles];
                 for (let i = shuffledFiles.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [shuffledFiles[i], shuffledFiles[j]] = [shuffledFiles[j], shuffledFiles[i]];
@@ -863,11 +948,9 @@ if (versionNumberSpan) {
                 card.className = 'pose-card';
                 card.style.animationDelay = `${index * 100}ms`;
 
-                // Extract name from file path (e.g., "yogaposes/cat cow.jpg" -> "cat cow")
                 const fileName = filePath.split('/').pop();
-                const poseName = fileName.substring(0, fileName.lastIndexOf('.'));
+                const poseName = fileName.substring(0, fileName.lastIndexOf('.')).replace(/-/g, ' ');
 
-                // Create card structure
                 const imageContainer = document.createElement('div');
                 imageContainer.className = 'card-image-container';
 
@@ -880,8 +963,16 @@ if (versionNumberSpan) {
                 
                 const nameHeader = document.createElement('h3');
                 nameHeader.className = 'pose-name';
-                nameHeader.textContent = poseName;
 
+                const link = document.createElement('a');
+                const searchQuery = encodeURIComponent(poseName + " yoga");
+                link.href = `https://www.youtube.com/results?search_query=${searchQuery}`;
+                link.target = '_blank';
+                link.rel = 'noopener noreferrer';
+                link.textContent = poseName;
+                link.title = `Search for "${poseName}" on YouTube`;
+
+                nameHeader.appendChild(link);
                 card.appendChild(imageContainer);
                 card.appendChild(nameHeader);
                 
@@ -891,8 +982,11 @@ if (versionNumberSpan) {
             // ------------------- //
             // --- INITIALIZATION --- //
             // ------------------- //
-            
-            // No initialization needed; session generation is now user-triggered.
+            populateSequenceButtons();
+
+            if (versionNumberSpan) {
+                versionNumberSpan.textContent = `| ${poseFiles.length} Poses | ${sequenceFiles.length} Sequences`;
+            }
 
         });
     </script>
