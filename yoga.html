@@ -553,9 +553,10 @@
         </main>
 
         <footer>
-            <p>
-                Created with love for well-being. Images are sourced from freely available public content via Google, and are used solely for the purpose of illustrating the poses 🙏
-            </p>
+       <p>
+    Created with love for well-being. Images are sourced from freely available public content via Google, and are used solely for the purpose of illustrating the poses 🙏
+    <span id="version-number"></span>
+</p>
             <a href="mailto:raffael.jomphe@gmail.com" class="about-button">Contact 📧</a>
         </footer>
     </div>
@@ -566,7 +567,7 @@
 
     <div id="about-overlay" class="about-overlay">
         <div class="about-content">
-            <p>"Serendipity Yoga" is a minimalistic random yoga session generator designed to bring variety and playfulness to your practice. Simply choose how many poses you'd like, breathe deeply, and enjoy exploring the sequence.<br><br> This tool celebrates the spirit of serendipity—finding joy in the unexpected—so the sequences may obviously sometimes be too challenging or not suited to your personal needs or physical limitations. You can regenerate them as often as you like to discover new or better combinations.<br><br> Think of it as an exploration tool, offering endless unique sessions drawn from a curated library of nearly 200 (and growing) yoga poses and a few sequences. Enjoy your practice, stay curious, and above all, remember to listen to your body.</p>
+            <p>"Serendipity Yoga" is a minimalistic random yoga session generator designed to bring variety and playfulness to your practice. Simply choose how many poses you'd like, breathe deeply, and enjoy exploring the sequence.<br><br> This tool celebrates the spirit of serendipity—finding joy in the unexpected—so the sequences may obviously sometimes be too challenging or not suited to your personal needs or physical limitations. You can regenerate them as often as you like to discover new or better combinations.<br><br> Think of it as an exploration tool, offering endless unique sessions drawn from a curated library of nearly 200 yoga poses and a few sequences. Enjoy your practice, stay curious, and above all, remember to listen to your body.</p>
         </div>
     </div>
 
@@ -788,6 +789,8 @@ const localImageFiles = [
             const aboutOverlay = document.getElementById('about-overlay');
             const aboutContent = document.querySelector('.about-content');
 
+            const versionNumberSpan = document.getElementById('version-number');
+
             // ------------------- //
             // --- EVENT LISTENERS --- //
             // ------------------- //
@@ -828,7 +831,9 @@ const localImageFiles = [
             });
 
             
-
+if (versionNumberSpan) {
+    versionNumberSpan.textContent = `v.${localImageFiles.length}`;
+}
 
             // ------------------- //
             // --- CORE FUNCTIONS --- //
