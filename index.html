@@ -12,7 +12,6 @@
     
     <style>
         :root {
-            /* Changed purple tones to blue */
             --primary: #3b82f6; /* Blue 500 */
             --primary-light: #60a5fa; /* Blue 400 */
             --primary-dark: #1d4ed8; /* Blue 700 */
@@ -34,13 +33,12 @@
 
         html, body {
             height: 100vh;
-            height: 100dvh;
-            overflow: hidden;
+            height: 100dvh; /* Use dynamic viewport height */
+            overflow: hidden; /* Prevent all scrolling */
             font-family: 'Inter', sans-serif;
         }
 
         body {
-            /* Replaced purple in gradient with a dark blue */
             background: linear-gradient(-45deg, #0f0f23, #1a1a3a, #1c2b5c, #1e293b);
             background-size: 400% 400%;
             animation: gradientShift 15s ease infinite;
@@ -61,67 +59,66 @@
             flex-direction: column;
             position: relative;
             z-index: 2;
-            padding: 1rem;
+            /* Use clamp() with vmin for fully fluid padding */
+            padding: clamp(0.5rem, 3vmin, 2rem);
         }
 
         /* Header - compact and responsive */
         .header {
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 700;
-            font-size: clamp(1.5rem, 4vh, 3rem);
+            /* Use clamp() with vmin for fluid font sizing */
+            font-size: clamp(1.5rem, 5vmin, 3.5rem);
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             text-align: center;
             letter-spacing: -0.02em;
-            margin-bottom: 0.5rem;
+            /* Use clamp() for fluid margins */
+            margin-bottom: clamp(0.25rem, 1.5vh, 1rem);
         }
 
         .subtitle {
-            font-size: clamp(0.8rem, 2vh, 1.2rem);
+            font-size: clamp(0.8rem, 2vmin, 1.2rem);
             color: var(--text-secondary);
             text-align: center;
-            margin-bottom: 1rem;
+            margin-bottom: clamp(0.5rem, 2.5vh, 1.5rem);
             font-weight: 300;
             letter-spacing: 0.05em;
         }
 
         /* Grid layout - perfectly fills remaining space */
         .projects-grid {
-            flex: 1;
+            flex: 1; /* This is crucial for filling space */
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            grid-template-rows: repeat(4, 1fr);
-            gap: 0.75rem;
-            min-height: 0;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            /* Use clamp() with vmin for fluid gaps */
+            gap: clamp(0.5rem, 2vmin, 1.5rem);
+            min-height: 0; /* Prevent grid from overflowing its container */
         }
 
         @media (min-width: 640px) {
             .projects-grid {
-                grid-template-columns: repeat(4, 1fr);
-                grid-template-rows: repeat(2, 1fr);
-                gap: 1rem;
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(3, 1fr);
             }
         }
 
         @media (min-width: 1024px) {
-            .projects-grid {
-                gap: 1.5rem;
-            }
-            
             .main-container {
                 padding: 2rem;
             }
         }
 
-        /* Cards - uniform size, no hover effects */
+        /* Cards - uniform size */
         .project-card {
             position: relative;
             backdrop-filter: blur(20px);
             background: var(--glass);
             border: 1px solid var(--glass-border);
-            border-radius: clamp(12px, 2vh, 20px);
+            border-radius: clamp(12px, 2vmin, 20px);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -132,9 +129,10 @@
             transition: all 0.3s ease;
             box-shadow: 
                 0 8px 32px -8px rgba(0, 0, 0, 0.3),
-                0 4px 16px -4px rgba(59, 130, 246, 0.2), /* Adjusted shadow color to match new blue */
+                0 4px 16px -4px rgba(59, 130, 246, 0.2),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            padding: clamp(0.5rem, 2vh, 1.5rem);
+            /* Use clamp() with vmin for fluid padding */
+            padding: clamp(0.5rem, 2vmin, 1.5rem);
         }
 
         .project-card::before {
@@ -159,20 +157,22 @@
             box-shadow: 
                 0 0 0 2px var(--primary),
                 0 8px 32px -8px rgba(0, 0, 0, 0.3),
-                0 4px 16px -4px rgba(59, 130, 246, 0.2); /* Adjusted shadow color */
+                0 4px 16px -4px rgba(59, 130, 246, 0.2);
         }
 
         /* Icon styling - responsive */
         .project-icon {
-            font-size: clamp(1.5rem, 4vh, 2.5rem);
-            margin-bottom: clamp(0.25rem, 1vh, 0.75rem);
+            /* Use clamp() with vmin for fluid icon size */
+            font-size: clamp(1.2rem, 6vmin, 3rem);
+            margin-bottom: clamp(0.25rem, 1.5vmin, 0.75rem);
             display: block;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
         }
 
         .project-title {
             font-family: 'Space Grotesk', sans-serif;
-            font-size: clamp(0.7rem, 1.8vh, 1.1rem);
+            /* Use clamp() with vmin for fluid title size */
+            font-size: clamp(0.6rem, 2.2vmin, 1.1rem);
             font-weight: 600;
             color: var(--text-primary);
             line-height: 1.2;
@@ -182,12 +182,10 @@
 
         /* Loading animation */
         .fade-in {
-            /* Shortened animation duration */
             animation: fadeInUp 0.5s ease forwards;
             opacity: 0;
         }
         
-        /* Reduced animation delays for a faster sequence */
         .fade-in:nth-child(1) { animation-delay: 0.05s; }
         .fade-in:nth-child(2) { animation-delay: 0.1s; }
         .fade-in:nth-child(3) { animation-delay: 0.15s; }
@@ -196,6 +194,7 @@
         .fade-in:nth-child(6) { animation-delay: 0.3s; }
         .fade-in:nth-child(7) { animation-delay: 0.35s; }
         .fade-in:nth-child(8) { animation-delay: 0.4s; }
+        .fade-in:nth-child(9) { animation-delay: 0.45s; }
 
         @keyframes fadeInUp {
             from {
@@ -208,28 +207,11 @@
             }
         }
 
-        /* Mobile optimizations */
-        @media (max-height: 600px) {
-            .header {
-                margin-bottom: 0.25rem;
-            }
-            
-            .subtitle {
-                margin-bottom: 0.5rem;
-                font-size: 0.8rem;
-            }
-            
-            .projects-grid {
-                gap: 0.5rem;
-            }
-        }
-
         /* Ultra-wide screen optimization */
         @media (min-width: 1400px) and (min-height: 800px) {
             .main-container {
                 max-width: 1200px;
                 margin: 0 auto;
-                padding: 3rem;
             }
         }
     </style>
@@ -238,7 +220,6 @@
     <div class="main-container">
         <div class="header-section">
             <h1 class="header">RGJP Navigator</h1>
-            
         </div>
 
         <div class="projects-grid">
@@ -277,6 +258,11 @@
                 <span class="project-title">Mooji Satsangs</span>
             </a>
 
+            <a href="yoga.html" class="project-card fade-in" tabindex="0" aria-label="Serendipity Yoga">
+                <span class="project-icon">🕉️</span>
+                <span class="project-title">Serendipity Yoga</span>
+            </a>
+
             <a href="cv.html" class="project-card fade-in" tabindex="0" aria-label="CV">
                 <span class="project-icon">📄</span>
                 <span class="project-title">CV</span>
@@ -285,12 +271,10 @@
     </div>
 
     <script>
-        // Simple click feedback without hover dependency
         document.addEventListener('DOMContentLoaded', function() {
             const cards = document.querySelectorAll('.project-card');
             
             cards.forEach(card => {
-                // Keyboard navigation enhancement
                 card.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
@@ -299,17 +283,6 @@
                 });
             });
         });
-
-        // Prevent any scrolling behavior
-        document.addEventListener('wheel', function(e) {
-            e.preventDefault();
-        }, { passive: false });
-
-        document.addEventListener('touchmove', function(e) {
-            if (e.touches.length > 1) {
-                e.preventDefault();
-            }
-        }, { passive: false });
     </script>
 </body>
 </html>
