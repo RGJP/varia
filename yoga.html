@@ -653,9 +653,14 @@
 
         <footer>
             <p>
-                Created with love for well-being. Images are sourced from freely available public content via Google,
-                and are used solely for the purpose of illustrating the poses 🙏
-                <span id="version-number"></span>
+                🌸<br><br>
+                Created with love for well-being.<br>
+                Images have been sourced from publicly available content via Google and are used here strictly for educational and illustrative purposes only.<br>
+                No copyright infringement is intended, and there is no commercial use or profit derived from these materials.<br>
+                This tool will always be free and ad-free.<br>
+                <br>
+                🙏
+            
             </p>
             <a href="mailto:raffael.jomphe@gmail.com" class="about-button">Contact 📧</a>
         </footer>
@@ -671,9 +676,9 @@
                 playfulness to your practice. Simply choose how many poses you'd like, breathe deeply, and enjoy
                 exploring the sequence.<br><br> This tool celebrates the spirit of serendipity—finding joy in the
                 unexpected—so the sequences may obviously sometimes be too challenging or not suited to your personal
-                needs or physical limitations. You can regenerate them as often as you like to discover new or better
+                needs or abilities. You can regenerate them as often as you like to discover new or better
                 combinations.<br><br> Think of it as an exploration tool, offering endless unique sessions drawn from a
-                curated library of nearly 200 yoga poses and a few sequences. Enjoy your practice, stay curious, and
+                growing library of nearly 200 yoga poses and a few sequences. Clicking a pose name will open a YouTube search for that pose, providing additional instructions. Enjoy your practice, stay curious, and
                 above all, remember to listen to your body.</p>
         </div>
     </div>
@@ -903,7 +908,7 @@
             const aboutBtn = document.getElementById('about-btn');
             const aboutOverlay = document.getElementById('about-overlay');
             const aboutContent = document.querySelector('.about-content');
-            const versionNumberSpan = document.getElementById('version-number');
+         
 
             // ------------------- //
             // --- EVENT LISTENERS --- //
@@ -1034,9 +1039,7 @@
             // ------------------- //
             populateSequenceButtons();
 
-            if (versionNumberSpan) {
-                versionNumberSpan.textContent = `| ${poseFiles.length} Poses | ${sequenceFiles.length} Sequences`;
-            }
+          
 
         });
     </script>
