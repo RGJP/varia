@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Serendipity Mudra 🤚</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ------------------- */
+        /* --- Global Styles & Variables --- */
+        /* ------------------- */
+        :root {
+            --color-background: #F8F5F2;
+            --color-text-primary: #3D405B;
+            --color-text-secondary: #5c6081;
+            --color-primary-accent: #E07A5F; /* Terracotta orange */
+            --color-primary-accent-dark: #c9684c; /* Darker orange */
+            --color-secondary-accent: #E9C46A; /* Saffron/gold */
+            --color-card-background: #FFFFFF;
+            --color-border: #ddd;
+            --color-input-background: #fff;
+            --color-footer-border: #e0e0e0;
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.05);
+            --shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.1);
+            --border-radius: 12px;
+            --font-family-main: 'Inter', sans-serif;
+        }
+
+        [data-theme="dark"] {
+            --color-background: #1A1A2E;
+            --color-text-primary: #EAEAEA;
+            --color-text-secondary: #a7a9be;
+            --color-primary-accent: #E07A5F;
+            --color-card-background: #162447;
+            --color-border: #4a4a6a;
+            --color-input-background: #1f4068;
+            --color-footer-border: #3a3a5a;
+            --shadow-light: 0 4px 15px rgba(0, 0, 0, 0.2);
+            --shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-family-main);
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        body.overlay-open {
+            overflow: hidden; /* Prevent scrolling when overlay is open */
+        }
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .footer-link {
+  color: #888888; /* A soft, medium gray color */
+  text-decoration: none; /* Removes the underline */
+  font-weight: bold; /* Makes the link text stand out a bit */
+  transition: color 0.3s ease; /* Adds a smooth color change effect */
+}
+
+/* This rule applies when you hover your mouse over the link */
+.footer-link:hover {
+  color: #555555; /* A darker gray for the hover effect */
+  text-decoration: underline; /* Optional: adds underline back on hover */
+}
+        
+        .header {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 10px 0;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: 2px solid var(--color-primary-accent);
+            color: var(--color-primary-accent);
+            border-radius: 50px;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--color-primary-accent);
+            color: white;
+        }
+
+        .title {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--color-text-primary);
+            letter-spacing: -1px;
+        }
+        
+        .logo-highlight {
+            color: var(--color-primary-accent);
+        }
+
+        .about-button {
+            display: inline-block;
+            background-color: transparent;
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+            padding: 0.5rem 1.25rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-family: var(--font-family-main);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            margin-top: -0.5rem; /* Adjust spacing in header */
+        }
+
+        .about-button:hover {
+            background-color: var(--color-primary-accent);
+            border-color: var(--color-primary-accent);
+            color: white;
+            text-decoration: none;
+        }
+
+        .explore-btn {
+            background: linear-gradient(135deg, var(--color-primary-accent), var(--color-primary-accent-dark));
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px var(--shadow-light);
+            margin: 40px 0;
+        }
+
+        .explore-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--shadow-medium);
+        }
+
+        .mudra-card {
+            background: var(--color-card-background);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            margin: 30px 0;
+            box-shadow: var(--shadow-medium);
+            border: 1px solid var(--color-border);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            width: 100%;
+        }
+
+        .mudra-card.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .mudra-image-container {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .mudra-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: var(--border-radius);
+            object-fit: contain; /* Ensures image scales without being cropped */
+            display: block;
+            margin: 0 auto;
+        }
+        
+        .mudra-name {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--color-primary-accent);
+            margin-bottom: 15px;
+        }
+
+        .mudra-description {
+            font-size: 1rem;
+            line-height: 1.8;
+            color: var(--color-text-secondary);
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: left;
+        }
+
+        .mudra-good-for {
+            margin-top: 25px;
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+            background-color: rgba(0, 0, 0, 0.02);
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid var(--color-primary-accent);
+            text-align: left;
+        }
+        
+        [data-theme="dark"] .mudra-good-for {
+             background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .mudra-good-for strong {
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .mudra-prayer {
+            margin-top: 20px;
+            color: var(--color-text-secondary);
+            font-size: 1rem;
+            font-style: italic;
+            background-color: rgba(0, 0, 0, 0.02);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--color-secondary-accent);
+            text-align: left;
+            line-height: 1.7;
+        }
+
+        [data-theme="dark"] .mudra-prayer {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        /* ------------------- */
+        /* --- About Overlay --- */
+        /* ------------------- */
+        .about-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            cursor: pointer;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            padding: 1rem;
+        }
+
+        .about-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .about-content {
+            background-color: var(--color-card-background);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            max-width: 600px;
+            width: 100%;
+            box-shadow: var(--shadow-medium);
+            cursor: default;
+            animation: popIn 0.4s ease-out;
+            color: var(--color-text-secondary);
+            line-height: 1.7;
+            text-align: left;
+        }
+
+        .about-content p {
+            font-size: 1rem;
+        }
+
+        /* ------------------- */
+        /* --- Animations --- */
+        /* ------------------- */
+        @keyframes popIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--color-footer-border);
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        footer p {
+            margin-bottom: 1rem;
+        }
+        
+        footer .about-button {
+            margin-top: 1rem;
+        }
+
+        /* ------------------- */
+        /* --- Responsive Design --- */
+        /* ------------------- */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+            <h1 class="title">Serendipity<span class="logo-highlight"> Mudra</span></h1>
+            <button id="about-btn" class="about-button">About ℹ️</button>
+        </div>
+        
+        <button class="explore-btn" onclick="exploreMudra()">Explore🤚</button>
+        
+        <div id="mudra-container"></div>
+    </div>
+    
+    <div id="about-overlay" class="about-overlay">
+        <div class="about-content">
+<p>
+Simply click the 'Explore 🤚' button to receive a mudra from a library of over 50 options. 
+Practicing mudras is simple: get in a comfortable position with your spine straight and your shoulders relaxed. 
+Gently bring your fingers into the chosen mudra without straining—keep the touch light and natural. 
+Close your eyes, breathe slowly and evenly, and hold the mudra for 5–15 minutes, or as long as feels comfortable. 
+Stay focused on your breath and the energy or meaning of the mudra, allowing your mind to calm. 
+Consistency matters more than duration, so practicing regularly—even daily—can help you experience the benefits more deeply.
+</p>
+        </div>
+    </div>
+
+    <footer>
+       <p>
+              🪷<br><br>
+                Created with love for well-being.<br>
+                Images have been sourced from publicly available content via Google and are used here strictly for educational and illustrative purposes only.<br>
+                No copyright infringement is intended, and there is no commercial use or profit derived from these materials.<br>
+                This tool will always be free, with no ads.<br>
+                <br>
+See also <a href="https://rgjp.github.io/varia/yoga.html" target="_blank" rel="noopener noreferrer" class="footer-link">'Serendipity Yoga'</a>, the companion app to Serendipity Mudra.<br><br>                🙏
+            
+        </p>
+        <a href="mailto:raffael.jomphe@gmail.com" class="about-button">Contact 📧</a>
+    </footer>
+
+    <script>
+        // IIFE to set theme instantly
+        (function () {
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.body.setAttribute('data-theme', 'dark');
+            }
+        })();
+
+        // --- About Overlay Logic ---
+        const aboutBtn = document.getElementById('about-btn');
+        const aboutOverlay = document.getElementById('about-overlay');
+
+        aboutBtn.addEventListener('click', () => {
+            aboutOverlay.classList.add('show');
+            document.body.classList.add('overlay-open');
+        });
+
+        aboutOverlay.addEventListener('click', (e) => {
+            // Hide only if the overlay background itself is clicked, not the content
+            if (e.target === aboutOverlay) {
+                aboutOverlay.classList.remove('show');
+                document.body.classList.remove('overlay-open');
+            }
+        });
+
+
+        const mudras = [
+            {
+                name: "Aakash Mudra",
+                imageSrc: "mudras/aakash.jpg",
+                description: "This gesture, joining the thumb and middle finger, is associated with the space element (Aakash), enhancing inner space and consciousness.",
+                goodFor: "developing intuition, detoxifying the body, and relieving congestion or a feeling of heaviness.",
+                prayer: '"I open myself to the vastness of the universe. I release what no longer serves me and create space for clarity and wisdom."'
+            },
+            {
+                name: "Abhaya Mudra",
+                imageSrc: "mudras/abhaya.jpg",
+                description: "A gesture of fearlessness, protection, and peace. It represents reassurance and safety, conveying a message to 'fear not'.",
+                goodFor: "overcoming fear, reducing anxiety, and finding inner peace.",
+                prayer: '"I am safe and protected. I release all fear and walk forward with courage and calm."'
+            },
+            {
+                name: "Adhi Mudra",
+                imageSrc: "mudras/adhi.jpg",
+                description: "The 'primal' gesture, where the thumb is tucked into the palm and covered by the other fingers, promoting security and inner quiet.",
+                goodFor: "calming the nervous system, reducing snoring, and improving the flow of oxygen to the brain.",
+                prayer: '"I connect with my primal self, finding stillness and security within. My breath is calm, my mind is at peace."'
+            },
+            {
+                name: "Anjali Mudra",
+                imageSrc: "mudras/anjali.jpg",
+                description: "A gesture of reverence, greeting, and prayer, with palms pressed together at the heart center. It balances the two hemispheres of the brain.",
+                goodFor: "promoting respect and gratitude, calming the mind, and centering one's energy.",
+                prayer: '"I honor the divine light within me and within all beings. My heart is filled with gratitude and peace."'
+            },
+            {
+                name: "Apan Vayu Mudra",
+                imageSrc: "mudras/apan vayu.jpg",
+                description: "Also known as the Mudra of the Heart, this is a powerful healing gesture for regulating the heart and circulatory system.",
+                goodFor: "strengthening the heart, regulating blood pressure, and relieving indigestion or heartburn.",
+                prayer: '"My heart is strong and my spirit is resilient. I release all tension and welcome healing energy."'
+            },
+            {
+                name: "Atmanjali Mudra",
+                imageSrc: "mudras/atmanjali.jpg",
+                description: "A gesture of reverence offered from the soul ('Atma'). It emphasizes a deep, personal connection to the divine.",
+                goodFor: "centering oneself, cultivating inner peace, and expressing deep, soul-felt gratitude.",
+                prayer: '"From the depth of my soul, I offer reverence and love. I am centered, balanced, and at peace."'
+            },
+            {
+                name: "Bhairava Mudra",
+                imageSrc: "mudras/bhairava.jpg",
+                description: "A gesture of universal consciousness, where the right hand rests on top of the left in the lap, unifying male and female energies.",
+                goodFor: "unifying the left and right brain, promoting tranquility, and deepening meditation.",
+                prayer: '"I unite the dualities within me. I am whole, balanced, and one with universal consciousness."'
+            },
+            {
+                name: "Bhramara Mudra",
+                imageSrc: "mudras/bhramara.jpg",
+                description: "The 'Bee Gesture,' named for its humming sound practice. It is used to combat allergic reactions and strengthen immunity.",
+                goodFor: "relieving allergies, strengthening the immune system, and alleviating respiratory issues.",
+                prayer: '"Like the bee transforms nectar, I transform challenges into strength. My body\'s defenses are strong and vital."'
+            },
+            {
+                name: "Buddhi Mudra",
+                imageSrc: "mudras/buddhi.jpg",
+                description: "The gesture of mental clarity. It connects the thumb (fire) with the little finger (water) to balance energies and improve intuition.",
+                goodFor: "enhancing communication skills, promoting mental clarity, and balancing bodily fluids.",
+                prayer: '"My mind is clear and my intuition is strong. I communicate my truth with wisdom and grace."'
+            },
+            {
+                name: "Dharmachakra Mudra",
+                imageSrc: "mudras/dharmachakra.jpg",
+                description: "Represents the 'turning of the wheel of Dharma,' symbolizing the teaching of the cosmic order as taught by the Buddha.",
+                goodFor: "promoting concentration, understanding the flow of life, and facilitating teaching.",
+                prayer: '"I embrace the unfolding of my life\'s purpose. I am a willing student of the universe\'s wisdom."'
+            },
+            {
+                name: "Dhyana Mudra",
+                imageSrc: "mudras/Bodhisattva Dhyan.jpg",
+                description: "The gesture of meditation. Hands rest on the lap, right on left, with thumbs touching, forming a triangle of spiritual fire.",
+                goodFor: "deepening concentration, promoting inner calm, and achieving profound meditation.",
+                prayer: '"I quiet my mind and turn my awareness inward. In this stillness, I find clarity, wisdom, and profound peace."'
+            },
+            {
+                name: "Dhyani Mudra",
+                imageSrc: "mudras/dhyani.jpg",
+                description: "The gesture of meditation and contemplation, where hands rest in the lap to create a bowl of energy for deep inner work.",
+                goodFor: "achieving deep states of meditation, cultivating tranquility, and balancing the mind.",
+                prayer: '"I create a space of stillness within me. My mind is a calm vessel, open to profound peace and insight."'
+            },
+            {
+                name: "Ganesha Mudra",
+                imageSrc: "mudras/ganesha.jpg",
+                description: "Named for the remover of obstacles, Ganesha. This gesture involves clasping the hands in front of the chest and pulling.",
+                goodFor: "strengthening the heart, relieving tension in the shoulders, and cultivating courage to overcome difficulties.",
+                prayer: '"I possess the strength to overcome all obstacles. My heart is open, strong, and courageous."'
+            },
+            {
+                name: "Garuda Mudra",
+                imageSrc: "mudras/garuda.jpg",
+                description: "Named after the mythical eagle, this gesture represents freedom and power. It is known to balance the Vata (air) energy.",
+                goodFor: "cultivating inner strength, reducing fatigue, and balancing energy flows.",
+                prayer: '"I invoke the spirit of the eagle within me. I am free, powerful, and balanced. I soar above all obstacles."'
+            },
+            {
+                name: "Granthita Mudra",
+                imageSrc: "mudras/granthita.jpg",
+                description: "The 'Knot' gesture. This mudra is used to help release deep-seated or 'knotted' physical, mental, and emotional tensions.",
+                goodFor: "untying psychological knots, releasing stubborn tension, and overcoming limiting beliefs.",
+                prayer: '"I gently untie the knots within my being. I release old patterns and create space for freedom and flow."'
+            },
+            {
+                name: "Hakini Mudra",
+                imageSrc: "mudras/hakini.jpg",
+                description: "The gesture for the mind, where all fingertips of both hands touch. It integrates the left and right hemispheres of the brain.",
+                goodFor: "improving memory and concentration, enhancing creativity, and promoting clear thinking.",
+                prayer: '"I bring my thoughts into perfect focus. My mind is a powerful, integrated tool for clarity and creation."'
+            },
+            {
+                name: "Hridaya Mudra",
+                imageSrc: "mudras/hridaya.jpg",
+                description: "The 'Heart Gesture,' which diverts the flow of prana from the hands to the heart center, nourishing the heart.",
+                goodFor: "releasing pent-up emotions, improving cardiovascular health, and fostering emotional balance.",
+                prayer: '"I release all that burdens my heart. I invite love, compassion, and healing into my emotional center."'
+            },
+            {
+                name: "Jalodar Nashak Mudra",
+                imageSrc: "mudras/jalodar nashak.jpg",
+                description: "The 'Water-Reducing Gesture.' It helps to balance the water element in the body by pressing the little finger at the base of the thumb.",
+                goodFor: "reducing excess water retention, swelling, or bloating, and purifying bodily fluids.",
+                prayer: '"I bring balance to the waters within me. My body releases excess and finds its natural, healthy equilibrium."'
+            },
+            {
+                name: "Jnana Mudra",
+                imageSrc: "mudras/jnana.jpg",
+                description: "The gesture of knowledge or wisdom. The connection between thumb (divine) and index finger (individual self) forms a circuit of wisdom.",
+                goodFor: "improving concentration, enhancing memory, calming the mind, and alleviating stress.",
+                prayer: '"I am open to receiving universal wisdom. My mind is calm, and my inner knowledge awakens."'
+            },
+            {
+                name: "Kalesvara Mudra",
+                imageSrc: "mudras/kalesvara.jpg",
+                description: "Named after Kalesvara, the lord of time. This gesture is used to calm the mind and control the incessant flow of thoughts.",
+                goodFor: "calming racing thoughts, changing character traits, and improving concentration.",
+                prayer: '"I am the master of my time and my thoughts. I find stillness in the present moment, allowing peace to quiet my mind."'
+            },
+            {
+                name: "Ksepana Mudra",
+                imageSrc: "mudras/ksepana.jpg",
+                description: "The gesture of 'letting go' and sprinkling nectar. It helps in releasing negative energy and absorbing positive energy.",
+                goodFor: "letting go of stress and negativity, stimulating detoxification, and uplifting the spirit.",
+                prayer: '"I willingly release all that no longer serves me. I let go of negativity and create space for positive energy."'
+            },
+            {
+                name: "Kubera Mudra",
+                imageSrc: "mudras/kubera.jpg",
+                description: "The gesture of wealth and wish-fulfillment. It unites the fingers of Mars, Jupiter, and Saturn to powerfully focus intention.",
+                goodFor: "focusing intention, manifesting goals, creating a sense of abundance, and opening sinuses.",
+                prayer: '"I focus my energy to manifest my desires. The universe provides for me in abundance."'
+            },
+            {
+                name: "Kundalini Mudra",
+                imageSrc: "mudras/kundalini.jpg",
+                description: "This mudra represents the awakening of Kundalini energy, the primal life force. It is also associated with sensual union.",
+                goodFor: "awakening creative potential, enhancing intimacy, and unifying inner energies.",
+                prayer: '"I awaken the divine creative energy that resides within me. I unite my physical and spiritual selves with love and awareness."'
+            },
+            {
+                name: "Kurma Mudra",
+                imageSrc: "mudras/turtle in its shell.jpg",
+                description: "The 'Turtle' gesture, which symbolizes withdrawing the senses from the outside world to find inner peace and security.",
+                goodFor: "calming the mind, conserving energy, protecting oneself from external stimuli, and promoting inner security.",
+                prayer: '"Like a turtle in its shell, I withdraw my senses from the outer world. I find safety, peace, and stillness within."'
+            },
+            {
+                name: "Linga Mudra",
+                imageSrc: "mudras/linga.jpg",
+                description: "A gesture that generates heat in the body. It represents the masculine energy of Shiva and boosts the body's defenses.",
+                goodFor: "strengthening the immune system, combating colds and coughs, and increasing vitality.",
+                prayer: '"I ignite the fire of vitality within me. My body is strong, warm, and resilient against illness."'
+            },
+            {
+                name: "Maha Sacral Mudra",
+                imageSrc: "mudras/maha sacral.jpg",
+                description: "A gesture that balances the energy in the lower abdomen and the sacral chakra, the seat of creativity and emotions.",
+                goodFor: "relieving menstrual discomfort, balancing creative and sexual energies, and soothing the lower back.",
+                prayer: '"I honor the creative and vital energy within my sacred center. I am balanced, fluid, and creative."'
+            },
+            {
+                name: "Mahasirs Mudra",
+                imageSrc: "mudras/mahasirsa.jpg",
+                description: "The 'Great Head' gesture. It is a highly effective mudra for relieving all types of headaches and balancing energy in the head.",
+                goodFor: "relieving tension headaches and migraines, calming the senses, and reducing sinus pressure.",
+                prayer: '"I release all tension from my head and mind. A calming energy flows through me, bringing balance, clarity, and ease."'
+            },
+            {
+                name: "Mano Fico Gesture",
+                imageSrc: "mudras/figa.jpg",
+                description: "A protective folk gesture where the thumb is clenched between the index and middle fingers to ward off negative energy.",
+                goodFor: "protecting one's energy, deflecting negativity, and creating a personal boundary of strength.",
+                prayer: '"I am shielded from negativity. My personal energy is protected, and I move through the world with strength."'
+            },
+            {
+                name: "Matangi Mudra",
+                imageSrc: "mudras/matangi.jpg",
+                description: "This gesture of inner harmony and royal dominion is associated with the solar plexus, strengthening digestion and expression.",
+                goodFor: "improving digestion, promoting inner harmony, removing obstacles, and enhancing self-confidence.",
+                prayer: '"I harmonize all aspects of my being. I have the power to overcome any obstacle and I radiate confidence."'
+            },
+            {
+                name: "Merudanda Mudra",
+                imageSrc: "mudras/merudanda.jpg",
+                description: "The 'Spinal Column' gesture, where the thumbs are extended upwards to promote energy flow and awareness along the spine.",
+                goodFor: "promoting spinal health, improving posture, and increasing vitality and breath awareness.",
+                prayer: '"My spine is aligned and strong. Energy flows freely through me, filling me with vitality and awareness."'
+            },
+            {
+                name: "Mukula Mudra",
+                imageSrc: "mudras/mukula.jpg",
+                description: "The 'Bud' gesture, where all fingertips come together. It can be placed on parts of the body to direct healing energy.",
+                goodFor: "directing healing energy, balancing the five elements, and promoting rejuvenation.",
+                prayer: '"I direct healing energy to where it is needed most. My entire being is balanced and rejuvenated."'
+            },
+            {
+                name: "Muladhara Mudra",
+                imageSrc: "mudras/muladhara.jpg",
+                description: "The 'Root Chakra' gesture. It connects one to the energy of the earth, activating the root chakra for stability and security.",
+                goodFor: "promoting feelings of stability, grounding one's energy, and strengthening the connection to the earth.",
+                prayer: '"I am grounded, safe, and secure. My roots are deep in the earth, and I draw strength from my foundation."'
+            },
+            {
+                name: "Mushti Mudra",
+                imageSrc: "mudras/mushti.jpg",
+                description: "The 'Fist' gesture, a symbol of determination and strength, used to release suppressed anger and frustration in a healthy way.",
+                goodFor: "releasing pent-up emotions, stimulating digestion, and courageously facing situations.",
+                prayer: '"I release suppressed emotions in a healthy way. I have the courage to face any challenge with resolve."'
+            },
+            {
+                name: "Namaste Gesture",
+                imageSrc: "mudras/namaste.jpg",
+                description: "The universal gesture of greeting, prayer, and respect. It acknowledges the divine light in oneself and in others.",
+                goodFor: "cultivating gratitude, calming the mind, and connecting heart and mind in reverence.",
+                prayer: '"The divine light in me honors the divine light in you. We are one."'
+            },
+            {
+                name: "Padma Mudra",
+                imageSrc: "mudras/padma.jpg",
+                description: "The Lotus Mudra, symbolizing purity, love, and compassion. The hands open like a blooming lotus at the heart.",
+                goodFor: "cultivating purity of heart, expressing gratitude, and opening the heart chakra.",
+                prayer: '"My heart opens like a lotus flower. I offer and receive love with purity and grace."'
+            },
+            {
+                name: "Prana Mudra",
+                imageSrc: "mudras/prana.jpg",
+                description: "The gesture of the life force ('Prana'). It activates dormant energy within the body, increasing vitality and inner strength.",
+                goodFor: "increasing vitality, reducing fatigue, improving eyesight, and strengthening the immune system.",
+                prayer: '"I activate the vital life force within me. I am filled with energy, health, and spirit."'
+            },
+            {
+                name: "Prithvi Mudra",
+                imageSrc: "mudras/prithvi.jpg",
+                description: "The gesture of the Earth element. It promotes a sense of stability, grounding, and connection to the physical world.",
+                goodFor: "promoting physical and mental stability, strengthening the body, and increasing self-confidence.",
+                prayer: '"I am grounded, stable, and strong like the Earth. I am rooted in the present moment."'
+            },
+            {
+                name: "Pushan Mudra",
+                imageSrc: "mudras/pushan.jpg",
+                description: "The gesture of nourishment, dedicated to the sun god Pushan. It governs digestion, absorption, and elimination.",
+                goodFor: "aiding digestion and elimination, absorbing nutrients, and processing life experiences.",
+                prayer: '"I gratefully receive all that nourishes me, body and soul. I digest life\'s experiences and release what I do not need."'
+            },
+            {
+                name: "Pushpaputa Mudra",
+                imageSrc: "mudras/pushpaputa.jpg",
+                description: "The 'Handful of Flowers' gesture, where the hands are cupped as if making an offering. It cultivates openness and generosity.",
+                goodFor: "fostering an attitude of giving and receiving, letting go of attachments, and opening the heart.",
+                prayer: '"With an open heart, I offer my gifts to the universe and gracefully receive its blessings in return."'
+            },
+            {
+                name: "Rudra Mudra",
+                imageSrc: "mudras/rudra.jpg",
+                description: "A powerful gesture associated with the solar plexus, the body's power center. It is named after the deity Rudra (a form of Shiva).",
+                goodFor: "improving concentration, energizing the body, relieving dizziness, and empowering the solar plexus.",
+                prayer: '"I harness my inner power and personal strength. I am centered, decisive, and filled with vital energy."'
+            },
+            {
+                name: "Sahasrara Mudra",
+                imageSrc: "mudras/thousand petals.jpg",
+                description: "The 'Thousand Petal Lotus' gesture, representing the crown chakra. It symbolizes the pinnacle of spiritual connection and enlightenment.",
+                goodFor: "enhancing spiritual connection, calming the mind for meditation, and connecting with higher consciousness.",
+                prayer: '"I open myself to divine wisdom and universal consciousness. My spirit connects with the infinite."'
+            },
+            {
+                name: "Samana Vayu Mudra",
+                imageSrc: "mudras/samana vayu.jpg",
+                description: "The gesture for 'balancing air' (Samana Vayu), which governs digestion and metabolism. It brings all five elements into harmony.",
+                goodFor: "improving digestion and metabolism, balancing the energies of assimilation, and promoting overall health.",
+                prayer: '"I balance all the energies within my core. I digest and assimilate all that nourishes my body, mind, and spirit."'
+            },
+            {
+                name: "Shakti Mudra",
+                imageSrc: "mudras/shakti.jpg",
+                description: "The gesture of power, invoking the divine feminine energy (Shakti). It has a calming effect and promotes restful sleep.",
+                goodFor: "promoting sleep, calming the nervous system, and channeling inner strength.",
+                prayer: '"I embrace my inner power with gentle calm. I release the day and welcome restorative peace."'
+            },
+            {
+                name: "Shankh Mudra",
+                imageSrc: "mudras/shankh.jpg",
+                description: "The 'Conch Shell' gesture. The shape of the hands resembles a conch, which is used in rituals to purify and announce sacredness.",
+                goodFor: "soothing throat problems, enhancing communication, and calming the nervous system.",
+                prayer: '"My voice is clear and my communication is true. I find calm and clarity in sacred sound."'
+            },
+            {
+                name: "Shiva Linga Mudra",
+                imageSrc: "mudras/shiva linga.jpg",
+                description: "A gesture that recharges energy. The right hand (masculine) rests in the left hand (feminine), representing the union of opposites.",
+                goodFor: "recharging energy reserves, combating fatigue and depression, and fostering confidence.",
+                prayer: '"I connect with the divine masculine and feminine energies within. I am recharged, balanced, and powerful."'
+            },
+            {
+                name: "Shuni Mudra",
+                imageSrc: "mudras/shuni.jpg",
+                description: "The gesture of patience. By connecting the middle finger (Saturn) to the thumb, it encourages discipline, patience, and responsibility.",
+                goodFor: "cultivating patience and discipline, reducing negativity, and promoting stability.",
+                prayer: '"I embrace the present moment with patience and understanding. I am stable, responsible, and committed."'
+            },
+            {
+                name: "Shunya Mudra",
+                imageSrc: "mudras/shunya heaven.jpg",
+                description: "The 'Heaven' or 'Emptiness' gesture. It is believed to reduce dullness or numbness in the body and open one to inner space.",
+                goodFor: "relieving earaches and hearing problems, reducing numbness, and creating a sense of inner space.",
+                prayer: '"I release dullness and listen to the subtle sounds of the universe. I find clarity in inner silence."'
+            },
+            {
+                name: "Suchi Mudra",
+                imageSrc: "mudras/suchi.jpg",
+                description: "The 'Needle' gesture, used to pinpoint focus and release blockages, particularly deep-seated anger or physical constipation.",
+                goodFor: "relieving constipation, cleansing the intestines, and releasing stubborn, repressed emotions.",
+                prayer: '"I release all that is stuck within me. I am cleansed, clear, and free from emotional blockage."'
+            },
+            {
+                name: "Surya Mudra",
+                imageSrc: "mudras/surya.jpg",
+                description: "The 'Sun' gesture. It increases the fire element in the body, which helps to boost metabolism and generate warmth.",
+                goodFor: "increasing metabolism and body heat, aiding weight loss, and improving digestion.",
+                prayer: '"I ignite the inner sun of my metabolism and vitality. I am energetic, radiant, and strong."'
+            },
+            {
+                name: "Ushas Mudra",
+                imageSrc: "mudras/ushas.jpg",
+                description: "The gesture of dawn, symbolizing the awakening to new beginnings. It energizes the body and clears the mind.",
+                goodFor: "awakening creativity, energizing the body, and creating enthusiasm for new projects.",
+                prayer: '"I welcome the dawn of new beginnings. My mind is fresh, my spirit is energized, and I am open to all possibilities."'
+            },
+            {
+                name: "Uttarabodhi Mudra",
+                imageSrc: "mudras/uttarabodhi.jpg",
+                description: "The gesture of supreme enlightenment. It connects one to a higher source of wisdom and charges one with positive energy.",
+                goodFor: "strengthening inspiration, relieving fear, and aligning with a higher purpose.",
+                prayer: '"I am connected to the supreme wisdom of the universe. I am enlightened, inspired, and aligned with my highest self."'
+            },
+            {
+                name: "Vajra Mudra",
+                imageSrc: "mudras/Power.jpg",
+                description: "The 'Thunderbolt' gesture, a symbol of indestructible power. It is used to boost circulation and transform ignorance into wisdom.",
+                goodFor: "boosting circulation, increasing energy, and transforming challenges with focused power.",
+                prayer: '"I am a channel for powerful, focused energy. I transform challenges with unwavering strength and wisdom."'
+            },
+            {
+                name: "Vajrapradama Mudra",
+                imageSrc: "mudras/vajrapradama.jpg",
+                description: "The gesture of unshakeable trust. The interlocked fingers over the heart create a seal of confidence in oneself and the divine.",
+                goodFor: "building self-confidence, cultivating trust in a higher power, and overcoming hopelessness.",
+                prayer: '"My heart is shielded by unshakeable trust. I am confident, secure, and open to the flow of divine guidance."'
+            },
+            {
+                name: "Varun Mudra",
+                imageSrc: "mudras/varun.jpg",
+                description: "The gesture of the water god, Varuna. It balances the water element in the body, helping with hydration and communication.",
+                goodFor: "balancing bodily fluids, relieving dryness (skin, eyes), and promoting clear communication.",
+                prayer: '"I balance the waters of my body and emotions. I am fluid, clear, and adaptable."'
+            },
+            {
+                name: "Vayu Mudra",
+                imageSrc: "mudras/vayu.jpg",
+                description: "The gesture of the air element. It is used to calm excess 'wind' in the body, which can manifest as anxiety or bloating.",
+                goodFor: "balancing the air element, relieving gas and joint pain, and calming an anxious mind.",
+                prayer: '"I calm the winds of my body and mind. I am grounded, serene, and free from anxiety."'
+            },
+            {
+                name: "Yoni Mudra",
+                imageSrc: "mudras/yoni.jpg",
+                description: "The 'Womb' or 'Source' gesture. It symbolizes a withdrawal from the outer world to connect with the primal, creative source within.",
+                goodFor: "calming the nervous system, developing intuition, and connecting with one's inner creative energy.",
+                prayer: '"I withdraw from the chaos of the outer world and connect with the creative source within. I am calm, intuitive, and secure."'
+            }
+        ];
+
+
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        function exploreMudra() {
+            const container = document.getElementById('mudra-container');
+            const randomMudra = mudras[Math.floor(Math.random() * mudras.length)];
+            
+            container.innerHTML = `
+                <div class="mudra-card" id="current-mudra">
+                    <div class="mudra-image-container">
+                         <img src="${randomMudra.imageSrc}" alt="${randomMudra.name}" class="mudra-image">
+                    </div>
+                    <h2 class="mudra-name">${randomMudra.name}</h2>
+                    <p class="mudra-description">${randomMudra.description}</p>
+                    <div class="mudra-good-for"><strong>Good for:</strong> ${randomMudra.goodFor}</div>
+                    <p class="mudra-prayer">${randomMudra.prayer}</p>
+                </div>
+            `;
+            
+            // Trigger animation
+            setTimeout(() => {
+                document.getElementById('current-mudra').classList.add('show');
+            }, 100);
+        }
+    </script>
+</body>
+</html>
