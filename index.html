@@ -60,7 +60,7 @@
             position: relative;
             z-index: 2;
             /* Use clamp() with vmin for fully fluid padding */
-            padding: clamp(0.5rem, 3vmin, 2rem);
+            padding: clamp(0.5rem, 2vmin, 1.5rem);
         }
 
         /* Header - compact and responsive */
@@ -68,7 +68,7 @@
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 700;
             /* Use clamp() with vmin for fluid font sizing */
-            font-size: clamp(1.5rem, 5vmin, 3.5rem);
+            font-size: clamp(1.4rem, 4.5vmin, 2.8rem);
             background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -76,49 +76,27 @@
             text-align: center;
             letter-spacing: -0.02em;
             /* Use clamp() for fluid margins */
-            margin-bottom: clamp(0.25rem, 1.5vh, 1rem);
+            margin-bottom: clamp(0.2rem, 1vh, 0.75rem);
         }
 
-        .subtitle {
-            font-size: clamp(0.8rem, 2vmin, 1.2rem);
-            color: var(--text-secondary);
-            text-align: center;
-            margin-bottom: clamp(0.5rem, 2.5vh, 1.5rem);
-            font-weight: 300;
-            letter-spacing: 0.05em;
-        }
-
-        /* Grid layout - perfectly fills remaining space */
+        /* Grid layout - perfectly fills remaining space with 4 rows */
         .projects-grid {
             flex: 1; /* This is crucial for filling space */
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(3, 1fr);
+            grid-template-rows: repeat(4, 1fr); /* Changed to 4 rows to fit more items */
             /* Use clamp() with vmin for fluid gaps */
-            gap: clamp(0.5rem, 2vmin, 1.5rem);
+            gap: clamp(0.4rem, 1.25vmin, 0.8rem);
             min-height: 0; /* Prevent grid from overflowing its container */
         }
 
-        @media (min-width: 640px) {
-            .projects-grid {
-                grid-template-columns: repeat(3, 1fr);
-                grid-template-rows: repeat(3, 1fr);
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .main-container {
-                padding: 2rem;
-            }
-        }
-
-        /* Cards - uniform size */
+        /* Cards - uniform size and slightly smaller */
         .project-card {
             position: relative;
             backdrop-filter: blur(20px);
             background: var(--glass);
             border: 1px solid var(--glass-border);
-            border-radius: clamp(12px, 2vmin, 20px);
+            border-radius: clamp(10px, 2vmin, 16px);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -131,8 +109,8 @@
                 0 8px 32px -8px rgba(0, 0, 0, 0.3),
                 0 4px 16px -4px rgba(59, 130, 246, 0.2),
                 inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            /* Use clamp() with vmin for fluid padding */
-            padding: clamp(0.5rem, 2vmin, 1.5rem);
+            /* Use clamp() with vmin for smaller, fluid padding */
+            padding: clamp(0.25rem, 1.5vmin, 1rem);
         }
 
         .project-card::before {
@@ -160,19 +138,19 @@
                 0 4px 16px -4px rgba(59, 130, 246, 0.2);
         }
 
-        /* Icon styling - responsive */
+        /* Icon styling - smaller and responsive */
         .project-icon {
-            /* Use clamp() with vmin for fluid icon size - INCREASED FOR MOBILE */
-            font-size: clamp(1.8rem, 7vmin, 3rem);
-            margin-bottom: clamp(0.25rem, 1.5vmin, 0.75rem);
+            /* Use clamp() with vmin for smaller fluid icon size */
+            font-size: clamp(1.4rem, 4.5vmin, 2.2rem);
+            margin-bottom: clamp(0.2rem, 1vmin, 0.5rem);
             display: block;
             filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
         }
 
         .project-title {
             font-family: 'Space Grotesk', sans-serif;
-            /* Use clamp() with vmin for fluid title size - INCREASED FOR MOBILE */
-            font-size: clamp(0.85rem, 3vmin, 1.2rem);
+            /* Use clamp() with vmin for smaller fluid title size */
+            font-size: clamp(0.7rem, 2.25vmin, 1rem);
             font-weight: 600;
             color: var(--text-primary);
             line-height: 1.2;
@@ -195,6 +173,7 @@
         .fade-in:nth-child(7) { animation-delay: 0.35s; }
         .fade-in:nth-child(8) { animation-delay: 0.4s; }
         .fade-in:nth-child(9) { animation-delay: 0.45s; }
+        .fade-in:nth-child(10) { animation-delay: 0.5s; } /* Added delay for 10th item */
 
         @keyframes fadeInUp {
             from {
@@ -263,7 +242,7 @@
                 <span class="project-title">Serendipity Yoga</span>
             </a>
 
-                  <a href="yoga.html" class="project-card fade-in" tabindex="0" aria-label="Serendipity Yoga">
+            <a href="mudra.html" class="project-card fade-in" tabindex="0" aria-label="Serendipity Mudra">
                 <span class="project-icon">🤚</span>
                 <span class="project-title">Serendipity Mudra</span>
             </a>
