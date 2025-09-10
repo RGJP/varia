@@ -519,12 +519,9 @@
                 document.body.classList.add('overlay-open');
             });
 
-            aboutOverlay.addEventListener('click', (e) => {
-                // Hide only if the overlay background itself is clicked, not the content
-                if (e.target === aboutOverlay) {
-                    aboutOverlay.classList.remove('show');
-                    document.body.classList.remove('overlay-open');
-                }
+            aboutOverlay.addEventListener('click', () => {
+                aboutOverlay.classList.remove('show');
+                document.body.classList.remove('overlay-open');
             });
         });
 
