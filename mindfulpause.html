@@ -2,19 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>Mindfulness Pause 🪷</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
   <style>
     /* CSS Custom Properties (Variables) */
     :root {
-      --primary-bg-color: #162d4d;
-      --primary-text-color: #ffd700;
-      --accent-color: #ffd700;
-      --button-bg-color: rgba(255, 215, 0, 0.2);
-      --button-hover-bg-color: rgba(255, 215, 0, 0.4);
-      --button-border-color: #ffd700;
-      --font-family-sans: Arial, Helvetica, sans-serif;
-      --base-font-size: 16px; /* Used for rem calculations */
+      --bg-gradient-start: #3B3C6A;
+      --bg-gradient-end: #9067C6;
+      --primary-text-color: #F0F0F0;
+      --accent-color: #FFFFFF;
+      --glass-bg: rgba(255, 255, 255, 0.1);
+      --glass-border: rgba(255, 255, 255, 0.2);
+      --glass-hover-bg: rgba(255, 255, 255, 0.2);
+      --font-family-sans: 'Inter', Arial, Helvetica, sans-serif;
+      --base-font-size: 16px;
     }
 
     /* Reset and Base Styles */
@@ -28,125 +32,170 @@
 
     html {
       font-size: var(--base-font-size);
-      scroll-behavior: smooth;
     }
 
     body {
-      background-color: var(--primary-bg-color);
+      background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
       color: var(--primary-text-color);
       font-family: var(--font-family-sans);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
-      padding: 1.25rem; /* 20px */
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden; /* Prevents scrolling */
       text-align: center;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Main App Container */
+    .app-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;
+        width: 100%;
+        max-width: 400px; /* Optimal width for mobile-first design */
+        padding: 2rem 1.5rem;
+    }
+    
+    header, main, footer {
+        width: 100%;
+    }
+
+    /* Header */
+    header {
+        position: relative; /* For positioning the info icon */
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 400;
+      color: var(--primary-text-color);
+      line-height: 1.2;
+    }
+
+    .lotus-icon {
+        font-size: 5rem;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    
+    #info-icon {
+      position: absolute;
+      top: 0;
+      right: 0;
+      font-size: 1.75rem;
+      cursor: pointer;
+      user-select: none;
+      color: var(--accent-color);
+      opacity: 0.7;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    
+    #info-icon:hover,
+    #info-icon:focus {
+      opacity: 1;
+      transform: scale(1.1);
+      outline: none;
     }
 
     /* Main Content Area */
     main {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      width: 100%;
-      max-width: 600px; /* Max width for content readability on large screens */
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
-
-    h1 {
-      font-size: 2.5rem; /* Adjusted for better responsiveness */
-      margin-bottom: 2rem;
-      color: var(--accent-color);
-    }
-
-    #info-icon {
-      cursor: pointer;
-      user-select: none; /* Prevents selecting the icon as text */
-      display: inline-block; /* Needed for transform */
-      transition: transform 0.2s ease;
-    }
-
-    #info-icon:hover,
-    #info-icon:focus {
-      transform: scale(1.15); /* Make it pop a bit */
-      outline: none;
-    }
-
+    
     /* Buttons */
     .button-container {
       display: flex;
-      flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
-      gap: 1rem; /* 16px, adjusted from 20px */
-      margin-bottom: 1.875rem; /* 30px */
-      justify-content: center;
+      flex-direction: column;
+      gap: 1rem;
+      width: 100%;
     }
 
     button {
-      background-color: var(--button-bg-color);
-      color: var(--primary-text-color);
-      border: 2px solid var(--button-border-color);
-      padding: 0.75rem 1.5rem; /* 12px 24px */
-      font-size: 1.125rem; /* 18px, slightly adjusted */
+      background: var(--glass-bg);
+      color: var(--accent-color);
+      border: 1px solid var(--glass-border);
+      padding: 1rem;
+      font-size: 1.125rem;
       cursor: pointer;
-      border-radius: 8px;
+      border-radius: 12px;
       transition: background-color 0.3s ease, transform 0.2s ease;
-      font-weight: bold;
+      font-weight: 700;
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
     }
 
     button:hover,
-    button:focus { /* Added focus state for accessibility */
-      background-color: var(--button-hover-bg-color);
-      outline: none; /* Remove default focus outline if custom is preferred */
-      transform: translateY(-2px); /* Subtle lift effect */
+    button:focus-visible { /* Using focus-visible for better accessibility */
+      background-color: var(--glass-hover-bg);
+      outline: none;
+      transform: translateY(-3px);
     }
 
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
-      transform: translateY(0); /* Reset hover effect */
+      transform: translateY(0);
+      background: var(--glass-bg);
+    }
+    
+    /* Footer & Messages */
+    footer {
+        min-height: 100px; /* Reserve space to prevent layout shift */
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
     }
 
-    /* Messages */
     #duration-message {
-      font-size: 1.25rem; /* 20px, adjusted for consistency */
-      margin-bottom: 1.25rem; /* 20px */
-      min-height: 1.5em; /* Ensure space even when empty */
+      font-size: 1rem;
+      margin-bottom: 0.75rem;
+      min-height: 1.2em;
       color: var(--accent-color);
+      opacity: 0.9;
     }
 
     .speaker-name {
-      font-size: 1rem; /* 16px */
-      margin-bottom: 0.3125rem; /* 5px */
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
       color: var(--primary-text-color);
-      opacity: 0.9;
+      opacity: 0.7;
       min-height: 1.2em;
     }
 
     .message {
-      margin-top: 0.625rem; /* 10px */
-      font-size: 1.125rem; /* 18px, adjusted */
-      min-height: 3.125rem; /* 50px */
-      line-height: 1.6;
+      font-size: 1.1rem;
+      min-height: 3em;
+      line-height: 1.5;
       color: var(--primary-text-color);
     }
 
     /* Countdown Splash Overlay */
     #countdown-overlay {
       position: fixed;
-      inset: 0; /* top, right, bottom, left = 0 */
-      background: rgba(22, 45, 77, 0.97); /* Slightly adjusted opacity */
+      inset: 0;
+      background: rgba(22, 22, 38, 0.5);
       display: none; /* Managed by JS */
       align-items: center;
       justify-content: center;
       z-index: 1000;
-      backdrop-filter: blur(5px); /* Optional: adds a blur effect to background */
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
 
     #countdown-number {
-      font-size: 8rem; /* Adjusted for various screens */
+      font-size: 8rem;
       color: var(--accent-color);
-      font-weight: bold;
+      font-weight: 700;
       animation: pop 1s ease-in-out infinite;
     }
 
@@ -154,116 +203,93 @@
     #info-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(22, 45, 77, 0.97);
+      background: rgba(22, 22, 38, 0.5);
       display: none; /* Initially hidden */
       align-items: center;
       justify-content: center;
       z-index: 1001; /* Higher than countdown */
-      backdrop-filter: blur(5px);
-      padding: 1rem;
-      cursor: pointer; /* Click anywhere to close */
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 1.5rem;
+      cursor: pointer;
     }
 
     .info-content {
-      background: var(--primary-bg-color);
+      background: var(--bg-gradient-start);
       padding: 2rem;
-      border-radius: 12px;
-      border: 1px solid var(--accent-color);
-      max-width: 600px;
+      border-radius: 16px;
+      border: 1px solid var(--glass-border);
+      max-width: 500px;
       width: 100%;
       text-align: left;
       line-height: 1.6;
+      cursor: default;
     }
 
     .info-content h2,
     .info-content h3 {
       color: var(--accent-color);
       margin-bottom: 1rem;
+      font-weight: 700;
     }
 
     .info-content h3 {
       margin-top: 1.5rem;
+      font-size: 1.1rem;
     }
 
     .info-content p,
     .info-content li {
       margin-bottom: 0.75rem;
+      color: var(--primary-text-color);
     }
 
     .info-content ol {
-      padding-left: 1.5rem; /* Indent list */
+      padding-left: 1.5rem;
     }
 
     .info-content strong {
       color: var(--accent-color);
+      font-weight: 700;
     }
 
     @keyframes pop {
       0%, 100% {
         transform: scale(1);
-        opacity: 1;
+        opacity: 0.9;
       }
       50% {
-        transform: scale(1.2); /* Slightly reduced pop for subtlety */
-        opacity: 0.8;
-      }
-    }
-
-    /* Responsive Adjustments */
-    @media (max-width: 768px) {
-      h1 {
-        font-size: 2rem;
-      }
-      #countdown-number {
-        font-size: 6rem;
-      }
-      button {
-        font-size: 1rem;
-        padding: 0.6rem 1.2rem;
-      }
-      .message {
-        font-size: 1rem;
-      }
-      #duration-message {
-        font-size: 1.125rem;
-      }
-      .info-content {
-        padding: 1.5rem;
-      }
-    }
-
-    @media (max-width: 480px) {
-      h1 {
-        font-size: 1.75rem;
-      }
-      .button-container {
-        flex-direction: column; /* Stack buttons vertically */
-        gap: 0.75rem;
-      }
-      button {
-        width: 100%; /* Make buttons full width in column layout */
-      }
-      #countdown-number {
-        font-size: 5rem;
+        transform: scale(1.15);
+        opacity: 1;
       }
     }
   </style>
 </head>
 
 <body>
-  <main>
-    <h1>🪷<br><br>Mindfulness Pause <br><br><span id="info-icon" role="button" tabindex="0" title="How to use">ℹ️</span></h1>
+  <div class="app-container">
+    <header>
+      <h1>
+        <span class="lotus-icon">🪷</span>
+        Mindfulness Pause
+      </h1>
+      <span id="info-icon" role="button" tabindex="0" title="How to use">ℹ️</span>
+    </header>
 
-    <div class="button-container">
-      <button id="five-min">5&nbsp;Minutes</button>
-      <button id="seven-min">7&nbsp;Minutes</button>
-      <button id="ten-min">10&nbsp;Minutes</button>
-    </div>
+    <main>
+        <div class="button-container">
+          <button id="five-min">5 Minutes</button>
+          <button id="seven-min">7 Minutes</button>
+          <button id="ten-min">10 Minutes</button>
+        </div>
+    </main>
 
-    <div id="duration-message"></div>
-    <div class="speaker-name" id="speaker-name"></div>
-    <div class="message" id="message"></div>
-  </main>
+    <footer>
+        <div id="duration-message"></div>
+        <div class="speaker-name" id="speaker-name"></div>
+        <div class="message" id="message"></div>
+    </footer>
+  </div>
 
   <div id="info-overlay">
     <div class="info-content">
@@ -349,10 +375,11 @@
         }
       });
 
-      infoOverlay.addEventListener('click', () => {
-        infoOverlay.style.display = 'none';
-      });
-
+   // This is the NEW code
+infoOverlay.addEventListener('click', (e) => {
+    // Now closes on any click within the overlay (background or content)
+    infoOverlay.style.display = 'none';
+});
 
       /* ───── Meditation text (UNCHANGED) ───── */
       const rand = a => a[Math.random() * a.length | 0];
