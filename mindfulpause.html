@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Mindfulness Pause v2.6</title>
+  <title>Mindfulness Pause 🪷</title>
   <style>
     /* CSS Custom Properties (Variables) */
     :root {
@@ -58,6 +58,19 @@
       font-size: 2.5rem; /* Adjusted for better responsiveness */
       margin-bottom: 2rem;
       color: var(--accent-color);
+    }
+
+    #info-icon {
+      cursor: pointer;
+      user-select: none; /* Prevents selecting the icon as text */
+      display: inline-block; /* Needed for transform */
+      transition: transform 0.2s ease;
+    }
+
+    #info-icon:hover,
+    #info-icon:focus {
+      transform: scale(1.15); /* Make it pop a bit */
+      outline: none;
     }
 
     /* Buttons */
@@ -137,6 +150,54 @@
       animation: pop 1s ease-in-out infinite;
     }
 
+    /* Info Overlay */
+    #info-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(22, 45, 77, 0.97);
+      display: none; /* Initially hidden */
+      align-items: center;
+      justify-content: center;
+      z-index: 1001; /* Higher than countdown */
+      backdrop-filter: blur(5px);
+      padding: 1rem;
+      cursor: pointer; /* Click anywhere to close */
+    }
+
+    .info-content {
+      background: var(--primary-bg-color);
+      padding: 2rem;
+      border-radius: 12px;
+      border: 1px solid var(--accent-color);
+      max-width: 600px;
+      width: 100%;
+      text-align: left;
+      line-height: 1.6;
+    }
+
+    .info-content h2,
+    .info-content h3 {
+      color: var(--accent-color);
+      margin-bottom: 1rem;
+    }
+
+    .info-content h3 {
+      margin-top: 1.5rem;
+    }
+
+    .info-content p,
+    .info-content li {
+      margin-bottom: 0.75rem;
+    }
+
+    .info-content ol {
+      padding-left: 1.5rem; /* Indent list */
+    }
+
+    .info-content strong {
+      color: var(--accent-color);
+    }
+
     @keyframes pop {
       0%, 100% {
         transform: scale(1);
@@ -166,6 +227,9 @@
       #duration-message {
         font-size: 1.125rem;
       }
+      .info-content {
+        padding: 1.5rem;
+      }
     }
 
     @media (max-width: 480px) {
@@ -188,7 +252,7 @@
 
 <body>
   <main>
-    <h1>Mindfulness Pause<br>🧘</h1>
+    <h1>Mindfulness Pause <span id="info-icon" role="button" tabindex="0" title="How to use">ℹ️</span><br>🪷</h1>
 
     <div class="button-container">
       <button id="five-min">5&nbsp;Minutes</button>
@@ -200,6 +264,27 @@
     <div class="speaker-name" id="speaker-name"></div>
     <div class="message" id="message"></div>
   </main>
+
+  <div id="info-overlay">
+    <div class="info-content">
+      <h2>How to Use</h2>
+      <p><strong>Microsoft Edge is required</strong> for the intended high-quality text-to-speech voice.</p>
+      <p>The 'Read Aloud' feature must be manually triggered once before starting a session. This is a Microsoft requirement to enable the high-quality TTS engine.</p>
+      <h3>On MOBILE Microsoft Edge:</h3>
+      <ol>
+        <li>Click the <strong>☰</strong> menu and select 'Read Aloud'.</li>
+        <li>The TTS engine will start. Immediately press <strong>pause</strong>.</li>
+        <li>Choose a 5, 7, or 10-minute session to begin.</li>
+      </ol>
+      <h3>On DESKTOP Microsoft Edge:</h3>
+      <ol>
+        <li>Press <strong>CTRL+SHIFT+U</strong> to enable the TTS engine.</li>
+        <li>The TTS engine will start. Immediately press <strong>pause</strong>.</li>
+        <li>Click a button to begin your meditation.</li>
+      </ol>
+      <p>Enjoy your moment of mindfulness!</p>
+    </div>
+  </div>
 
   <div id="countdown-overlay">
     <div id="countdown-number">7</div>
@@ -215,7 +300,7 @@
       /* ───── Environment check ───── */
       const ua = navigator.userAgent.toLowerCase();
       const isAndroid = ua.includes('android');
-      const isEdge    = ua.includes('edg/') || ua.includes('edga') || ua.includes('edge');
+      const isEdge = ua.includes('edg/') || ua.includes('edga') || ua.includes('edge');
 
       // --- Original Environment Check ---
       // This WebApp is currently not supported on Android devices due to a known issue in Edge for Android that remains unfixed by Microsoft.
@@ -244,15 +329,33 @@
       /* ───── DOM helpers ───── */
       const $ = id => document.getElementById(id);
 
-      const btn5  = $('five-min');
-      const btn7  = $('seven-min');
+      const btn5 = $('five-min');
+      const btn7 = $('seven-min');
       const btn10 = $('ten-min');
-      const msgElem       = $('message');
+      const msgElem = $('message');
       const speakerLabel = $('speaker-name');
-      const durMsg       = $('duration-message');
+      const durMsg = $('duration-message');
+      const infoIcon = $('info-icon');
+      const infoOverlay = $('info-overlay');
+
+      /* ───── Info Overlay Handlers ───── */
+      infoIcon.addEventListener('click', () => {
+        infoOverlay.style.display = 'flex';
+      });
+
+      infoIcon.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          infoOverlay.style.display = 'flex';
+        }
+      });
+
+      infoOverlay.addEventListener('click', () => {
+        infoOverlay.style.display = 'none';
+      });
+
 
       /* ───── Meditation text (UNCHANGED) ───── */
-      const rand = a => a[Math.random()*a.length | 0];
+      const rand = a => a[Math.random() * a.length | 0];
 
       const scriptVariations = {
         0: [
@@ -338,11 +441,11 @@
         ]
       };
 
-      const baseSteps = Object.entries(scriptVariations).map(([sec,v])=>({sec:+sec,varis:v}));
+      const baseSteps = Object.entries(scriptVariations).map(([sec, v]) => ({ sec: +sec, varis: v }));
 
       const makePlan = total => {
         const gap = Math.floor(total / (baseSteps.length - 1));
-        return baseSteps.map((s,i)=>({t:i*gap,text:rand(s.varis)}));
+        return baseSteps.map((s, i) => ({ t: i * gap, text: rand(s.varis) }));
       };
 
       /* ───── Wake Lock Functions (UNCHANGED) ───── */
@@ -381,8 +484,8 @@
 
       /* ───── Speech helpers (UNCHANGED) ───── */
       const loadVoices = () =>
-        new Promise(res=>{
-          const ready = () =>{
+        new Promise(res => {
+          const ready = () => {
             speechSynthesis.onvoiceschanged = null;
             res(speechSynthesis.getVoices());
           };
@@ -391,20 +494,20 @@
         });
 
       const pickVoice = vs => {
-        const prefs=['Steffan']; // Original prefs: ['Steffan','Christopher','Eric','Liam']
-        const en = vs.filter(v=>v.lang.toLowerCase().startsWith('en'));
-        const match = en.filter(v=>prefs.some(n=>new RegExp(`\\b${n}\\b`,'i').test(v.name)));
+        const prefs = ['Steffan']; // Original prefs: ['Steffan','Christopher','Eric','Liam']
+        const en = vs.filter(v => v.lang.toLowerCase().startsWith('en'));
+        const match = en.filter(v => prefs.some(n => new RegExp(`\\b${n}\\b`, 'i').test(v.name)));
         return match.length ? rand(match) : en[0] || null;
       };
 
-      const speak = (voice,text)=>new Promise(done=>{
+      const speak = (voice, text) => new Promise(done => {
         if (!text || text.trim() === "...") { // Don't speak if text is just "..."
           done();
           return;
         }
         const u = new SpeechSynthesisUtterance(text);
         u.rate = .85; u.pitch = .5;
-        if(voice) u.voice = voice;
+        if (voice) u.voice = voice;
         u.onend = done;
         u.onerror = (event) => {
           console.error('SpeechSynthesisUtterance.onerror', event);
@@ -417,53 +520,53 @@
       let aborter = null;
 
       const resetUI = async () => { // Make async to await releaseWakeLock
-        if(aborter) aborter.abort();
+        if (aborter) aborter.abort();
         speechSynthesis.cancel(); // Stop any ongoing speech
-        msgElem.textContent='';
-        speakerLabel.textContent='';
-        durMsg.textContent='';
+        msgElem.textContent = '';
+        speakerLabel.textContent = '';
+        durMsg.textContent = '';
 
         await releaseWakeLock(); // Release the wake lock
       };
 
-      const countdown = (n=7)=>new Promise(res=>{
-        const overlay=$('countdown-overlay');
-        const num=$('countdown-number');
-        overlay.style.display='flex';
-        num.textContent=n;
-        const iv=setInterval(()=>{
-          n--; num.textContent=n;
-          if(n===0){
+      const countdown = (n = 7) => new Promise(res => {
+        const overlay = $('countdown-overlay');
+        const num = $('countdown-number');
+        overlay.style.display = 'flex';
+        num.textContent = n;
+        const iv = setInterval(() => {
+          n--; num.textContent = n;
+          if (n === 0) {
             clearInterval(iv);
-            overlay.style.display='none';
+            overlay.style.display = 'none';
             res();
           }
-        },1000);
+        }, 1000);
       });
 
-      const runSession = async(plan,dur,voice,signal)=>{
-        const sessionStartTime=Date.now(); // Renamed from 'start'
+      const runSession = async (plan, dur, voice, signal) => {
+        const sessionStartTime = Date.now(); // Renamed from 'start'
 
-        for(let i=0;i<plan.length;i++){
-          if(signal.aborted) {
+        for (let i = 0; i < plan.length; i++) {
+          if (signal.aborted) {
             console.log("Session aborted during loop.");
             await releaseWakeLock(); // Ensure lock is released if aborted mid-session
             return;
           }
           const waitTime = plan[i].t * 1000 - (Date.now() - sessionStartTime);
-          if(waitTime > 0) await new Promise(r=>setTimeout(r,waitTime));
+          if (waitTime > 0) await new Promise(r => setTimeout(r, waitTime));
 
-          if(signal.aborted) {
+          if (signal.aborted) {
             console.log("Session aborted after wait.");
             await releaseWakeLock();
             return;
           }
           msgElem.textContent = plan[i].text;
           speakerLabel.textContent = voice ? `${voice.name}:` : 'Default Voice:';
-          await speak(voice,plan[i].text);
+          await speak(voice, plan[i].text);
         }
 
-        await new Promise(r=>setTimeout(r,2000)); // Pause before reload
+        await new Promise(r => setTimeout(r, 2000)); // Pause before reload
         // Page reload will inherently cause the browser to release the wake lock.
         // resetUI (which calls releaseWakeLock) is called at the start of a new session.
         window.location.href = window.location.href;
@@ -474,7 +577,7 @@
 
         await requestWakeLock(); // Request wake lock when session starts
 
-        durMsg.textContent=`${totalSeconds/60} minutes session in progress...`;
+        durMsg.textContent = `${totalSeconds / 60} minutes session in progress...`;
         try {
           await countdown();
           const voices = await loadVoices();
@@ -489,9 +592,9 @@
       };
 
       /* ───── Button handlers (UNCHANGED) ───── */
-      btn5 .addEventListener('click',()=>startSession(300));
-      btn7 .addEventListener('click',()=>startSession(420));
-      btn10.addEventListener('click',()=>startSession(600));
+      btn5.addEventListener('click', () => startSession(300));
+      btn7.addEventListener('click', () => startSession(420));
+      btn10.addEventListener('click', () => startSession(600));
 
       /* ───── Visibility Change Handler (UNCHANGED) ───── */
       document.addEventListener('visibilitychange', async () => {
@@ -500,14 +603,14 @@
         // or if the 'release' event fired and we nulled it.
         // This primarily handles re-acquiring if the document had a lock, became hidden (browser released it), and then became visible again.
         if (document.visibilityState === 'visible') {
-            // If we think a wake lock should be active (e.g., a session is in progress, which is hard to check here directly)
-            // and wakeLock is currently null, we might try to re-acquire.
-            // A more robust way would be to check a session state variable.
-            // For now, if a session was started, durMsg would have text.
-            if (durMsg.textContent !== '' && wakeLock === null) {
-                  console.log('Page became visible, attempting to re-acquire screen wake lock because a session seems active.');
-                  await requestWakeLock();
-            }
+          // If we think a wake lock should be active (e.g., a session is in progress, which is hard to check here directly)
+          // and wakeLock is currently null, we might try to re-acquire.
+          // A more robust way would be to check a session state variable.
+          // For now, if a session was started, durMsg would have text.
+          if (durMsg.textContent !== '' && wakeLock === null) {
+            console.log('Page became visible, attempting to re-acquire screen wake lock because a session seems active.');
+            await requestWakeLock();
+          }
         }
         // Note: The browser automatically releases screen wake locks when the document becomes non-visible.
         // The 'release' event on the wakeLock object itself is the most direct way to know this happened.
