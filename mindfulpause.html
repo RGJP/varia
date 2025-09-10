@@ -51,15 +51,17 @@
     }
 
     /* Main App Container */
-    .app-container {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        height: 100%;
-        width: 100%;
-        max-width: 400px; /* Optimal width for mobile-first design */
-        padding: 2rem 1.5rem;
-    }
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center; /* This is the key change */
+    height: 100%;
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem 1.5rem;
+    gap: 2rem; /* Optional: adds space between elements */
+}
     
     header, main, footer {
         width: 100%;
@@ -164,19 +166,48 @@
       opacity: 0.9;
     }
 
-    .speaker-name {
-      font-size: 0.9rem;
-      margin-bottom: 0.25rem;
-      color: var(--primary-text-color);
-      opacity: 0.7;
-      min-height: 1.2em;
+    .speaker-name, .message {
+        display: none; /* Hidden as per request */
+    }
+    
+    /* Progress Indicator */
+    #progress-container {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .message {
-      font-size: 1.1rem;
-      min-height: 3em;
-      line-height: 1.5;
-      color: var(--primary-text-color);
+    .progress-ring {
+      width: 160px;
+      height: 160px;
+      transform: rotate(-90deg); /* Start from the top */
+    }
+
+    .progress-ring-bg,
+    .progress-ring-fg {
+      fill: none;
+      stroke-width: 10;
+    }
+
+    .progress-ring-bg {
+      stroke: var(--glass-bg); /* Background track color */
+    }
+
+    .progress-ring-fg {
+      stroke: var(--accent-color); /* Progress color */
+      stroke-linecap: round; /* Rounded ends for a softer look */
+      transition: stroke-dashoffset 0.25s linear;
+    }
+
+    #progress-percent {
+      position: absolute;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent-color);
+      user-select: none;
     }
 
     /* Countdown Splash Overlay */
@@ -282,6 +313,13 @@
           <button id="seven-min">7 Minutes</button>
           <button id="ten-min">10 Minutes</button>
         </div>
+        <div id="progress-container" style="display: none;">
+            <svg class="progress-ring" viewbox="0 0 160 160">
+              <circle class="progress-ring-bg" r="70" cx="80" cy="80"></circle>
+              <circle id="progress-ring-fg" class="progress-ring-fg" r="70" cx="80" cy="80"></circle>
+            </svg>
+            <span id="progress-percent">0%</span>
+        </div>
     </main>
 
     <footer>
@@ -322,33 +360,22 @@
 
       // Declare wakeLock sentinel variable
       let wakeLock = null;
+      let aborter = null;
+      let progressInterval = null;
+
 
       /* ───── Environment check ───── */
       const ua = navigator.userAgent.toLowerCase();
       const isAndroid = ua.includes('android');
       const isEdge = ua.includes('edg/') || ua.includes('edga') || ua.includes('edge');
 
-      // --- Original Environment Check ---
-      // This WebApp is currently not supported on Android devices due to a known issue in Edge for Android that remains unfixed by Microsoft.
-      // This WebApp only works in Microsoft Edge on desktop for improved voice quality. Please open this page in Microsoft Edge.
-      // ---
-      // You'll need to decide how to handle this. For Wake Lock API to be tested on Android,
-      // the Android block needs to be bypassed or modified.
       if (isAndroid) {
-        // Example: Allow Android but maybe show a different message or just log
         console.log('Running on Android. Wake Lock API will be attempted. Original app had specific Edge for Android issues.');
-        // alert('This WebApp is currently not supported on Android devices due to a known issue in Edge for Android that remains unfixed by Microsoft.');
-        // return; // Commented out to allow testing on Android
       }
-      // This check was for non-Android, non-Edge desktop
       if (!isAndroid && !isEdge) {
-        alert('This WebApp was originally optimized for Microsoft Edge on desktop. Standard browser features like Wake Lock will be used if available.');
-        // return; // Decide if you want to stop execution or just warn
+        console.warn('This WebApp was originally optimized for Microsoft Edge on desktop. Standard browser features will be used.');
       } else if (isAndroid && isEdge) {
         console.log('Running on Edge for Android. Original app noted issues here.');
-      } else if (!isEdge && !isAndroid) { // Original condition for desktop Edge
-        alert('This WebApp was originally optimized for Microsoft Edge on desktop for improved voice quality. Please open this page in Microsoft Edge or a modern browser.');
-        // return; // Decide if you want to stop execution
       }
 
 
@@ -363,6 +390,24 @@
       const durMsg = $('duration-message');
       const infoIcon = $('info-icon');
       const infoOverlay = $('info-overlay');
+      const buttonContainer = document.querySelector('.button-container');
+      const progressContainer = $('progress-container');
+      const progressRing = $('progress-ring-fg');
+      const progressPercent = $('progress-percent');
+      
+      /* ───── Progress Circle Setup ───── */
+      const radius = progressRing.r.baseVal.value;
+      const circumference = 2 * Math.PI * radius;
+
+      progressRing.style.strokeDasharray = `${circumference} ${circumference}`;
+      progressRing.style.strokeDashoffset = circumference;
+
+      const setProgress = (percent) => {
+        const offset = circumference - (percent / 100) * circumference;
+        progressRing.style.strokeDashoffset = offset;
+        progressPercent.textContent = `${Math.round(percent)}%`;
+      };
+
 
       /* ───── Info Overlay Handlers ───── */
       infoIcon.addEventListener('click', () => {
@@ -375,11 +420,9 @@
         }
       });
 
-   // This is the NEW code
-infoOverlay.addEventListener('click', (e) => {
-    // Now closes on any click within the overlay (background or content)
-    infoOverlay.style.display = 'none';
-});
+      infoOverlay.addEventListener('click', (e) => {
+        infoOverlay.style.display = 'none';
+      });
 
       /* ───── Meditation text (UNCHANGED) ───── */
       const rand = a => a[Math.random() * a.length | 0];
@@ -475,7 +518,7 @@ infoOverlay.addEventListener('click', (e) => {
         return baseSteps.map((s, i) => ({ t: i * gap, text: rand(s.varis) }));
       };
 
-      /* ───── Wake Lock Functions (UNCHANGED) ───── */
+      /* ───── Wake Lock Functions ───── */
       const requestWakeLock = async () => {
         if ('wakeLock' in navigator) {
           try {
@@ -483,10 +526,9 @@ infoOverlay.addEventListener('click', (e) => {
             console.log('Screen Wake Lock is active.');
             wakeLock.addEventListener('release', () => {
               console.log('Screen Wake Lock was released by the system.');
-              // wakeLock will be nullified by the system, or if we re-acquire it.
             });
           } catch (err) {
-            wakeLock = null; // Ensure wakeLock is null if request fails
+            wakeLock = null;
             console.error(`Failed to acquire screen wake lock: ${err.name}, ${err.message}`);
           }
         } else {
@@ -502,14 +544,12 @@ infoOverlay.addEventListener('click', (e) => {
             console.log('Screen Wake Lock released programmatically.');
           } catch (err) {
             console.error(`Failed to release screen wake lock: ${err.name}, ${err.message}`);
-            // wakeLock might still be 'active' from the script's perspective if release fails,
-            // though the system might have released it. Setting to null to be safe.
             wakeLock = null;
           }
         }
       };
 
-      /* ───── Speech helpers (UNCHANGED) ───── */
+      /* ───── Speech helpers ───── */
       const loadVoices = () =>
         new Promise(res => {
           const ready = () => {
@@ -521,14 +561,14 @@ infoOverlay.addEventListener('click', (e) => {
         });
 
       const pickVoice = vs => {
-        const prefs = ['Steffan']; // Original prefs: ['Steffan','Christopher','Eric','Liam']
+        const prefs = ['Steffan'];
         const en = vs.filter(v => v.lang.toLowerCase().startsWith('en'));
         const match = en.filter(v => prefs.some(n => new RegExp(`\\b${n}\\b`, 'i').test(v.name)));
         return match.length ? rand(match) : en[0] || null;
       };
 
       const speak = (voice, text) => new Promise(done => {
-        if (!text || text.trim() === "...") { // Don't speak if text is just "..."
+        if (!text || text.trim() === "...") {
           done();
           return;
         }
@@ -543,17 +583,21 @@ infoOverlay.addEventListener('click', (e) => {
         speechSynthesis.speak(u);
       });
 
-      /* ───── Session control (UNCHANGED) ───── */
-      let aborter = null;
-
-      const resetUI = async () => { // Make async to await releaseWakeLock
+      /* ───── Session control ───── */
+      const resetUI = async () => {
         if (aborter) aborter.abort();
-        speechSynthesis.cancel(); // Stop any ongoing speech
-        msgElem.textContent = '';
-        speakerLabel.textContent = '';
+        speechSynthesis.cancel();
         durMsg.textContent = '';
-
-        await releaseWakeLock(); // Release the wake lock
+        
+        if (progressInterval) {
+            clearInterval(progressInterval);
+            progressInterval = null;
+        }
+        
+        progressContainer.style.display = 'none';
+        buttonContainer.style.display = 'flex';
+        
+        await releaseWakeLock();
       };
 
       const countdown = (n = 7) => new Promise(res => {
@@ -571,13 +615,11 @@ infoOverlay.addEventListener('click', (e) => {
         }, 1000);
       });
 
-      const runSession = async (plan, dur, voice, signal) => {
-        const sessionStartTime = Date.now(); // Renamed from 'start'
-
+      const runSession = async (plan, dur, voice, signal, sessionStartTime) => {
         for (let i = 0; i < plan.length; i++) {
           if (signal.aborted) {
             console.log("Session aborted during loop.");
-            await releaseWakeLock(); // Ensure lock is released if aborted mid-session
+            await releaseWakeLock();
             return;
           }
           const waitTime = plan[i].t * 1000 - (Date.now() - sessionStartTime);
@@ -588,21 +630,25 @@ infoOverlay.addEventListener('click', (e) => {
             await releaseWakeLock();
             return;
           }
-          msgElem.textContent = plan[i].text;
-          speakerLabel.textContent = voice ? `${voice.name}:` : 'Default Voice:';
+
+          // These lines are removed from updating the UI, but speech still happens.
+          // msgElem.textContent = plan[i].text;
+          // speakerLabel.textContent = voice ? `${voice.name}:` : 'Default Voice:';
           await speak(voice, plan[i].text);
         }
 
-        await new Promise(r => setTimeout(r, 2000)); // Pause before reload
-        // Page reload will inherently cause the browser to release the wake lock.
-        // resetUI (which calls releaseWakeLock) is called at the start of a new session.
+        await new Promise(r => setTimeout(r, 2000));
         window.location.href = window.location.href;
       };
 
-      const startSession = async totalSeconds => { // Renamed from 'start' to 'startSession'
-        await resetUI(); // This will also call releaseWakeLock()
+      const startSession = async totalSeconds => {
+        await resetUI();
+        
+        buttonContainer.style.display = 'none';
+        progressContainer.style.display = 'flex';
+        setProgress(0);
 
-        await requestWakeLock(); // Request wake lock when session starts
+        await requestWakeLock();
 
         durMsg.textContent = `${totalSeconds / 60} minutes session in progress...`;
         try {
@@ -611,36 +657,39 @@ infoOverlay.addEventListener('click', (e) => {
           const voice = pickVoice(voices);
           aborter = new AbortController();
 
-          await runSession(makePlan(totalSeconds), totalSeconds, voice, aborter.signal);
+          const sessionStartTime = Date.now();
+          progressInterval = setInterval(() => {
+              const elapsed = Date.now() - sessionStartTime;
+              const percentage = (elapsed / (totalSeconds * 1000)) * 100;
+              if (percentage >= 100) {
+                  setProgress(100);
+                  clearInterval(progressInterval);
+              } else {
+                  setProgress(percentage);
+              }
+          }, 250); // Update progress 4 times a second
+
+          await runSession(makePlan(totalSeconds), totalSeconds, voice, aborter.signal, sessionStartTime);
         } catch (err) {
           console.error("Error during session setup or execution:", err);
           await releaseWakeLock(); // Ensure wake lock is released on error
+          if(progressInterval) clearInterval(progressInterval);
         }
       };
 
-      /* ───── Button handlers (UNCHANGED) ───── */
+      /* ───── Button handlers ───── */
       btn5.addEventListener('click', () => startSession(300));
       btn7.addEventListener('click', () => startSession(420));
       btn10.addEventListener('click', () => startSession(600));
 
-      /* ───── Visibility Change Handler (UNCHANGED) ───── */
+      /* ───── Visibility Change Handler ───── */
       document.addEventListener('visibilitychange', async () => {
-        // Check if the page is visible and if there was a wake lock that might have been released.
-        // The `wakeLock` variable itself might be null if it was released programmatically
-        // or if the 'release' event fired and we nulled it.
-        // This primarily handles re-acquiring if the document had a lock, became hidden (browser released it), and then became visible again.
         if (document.visibilityState === 'visible') {
-          // If we think a wake lock should be active (e.g., a session is in progress, which is hard to check here directly)
-          // and wakeLock is currently null, we might try to re-acquire.
-          // A more robust way would be to check a session state variable.
-          // For now, if a session was started, durMsg would have text.
           if (durMsg.textContent !== '' && wakeLock === null) {
-            console.log('Page became visible, attempting to re-acquire screen wake lock because a session seems active.');
+            console.log('Page became visible, attempting to re-acquire screen wake lock.');
             await requestWakeLock();
           }
         }
-        // Note: The browser automatically releases screen wake locks when the document becomes non-visible.
-        // The 'release' event on the wakeLock object itself is the most direct way to know this happened.
       });
 
     })();
