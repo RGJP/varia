@@ -50,7 +50,7 @@
         .app-container {
             width: 100%;
             max-width: 450px;
-            height: 100%;
+            /* height: 100%; <-- This was removed to allow vertical centering */
             max-height: 95vh;
             background-color: var(--bg-mid-blue);
             border-radius: 2rem;
@@ -233,14 +233,17 @@
 <body>
 
     <main class="app-container" aria-live="polite">
-        <header class="header">
-            <img src="tb.jpg" alt="An ornate brass Tibetan singing bowl" class="header-image">
-            <div class="title-container">
-                <h1>Echoes of Silence</h1>
-                <button id="infoBtn" class="info-button" aria-label="About">ℹ️</button>
-            </div>
-            <p>Sound Meditation</p>
-        </header>
+       <header class="header">
+    <img src="tb.jpg" alt="An ornate brass Tibetan singing bowl" class="header-image">
+    <div class="title-container">
+        <h1>Echoes of Silence</h1>
+    </div>
+    <div class="subtitle-container">
+        <p>Sound Meditation</p>
+        <br>
+        <button id="infoBtn" class="info-button" aria-label="About">ℹ️</button>
+    </div>
+</header>
 
         <div class="controls">
             <button id="toggleMeditationBtn" class="control-button">Start Meditation</button>
@@ -253,13 +256,19 @@
         <div class="overlay-content">
             <button id="closeOverlayBtn" class="close-button" aria-label="Close">&times;</button>
             <h2>About</h2>
-            <p>This app provides a unique meditation experience using the sounds of Tibetan singing bowls. Press Start to begin building a layered, evolving soundscape. Press Stop to gently fade out the sounds. The session is endless, allowing you to find your own moment of calm. <br><br>Reworked audio sources are from 
-                
-                <a href="https://kasper.bandcamp.com/album/singing-bowls" 
+           <p>
+This minimalist app lets you meditate with the calming sounds of Tibetan singing bowls. Press <b>Start</b> to create an endless, evolving soundscape—unique every time—then press <b>Stop</b> when you’re done.  
+<br><br>
+The sounds are adapted from over 20 original recordings by 
+<a href="https://kasper.bandcamp.com/album/singing-bowls" 
    target="_blank" 
    rel="noopener noreferrer" 
    style="color:white; text-decoration:underline;">
-  Kasper</a>.<br>This will always be free, ad-free, and dedicated solely to well-being, with no commercial purpose.</p>
+   Kasper</a>.  
+<br><br>
+For the best experience, listen for at least five minutes while focusing on your breath. This app will always be free, ad-free, and dedicated solely to your well-being.
+</p>
+
         </div>
     </div>
 
@@ -272,29 +281,29 @@
             const closeOverlayBtn = document.getElementById('closeOverlayBtn');
 
             // --- App State & Audio Config ---
-          const BOWL_SOUNDS = [
-  'tibetanbowls/110_a.mp3',
-  'tibetanbowls/121_b.mp3',
-  'tibetanbowls/130_c.mp3',
-  'tibetanbowls/147_d.mp3',
-  'tibetanbowls/164_e.mp3',
-  'tibetanbowls/174_f.mp3',
-  'tibetanbowls/198_g.mp3',
-  'tibetanbowls/220_a.mp3',
-  'tibetanbowls/245_b.mp3',
-  'tibetanbowls/264_c.mp3',
-  'tibetanbowls/64_c.mp3',
-  'tibetanbowls/75_d.mp3',
-  'tibetanbowls/82_e.mp3',
-  'tibetanbowls/87_f.mp3',
-  'tibetanbowls/98_g.mp3',
-  'tibetanbowls/bell1.mp3',
-  'tibetanbowls/bell2.mp3',
-  'tibetanbowls/bell3.mp3',
-  'tibetanbowls/bell4.mp3',
-  'tibetanbowls/drone1.mp3',
-  'tibetanbowls/drone2.mp3',
-  'tibetanbowls/drone3.mp3'
+           const BOWL_SOUNDS = [
+ 'tibetanbowls/110_a.mp3',
+ 'tibetanbowls/121_b.mp3',
+ 'tibetanbowls/130_c.mp3',
+ 'tibetanbowls/147_d.mp3',
+ 'tibetanbowls/164_e.mp3',
+ 'tibetanbowls/174_f.mp3',
+ 'tibetanbowls/198_g.mp3',
+ 'tibetanbowls/220_a.mp3',
+ 'tibetanbowls/245_b.mp3',
+ 'tibetanbowls/264_c.mp3',
+ 'tibetanbowls/64_c.mp3',
+ 'tibetanbowls/75_d.mp3',
+ 'tibetanbowls/82_e.mp3',
+ 'tibetanbowls/87_f.mp3',
+ 'tibetanbowls/98_g.mp3',
+ 'tibetanbowls/bell1.mp3',
+ 'tibetanbowls/bell2.mp3',
+ 'tibetanbowls/bell3.mp3',
+ 'tibetanbowls/bell4.mp3',
+ 'tibetanbowls/drone1.mp3',
+ 'tibetanbowls/drone2.mp3',
+ 'tibetanbowls/drone3.mp3'
 ];
 
             
@@ -335,7 +344,7 @@
                 soundScheduler = null;
 
                 // Fade out all currently playing sounds
-                activePlayers.forEach(player => fadeOutAndStop(player, 2000));
+                activePlayers.forEach(player => fadeOutAndStop(player, 5000));
                 activePlayers = []; // Clear the array
             }
 
