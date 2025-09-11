@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echoes of Silence — Tibetan Bowl Meditation</title>
+    <meta name="description" content="A calm, minimal web app for Tibetan bowl meditation with randomized audio playback.">
+    
+    <style>
+        /* --- Reset & Base Styles --- */
+        :root {
+            --bg-deep-blue: #041735;
+            --bg-mid-blue: #0A2A4A;
+            --accent-gold: #C9A84D;
+            --text-light: #EDE8DC;
+            --shadow-color: rgba(0, 0, 0, 0.25);
+            
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            --font-serif-display: 'Lora', 'Georgia', serif;
+            
+            font-synthesis: none;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            background-color: var(--bg-deep-blue);
+            color: var(--text-light);
+            font-family: var(--font-sans);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            line-height: 1.6;
+        }
+
+        /* --- Main App Container & Layout --- */
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            background-color: var(--bg-mid-blue);
+            border-radius: 2rem;
+            padding: 2rem;
+            box-shadow: 0 10px 30px var(--shadow-color);
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            transition: all 0.3s ease;
+        }
+
+        @media (min-width: 640px) {
+            .app-container {
+                padding: 3rem;
+            }
+        }
+
+        /* --- Header --- */
+        .header {
+            text-align: center;
+        }
+        
+        .header-image {
+            width: 250px;  /* Increased from 120px */
+            height: 250px; /* Increased from 120px */
+            border-radius:1rem; /* Adjusted for new size */
+            object-fit: cover;
+            border: 0px solid var(--accent-gold);
+            margin-bottom: 1.5rem;
+            box-shadow: 0 5px 15px var(--shadow-color);
+        }
+
+        .title-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .header h1 {
+            font-family: var(--font-serif-display);
+            color: var(--accent-gold);
+            font-size: 1.75rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .info-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--accent-gold);
+            padding: 0;
+            line-height: 1;
+            opacity: 0.8;
+            transition: opacity 0.2s ease;
+        }
+
+        .info-button:hover {
+            opacity: 1;
+        }
+
+        .header p {
+            font-size: 0.95rem;
+            opacity: 0.8;
+        }
+        
+        /* --- Settings & Inputs --- */
+        .settings-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-group label {
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .duration-input {
+            background-color: var(--bg-deep-blue);
+            color: var(--text-light);
+            border: 2px solid var(--accent-gold);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            width: 100%;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .duration-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px var(--accent-gold);
+        }
+
+        /* --- Controls --- */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .control-button {
+            background-color: var(--accent-gold);
+            color: var(--bg-deep-blue);
+            border: none;
+            border-radius: 50px; /* pill shape */
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: none; /* Hidden by default */
+        }
+
+        .control-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(201, 168, 77, 0.3);
+        }
+
+        .control-button:disabled {
+            background-color: #555;
+            color: #999;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        #startBtn {
+            display: inline-block; /* Show start button initially */
+        }
+        
+        /* --- Timer & Progress --- */
+        .progress-display {
+            text-align: center;
+            display: none; /* Hidden until meditation starts */
+        }
+
+        .timer {
+            font-size: 3rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            color: var(--accent-gold);
+        }
+        
+        .progress-bar-container {
+            width: 100%;
+            height: 8px;
+            background-color: var(--bg-deep-blue);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 100%;
+            background-color: var(--accent-gold);
+            border-radius: 4px;
+            transition: transform 1s linear;
+            transform-origin: left;
+        }
+
+        /* --- Information Overlay --- */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .overlay-content {
+            background-color: var(--bg-mid-blue);
+            padding: 2.5rem 2rem 2rem 2rem;
+            border-radius: 1rem;
+            max-width: 450px;
+            width: 100%;
+            position: relative;
+            box-shadow: 0 5px 25px var(--shadow-color);
+            border: 1px solid var(--accent-gold);
+            text-align: center; /* Added to center all content */
+        }
+
+        .overlay-content h2 {
+            font-family: var(--font-serif-display);
+            color: var(--accent-gold);
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .overlay-content p {
+            opacity: 0.9;
+            line-height: 1.7;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--text-light);
+            cursor: pointer;
+            line-height: 1;
+            opacity: 0.7;
+            transition: opacity 0.2s ease;
+        }
+
+        .close-button:hover {
+            opacity: 1;
+        }
+
+        /* --- Footer --- */
+        .site-footer {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            color: var(--text-light);
+            opacity: 0.6;
+        }
+
+        .site-footer a {
+            color: var(--accent-gold);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .site-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <main class="app-container" aria-live="polite">
+        <header class="header">
+            <img src="tb.jpg" alt="An ornate brass Tibetan singing bowl" class="header-image">
+            <div class="title-container">
+                <h1>Echoes of Silence</h1>
+                <button id="infoBtn" class="info-button" aria-label="About">ℹ️</button>
+            </div>
+            <p>Sound Meditation</p>
+        </header>
+
+        <section class="settings-panel" id="settingsPanel">
+            <div class="input-group">
+                <label for="duration">Session length (minutes)</label>
+                <input type="number" id="duration" class="duration-input" value="15" min="1" max="180" aria-label="Meditation duration in minutes">
+            </div>
+        </section>
+
+        <div class="controls">
+            <button id="startBtn" class="control-button">Start Meditation</button>
+            <button id="pauseBtn" class="control-button">Pause</button>
+            <button id="stopBtn" class="control-button">Stop</button>
+        </div>
+        
+        <section class="progress-display" id="progressDisplay">
+            <div id="timer" class="timer" aria-label="Time remaining">15:00</div>
+            <div class="progress-bar-container" aria-hidden="true">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </section>
+    </main>
+    
+    <footer class="site-footer">
+        <p>Reworked audio sources are originally from the great <a href="https://kasper.bandcamp.com/album/singing-bowls" target="_blank" rel="noopener noreferrer">Kasper</a>. Many thanks 🙏<br>This WebApp will always be free, ad-free, and dedicated solely to well-being, with no commercial purpose.</p>
+    </footer>
+
+    <div id="infoOverlay" class="overlay">
+        <div class="overlay-content">
+            <button id="closeOverlayBtn" class="close-button" aria-label="Close">&times;</button>
+            <h2>About</h2>
+            <p>This app provides a unique meditation experience using the sounds of Tibetan singing bowls. Each session is completely unique, generated from a randomized sequence of many different tones. Just choose how many minutes you want the session to be and enjoy your moment of calm.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM Elements ---
+            const durationInput = document.getElementById('duration');
+            const startBtn = document.getElementById('startBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const settingsPanel = document.getElementById('settingsPanel');
+            const progressDisplay = document.getElementById('progressDisplay');
+            const timerDisplay = document.getElementById('timer');
+            const progressBar = document.getElementById('progressBar');
+            const infoBtn = document.getElementById('infoBtn');
+            const infoOverlay = document.getElementById('infoOverlay');
+            const closeOverlayBtn = document.getElementById('closeOverlayBtn');
+
+            // --- App State & Audio Config ---
+            const BOWL_SOUNDS = [
+                'tibetanbowls/110_a.mp3', 'tibetanbowls/121_b.mp3', 'tibetanbowls/130_c.mp3',
+                'tibetanbowls/147_d.mp3', 'tibetanbowls/164_e.mp3', 'tibetanbowls/174_f.mp3',
+                'tibetanbowls/198_g.mp3', 'tibetanbowls/220_a.mp3', 'tibetanbowls/245_b.mp3',
+                'tibetanbowls/264_c.mp3', 'tibetanbowls/64_c.mp3',  'tibetanbowls/75_d.mp3',
+                'tibetanbowls/82_e.mp3',  'tibetanbowls/87_f.mp3',  'tibetanbowls/98_g.mp3',
+                'tibetanbowls/drone1.mp3', 'tibetanbowls/drone2.mp3', 'tibetanbowls/drone3.mp3',
+                'tibetanbowls/bell1.mp3', 'tibetanbowls/bell2.mp3', 'tibetanbowls/bell3.mp3',
+                'tibetanbowls/bell4.mp3'
+            ];
+            const CROSSFADE_DURATION = 2.5; // seconds for a gentle crossfade
+            const SESSION_FADEOUT_DURATION = 10; // seconds
+
+            // --- Web Audio API State ---
+            let audioContext;
+            let masterGain;
+            let compressor;
+            const audioBufferCache = {};
+            let activeSources = [];
+
+            // --- Playback State ---
+            let playlist = [];
+            let currentTrackIndex = 0;
+            let isPlaying = false;
+            let isPaused = false;
+            let sessionDurationSeconds = 0;
+            let startTime = 0; // performance.now() timer
+            let pausedTime = 0;
+            let totalPausedDuration = 0;
+            let schedulerTimeout = null;
+            let timerInterval = null;
+            let countdownInterval = null;
+
+            // --- Event Listeners ---
+            durationInput.addEventListener('input', checkCanStart);
+            startBtn.addEventListener('click', startMeditation);
+            pauseBtn.addEventListener('click', togglePause);
+            stopBtn.addEventListener('click', stopMeditation);
+            infoBtn.addEventListener('click', () => infoOverlay.style.display = 'flex');
+            closeOverlayBtn.addEventListener('click', () => infoOverlay.style.display = 'none');
+            
+            infoOverlay.addEventListener('click', (e) => {
+                if (e.target === infoOverlay) {
+                    infoOverlay.style.display = 'none';
+                }
+            });
+
+            // --- Web Audio API Initialization ---
+            function initAudioContext() {
+                if (audioContext && audioContext.state !== 'closed') return;
+                
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // The Compressor node is key to evening out the volume
+                compressor = audioContext.createDynamicsCompressor();
+                compressor.threshold.setValueAtTime(-24, audioContext.currentTime); // Start compressing sounds above -24dB
+                compressor.knee.setValueAtTime(30, audioContext.currentTime);     // Smoothly transition into compression
+                compressor.ratio.setValueAtTime(12, audioContext.currentTime);     // A 12:1 compression ratio
+                compressor.attack.setValueAtTime(0.003, audioContext.currentTime);// Fast attack
+                compressor.release.setValueAtTime(0.25, audioContext.currentTime);// Natural release
+
+                masterGain = audioContext.createGain();
+
+                // Connect the nodes: Compressor -> Master Gain -> Speakers
+                compressor.connect(masterGain);
+                masterGain.connect(audioContext.destination);
+            }
+            
+            async function getAudioBuffer(url) {
+                if (audioBufferCache[url]) {
+                    return audioBufferCache[url];
+                }
+                try {
+                    const response = await fetch(url);
+                    const arrayBuffer = await response.arrayBuffer();
+                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    audioBufferCache[url] = audioBuffer;
+                    return audioBuffer;
+                } catch (error) {
+                    console.error(`Error loading or decoding audio file: ${url}`, error);
+                    return null;
+                }
+            }
+
+            // --- Core Functions ---
+            function checkCanStart() {
+                const hasDuration = parseInt(durationInput.value, 10) > 0;
+                startBtn.disabled = !hasDuration;
+            }
+            
+            function shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+            
+            function startMeditation() {
+                if (!durationInput.value) return;
+
+                initAudioContext();
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+
+                sessionDurationSeconds = parseInt(durationInput.value, 10) * 60;
+                isPlaying = true;
+                isPaused = false;
+                totalPausedDuration = 0;
+                playlist = [...BOWL_SOUNDS];
+                shuffle(playlist);
+                currentTrackIndex = 0;
+                
+                masterGain.gain.setValueAtTime(1.0, audioContext.currentTime);
+                
+                toggleView(true);
+                
+                getAudioBuffer(playlist[0]);
+                if (playlist.length > 1) getAudioBuffer(playlist[1]);
+                
+                document.querySelector('.progress-bar-container').style.visibility = 'hidden';
+                pauseBtn.disabled = true;
+                stopBtn.disabled = true;
+
+                let countdownSeconds = 5;
+                timerDisplay.textContent = countdownSeconds;
+
+                countdownInterval = setInterval(() => {
+                    countdownSeconds--;
+                    timerDisplay.textContent = countdownSeconds;
+                    
+                    if (countdownSeconds <= 0) {
+                        clearInterval(countdownInterval);
+                        countdownInterval = null;
+
+                        document.querySelector('.progress-bar-container').style.visibility = 'visible';
+                        pauseBtn.disabled = false;
+                        stopBtn.disabled = false;
+
+                        updateTimerDisplay(sessionDurationSeconds);
+                        
+                        scheduleNextTrack(audioContext.currentTime + 0.1);
+
+                        startTime = performance.now();
+                        timerInterval = setInterval(updateTimer, 250);
+                    }
+                }, 1000);
+            }
+
+            function stopMeditation() {
+                isPlaying = false;
+                isPaused = false;
+                
+                activeSources.forEach(source => {
+                    try { source.stop(); } catch (e) {}
+                });
+                activeSources = [];
+                
+                if (schedulerTimeout) clearTimeout(schedulerTimeout);
+
+                if (audioContext && audioContext.state === 'running') {
+                    audioContext.suspend();
+                }
+
+                clearInterval(timerInterval);
+                if (countdownInterval) clearInterval(countdownInterval);
+                timerInterval = null;
+                countdownInterval = null;
+                schedulerTimeout = null;
+                
+                playlist = [];
+                currentTrackIndex = 0;
+
+                pauseBtn.disabled = false;
+                stopBtn.disabled = false;
+
+                toggleView(false);
+            }
+
+            function togglePause() {
+                if (!isPlaying) return;
+                
+                isPaused = !isPaused;
+                if (isPaused) {
+                    audioContext.suspend();
+                    pausedTime = performance.now();
+                    pauseBtn.textContent = 'Resume';
+                } else {
+                    audioContext.resume();
+                    totalPausedDuration += performance.now() - pausedTime;
+                    pauseBtn.textContent = 'Pause';
+                }
+            }
+
+            // --- Audio Scheduling & Playback ---
+            async function scheduleNextTrack(startTime) {
+                if (!isPlaying) return;
+
+                const trackUrl = playlist[currentTrackIndex];
+                const audioBuffer = await getAudioBuffer(trackUrl);
+                
+                if (!audioBuffer) {
+                    currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+                    scheduleNextTrack(startTime);
+                    return;
+                }
+
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                
+                const trackGain = audioContext.createGain();
+                source.connect(trackGain);
+                trackGain.connect(compressor);
+                
+                trackGain.gain.setValueAtTime(0, startTime);
+                trackGain.gain.linearRampToValueAtTime(1, startTime + CROSSFADE_DURATION);
+
+                const fadeOutTime = startTime + audioBuffer.duration - CROSSFADE_DURATION;
+                trackGain.gain.setValueAtTime(1, fadeOutTime);
+                trackGain.gain.linearRampToValueAtTime(0, fadeOutTime + CROSSFADE_DURATION);
+
+                source.start(startTime);
+                activeSources.push(source);
+                
+                source.onended = () => {
+                    activeSources = activeSources.filter(s => s !== source);
+                };
+
+                const nextTrackStartTime = startTime + audioBuffer.duration - CROSSFADE_DURATION;
+                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
+                
+                getAudioBuffer(playlist[currentTrackIndex]); 
+
+                const elapsed = (performance.now() - window.startTime - totalPausedDuration) / 1000;
+                const remaining = sessionDurationSeconds - elapsed;
+                
+                if (remaining > CROSSFADE_DURATION && !isPaused) {
+                    const delay = (nextTrackStartTime - audioContext.currentTime - 0.1) * 1000;
+                    schedulerTimeout = setTimeout(() => scheduleNextTrack(nextTrackStartTime), Math.max(0, delay));
+                }
+            }
+
+            // --- UI & Timer Updates ---
+            function updateTimer() {
+                if (!isPlaying || isPaused) return;
+
+                const elapsedTime = (performance.now() - startTime - totalPausedDuration) / 1000;
+                const remainingTime = Math.max(0, sessionDurationSeconds - elapsedTime);
+                
+                updateTimerDisplay(remainingTime);
+                updateProgressBar(elapsedTime);
+                
+                if (remainingTime <= SESSION_FADEOUT_DURATION) {
+                    masterGain.gain.linearRampToValueAtTime(0, audioContext.currentTime + remainingTime);
+                }
+                
+                if (remainingTime <= 0) {
+                    setTimeout(stopMeditation, 200); // Small delay to allow fadeout to complete
+                }
+            }
+
+            function updateTimerDisplay(seconds) {
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                timerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+            }
+
+            function updateProgressBar(elapsedSeconds) {
+                const progressPercentage = (elapsedSeconds / sessionDurationSeconds) * 100;
+                progressBar.style.transform = `scaleX(${progressPercentage / 100})`;
+            }
+
+            function toggleView(inProgress) {
+                if (inProgress) {
+                    settingsPanel.style.display = 'none';
+                    progressDisplay.style.display = 'block';
+                    startBtn.style.display = 'none';
+                    pauseBtn.style.display = 'inline-block';
+                    stopBtn.style.display = 'inline-block';
+                    pauseBtn.textContent = 'Pause';
+                } else {
+                    settingsPanel.style.display = 'flex';
+                    progressDisplay.style.display = 'none';
+                    startBtn.style.display = 'inline-block';
+                    pauseBtn.style.display = 'none';
+                    stopBtn.style.display = 'none';
+                    progressBar.style.transform = 'scaleX(0)';
+                    const newDuration = parseInt(durationInput.value, 10) * 60 || 0;
+                    updateTimerDisplay(newDuration > 0 ? newDuration : 15 * 60);
+                    checkCanStart();
+                }
+            }
+
+            // Initial check to enable the start button
+            checkCanStart();
+            updateTimerDisplay(parseInt(durationInput.value, 10) * 60);
+        });
+    </script>
+
+</body>
+</html>
