@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Echoes of Silence — Tibetan Bowl Meditation</title>
-    <meta name="description" content="A calm, minimal web app for Tibetan bowl meditation with randomized audio playback.">
+    <meta name="description" content="A calm, minimal web app for creating an endless, layered soundscape with Tibetan singing bowls.">
     
     <style>
         /* --- Reset & Base Styles --- */
@@ -43,28 +43,28 @@
             justify-content: center;
             align-items: center;
             padding: 1rem;
-            line-height: 1.5; /* Slightly reduced line-height */
+            line-height: 1.5;
         }
 
         /* --- Main App Container & Layout --- */
         .app-container {
             width: 100%;
-            max-width: 450px; /* Reduced max-width slightly */
-            height: 100%; /* Make container fill the flex parent space */
-            max-height: 95vh; /* Ensure it doesn't touch screen edges */
+            max-width: 450px;
+            height: 100%;
+            max-height: 95vh;
             background-color: var(--bg-mid-blue);
             border-radius: 2rem;
-            padding: 1.5rem; /* Reduced padding */
+            padding: 1.5rem;
             box-shadow: 0 10px 30px var(--shadow-color);
             display: flex;
             flex-direction: column;
-            gap: 1rem; /* Reduced gap */
+            gap: 1.5rem; /* Adjusted gap */
             transition: all 0.3s ease;
         }
 
         @media (min-width: 640px) {
             .app-container {
-                padding: 2rem; /* Reduced padding */
+                padding: 2rem;
             }
         }
 
@@ -79,7 +79,7 @@
             border-radius: 1rem;
             object-fit: cover;
             border: 0px solid var(--accent-gold);
-            margin-bottom: 1rem; /* Reduced margin */
+            margin-bottom: 1rem;
             box-shadow: 0 5px 15px var(--shadow-color);
         }
 
@@ -93,7 +93,7 @@
         .header h1 {
             font-family: var(--font-serif-display);
             color: var(--accent-gold);
-            font-size: 1.6rem; /* Reduced font size */
+            font-size: 1.6rem;
             font-weight: 500;
             letter-spacing: 0.5px;
             margin-bottom: 0.25rem;
@@ -102,7 +102,7 @@
         .info-button {
             background: none;
             border: none;
-            font-size: 1.4rem; /* Reduced font size */
+            font-size: 1.4rem;
             cursor: pointer;
             color: var(--accent-gold);
             padding: 0;
@@ -116,63 +116,15 @@
         }
 
         .header p {
-            font-size: 0.9rem; /* Reduced font size */
+            font-size: 0.9rem;
             opacity: 0.8;
         }
         
-        /* --- Settings & Inputs --- */
-        .settings-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem; /* Reduced gap */
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .input-group label {
-            margin-bottom: 0.5rem; /* Reduced margin */
-            font-size: 0.95rem; /* Reduced font size */
-            font-weight: 500;
-        }
-
-        .duration-input {
-            background-color: var(--bg-deep-blue);
-            color: var(--text-light);
-            border: 2px solid var(--accent-gold);
-            border-radius: 0.75rem;
-            padding: 0.6rem 1rem; /* Reduced padding */
-            font-size: 1rem;
-            width: 100%;
-            transition: box-shadow 0.2s ease;
-            cursor: pointer;
-            
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23C9A84D' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 1em;
-            padding-right: 2.5rem;
-        }
-
-        .duration-input::-ms-expand {
-            display: none;
-        }
-
-        .duration-input:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px var(--accent-gold);
-        }
-
         /* --- Controls --- */
         .controls {
             display: flex;
             justify-content: center;
-            gap: 1rem;
+            margin-top: 1rem; /* Added margin for spacing */
         }
         
         .control-button {
@@ -180,12 +132,13 @@
             color: var(--bg-deep-blue);
             border: none;
             border-radius: 50px;
-            padding: 0.8rem 1.5rem; /* Reduced padding */
-            font-size: 1rem; /* Reduced font size */
+            padding: 0.9rem 2rem; /* Increased padding */
+            font-size: 1.1rem; /* Increased font size */
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            display: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+            width: 200px; /* Set a fixed width */
+            text-align: center;
         }
 
         .control-button:hover:not(:disabled) {
@@ -193,46 +146,8 @@
             box-shadow: 0 4px 15px rgba(201, 168, 77, 0.3);
         }
 
-        .control-button:disabled {
-            background-color: #555;
-            color: #999;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
-
-        #startBtn {
-            display: inline-block;
-        }
-        
-        /* --- Timer & Progress --- */
-        .progress-display {
-            text-align: center;
-            display: none;
-        }
-
-        .timer {
-            font-size: 2.5rem; /* Reduced font size */
-            font-weight: 300;
-            letter-spacing: 2px;
-            color: var(--accent-gold);
-        }
-        
-        .progress-bar-container {
-            width: 100%;
-            height: 8px;
-            background-color: var(--bg-deep-blue);
-            border-radius: 4px;
-            overflow: hidden;
-            margin-top: 0.75rem; /* Reduced margin */
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 100%;
-            background-color: var(--accent-gold);
-            border-radius: 4px;
-            transition: transform 1s linear;
-            transform-origin: left;
+        .control-button.active {
+            background-color: #a88d3e; /* Darker gold when active */
         }
 
         /* --- Information Overlay --- */
@@ -298,8 +213,8 @@
         .site-footer {
             text-align: center;
             margin-top: auto; /* Pushes footer to the bottom of the flex container */
-            padding-top: 1rem; /* Add some space above the footer */
-            font-size: 0.8rem; /* Reduced font size */
+            padding-top: 1rem;
+            font-size: 0.8rem;
             color: var(--text-light);
             opacity: 0.6;
         }
@@ -327,332 +242,161 @@
             <p>Sound Meditation</p>
         </header>
 
-        <section class="settings-panel" id="settingsPanel">
-            <div class="input-group">
-                <label for="duration">Session length</label>
-                <select id="duration" class="duration-input" aria-label="Meditation duration in minutes">
-                     <option value="3">3 minutes</option>
-                    <option value="5">5 minutes</option>
-                    <option value="7">7 minutes</option>
-                    <option value="10" selected>10 minutes</option>
-                    <option value="15" >15 minutes</option>
-                    <option value="20">20 minutes</option>
-                    <option value="30">30 minutes</option>
-                    <option value="45">45 minutes</option>
-                    <option value="60">60 minutes</option>
-                </select>
-            </div>
-        </section>
-
         <div class="controls">
-            <button id="startBtn" class="control-button">Start Meditation</button>
-            <button id="pauseBtn" class="control-button">Pause</button>
-            <button id="stopBtn" class="control-button">Stop</button>
+            <button id="toggleMeditationBtn" class="control-button">Start Meditation</button>
         </div>
         
-        <section class="progress-display" id="progressDisplay">
-            <div id="timer" class="timer" aria-label="Time remaining">15:00</div>
-            <div class="progress-bar-container" aria-hidden="true">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-        </section>
-        
-        <footer class="site-footer">
-            <p>Reworked audio sources are <a href="https://kasper.bandcamp.com/album/singing-bowls" target="_blank" rel="noopener noreferrer">Kasper</a>.<br>This will always be free, ad-free, and dedicated solely to well-being, with no commercial purpose.</p>
-        </footer>
+       
     </main>
     
     <div id="infoOverlay" class="overlay">
         <div class="overlay-content">
             <button id="closeOverlayBtn" class="close-button" aria-label="Close">&times;</button>
             <h2>About</h2>
-            <p>This app provides a unique meditation experience using the sounds of Tibetan singing bowls. Each session is completely unique, generated from a randomized sequence of many different tones. Just choose how many minutes you want the session to be and enjoy your moment of calm.</p>
+            <p>This app provides a unique meditation experience using the sounds of Tibetan singing bowls. Press Start to begin building a layered, evolving soundscape. Press Stop to gently fade out the sounds. The session is endless, allowing you to find your own moment of calm. <br><br>Reworked audio sources are from 
+                
+                <a href="https://kasper.bandcamp.com/album/singing-bowls" 
+   target="_blank" 
+   rel="noopener noreferrer" 
+   style="color:white; text-decoration:underline;">
+  Kasper</a>.<br>This will always be free, ad-free, and dedicated solely to well-being, with no commercial purpose.</p>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // --- DOM Elements ---
-            const durationInput = document.getElementById('duration');
-            const startBtn = document.getElementById('startBtn');
-            const pauseBtn = document.getElementById('pauseBtn');
-            const stopBtn = document.getElementById('stopBtn');
-            const settingsPanel = document.getElementById('settingsPanel');
-            const progressDisplay = document.getElementById('progressDisplay');
-            const timerDisplay = document.getElementById('timer');
-            const progressBar = document.getElementById('progressBar');
+            const toggleBtn = document.getElementById('toggleMeditationBtn');
             const infoBtn = document.getElementById('infoBtn');
             const infoOverlay = document.getElementById('infoOverlay');
             const closeOverlayBtn = document.getElementById('closeOverlayBtn');
 
             // --- App State & Audio Config ---
-            const BOWL_SOUNDS = [
-                'tibetanbowls/110_a.mp3', 'tibetanbowls/121_b.mp3', 'tibetanbowls/130_c.mp3',
-                'tibetanbowls/147_d.mp3', 'tibetanbowls/164_e.mp3', 'tibetanbowls/174_f.mp3',
-                'tibetanbowls/198_g.mp3', 'tibetanbowls/220_a.mp3', 'tibetanbowls/245_b.mp3',
-                'tibetanbowls/264_c.mp3', 'tibetanbowls/64_c.mp3',  'tibetanbowls/75_d.mp3',
-                'tibetanbowls/82_e.mp3',  'tibetanbowls/87_f.mp3',  'tibetanbowls/98_g.mp3',
-                 'tibetanbowls/drone1.mp3', 'tibetanbowls/drone2.mp3', 'tibetanbowls/drone3.mp3',
-                'tibetanbowls/bell1.mp3', 'tibetanbowls/bell2.mp3', 'tibetanbowls/bell3.mp3',
-                'tibetanbowls/bell4.mp3'
-            ];
-            const CROSSFADE_DURATION = 2; // seconds
-            const SESSION_FADEOUT_DURATION = 10; // seconds
+          const BOWL_SOUNDS = [
+  'tibetanbowls/110_a.mp3',
+  'tibetanbowls/121_b.mp3',
+  'tibetanbowls/130_c.mp3',
+  'tibetanbowls/147_d.mp3',
+  'tibetanbowls/164_e.mp3',
+  'tibetanbowls/174_f.mp3',
+  'tibetanbowls/198_g.mp3',
+  'tibetanbowls/220_a.mp3',
+  'tibetanbowls/245_b.mp3',
+  'tibetanbowls/264_c.mp3',
+  'tibetanbowls/64_c.mp3',
+  'tibetanbowls/75_d.mp3',
+  'tibetanbowls/82_e.mp3',
+  'tibetanbowls/87_f.mp3',
+  'tibetanbowls/98_g.mp3',
+  'tibetanbowls/bell1.mp3',
+  'tibetanbowls/bell2.mp3',
+  'tibetanbowls/bell3.mp3',
+  'tibetanbowls/bell4.mp3',
+  'tibetanbowls/drone1.mp3',
+  'tibetanbowls/drone2.mp3',
+  'tibetanbowls/drone3.mp3'
+];
 
-            let playerA = new Audio();
-            let playerB = new Audio();
-            let activePlayer;
             
-            let playlist = [];
-            let currentTrackIndex = 0;
             let isPlaying = false;
-            let isPaused = false;
-            let sessionDurationSeconds = 0;
-            let startTime = 0;
-            let pausedTime = 0;
-            let totalPausedDuration = 0;
-            let timerInterval = null;
-            let crossfadeInterval = null;
-            let countdownInterval = null;
+            let activePlayers = [];
+            let soundScheduler = null;
 
             // --- Event Listeners ---
-            durationInput.addEventListener('change', checkCanStart);
-            startBtn.addEventListener('click', startMeditation);
-            pauseBtn.addEventListener('click', togglePause);
-            stopBtn.addEventListener('click', stopMeditation);
+            toggleBtn.addEventListener('click', toggleMeditation);
             infoBtn.addEventListener('click', () => infoOverlay.style.display = 'flex');
             closeOverlayBtn.addEventListener('click', () => infoOverlay.style.display = 'none');
-            
             infoOverlay.addEventListener('click', (e) => {
-                if (e.target === infoOverlay) {
+               
                     infoOverlay.style.display = 'none';
-                }
+                
             });
 
-            playerA.addEventListener('timeupdate', handleCrossfadeTrigger);
-            playerB.addEventListener('timeupdate', handleCrossfadeTrigger);
-            playerA.addEventListener('ended', handleTrackEnd);
-            playerB.addEventListener('ended', handleTrackEnd);
-
             // --- Core Functions ---
-            function checkCanStart() {
-                const hasDuration = parseInt(durationInput.value, 10) > 0;
-                startBtn.disabled = !hasDuration;
-            }
-            
-            function shuffle(array) {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
+            function toggleMeditation() {
+                isPlaying = !isPlaying;
+                if (isPlaying) {
+                    startSoundscape();
+                } else {
+                    stopSoundscape();
                 }
-            }
-            
-            function startMeditation() {
-                if (!durationInput.value) return;
-
-                sessionDurationSeconds = parseInt(durationInput.value, 10) * 60;
-                isPlaying = true;
-                isPaused = false;
-                totalPausedDuration = 0;
-                playlist = [...BOWL_SOUNDS];
-                shuffle(playlist);
-                currentTrackIndex = 0;
-                
-                playerA.volume = 1;
-                playerB.volume = 1;
-
-                toggleView(true);
-                
-                // --- COUNTDOWN LOGIC ---
-                document.querySelector('.progress-bar-container').style.visibility = 'hidden';
-                pauseBtn.disabled = true;
-                stopBtn.disabled = true;
-
-                let countdownSeconds = 5;
-                timerDisplay.textContent = countdownSeconds;
-
-                countdownInterval = setInterval(() => {
-                    countdownSeconds--;
-                    timerDisplay.textContent = countdownSeconds;
-                    
-                    if (countdownSeconds <= 0) {
-                        clearInterval(countdownInterval);
-                        countdownInterval = null;
-
-                        document.querySelector('.progress-bar-container').style.visibility = 'visible';
-                        pauseBtn.disabled = false;
-                        stopBtn.disabled = false;
-
-                        updateTimerDisplay(sessionDurationSeconds);
-                        
-                        activePlayer = playerA;
-                        activePlayer.src = playlist[currentTrackIndex];
-                        activePlayer.play().catch(e => console.error("Playback error:", e));
-                        
-                        startTime = performance.now();
-                        timerInterval = setInterval(updateTimer, 250);
-                    }
-                }, 1000);
+                updateButtonUI();
             }
 
-            function stopMeditation() {
-                isPlaying = false;
-                isPaused = false;
-                
-                playerA.pause();
-                playerB.pause();
-                playerA.src = "";
-                playerB.src = "";
-                playerA.volume = 1;
-                playerB.volume = 1;
-
-                clearInterval(timerInterval);
-                if (crossfadeInterval) clearInterval(crossfadeInterval);
-                if (countdownInterval) clearInterval(countdownInterval);
-                timerInterval = null;
-                crossfadeInterval = null;
-                countdownInterval = null;
-                
-                playlist = [];
-                currentTrackIndex = 0;
-
-                pauseBtn.disabled = false;
-                stopBtn.disabled = false;
-
-                toggleView(false);
+            function startSoundscape() {
+                console.log("Starting soundscape...");
+                playRandomSound(); // Play the first sound immediately
+                scheduleNextSound();
             }
 
-            function togglePause() {
+            function stopSoundscape() {
+                console.log("Stopping soundscape...");
+                clearTimeout(soundScheduler); // Stop scheduling new sounds
+                soundScheduler = null;
+
+                // Fade out all currently playing sounds
+                activePlayers.forEach(player => fadeOutAndStop(player, 2000));
+                activePlayers = []; // Clear the array
+            }
+
+            function scheduleNextSound() {
+                if (!isPlaying) return;
+
+                // Random delay between 10 and 20 seconds
+                const delay = Math.random() * 10000 + 10000;
+                
+                soundScheduler = setTimeout(() => {
+                    playRandomSound();
+                    scheduleNextSound(); // Schedule the next one
+                }, delay);
+            }
+
+            function playRandomSound() {
                 if (!isPlaying) return;
                 
-                isPaused = !isPaused;
-                if (isPaused) {
-                    playerA.pause();
-                    playerB.pause();
-                    pausedTime = performance.now();
-                    pauseBtn.textContent = 'Resume';
-                } else {
-                    activePlayer.play().catch(e => console.error("Playback error on resume:", e));
-                    totalPausedDuration += performance.now() - pausedTime;
-                    pauseBtn.textContent = 'Pause';
-                }
-            }
-
-            // --- Audio Handling ---
-            function handleCrossfadeTrigger() {
-                if (!this.duration || !isPlaying || isPaused || crossfadeInterval) return;
-
-                const timeToFade = this.duration - CROSSFADE_DURATION;
-                if (this.currentTime >= timeToFade) {
-                    initiateCrossfade();
-                }
-            }
-
-            function handleTrackEnd() {
-                if (this === activePlayer && !crossfadeInterval) {
-                    initiateCrossfade();
-                }
-            }
-
-            function initiateCrossfade() {
-                if (crossfadeInterval) return;
-
-                const elapsedTime = (performance.now() - startTime - totalPausedDuration) / 1000;
-                const remainingTime = Math.max(0, sessionDurationSeconds - elapsedTime);
+                const soundIndex = Math.floor(Math.random() * BOWL_SOUNDS.length);
+                const soundSrc = BOWL_SOUNDS[soundIndex];
                 
-                if (remainingTime <= SESSION_FADEOUT_DURATION) {
-                    return;
-                }
+                const player = new Audio(soundSrc);
+                player.volume = 0.8; // Set a default volume
+                
+                player.play().catch(e => console.error("Audio playback failed:", e));
+                
+                activePlayers.push(player);
 
-                currentTrackIndex++;
-                if (currentTrackIndex >= playlist.length) {
-                    shuffle(playlist);
-                    currentTrackIndex = 0;
-                }
+                // Clean up the player from the array once it has finished
+                player.addEventListener('ended', () => {
+                    activePlayers = activePlayers.filter(p => p !== player);
+                });
+            }
 
-                const fadeOutPlayer = activePlayer;
-                const fadeInPlayer = (activePlayer === playerA) ? playerB : playerA;
+            function fadeOutAndStop(player, duration) {
+                const fadeInterval = 50; // ms
+                const steps = duration / fadeInterval;
+                const volumeStep = player.volume / steps;
 
-                fadeInPlayer.src = playlist[currentTrackIndex];
-                fadeInPlayer.volume = 0;
-                fadeInPlayer.play().catch(e => console.error("Playback error:", e));
-                activePlayer = fadeInPlayer;
-
-                let fadeStartTime = Date.now();
-                crossfadeInterval = setInterval(() => {
-                    let elapsed = (Date.now() - fadeStartTime) / 1000;
-                    let progress = Math.min(elapsed / CROSSFADE_DURATION, 1);
-
-                    try {
-                        fadeOutPlayer.volume = 1 - progress;
-                        fadeInPlayer.volume = progress;
-                    } catch (e) { /* Ignore errors */ }
-
-                    if (progress >= 1) {
-                        clearInterval(crossfadeInterval);
-                        crossfadeInterval = null;
-                        fadeOutPlayer.pause();
-                        fadeOutPlayer.src = "";
+                const fade = setInterval(() => {
+                    if (player.volume > volumeStep) {
+                        player.volume -= volumeStep;
+                    } else {
+                        player.volume = 0;
+                        player.pause();
+                        clearInterval(fade);
                     }
-                }, 50);
+                }, fadeInterval);
             }
 
-            // --- UI & Timer Updates ---
-            function updateTimer() {
-                if (!isPlaying || isPaused) return;
-
-                const elapsedTime = (performance.now() - startTime - totalPausedDuration) / 1000;
-                const remainingTime = Math.max(0, sessionDurationSeconds - elapsedTime);
-                
-                updateTimerDisplay(remainingTime);
-                updateProgressBar(elapsedTime);
-                
-                if (remainingTime <= SESSION_FADEOUT_DURATION) {
-                    const fadeProgress = remainingTime / SESSION_FADEOUT_DURATION;
-                    const newVolume = Math.max(0, fadeProgress);
-                    
-                    if (!crossfadeInterval) {
-                       playerA.volume = newVolume;
-                       playerB.volume = newVolume;
-                    }
-                }
-                
-                if (remainingTime <= 0) {
-                    stopMeditation();
-                }
-            }
-
-            function updateTimerDisplay(seconds) {
-                const mins = Math.floor(seconds / 60);
-                const secs = Math.floor(seconds % 60);
-                timerDisplay.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-            }
-
-            function updateProgressBar(elapsedSeconds) {
-                const progressPercentage = (elapsedSeconds / sessionDurationSeconds) * 100;
-                progressBar.style.transform = `scaleX(${progressPercentage / 100})`;
-            }
-
-            function toggleView(inProgress) {
-                if (inProgress) {
-                    settingsPanel.style.display = 'none';
-                    progressDisplay.style.display = 'block';
-                    startBtn.style.display = 'none';
-                    pauseBtn.style.display = 'inline-block';
-                    stopBtn.style.display = 'inline-block';
-                    pauseBtn.textContent = 'Pause';
+            function updateButtonUI() {
+                if (isPlaying) {
+                    toggleBtn.textContent = 'Stop Meditation';
+                    toggleBtn.classList.add('active');
+                    toggleBtn.setAttribute('aria-label', 'Stop the meditation soundscape');
                 } else {
-                    settingsPanel.style.display = 'flex';
-                    progressDisplay.style.display = 'none';
-                    startBtn.style.display = 'inline-block';
-                    pauseBtn.style.display = 'none';
-                    stopBtn.style.display = 'none';
-                    progressBar.style.transform = 'scaleX(0)';
-                    checkCanStart();
+                    toggleBtn.textContent = 'Start Meditation';
+                    toggleBtn.classList.remove('active');
+                    toggleBtn.setAttribute('aria-label', 'Start the meditation soundscape');
                 }
             }
-
-            checkCanStart();
         });
     </script>
 
