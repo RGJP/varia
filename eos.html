@@ -31,7 +31,8 @@
         }
 
         html, body {
-            height: 100%;
+            height: 100vh; /* Use viewport height */
+            overflow: hidden; /* Prevent scrolling on the body */
         }
 
         body {
@@ -39,30 +40,31 @@
             color: var(--text-light);
             font-family: var(--font-sans);
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             padding: 1rem;
-            line-height: 1.6;
+            line-height: 1.5; /* Slightly reduced line-height */
         }
 
         /* --- Main App Container & Layout --- */
         .app-container {
             width: 100%;
-            max-width: 480px;
+            max-width: 450px; /* Reduced max-width slightly */
+            height: 100%; /* Make container fill the flex parent space */
+            max-height: 95vh; /* Ensure it doesn't touch screen edges */
             background-color: var(--bg-mid-blue);
             border-radius: 2rem;
-            padding: 2rem;
+            padding: 1.5rem; /* Reduced padding */
             box-shadow: 0 10px 30px var(--shadow-color);
             display: flex;
             flex-direction: column;
-            gap: 2rem;
+            gap: 1rem; /* Reduced gap */
             transition: all 0.3s ease;
         }
 
         @media (min-width: 640px) {
             .app-container {
-                padding: 3rem;
+                padding: 2rem; /* Reduced padding */
             }
         }
 
@@ -72,12 +74,12 @@
         }
         
         .header-image {
-            width: 250px;  /* Increased from 120px */
-            height: 250px; /* Increased from 120px */
-            border-radius:1rem; /* Adjusted for new size */
+            width: 280px;  
+            height: 280px; 
+            border-radius: 1rem;
             object-fit: cover;
             border: 0px solid var(--accent-gold);
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem; /* Reduced margin */
             box-shadow: 0 5px 15px var(--shadow-color);
         }
 
@@ -91,7 +93,7 @@
         .header h1 {
             font-family: var(--font-serif-display);
             color: var(--accent-gold);
-            font-size: 1.75rem;
+            font-size: 1.6rem; /* Reduced font size */
             font-weight: 500;
             letter-spacing: 0.5px;
             margin-bottom: 0.25rem;
@@ -100,7 +102,7 @@
         .info-button {
             background: none;
             border: none;
-            font-size: 1.5rem;
+            font-size: 1.4rem; /* Reduced font size */
             cursor: pointer;
             color: var(--accent-gold);
             padding: 0;
@@ -114,7 +116,7 @@
         }
 
         .header p {
-            font-size: 0.95rem;
+            font-size: 0.9rem; /* Reduced font size */
             opacity: 0.8;
         }
         
@@ -122,7 +124,7 @@
         .settings-panel {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 1rem; /* Reduced gap */
         }
 
         .input-group {
@@ -131,8 +133,8 @@
         }
 
         .input-group label {
-            margin-bottom: 0.75rem;
-            font-size: 1rem;
+            margin-bottom: 0.5rem; /* Reduced margin */
+            font-size: 0.95rem; /* Reduced font size */
             font-weight: 500;
         }
 
@@ -141,10 +143,24 @@
             color: var(--text-light);
             border: 2px solid var(--accent-gold);
             border-radius: 0.75rem;
-            padding: 0.75rem 1rem;
+            padding: 0.6rem 1rem; /* Reduced padding */
             font-size: 1rem;
             width: 100%;
             transition: box-shadow 0.2s ease;
+            cursor: pointer;
+            
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23C9A84D' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+            padding-right: 2.5rem;
+        }
+
+        .duration-input::-ms-expand {
+            display: none;
         }
 
         .duration-input:focus {
@@ -163,13 +179,13 @@
             background-color: var(--accent-gold);
             color: var(--bg-deep-blue);
             border: none;
-            border-radius: 50px; /* pill shape */
-            padding: 1rem 2rem;
-            font-size: 1.1rem;
+            border-radius: 50px;
+            padding: 0.8rem 1.5rem; /* Reduced padding */
+            font-size: 1rem; /* Reduced font size */
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
-            display: none; /* Hidden by default */
+            display: none;
         }
 
         .control-button:hover:not(:disabled) {
@@ -185,17 +201,17 @@
         }
 
         #startBtn {
-            display: inline-block; /* Show start button initially */
+            display: inline-block;
         }
         
         /* --- Timer & Progress --- */
         .progress-display {
             text-align: center;
-            display: none; /* Hidden until meditation starts */
+            display: none;
         }
 
         .timer {
-            font-size: 3rem;
+            font-size: 2.5rem; /* Reduced font size */
             font-weight: 300;
             letter-spacing: 2px;
             color: var(--accent-gold);
@@ -207,7 +223,7 @@
             background-color: var(--bg-deep-blue);
             border-radius: 4px;
             overflow: hidden;
-            margin-top: 1rem;
+            margin-top: 0.75rem; /* Reduced margin */
         }
 
         .progress-bar {
@@ -227,7 +243,7 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.7);
-            display: none; /* Hidden by default */
+            display: none;
             justify-content: center;
             align-items: center;
             padding: 1rem;
@@ -244,7 +260,7 @@
             position: relative;
             box-shadow: 0 5px 25px var(--shadow-color);
             border: 1px solid var(--accent-gold);
-            text-align: center; /* Added to center all content */
+            text-align: center;
         }
 
         .overlay-content h2 {
@@ -281,8 +297,9 @@
         /* --- Footer --- */
         .site-footer {
             text-align: center;
-            margin-top: 2rem;
-            font-size: 0.85rem;
+            margin-top: auto; /* Pushes footer to the bottom of the flex container */
+            padding-top: 1rem; /* Add some space above the footer */
+            font-size: 0.8rem; /* Reduced font size */
             color: var(--text-light);
             opacity: 0.6;
         }
@@ -312,8 +329,18 @@
 
         <section class="settings-panel" id="settingsPanel">
             <div class="input-group">
-                <label for="duration">Session length (minutes)</label>
-                <input type="number" id="duration" class="duration-input" value="15" min="1" max="180" aria-label="Meditation duration in minutes">
+                <label for="duration">Session length</label>
+                <select id="duration" class="duration-input" aria-label="Meditation duration in minutes">
+                     <option value="3">3 minutes</option>
+                    <option value="5">5 minutes</option>
+                    <option value="7">7 minutes</option>
+                    <option value="10" selected>10 minutes</option>
+                    <option value="15" >15 minutes</option>
+                    <option value="20">20 minutes</option>
+                    <option value="30">30 minutes</option>
+                    <option value="45">45 minutes</option>
+                    <option value="60">60 minutes</option>
+                </select>
             </div>
         </section>
 
@@ -329,12 +356,12 @@
                 <div class="progress-bar" id="progressBar"></div>
             </div>
         </section>
+        
+        <footer class="site-footer">
+            <p>Reworked audio sources are <a href="https://kasper.bandcamp.com/album/singing-bowls" target="_blank" rel="noopener noreferrer">Kasper</a>.<br>This will always be free, ad-free, and dedicated solely to well-being, with no commercial purpose.</p>
+        </footer>
     </main>
     
-    <footer class="site-footer">
-        <p>Reworked audio sources are from <a href="https://kasper.bandcamp.com/album/singing-bowls" target="_blank" rel="noopener noreferrer">Kasper</a>🙏.<br>This WebApp will always be free, ad-free, and dedicated solely to well-being, with no commercial purpose.</p>
-    </footer>
-
     <div id="infoOverlay" class="overlay">
         <div class="overlay-content">
             <button id="closeOverlayBtn" class="close-button" aria-label="Close">&times;</button>
@@ -365,35 +392,31 @@
                 'tibetanbowls/198_g.mp3', 'tibetanbowls/220_a.mp3', 'tibetanbowls/245_b.mp3',
                 'tibetanbowls/264_c.mp3', 'tibetanbowls/64_c.mp3',  'tibetanbowls/75_d.mp3',
                 'tibetanbowls/82_e.mp3',  'tibetanbowls/87_f.mp3',  'tibetanbowls/98_g.mp3',
-                'tibetanbowls/drone1.mp3', 'tibetanbowls/drone2.mp3', 'tibetanbowls/drone3.mp3',
+                 'tibetanbowls/drone1.mp3', 'tibetanbowls/drone2.mp3', 'tibetanbowls/drone3.mp3',
                 'tibetanbowls/bell1.mp3', 'tibetanbowls/bell2.mp3', 'tibetanbowls/bell3.mp3',
                 'tibetanbowls/bell4.mp3'
             ];
-            const CROSSFADE_DURATION = 2.5; // seconds for a gentle crossfade
+            const CROSSFADE_DURATION = 2; // seconds
             const SESSION_FADEOUT_DURATION = 10; // seconds
 
-            // --- Web Audio API State ---
-            let audioContext;
-            let masterGain;
-            let compressor;
-            const audioBufferCache = {};
-            let activeSources = [];
-
-            // --- Playback State ---
+            let playerA = new Audio();
+            let playerB = new Audio();
+            let activePlayer;
+            
             let playlist = [];
             let currentTrackIndex = 0;
             let isPlaying = false;
             let isPaused = false;
             let sessionDurationSeconds = 0;
-            let startTime = 0; // performance.now() timer
+            let startTime = 0;
             let pausedTime = 0;
             let totalPausedDuration = 0;
-            let schedulerTimeout = null;
             let timerInterval = null;
+            let crossfadeInterval = null;
             let countdownInterval = null;
 
             // --- Event Listeners ---
-            durationInput.addEventListener('input', checkCanStart);
+            durationInput.addEventListener('change', checkCanStart);
             startBtn.addEventListener('click', startMeditation);
             pauseBtn.addEventListener('click', togglePause);
             stopBtn.addEventListener('click', stopMeditation);
@@ -406,42 +429,10 @@
                 }
             });
 
-            // --- Web Audio API Initialization ---
-            function initAudioContext() {
-                if (audioContext && audioContext.state !== 'closed') return;
-                
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                
-                // The Compressor node is key to evening out the volume
-                compressor = audioContext.createDynamicsCompressor();
-                compressor.threshold.setValueAtTime(-24, audioContext.currentTime); // Start compressing sounds above -24dB
-                compressor.knee.setValueAtTime(30, audioContext.currentTime);      // Smoothly transition into compression
-                compressor.ratio.setValueAtTime(12, audioContext.currentTime);     // A 12:1 compression ratio
-                compressor.attack.setValueAtTime(0.003, audioContext.currentTime);// Fast attack
-                compressor.release.setValueAtTime(0.25, audioContext.currentTime);// Natural release
-
-                masterGain = audioContext.createGain();
-
-                // Connect the nodes: Compressor -> Master Gain -> Speakers
-                compressor.connect(masterGain);
-                masterGain.connect(audioContext.destination);
-            }
-            
-            async function getAudioBuffer(url) {
-                if (audioBufferCache[url]) {
-                    return audioBufferCache[url];
-                }
-                try {
-                    const response = await fetch(url);
-                    const arrayBuffer = await response.arrayBuffer();
-                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                    audioBufferCache[url] = audioBuffer;
-                    return audioBuffer;
-                } catch (error) {
-                    console.error(`Error loading or decoding audio file: ${url}`, error);
-                    return null;
-                }
-            }
+            playerA.addEventListener('timeupdate', handleCrossfadeTrigger);
+            playerB.addEventListener('timeupdate', handleCrossfadeTrigger);
+            playerA.addEventListener('ended', handleTrackEnd);
+            playerB.addEventListener('ended', handleTrackEnd);
 
             // --- Core Functions ---
             function checkCanStart() {
@@ -459,11 +450,6 @@
             function startMeditation() {
                 if (!durationInput.value) return;
 
-                initAudioContext();
-                if (audioContext.state === 'suspended') {
-                    audioContext.resume();
-                }
-
                 sessionDurationSeconds = parseInt(durationInput.value, 10) * 60;
                 isPlaying = true;
                 isPaused = false;
@@ -472,13 +458,12 @@
                 shuffle(playlist);
                 currentTrackIndex = 0;
                 
-                masterGain.gain.setValueAtTime(1.0, audioContext.currentTime);
-                
+                playerA.volume = 1;
+                playerB.volume = 1;
+
                 toggleView(true);
                 
-                getAudioBuffer(playlist[0]);
-                if (playlist.length > 1) getAudioBuffer(playlist[1]);
-                
+                // --- COUNTDOWN LOGIC ---
                 document.querySelector('.progress-bar-container').style.visibility = 'hidden';
                 pauseBtn.disabled = true;
                 stopBtn.disabled = true;
@@ -500,8 +485,10 @@
 
                         updateTimerDisplay(sessionDurationSeconds);
                         
-                        scheduleNextTrack(audioContext.currentTime + 0.1);
-
+                        activePlayer = playerA;
+                        activePlayer.src = playlist[currentTrackIndex];
+                        activePlayer.play().catch(e => console.error("Playback error:", e));
+                        
                         startTime = performance.now();
                         timerInterval = setInterval(updateTimer, 250);
                     }
@@ -512,22 +499,19 @@
                 isPlaying = false;
                 isPaused = false;
                 
-                activeSources.forEach(source => {
-                    try { source.stop(); } catch (e) {}
-                });
-                activeSources = [];
-                
-                if (schedulerTimeout) clearTimeout(schedulerTimeout);
-
-                if (audioContext && audioContext.state === 'running') {
-                    audioContext.suspend();
-                }
+                playerA.pause();
+                playerB.pause();
+                playerA.src = "";
+                playerB.src = "";
+                playerA.volume = 1;
+                playerB.volume = 1;
 
                 clearInterval(timerInterval);
+                if (crossfadeInterval) clearInterval(crossfadeInterval);
                 if (countdownInterval) clearInterval(countdownInterval);
                 timerInterval = null;
+                crossfadeInterval = null;
                 countdownInterval = null;
-                schedulerTimeout = null;
                 
                 playlist = [];
                 currentTrackIndex = 0;
@@ -543,63 +527,74 @@
                 
                 isPaused = !isPaused;
                 if (isPaused) {
-                    audioContext.suspend();
+                    playerA.pause();
+                    playerB.pause();
                     pausedTime = performance.now();
                     pauseBtn.textContent = 'Resume';
                 } else {
-                    audioContext.resume();
+                    activePlayer.play().catch(e => console.error("Playback error on resume:", e));
                     totalPausedDuration += performance.now() - pausedTime;
                     pauseBtn.textContent = 'Pause';
                 }
             }
 
-            // --- Audio Scheduling & Playback ---
-            async function scheduleNextTrack(startTime) {
-                if (!isPlaying) return;
+            // --- Audio Handling ---
+            function handleCrossfadeTrigger() {
+                if (!this.duration || !isPlaying || isPaused || crossfadeInterval) return;
 
-                const trackUrl = playlist[currentTrackIndex];
-                const audioBuffer = await getAudioBuffer(trackUrl);
+                const timeToFade = this.duration - CROSSFADE_DURATION;
+                if (this.currentTime >= timeToFade) {
+                    initiateCrossfade();
+                }
+            }
+
+            function handleTrackEnd() {
+                if (this === activePlayer && !crossfadeInterval) {
+                    initiateCrossfade();
+                }
+            }
+
+            function initiateCrossfade() {
+                if (crossfadeInterval) return;
+
+                const elapsedTime = (performance.now() - startTime - totalPausedDuration) / 1000;
+                const remainingTime = Math.max(0, sessionDurationSeconds - elapsedTime);
                 
-                if (!audioBuffer) {
-                    currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-                    scheduleNextTrack(startTime);
+                if (remainingTime <= SESSION_FADEOUT_DURATION) {
                     return;
                 }
 
-                const source = audioContext.createBufferSource();
-                source.buffer = audioBuffer;
-                
-                const trackGain = audioContext.createGain();
-                source.connect(trackGain);
-                trackGain.connect(compressor);
-                
-                trackGain.gain.setValueAtTime(0, startTime);
-                trackGain.gain.linearRampToValueAtTime(1, startTime + CROSSFADE_DURATION);
-
-                const fadeOutTime = startTime + audioBuffer.duration - CROSSFADE_DURATION;
-                trackGain.gain.setValueAtTime(1, fadeOutTime);
-                trackGain.gain.linearRampToValueAtTime(0, fadeOutTime + CROSSFADE_DURATION);
-
-                source.start(startTime);
-                activeSources.push(source);
-                
-                source.onended = () => {
-                    activeSources = activeSources.filter(s => s !== source);
-                };
-
-                const nextTrackStartTime = startTime + audioBuffer.duration - CROSSFADE_DURATION;
-                currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-                
-                getAudioBuffer(playlist[currentTrackIndex]); 
-
-                // *** THIS IS THE FIX: Changed 'window.startTime' to 'startTime' ***
-                const elapsed = (performance.now() - startTime - totalPausedDuration) / 1000;
-                const remaining = sessionDurationSeconds - elapsed;
-                
-                if (remaining > CROSSFADE_DURATION && !isPaused) {
-                    const delay = (nextTrackStartTime - audioContext.currentTime - 0.1) * 1000;
-                    schedulerTimeout = setTimeout(() => scheduleNextTrack(nextTrackStartTime), Math.max(0, delay));
+                currentTrackIndex++;
+                if (currentTrackIndex >= playlist.length) {
+                    shuffle(playlist);
+                    currentTrackIndex = 0;
                 }
+
+                const fadeOutPlayer = activePlayer;
+                const fadeInPlayer = (activePlayer === playerA) ? playerB : playerA;
+
+                fadeInPlayer.src = playlist[currentTrackIndex];
+                fadeInPlayer.volume = 0;
+                fadeInPlayer.play().catch(e => console.error("Playback error:", e));
+                activePlayer = fadeInPlayer;
+
+                let fadeStartTime = Date.now();
+                crossfadeInterval = setInterval(() => {
+                    let elapsed = (Date.now() - fadeStartTime) / 1000;
+                    let progress = Math.min(elapsed / CROSSFADE_DURATION, 1);
+
+                    try {
+                        fadeOutPlayer.volume = 1 - progress;
+                        fadeInPlayer.volume = progress;
+                    } catch (e) { /* Ignore errors */ }
+
+                    if (progress >= 1) {
+                        clearInterval(crossfadeInterval);
+                        crossfadeInterval = null;
+                        fadeOutPlayer.pause();
+                        fadeOutPlayer.src = "";
+                    }
+                }, 50);
             }
 
             // --- UI & Timer Updates ---
@@ -613,11 +608,17 @@
                 updateProgressBar(elapsedTime);
                 
                 if (remainingTime <= SESSION_FADEOUT_DURATION) {
-                    masterGain.gain.linearRampToValueAtTime(0, audioContext.currentTime + remainingTime);
+                    const fadeProgress = remainingTime / SESSION_FADEOUT_DURATION;
+                    const newVolume = Math.max(0, fadeProgress);
+                    
+                    if (!crossfadeInterval) {
+                       playerA.volume = newVolume;
+                       playerB.volume = newVolume;
+                    }
                 }
                 
                 if (remainingTime <= 0) {
-                    setTimeout(stopMeditation, 200); // Small delay to allow fadeout to complete
+                    stopMeditation();
                 }
             }
 
@@ -647,15 +648,11 @@
                     pauseBtn.style.display = 'none';
                     stopBtn.style.display = 'none';
                     progressBar.style.transform = 'scaleX(0)';
-                    const newDuration = parseInt(durationInput.value, 10) * 60 || 0;
-                    updateTimerDisplay(newDuration > 0 ? newDuration : 15 * 60);
                     checkCanStart();
                 }
             }
 
-            // Initial check to enable the start button
             checkCanStart();
-            updateTimerDisplay(parseInt(durationInput.value, 10) * 60);
         });
     </script>
 
