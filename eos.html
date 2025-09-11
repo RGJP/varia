@@ -415,7 +415,7 @@
                 // The Compressor node is key to evening out the volume
                 compressor = audioContext.createDynamicsCompressor();
                 compressor.threshold.setValueAtTime(-24, audioContext.currentTime); // Start compressing sounds above -24dB
-                compressor.knee.setValueAtTime(30, audioContext.currentTime);     // Smoothly transition into compression
+                compressor.knee.setValueAtTime(30, audioContext.currentTime);      // Smoothly transition into compression
                 compressor.ratio.setValueAtTime(12, audioContext.currentTime);     // A 12:1 compression ratio
                 compressor.attack.setValueAtTime(0.003, audioContext.currentTime);// Fast attack
                 compressor.release.setValueAtTime(0.25, audioContext.currentTime);// Natural release
@@ -592,7 +592,8 @@
                 
                 getAudioBuffer(playlist[currentTrackIndex]); 
 
-                const elapsed = (performance.now() - window.startTime - totalPausedDuration) / 1000;
+                // *** THIS IS THE FIX: Changed 'window.startTime' to 'startTime' ***
+                const elapsed = (performance.now() - startTime - totalPausedDuration) / 1000;
                 const remaining = sessionDurationSeconds - elapsed;
                 
                 if (remaining > CROSSFADE_DURATION && !isPaused) {
