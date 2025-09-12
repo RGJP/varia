@@ -394,6 +394,8 @@
     clearTimeout(soundScheduler); // Stop scheduling new sounds
     soundScheduler = null;
 
+    toggleBtn.disabled = true;
+
     const fadeDuration = 4000; // Match this with the duration in fadeOutAndStop
 
     // Fade out all currently playing sounds
