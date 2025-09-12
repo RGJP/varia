@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Echoes of Silence</title>
-    <meta name="description" content="A calm, minimal web app for creating an endless, layered soundscape with Tibetan singing bowls.">
-    
+    <meta name="description"
+        content="A calm, minimal web app for creating an endless, layered soundscape with Tibetan singing bowls.">
+
     <style>
         /* --- Reset & Base Styles --- */
         :root {
@@ -14,25 +16,30 @@
             --accent-gold: #C9A84D;
             --text-light: #EDE8DC;
             --shadow-color: rgba(0, 0, 0, 0.25);
-            
+
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
             --font-serif-display: 'Lora', 'Georgia', serif;
-            
+
             font-synthesis: none;
             text-rendering: optimizeLegibility;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
 
-        *, *::before, *::after {
+        *,
+        *::before,
+        *::after {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
-        html, body {
-            height: 100vh; /* Use viewport height */
-            overflow: hidden; /* Prevent scrolling on the body */
+        html,
+        body {
+            height: 100vh;
+            /* Use viewport height */
+            overflow: hidden;
+            /* Prevent scrolling on the body */
         }
 
         body {
@@ -65,7 +72,8 @@
             box-shadow: 0 10px 30px var(--shadow-color);
             display: flex;
             flex-direction: column;
-            gap: 1.5rem; /* Adjusted gap */
+            gap: 1.5rem;
+            /* Adjusted gap */
             transition: all 0.3s ease;
         }
 
@@ -79,10 +87,10 @@
         .header {
             text-align: center;
         }
-        
+
         .header-image {
-            width: 280px;  
-            height: 280px; 
+            width: 280px;
+            height: 280px;
             border-radius: 1rem;
             object-fit: cover;
             border: 0px solid var(--accent-gold);
@@ -109,7 +117,8 @@
         .info-button {
             background: none;
             border: none;
-            width: 26px; /* Sized to be similar to the old emoji */
+            width: 26px;
+            /* Sized to be similar to the old emoji */
             height: 26px;
             cursor: pointer;
             color: var(--accent-gold);
@@ -132,25 +141,29 @@
             font-size: 0.9rem;
             opacity: 0.8;
         }
-        
+
         /* --- Controls --- */
         .controls {
             display: flex;
             justify-content: center;
-            margin-top: 1rem; /* Added margin for spacing */
+            margin-top: 1rem;
+            /* Added margin for spacing */
         }
-        
+
         .control-button {
             background-color: var(--accent-gold);
             color: var(--bg-deep-blue);
             border: none;
             border-radius: 50px;
-            padding: 0.9rem 2rem; /* Increased padding */
-            font-size: 1.1rem; /* Increased font size */
+            padding: 0.9rem 2rem;
+            /* Increased padding */
+            font-size: 1.1rem;
+            /* Increased font size */
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-            width: 200px; /* Set a fixed width */
+            width: 200px;
+            /* Set a fixed width */
             text-align: center;
         }
 
@@ -160,7 +173,8 @@
         }
 
         .control-button.active {
-            background-color: #a88d3e; /* Darker gold when active */
+            background-color: #a88d3e;
+            /* Darker gold when active */
         }
 
         /* --- Information Overlay --- */
@@ -221,21 +235,23 @@
         .close-button:hover {
             opacity: 1;
         }
-        
+
         /* --- Now Playing Element --- */
         .now-playing-text {
             text-align: center;
             margin-top: 1.5rem;
             font-size: 0.9rem;
             opacity: 0.1;
-            min-height: 1.5em; /* Prevent layout shift */
+            min-height: 1.5em;
+            /* Prevent layout shift */
             transition: opacity 0.3s ease-in-out;
         }
 
         /* --- Footer (example if needed inside app-container) --- */
         .site-footer {
             text-align: center;
-            margin-top: auto; /* Pushes footer to the bottom of the flex container */
+            margin-top: auto;
+            /* Pushes footer to the bottom of the flex container */
             padding-top: 1rem;
             font-size: 0.8rem;
             color: var(--text-light);
@@ -253,6 +269,7 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="content-wrapper">
@@ -266,8 +283,10 @@
                     <p>Sound Meditation</p>
                     <br>
                     <button id="infoBtn" class="info-button" aria-label="About">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                            <path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                            aria-hidden="true">
+                            <path
+                                d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
                         </svg>
                     </button>
                 </div>
@@ -280,22 +299,23 @@
 
         <p id="nowPlaying" class="now-playing-text"></p>
     </div>
-    
+
     <div id="infoOverlay" class="overlay">
         <div class="overlay-content">
             <button id="closeOverlayBtn" class="close-button" aria-label="Close">&times;</button>
             <h2>About</h2>
             <p>
-                'Echoes of Silence' lets you meditate with the magic sounds of authentic Tibetan singing bowls. Press <b>Start</b> to create an endless, evolving soundscape—randomized in a unique sequence and unique timing every time—when you are done, press <b>Stop</b> to end.  
+                'Echoes of Silence' lets you meditate with the magic sounds of authentic Tibetan singing bowls. Press
+                <b>Start</b> to create an endless, evolving soundscape—randomized in a unique sequence and unique timing
+                every time—when you are done, press <b>Stop</b> to end.
                 <br><br>
-                The sounds are adapted from varied recordings by 
-                <a href="https://kasper.bandcamp.com/album/singing-bowls" 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                The sounds are adapted from varied recordings by
+                <a href="https://kasper.bandcamp.com/album/singing-bowls" target="_blank" rel="noopener noreferrer"
                     style="color:white; text-decoration:underline;">
-                    Kasper</a> and include over 15 different tones.  
+                    Kasper</a> and include over 15 different tones.
                 <br><br>
-                For the best experience, listen with headphones at low volume for at least five minutes while focusing on your breath. This app will always be free, ad-free, and dedicated solely to well-being 🙏.
+                For the best experience, listen with headphones at low volume for at least five minutes while focusing
+                on your breath. This app will always be free, ad-free, and dedicated solely to well-being 🙏.
             </p>
         </div>
     </div>
@@ -319,8 +339,9 @@
                 'tibetanbowls/198_g.mp3',
                 'tibetanbowls/220_a.mp3',
                 'tibetanbowls/264_c.mp3',
-                  'tibetanbowls/50_g.mp3',
-                      'tibetanbowls/50_g.mp3',
+                'tibetanbowls/50_g.mp3',
+                'tibetanbowls/50_g.mp3',
+                'tibetanbowls/50_g.mp3',
                 'tibetanbowls/64_c.mp3',
                 'tibetanbowls/75_d.mp3',
                 'tibetanbowls/82_e.mp3',
@@ -336,7 +357,7 @@
                 'tibetanbowls/drone1.mp3',
                 'tibetanbowls/drone3.mp3'
             ];
-            
+
             let isPlaying = false;
             let activePlayers = [];
             let soundScheduler = null;
@@ -346,9 +367,9 @@
             infoBtn.addEventListener('click', () => infoOverlay.style.display = 'flex');
             closeOverlayBtn.addEventListener('click', () => infoOverlay.style.display = 'none');
             infoOverlay.addEventListener('click', (e) => {
-               
-                    infoOverlay.style.display = 'none';
-                
+
+                infoOverlay.style.display = 'none';
+
             });
 
             // --- Core Functions ---
@@ -380,12 +401,12 @@
 
             function scheduleNextSound() {
                 if (!isPlaying) return;
-// Random delay between 10 and 20 seconds
-const delay = Math.random() * 10000 + 10000;
+                // Random delay between 10 and 20 seconds
+                const delay = Math.random() * 10000 + 10000;
 
 
-                                  console.log(`[${new Date().toLocaleTimeString()}] Delay value rolled: ${delay}`);
-                
+                console.log(`[${new Date().toLocaleTimeString()}] Delay value rolled: ${delay}`);
+
                 soundScheduler = setTimeout(() => {
                     playRandomSound();
                     scheduleNextSound(); // Schedule the next one
@@ -394,10 +415,10 @@ const delay = Math.random() * 10000 + 10000;
 
             function playRandomSound() {
                 if (!isPlaying) return;
-                
+
                 const soundIndex = Math.floor(Math.random() * BOWL_SOUNDS.length);
                 const soundSrc = BOWL_SOUNDS[soundIndex];
-                
+
 
 
                 console.log(`[${new Date().toLocaleTimeString()}] Playing: ${soundSrc}`);
@@ -408,9 +429,9 @@ const delay = Math.random() * 10000 + 10000;
 
                 const player = new Audio(soundSrc);
                 player.volume = 0.8; // Set a default volume
-                
+
                 player.play().catch(e => console.error("Audio playback failed:", e));
-                
+
                 activePlayers.push(player);
 
                 // Clean up the player from the array once it has finished
@@ -452,4 +473,5 @@ const delay = Math.random() * 10000 + 10000;
     </script>
 
 </body>
+
 </html>
