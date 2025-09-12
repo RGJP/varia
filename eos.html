@@ -349,12 +349,49 @@
 
             let isPlaying = false;
             let soundScheduler = null;
+            let wakeLock = null; // To hold the WakeLockSentinel object
 
             // --- Web Audio API specific variables ---
             let audioContext = null;
             const audioBuffers = {};
             let activeSources = [];
             let soundsLoaded = false;
+            
+            // --- Wake Lock Functions ---
+            const requestWakeLock = async () => {
+                if ('wakeLock' in navigator) {
+                    try {
+                        wakeLock = await navigator.wakeLock.request('screen');
+                        wakeLock.addEventListener('release', () => {
+                            console.log('Screen Wake Lock was released by the system.');
+                        });
+                        console.log('Screen Wake Lock is active.');
+                    } catch (err) {
+                        console.error(`Wake Lock request failed: ${err.name}, ${err.message}`);
+                    }
+                } else {
+                    console.warn('Screen Wake Lock API is not supported on this browser.');
+                }
+            };
+
+            const releaseWakeLock = async () => {
+                if (wakeLock !== null) {
+                    try {
+                        await wakeLock.release();
+                        wakeLock = null;
+                        console.log('Screen Wake Lock released.');
+                    } catch (err) {
+                         console.error(`Wake Lock release failed: ${err.name}, ${err.message}`);
+                    }
+                }
+            };
+            
+            // Re-acquire the lock if the page becomes visible again (e.g., user switches tabs and comes back)
+            const handleVisibilityChange = async () => {
+                if (isPlaying && document.visibilityState === 'visible') {
+                   await requestWakeLock();
+                }
+            };
 
             // --- Event Listeners ---
             toggleBtn.addEventListener('click', toggleMeditation);
@@ -365,6 +402,8 @@
                     infoOverlay.style.display = 'none';
                 }
             });
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+
 
             // --- Core Functions ---
             async function toggleMeditation() {
@@ -376,13 +415,15 @@
                     }
                     await startSoundscape();
                 } else {
-                    stopSoundscape();
+                    await stopSoundscape();
                 }
                 updateButtonUI();
             }
 
             async function startSoundscape() {
                 console.log("Starting soundscape...");
+                await requestWakeLock(); // Request the wake lock
+                
                 if (!soundsLoaded) {
                     toggleBtn.textContent = 'Loading...';
                     toggleBtn.disabled = true;
@@ -395,8 +436,10 @@
                 scheduleNextSound();
             }
 
-            function stopSoundscape() {
+            async function stopSoundscape() {
                 console.log("Stopping soundscape...");
+                await releaseWakeLock(); // Release the wake lock
+
                 clearTimeout(soundScheduler);
                 soundScheduler = null;
 
@@ -405,9 +448,11 @@
                 const fadeDuration = 4; // 4 seconds
 
                 // Fade out all currently playing sounds using Web Audio API
-                activeSources.forEach(({ gainNode }) => {
-                    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + fadeDuration);
-                });
+                if (audioContext) {
+                    activeSources.forEach(({ gainNode }) => {
+                        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + fadeDuration);
+                    });
+                }
 
                 setTimeout(() => {
                     window.location.reload();
