@@ -257,16 +257,16 @@
             <button id="closeOverlayBtn" class="close-button" aria-label="Close">&times;</button>
             <h2>About</h2>
            <p>
-This minimalist app lets you meditate with the calming sounds of Tibetan singing bowls. Press <b>Start</b> to create an endless, evolving soundscape—unique every time—then press <b>Stop</b> when you’re done.  
+This app lets you meditate with the calming sounds of Tibetan singing bowls. Press <b>Start</b> to create an endless, evolving soundscape—unique every time—then press <b>Stop</b> when you’re done.  
 <br><br>
-The sounds are adapted from over 20 original recordings by 
+The sounds are adapted from over 20 varied recordings by 
 <a href="https://kasper.bandcamp.com/album/singing-bowls" 
    target="_blank" 
    rel="noopener noreferrer" 
    style="color:white; text-decoration:underline;">
    Kasper</a>.  
 <br><br>
-For the best experience, listen for at least five minutes while focusing on your breath. This app will always be free, ad-free, and dedicated solely to your well-being.
+For the best experience, listen with headphones for at least five minutes while focusing on your breath. This app will always be free, ad-free, and dedicated solely to your well-being 🙏
 </p>
 
         </div>
@@ -351,8 +351,8 @@ For the best experience, listen for at least five minutes while focusing on your
             function scheduleNextSound() {
                 if (!isPlaying) return;
 
-                // Random delay between 10 and 20 seconds
-                const delay = Math.random() * 10000 + 10000;
+                // Random delay between 10 and 15 seconds
+             const delay = Math.random() * 5000 + 10000;
                 
                 soundScheduler = setTimeout(() => {
                     playRandomSound();
@@ -366,6 +366,8 @@ For the best experience, listen for at least five minutes while focusing on your
                 const soundIndex = Math.floor(Math.random() * BOWL_SOUNDS.length);
                 const soundSrc = BOWL_SOUNDS[soundIndex];
                 
+                console.log(`[${new Date().toLocaleTimeString()}] Playing: ${soundSrc}`);
+
                 const player = new Audio(soundSrc);
                 player.volume = 0.8; // Set a default volume
                 
