@@ -295,7 +295,7 @@
                     style="color:white; text-decoration:underline;">
                     Kasper</a> and include over 15 different tones.  
                 <br><br>
-                For the best experience, listen with headphones at low volume for at least five minutes while focusing on your breath. This app will always be free, ad-free, and dedicated solely to your well-being 🙏
+                For the best experience, listen with headphones at low volume for at least five minutes while focusing on your breath. This app will always be free, ad-free, and dedicated solely to well-being 🙏.
             </p>
         </div>
     </div>
@@ -312,14 +312,12 @@
             // --- App State & Audio Config ---
             const BOWL_SOUNDS = [
                 'tibetanbowls/110_a.mp3',
-                'tibetanbowls/121_b.mp3',
                 'tibetanbowls/130_c.mp3',
                 'tibetanbowls/147_d.mp3',
                 'tibetanbowls/164_e.mp3',
                 'tibetanbowls/174_f.mp3',
                 'tibetanbowls/198_g.mp3',
                 'tibetanbowls/220_a.mp3',
-                'tibetanbowls/245_b.mp3',
                 'tibetanbowls/264_c.mp3',
                 'tibetanbowls/64_c.mp3',
                 'tibetanbowls/75_d.mp3',
@@ -380,8 +378,8 @@
 
             function scheduleNextSound() {
                 if (!isPlaying) return;
-// Random delay between 7 and 20 seconds
-const delay = Math.random() * 13000 + 7000;
+// Random delay between 10 and 20 seconds
+const delay = Math.random() * 10000 + 10000;
 
 
                                   console.log(`[${new Date().toLocaleTimeString()}] Delay value rolled: ${delay}`);
