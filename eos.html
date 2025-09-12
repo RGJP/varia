@@ -389,15 +389,21 @@
                 scheduleNextSound();
             }
 
-            function stopSoundscape() {
-                console.log("Stopping soundscape...");
-                clearTimeout(soundScheduler); // Stop scheduling new sounds
-                soundScheduler = null;
+           function stopSoundscape() {
+    console.log("Stopping soundscape...");
+    clearTimeout(soundScheduler); // Stop scheduling new sounds
+    soundScheduler = null;
 
-                // Fade out all currently playing sounds
-                activePlayers.forEach(player => fadeOutAndStop(player, 4000));
-                activePlayers = []; // Clear the array
-            }
+    const fadeDuration = 4000; // Match this with the duration in fadeOutAndStop
+
+    // Fade out all currently playing sounds
+    activePlayers.forEach(player => fadeOutAndStop(player, fadeDuration));
+
+    // Wait for the fade out to finish before reloading the page
+    setTimeout(() => {
+        window.location.reload();
+    }, fadeDuration + 500); // Add a small buffer to ensure the fade is complete
+}
 
             function scheduleNextSound() {
                 if (!isPlaying) return;
