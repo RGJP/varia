@@ -46,11 +46,18 @@
             line-height: 1.5;
         }
 
+        /* --- New Content Wrapper --- */
+        .content-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 450px;
+        }
+
         /* --- Main App Container & Layout --- */
         .app-container {
             width: 100%;
-            max-width: 450px;
-            /* height: 100%; <-- This was removed to allow vertical centering */
             max-height: 95vh;
             background-color: var(--bg-mid-blue);
             border-radius: 2rem;
@@ -102,7 +109,8 @@
         .info-button {
             background: none;
             border: none;
-            font-size: 1.4rem;
+            width: 26px; /* Sized to be similar to the old emoji */
+            height: 26px;
             cursor: pointer;
             color: var(--accent-gold);
             padding: 0;
@@ -113,6 +121,11 @@
 
         .info-button:hover {
             opacity: 1;
+        }
+
+        .info-button svg {
+            width: 100%;
+            height: 100%;
         }
 
         .header p {
@@ -208,8 +221,18 @@
         .close-button:hover {
             opacity: 1;
         }
+        
+        /* --- Now Playing Element --- */
+        .now-playing-text {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            opacity: 0.1;
+            min-height: 1.5em; /* Prevent layout shift */
+            transition: opacity 0.3s ease-in-out;
+        }
 
-        /* --- Footer --- */
+        /* --- Footer (example if needed inside app-container) --- */
         .site-footer {
             text-align: center;
             margin-top: auto; /* Pushes footer to the bottom of the flex container */
@@ -232,43 +255,48 @@
 </head>
 <body>
 
-    <main class="app-container" aria-live="polite">
-       <header class="header">
-    <img src="tb.jpg" alt="An ornate brass Tibetan singing bowl" class="header-image">
-    <div class="title-container">
-        <h1>Echoes of Silence</h1>
-    </div>
-    <div class="subtitle-container">
-        <p>Sound Meditation</p>
-        <br>
-        <button id="infoBtn" class="info-button" aria-label="About">ℹ️</button>
-    </div>
-</header>
+    <div class="content-wrapper">
+        <main class="app-container" aria-live="polite">
+            <header class="header">
+                <img src="tb.jpg" alt="An ornate brass Tibetan singing bowl" class="header-image">
+                <div class="title-container">
+                    <h1>Echoes of Silence</h1>
+                </div>
+                <div class="subtitle-container">
+                    <p>Sound Meditation</p>
+                    <br>
+                    <button id="infoBtn" class="info-button" aria-label="About">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+                        </svg>
+                    </button>
+                </div>
+            </header>
 
-        <div class="controls">
-            <button id="toggleMeditationBtn" class="control-button">Start Meditation</button>
-        </div>
-        
-       
-    </main>
+            <div class="controls">
+                <button id="toggleMeditationBtn" class="control-button">Start Meditation</button>
+            </div>
+        </main>
+
+        <p id="nowPlaying" class="now-playing-text"></p>
+    </div>
     
     <div id="infoOverlay" class="overlay">
         <div class="overlay-content">
             <button id="closeOverlayBtn" class="close-button" aria-label="Close">&times;</button>
             <h2>About</h2>
-           <p>
-This app lets you meditate with the calming sounds of Tibetan singing bowls. Press <b>Start</b> to create an endless, evolving soundscape—unique every time—then press <b>Stop</b> when you’re done.  
-<br><br>
-The sounds are adapted from over 20 varied recordings by 
-<a href="https://kasper.bandcamp.com/album/singing-bowls" 
-   target="_blank" 
-   rel="noopener noreferrer" 
-   style="color:white; text-decoration:underline;">
-   Kasper</a>.  
-<br><br>
-For the best experience, listen with headphones for at least five minutes while focusing on your breath. This app will always be free, ad-free, and dedicated solely to your well-being 🙏
-</p>
-
+            <p>
+                'Echoes of Silence' lets you meditate with the magic sounds of authentic Tibetan singing bowls. Press <b>Start</b> to create an endless, evolving soundscape—randomized in a unique sequence and unique timing every time—when you are done, press <b>Stop</b> to end.  
+                <br><br>
+                The sounds are adapted from varied recordings by 
+                <a href="https://kasper.bandcamp.com/album/singing-bowls" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    style="color:white; text-decoration:underline;">
+                    Kasper</a> and include over 15 different tones.  
+                <br><br>
+                For the best experience, listen with headphones at low volume for at least five minutes while focusing on your breath. This app will always be free, ad-free, and dedicated solely to your well-being 🙏
+            </p>
         </div>
     </div>
 
@@ -279,33 +307,36 @@ For the best experience, listen with headphones for at least five minutes while 
             const infoBtn = document.getElementById('infoBtn');
             const infoOverlay = document.getElementById('infoOverlay');
             const closeOverlayBtn = document.getElementById('closeOverlayBtn');
+            const nowPlayingEl = document.getElementById('nowPlaying'); // Get the 'now playing' element
 
             // --- App State & Audio Config ---
-           const BOWL_SOUNDS = [
- 'tibetanbowls/110_a.mp3',
- 'tibetanbowls/121_b.mp3',
- 'tibetanbowls/130_c.mp3',
- 'tibetanbowls/147_d.mp3',
- 'tibetanbowls/164_e.mp3',
- 'tibetanbowls/174_f.mp3',
- 'tibetanbowls/198_g.mp3',
- 'tibetanbowls/220_a.mp3',
- 'tibetanbowls/245_b.mp3',
- 'tibetanbowls/264_c.mp3',
- 'tibetanbowls/64_c.mp3',
- 'tibetanbowls/75_d.mp3',
- 'tibetanbowls/82_e.mp3',
- 'tibetanbowls/87_f.mp3',
- 'tibetanbowls/98_g.mp3',
- 'tibetanbowls/bell1.mp3',
- 'tibetanbowls/bell2.mp3',
- 'tibetanbowls/bell3.mp3',
- 'tibetanbowls/bell4.mp3',
- 'tibetanbowls/drone1.mp3',
- 'tibetanbowls/drone2.mp3',
- 'tibetanbowls/drone3.mp3'
-];
-
+            const BOWL_SOUNDS = [
+                'tibetanbowls/110_a.mp3',
+                'tibetanbowls/121_b.mp3',
+                'tibetanbowls/130_c.mp3',
+                'tibetanbowls/147_d.mp3',
+                'tibetanbowls/164_e.mp3',
+                'tibetanbowls/174_f.mp3',
+                'tibetanbowls/198_g.mp3',
+                'tibetanbowls/220_a.mp3',
+                'tibetanbowls/245_b.mp3',
+                'tibetanbowls/264_c.mp3',
+                'tibetanbowls/64_c.mp3',
+                'tibetanbowls/75_d.mp3',
+                'tibetanbowls/82_e.mp3',
+                'tibetanbowls/87_f.mp3',
+                'tibetanbowls/98_g.mp3',
+                'tibetanbowls/bell1.mp3',
+                'tibetanbowls/bell2.mp3',
+                'tibetanbowls/bell3.mp3',
+                'tibetanbowls/bell4.mp3',
+                'tibetanbowls/drone1.mp3',
+                'tibetanbowls/drone2.mp3',
+                'tibetanbowls/drone3.mp3',
+                'tibetanbowls/drone1.mp3',
+                'tibetanbowls/drone2.mp3',
+                'tibetanbowls/drone3.mp3'
+            ];
             
             let isPlaying = false;
             let activePlayers = [];
@@ -344,15 +375,17 @@ For the best experience, listen with headphones for at least five minutes while 
                 soundScheduler = null;
 
                 // Fade out all currently playing sounds
-                activePlayers.forEach(player => fadeOutAndStop(player, 5000));
+                activePlayers.forEach(player => fadeOutAndStop(player, 4000));
                 activePlayers = []; // Clear the array
             }
 
             function scheduleNextSound() {
                 if (!isPlaying) return;
+// Random delay between 7 and 20 seconds
+const delay = Math.random() * 13000 + 7000;
 
-                // Random delay between 10 and 15 seconds
-             const delay = Math.random() * 5000 + 10000;
+
+                                  console.log(`[${new Date().toLocaleTimeString()}] Delay value rolled: ${delay}`);
                 
                 soundScheduler = setTimeout(() => {
                     playRandomSound();
@@ -366,7 +399,13 @@ For the best experience, listen with headphones for at least five minutes while 
                 const soundIndex = Math.floor(Math.random() * BOWL_SOUNDS.length);
                 const soundSrc = BOWL_SOUNDS[soundIndex];
                 
+
+
                 console.log(`[${new Date().toLocaleTimeString()}] Playing: ${soundSrc}`);
+
+                // Update the 'now playing' text
+                const fileName = soundSrc.split('/').pop(); // Extracts "110_a.mp3"
+                nowPlayingEl.textContent = `${fileName.replace('.mp3', '')}`;
 
                 const player = new Audio(soundSrc);
                 player.volume = 0.8; // Set a default volume
@@ -406,6 +445,8 @@ For the best experience, listen with headphones for at least five minutes while 
                     toggleBtn.textContent = 'Start Meditation';
                     toggleBtn.classList.remove('active');
                     toggleBtn.setAttribute('aria-label', 'Start the meditation soundscape');
+                    // Reset 'now playing' text when stopped
+                    nowPlayingEl.textContent = '';
                 }
             }
         });
