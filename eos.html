@@ -166,6 +166,11 @@
             /* Set a fixed width */
             text-align: center;
         }
+        
+        .control-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
 
         .control-button:hover:not(:disabled) {
             transform: translateY(-2px);
@@ -327,141 +332,157 @@
             const infoBtn = document.getElementById('infoBtn');
             const infoOverlay = document.getElementById('infoOverlay');
             const closeOverlayBtn = document.getElementById('closeOverlayBtn');
-            const nowPlayingEl = document.getElementById('nowPlaying'); // Get the 'now playing' element
+            const nowPlayingEl = document.getElementById('nowPlaying');
 
             // --- App State & Audio Config ---
             const BOWL_SOUNDS = [
-                'tibetanbowls/110_a.mp3',
-                'tibetanbowls/130_c.mp3',
-                'tibetanbowls/147_d.mp3',
-                'tibetanbowls/164_e.mp3',
-                'tibetanbowls/174_f.mp3',
-                'tibetanbowls/198_g.mp3',
-                'tibetanbowls/220_a.mp3',
-                'tibetanbowls/264_c.mp3',
-                'tibetanbowls/50_g.mp3',
-                'tibetanbowls/50_g.mp3',
-                'tibetanbowls/50_g.mp3',
-                'tibetanbowls/64_c.mp3',
-                'tibetanbowls/75_d.mp3',
-                'tibetanbowls/82_e.mp3',
-                'tibetanbowls/87_f.mp3',
-                'tibetanbowls/98_g.mp3',
-                'tibetanbowls/bell1.mp3',
-                'tibetanbowls/bell2.mp3',
-                'tibetanbowls/bell3.mp3',
-                'tibetanbowls/bell4.mp3',
-                'tibetanbowls/drone1.mp3',
-                'tibetanbowls/drone2.mp3',
-                'tibetanbowls/drone3.mp3',
-                'tibetanbowls/drone1.mp3',
+                'tibetanbowls/110_a.mp3', 'tibetanbowls/130_c.mp3', 'tibetanbowls/147_d.mp3',
+                'tibetanbowls/164_e.mp3', 'tibetanbowls/174_f.mp3', 'tibetanbowls/198_g.mp3',
+                'tibetanbowls/220_a.mp3', 'tibetanbowls/264_c.mp3', 'tibetanbowls/50_g.mp3',
+                'tibetanbowls/50_g.mp3', 'tibetanbowls/50_g.mp3', 'tibetanbowls/64_c.mp3',
+                'tibetanbowls/75_d.mp3', 'tibetanbowls/82_e.mp3', 'tibetanbowls/87_f.mp3',
+                'tibetanbowls/98_g.mp3', 'tibetanbowls/bell1.mp3', 'tibetanbowls/bell2.mp3',
+                'tibetanbowls/bell3.mp3', 'tibetanbowls/bell4.mp3', 'tibetanbowls/drone1.mp3',
+                'tibetanbowls/drone2.mp3', 'tibetanbowls/drone3.mp3', 'tibetanbowls/drone1.mp3',
                 'tibetanbowls/drone3.mp3'
             ];
 
             let isPlaying = false;
-            let activePlayers = [];
             let soundScheduler = null;
+
+            // --- Web Audio API specific variables ---
+            let audioContext = null;
+            const audioBuffers = {};
+            let activeSources = [];
+            let soundsLoaded = false;
 
             // --- Event Listeners ---
             toggleBtn.addEventListener('click', toggleMeditation);
             infoBtn.addEventListener('click', () => infoOverlay.style.display = 'flex');
             closeOverlayBtn.addEventListener('click', () => infoOverlay.style.display = 'none');
             infoOverlay.addEventListener('click', (e) => {
-
-                infoOverlay.style.display = 'none';
-
+                if (e.target === infoOverlay) {
+                    infoOverlay.style.display = 'none';
+                }
             });
 
             // --- Core Functions ---
-            function toggleMeditation() {
+            async function toggleMeditation() {
                 isPlaying = !isPlaying;
                 if (isPlaying) {
-                    startSoundscape();
+                    // Create AudioContext on first user interaction
+                    if (!audioContext) {
+                        audioContext = new(window.AudioContext || window.webkitAudioContext)();
+                    }
+                    await startSoundscape();
                 } else {
                     stopSoundscape();
                 }
                 updateButtonUI();
             }
 
-            function startSoundscape() {
+            async function startSoundscape() {
                 console.log("Starting soundscape...");
+                if (!soundsLoaded) {
+                    toggleBtn.textContent = 'Loading...';
+                    toggleBtn.disabled = true;
+                    await preloadAllSounds();
+                    soundsLoaded = true;
+                    toggleBtn.disabled = false;
+                    updateButtonUI(); // Update text back to 'Stop'
+                }
                 playRandomSound(); // Play the first sound immediately
                 scheduleNextSound();
             }
 
-           function stopSoundscape() {
-    console.log("Stopping soundscape...");
-    clearTimeout(soundScheduler); // Stop scheduling new sounds
-    soundScheduler = null;
+            function stopSoundscape() {
+                console.log("Stopping soundscape...");
+                clearTimeout(soundScheduler);
+                soundScheduler = null;
 
-    toggleBtn.disabled = true;
+                toggleBtn.disabled = true;
 
-    const fadeDuration = 4000; // Match this with the duration in fadeOutAndStop
+                const fadeDuration = 4; // 4 seconds
 
-    // Fade out all currently playing sounds
-    activePlayers.forEach(player => fadeOutAndStop(player, fadeDuration));
+                // Fade out all currently playing sounds using Web Audio API
+                activeSources.forEach(({ gainNode }) => {
+                    gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + fadeDuration);
+                });
 
-    // Wait for the fade out to finish before reloading the page
-    setTimeout(() => {
-        window.location.reload();
-    }, fadeDuration + 500); // Add a small buffer to ensure the fade is complete
-}
+                setTimeout(() => {
+                    window.location.reload();
+                }, (fadeDuration * 1000) + 500); // Add a buffer
+            }
 
             function scheduleNextSound() {
                 if (!isPlaying) return;
-                // Random delay between 10 and 20 seconds
-                const delay = Math.random() * 10000 + 10000;
-
-
-                console.log(`[${new Date().toLocaleTimeString()}] Delay value rolled: ${delay}`);
+                const delay = Math.random() * 10000 + 10000; // 10-20 seconds
+                console.log(`[${new Date().toLocaleTimeString()}] Next sound in ${(delay / 1000).toFixed(2)}s`);
 
                 soundScheduler = setTimeout(() => {
                     playRandomSound();
-                    scheduleNextSound(); // Schedule the next one
+                    scheduleNextSound();
                 }, delay);
             }
-
+            
             function playRandomSound() {
-                if (!isPlaying) return;
-
+                if (!isPlaying || Object.keys(audioBuffers).length === 0) return;
+            
                 const soundIndex = Math.floor(Math.random() * BOWL_SOUNDS.length);
                 const soundSrc = BOWL_SOUNDS[soundIndex];
-
-
-
+                const buffer = audioBuffers[soundSrc];
+            
+                if (!buffer) {
+                    console.error(`Buffer for ${soundSrc} not found.`);
+                    return;
+                }
+            
                 console.log(`[${new Date().toLocaleTimeString()}] Playing: ${soundSrc}`);
-
-                // Update the 'now playing' text
-                const fileName = soundSrc.split('/').pop(); // Extracts "110_a.mp3"
-                nowPlayingEl.textContent = `${fileName.replace('.mp3', '')}`;
-
-                const player = new Audio(soundSrc);
-                player.volume = 0.8; // Set a default volume
-
-                player.play().catch(e => console.error("Audio playback failed:", e));
-
-                activePlayers.push(player);
-
-                // Clean up the player from the array once it has finished
-                player.addEventListener('ended', () => {
-                    activePlayers = activePlayers.filter(p => p !== player);
-                });
+            
+                // Update UI
+                const fileName = soundSrc.split('/').pop().replace('.mp3', '');
+                nowPlayingEl.textContent = fileName;
+            
+                // Setup Web Audio nodes
+                const source = audioContext.createBufferSource();
+                const gainNode = audioContext.createGain();
+            
+                source.buffer = buffer;
+                gainNode.gain.value = 0.8; // Set volume
+            
+                source.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                source.start(0);
+            
+                const sourceData = { source, gainNode };
+                activeSources.push(sourceData);
+            
+                // Clean up the source from the array once it has finished
+                source.onended = () => {
+                    activeSources = activeSources.filter(s => s !== sourceData);
+                };
             }
 
-            function fadeOutAndStop(player, duration) {
-                const fadeInterval = 50; // ms
-                const steps = duration / fadeInterval;
-                const volumeStep = player.volume / steps;
+            // --- Web Audio API Helper Functions ---
+            async function loadSound(url) {
+                if (audioBuffers[url]) return audioBuffers[url]; // Return cached buffer
+                try {
+                    const response = await fetch(url);
+                    const arrayBuffer = await response.arrayBuffer();
+                    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    audioBuffers[url] = audioBuffer;
+                    return audioBuffer;
+                } catch (error) {
+                    console.error(`Error loading sound: ${url}`, error);
+                }
+            }
 
-                const fade = setInterval(() => {
-                    if (player.volume > volumeStep) {
-                        player.volume -= volumeStep;
-                    } else {
-                        player.volume = 0;
-                        player.pause();
-                        clearInterval(fade);
-                    }
-                }, fadeInterval);
+            async function preloadAllSounds() {
+                console.log("Preloading all sounds...");
+                const uniqueSounds = [...new Set(BOWL_SOUNDS)];
+                const promises = uniqueSounds.map(url => loadSound(url));
+                await Promise.all(promises);
+                console.log("All sounds preloaded.");
             }
 
             function updateButtonUI() {
@@ -473,7 +494,6 @@
                     toggleBtn.textContent = 'Start Meditation';
                     toggleBtn.classList.remove('active');
                     toggleBtn.setAttribute('aria-label', 'Start the meditation soundscape');
-                    // Reset 'now playing' text when stopped
                     nowPlayingEl.textContent = '';
                 }
             }
