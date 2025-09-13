@@ -399,9 +399,9 @@
             infoBtn.addEventListener('click', () => infoOverlay.style.display = 'flex');
             closeOverlayBtn.addEventListener('click', () => infoOverlay.style.display = 'none');
             infoOverlay.addEventListener('click', (e) => {
-                if (e.target === infoOverlay) {
+                
                     infoOverlay.style.display = 'none';
-                }
+                
             });
             document.addEventListener('visibilitychange', handleVisibilityChange);
 
