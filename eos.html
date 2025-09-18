@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Echoes of Silence</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔔</text></svg>">
     <meta name="description"
         content="A calm, minimal web app for creating an endless, layered soundscape with Tibetan singing bowls.">
 
@@ -345,15 +346,20 @@
                 'tibetanbowls/98_g.mp3', 'tibetanbowls/bell_f.mp3', 'tibetanbowls/bell_a.mp3',
                 'tibetanbowls/bell_g.mp3', 'tibetanbowls/bell_e.mp3', 'tibetanbowls/drone_c.mp3',
                 'tibetanbowls/drone_a.mp3', 'tibetanbowls/drone_f.mp3', 'tibetanbowls/drone_c.mp3',
-                'tibetanbowls/drone_f.mp3','tibetanbowls/kcam1.mp3','tibetanbowls/kcam2.mp3','tibetanbowls/kcam1.mp3','tibetanbowls/kcam2.mp3'
-                       ];
+                'tibetanbowls/drone_f.mp3'
+            ];
+            const CHIME_SOUNDS = [
+                'tibetanbowls/kcam1.mp3', 'tibetanbowls/kcam2.mp3'
+            ];
 
             let isPlaying = false;
             let soundScheduler = null;
+            let chimeScheduler = null;
             let wakeLock = null; // To hold the WakeLockSentinel object
 
             // --- Web Audio API specific variables ---
             let audioContext = null;
+            let compressor = null; // NEW: To equalize volume
             const audioBuffers = {};
             let activeSources = [];
             let soundsLoaded = false;
@@ -413,6 +419,11 @@
                     // Create AudioContext on first user interaction
                     if (!audioContext) {
                         audioContext = new(window.AudioContext || window.webkitAudioContext)();
+                        
+                        // NEW: Create and configure the compressor for volume equalization
+                        compressor = audioContext.createDynamicsCompressor();
+                        // Connect the compressor to the final output (speakers)
+                        compressor.connect(audioContext.destination);
                     }
                     await startSoundscape();
                 } else {
@@ -433,8 +444,9 @@
                     toggleBtn.disabled = false;
                     updateButtonUI(); // Update text back to 'Stop'
                 }
-                playRandomSound(); // Play the first sound immediately
-                scheduleNextSound();
+                playRandomBowl(); // Play the first sound immediately
+                scheduleNextBowl();
+                scheduleNextChime();
             }
 
             async function stopSoundscape() {
@@ -442,7 +454,9 @@
                 await releaseWakeLock(); // Release the wake lock
 
                 clearTimeout(soundScheduler);
+                clearTimeout(chimeScheduler);
                 soundScheduler = null;
+                chimeScheduler = null;
 
                 toggleBtn.disabled = true;
 
@@ -460,53 +474,93 @@
                 }, (fadeDuration * 1000) + 500); // Add a buffer
             }
 
-            function scheduleNextSound() {
+            function scheduleNextBowl() {
                 if (!isPlaying) return;
                 const delay = Math.random() * 10000 + 10000; // 10-20 seconds
-                console.log(`[${new Date().toLocaleTimeString()}] Next sound in ${(delay / 1000).toFixed(2)}s`);
+                console.log(`[${new Date().toLocaleTimeString()}] Next bowl sound in ${(delay / 1000).toFixed(2)}s`);
 
                 soundScheduler = setTimeout(() => {
-                    playRandomSound();
-                    scheduleNextSound();
+                    playRandomBowl();
+                    scheduleNextBowl();
                 }, delay);
             }
-            
-            function playRandomSound() {
-                if (!isPlaying || Object.keys(audioBuffers).length === 0) return;
-            
-                const soundIndex = Math.floor(Math.random() * BOWL_SOUNDS.length);
-                const soundSrc = BOWL_SOUNDS[soundIndex];
+
+            function scheduleNextChime() {
+                if (!isPlaying) return;
+                // Chimes are more sparse to act as accents
+                const delay = Math.random() * 30000 + 60000; // 60-90 seconds
+                console.log(`[${new Date().toLocaleTimeString()}] Next chime in ${(delay / 1000).toFixed(2)}s`);
+
+                chimeScheduler = setTimeout(() => {
+                    playRandomChime();
+                    scheduleNextChime();
+                }, delay);
+            }
+
+            function playSound(soundSrc, type) {
+                if (!isPlaying || !audioContext) return;
+
                 const buffer = audioBuffers[soundSrc];
-            
                 if (!buffer) {
                     console.error(`Buffer for ${soundSrc} not found.`);
                     return;
                 }
-            
-                console.log(`[${new Date().toLocaleTimeString()}] Playing: ${soundSrc}`);
-            
-                // Update UI
-                const fileName = soundSrc.split('/').pop().replace('.mp3', '');
-                nowPlayingEl.textContent = fileName;
-            
+
+                console.log(`[${new Date().toLocaleTimeString()}] Playing [${type}]: ${soundSrc}`);
+
+                // Only update the UI for the main bowl sounds
+                if (type === 'bowl') {
+                    const fileName = soundSrc.split('/').pop().replace('.mp3', '');
+                    nowPlayingEl.textContent = fileName;
+                }
+
                 // Setup Web Audio nodes
                 const source = audioContext.createBufferSource();
                 const gainNode = audioContext.createGain();
-            
+
                 source.buffer = buffer;
-                gainNode.gain.value = 0.8; // Set volume
-            
+                // Make chimes slightly quieter
+                gainNode.gain.value = (type === 'chime') ? 0.6 : 0.8;
+
                 source.connect(gainNode);
-                gainNode.connect(audioContext.destination);
+                // MODIFIED: Connect the gain node to the compressor instead of directly to the destination
+                gainNode.connect(compressor);
                 source.start(0);
-            
-                const sourceData = { source, gainNode };
+
+                // Track the source along with its type
+                const sourceData = { source, gainNode, type };
                 activeSources.push(sourceData);
-            
+
                 // Clean up the source from the array once it has finished
                 source.onended = () => {
                     activeSources = activeSources.filter(s => s !== sourceData);
+                    // If no more bowls are playing, clear the text
+                    if (!activeSources.some(s => s.type === 'bowl')) {
+                        nowPlayingEl.textContent = '';
+                    }
                 };
+            }
+
+            function playRandomBowl() {
+                if (!isPlaying || BOWL_SOUNDS.length === 0) return;
+                const soundIndex = Math.floor(Math.random() * BOWL_SOUNDS.length);
+                const soundSrc = BOWL_SOUNDS[soundIndex];
+                playSound(soundSrc, 'bowl');
+            }
+
+            function playRandomChime() {
+                if (!isPlaying || CHIME_SOUNDS.length === 0) return;
+
+                // CRITICAL CHECK: Only play chime if a bowl is currently active
+                const isBowlPlaying = activeSources.some(s => s.type === 'bowl');
+
+                if (isBowlPlaying) {
+                    const soundIndex = Math.floor(Math.random() * CHIME_SOUNDS.length);
+                    const soundSrc = CHIME_SOUNDS[soundIndex];
+                    playSound(soundSrc, 'chime');
+                } else {
+                    console.log(`[${new Date().toLocaleTimeString()}] Skipping chime: No bowl sound is currently playing.`);
+                }
             }
 
             // --- Web Audio API Helper Functions ---
@@ -525,7 +579,8 @@
 
             async function preloadAllSounds() {
                 console.log("Preloading all sounds...");
-                const uniqueSounds = [...new Set(BOWL_SOUNDS)];
+                const allSounds = [...BOWL_SOUNDS, ...CHIME_SOUNDS];
+                const uniqueSounds = [...new Set(allSounds)];
                 const promises = uniqueSounds.map(url => loadSound(url));
                 await Promise.all(promises);
                 console.log("All sounds preloaded.");
