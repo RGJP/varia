@@ -190,8 +190,8 @@
         }
 
         /* Make specific sharp key labels dark for readability */
-        .key[data-note="Fs4"] .note-label,
-        .key[data-note="Cs5"] .note-label {
+        .key[data-note="Fs5"] .note-label,
+        .key[data-note="Cs6"] .note-label {
             color: rgba(0, 0, 0, 0.6);
         }
 
@@ -241,7 +241,7 @@
 <body>
 
     <div class="app-container">
-       
+        <h1></h1>
         <div class="fingering-display">
             <img id="fingering-image" src="" alt="Recorder Fingering">
             <p id="note-name">Press a colorful key to play!</p>
@@ -257,7 +257,7 @@
 
             // --- WEB AUDIO API SETUP ---
             let audioContext;
-            const activeNodes = {}; 
+            const activeOscillators = {}; 
 
             function resumeAudioContext() {
                 if (!audioContext) {
@@ -268,110 +268,63 @@
                 }
             }
             
+            // Frequencies for soprano recorder, starting from C5.
             const NOTE_FREQUENCIES = {
-                C4: 261.63, Cs4: 277.18, D4: 293.66, Ds4: 311.13, E4: 329.63, 
-                F4: 349.23, Fs4: 369.99, G4: 392.00, Gs4: 415.30, A4: 440.00, 
-                As4: 466.16, B4: 493.88, C5: 523.25, Cs5: 554.37, D5: 587.33,
-                Ds5: 622.25, E5: 659.25
+                C5: 523.25, Cs5: 554.37, D5: 587.33, Ds5: 622.25, E5: 659.25,
+                F5: 698.46, Fs5: 739.99, G5: 783.99, Gs5: 830.61, A5: 880.00,
+                As5: 932.33, B5: 987.77, C6: 1046.50, Cs6: 1108.73, D6: 1174.66
             };
 
-            function createWhiteNoise() {
-                const bufferSize = audioContext.sampleRate * 2; // 2 seconds of noise
-                const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-                const output = noiseBuffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    output[i] = Math.random() * 2 - 1;
-                }
-                const noiseSource = audioContext.createBufferSource();
-                noiseSource.buffer = noiseBuffer;
-                noiseSource.loop = true;
-                return noiseSource;
-            }
-
             function startTone(noteId) {
-                if (!audioContext || !NOTE_FREQUENCIES[noteId] || activeNodes[noteId]) return;
+                if (!audioContext || !NOTE_FREQUENCIES[noteId] || activeOscillators[noteId]) return;
+
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.type = 'triangle'; // Simple, clean wave for the sound
+                oscillator.frequency.value = NOTE_FREQUENCIES[noteId];
                 
                 const now = audioContext.currentTime;
-                
-                // --- Create Audio Nodes ---
-                const oscillator = audioContext.createOscillator();
-                const noise = createWhiteNoise();
-                const noiseFilter = audioContext.createBiquadFilter();
-                const noiseGain = audioContext.createGain();
-                const mainFilter = audioContext.createBiquadFilter();
-                const mainGain = audioContext.createGain();
+                // Attack: Fade in quickly to avoid a "click" sound
+                gainNode.gain.setValueAtTime(0, now);
+                gainNode.gain.linearRampToValueAtTime(0.5, now + 0.02);
 
-                // --- Configure Nodes ---
-                // Oscillator (core pitch)
-                oscillator.type = 'sine';
-                oscillator.frequency.value = NOTE_FREQUENCIES[noteId];
-
-                // Noise (breath)
-                noiseFilter.type = 'bandpass';
-                noiseFilter.frequency.value = 1200;
-                noiseFilter.Q.value = 0.6;
-                noiseGain.gain.value = 0.05; // Amount of breathiness
-
-                // Main Filter (shapes the overall sound)
-                mainFilter.type = 'lowpass';
-                mainFilter.Q.value = 2;
-
-                // --- Routing (connect the nodes) ---
-                noise.connect(noiseFilter);
-                noiseFilter.connect(noiseGain);
-                noiseGain.connect(mainFilter);
-                oscillator.connect(mainFilter);
-                mainFilter.connect(mainGain);
-                mainGain.connect(audioContext.destination);
-
-                // --- Envelopes (attack/decay) ---
-                // Filter envelope
-                mainFilter.frequency.setValueAtTime(400, now);
-                mainFilter.frequency.linearRampToValueAtTime(3000, now + 0.05);
-                mainFilter.frequency.linearRampToValueAtTime(1500, now + 0.2);
-
-                // Gain envelope
-                mainGain.gain.setValueAtTime(0, now);
-                mainGain.gain.linearRampToValueAtTime(0.5, now + 0.05); // Attack
-                mainGain.gain.linearRampToValueAtTime(0.3, now + 0.2); // Decay to sustain
-
-                // --- Start and Store ---
                 oscillator.start(now);
-                noise.start(now);
-                activeNodes[noteId] = { oscillator, noise, mainGain };
+                activeOscillators[noteId] = { oscillator, gainNode };
             }
 
             function stopTone(noteId) {
-                const active = activeNodes[noteId];
+                const active = activeOscillators[noteId];
                 if (!active) return;
 
                 const now = audioContext.currentTime;
-                const releaseTime = now + 0.25; // 250ms release
-
-                // Release envelope for gain
-                active.mainGain.gain.cancelScheduledValues(now);
-                active.mainGain.gain.setValueAtTime(active.mainGain.gain.value, now);
-                active.mainGain.gain.linearRampToValueAtTime(0, releaseTime);
+                const releaseTime = now + 0.1; // 100ms release time
+                
+                // Release: Fade out to avoid a "click"
+                active.gainNode.gain.setValueAtTime(active.gainNode.gain.value, now);
+                active.gainNode.gain.linearRampToValueAtTime(0, releaseTime);
 
                 active.oscillator.stop(releaseTime);
-                active.noise.stop(releaseTime);
 
-                delete activeNodes[noteId];
+                delete activeOscillators[noteId];
             }
 
             // --- DATA CONFIGURATION ---
             const NOTES_DATA = {
-                'C4':  { displayName: 'Low C',  img: 'recorder/C_LOW.png' },
-                'D4':  { displayName: 'D',      img: 'recorder/D.png' },
-                'E4':  { displayName: 'E',      img: 'recorder/E.png' },
-                'F4':  { displayName: 'F',      img: 'recorder/F.png' },
-                'Fs4': { displayName: 'F♯',     img: 'recorder/Fs.png' },
-                'G4':  { displayName: 'G',      img: 'recorder/G.png' },
-                'A4':  { displayName: 'A',      img: 'recorder/A.png' },
-                'B4':  { displayName: 'B',      img: 'recorder/B.png' },
-                'C5':  { displayName: 'High C', img: 'recorder/C_HIGH.png' },
-                'Cs5': { displayName: 'High C♯',img: 'recorder/Cs_HIGH.png' },
-                'D5':  { displayName: 'High D', img: 'recorder/D_HIGH.png' },
+                'C5':  { displayName: 'C',       img: 'recorder/C_LOW.png' },
+                'D5':  { displayName: 'D',       img: 'recorder/D.png' },
+                'E5':  { displayName: 'E',       img: 'recorder/E.png' },
+                'F5':  { displayName: 'F',       img: 'recorder/F.png' },
+                'Fs5': { displayName: 'F♯',      img: 'recorder/Fs.png' },
+                'G5':  { displayName: 'G',       img: 'recorder/G.png' },
+                'A5':  { displayName: 'A',       img: 'recorder/A.png' },
+                'B5':  { displayName: 'B',       img: 'recorder/B.png' },
+                'C6':  { displayName: 'High C',  img: 'recorder/C_HIGH.png' },
+                'Cs6': { displayName: 'High C♯', img: 'recorder/Cs_HIGH.png' },
+                'D6':  { displayName: 'High D',  img: 'recorder/D_HIGH.png' },
             };
 
             const pianoContainer = document.getElementById('piano-keyboard');
@@ -379,22 +332,23 @@
             const noteNameDisplay = document.getElementById('note-name');
 
             const pianoKeysLayout = [
-                { note: 'C4',  type: 'white' }, { note: 'Cs4', type: 'black' },
-                { note: 'D4',  type: 'white' }, { note: 'Ds4', type: 'black' },
-                { note: 'E4',  type: 'white' },
-                { note: 'F4',  type: 'white' }, { note: 'Fs4', type: 'black' },
-                { note: 'G4',  type: 'white' }, { note: 'Gs4', type: 'black' },
-                { note: 'A4',  type: 'white' }, { note: 'As4', type: 'black' },
-                { note: 'B4',  type: 'white' },
                 { note: 'C5',  type: 'white' }, { note: 'Cs5', type: 'black' },
                 { note: 'D5',  type: 'white' }, { note: 'Ds5', type: 'black' },
-                { note: 'E5',  type: 'white' }
+                { note: 'E5',  type: 'white' },
+                { note: 'F5',  type: 'white' }, { note: 'Fs5', type: 'black' },
+                { note: 'G5',  type: 'white' }, { note: 'Gs5', type: 'black' },
+                { note: 'A5',  type: 'white' }, { note: 'As5', type: 'black' },
+                { note: 'B5',  type: 'white' },
+                { note: 'C6',  type: 'white' }, { note: 'Cs6', type: 'black' },
+                { note: 'D6',  type: 'white' }, { note: 'Ds6', type: 'black' },
+                { note: 'E6',  type: 'white' }
             ];
             
             // --- UI GENERATION & EVENT LISTENERS ---
             pianoKeysLayout.forEach(keyInfo => {
                 const noteData = NOTES_DATA[keyInfo.note];
 
+                // Only create a key if it is playable in NOTES_DATA
                 if (noteData) {
                     const keyElement = document.createElement('div');
                     keyElement.className = `key ${keyInfo.type} playable`;
@@ -422,9 +376,9 @@
                 }
             });
 
-            // Failsafe to stop all sounds
+            // Failsafe to stop all sounds if the mouse is released anywhere on the page
             window.addEventListener('mouseup', () => {
-                for (const noteId in activeNodes) {
+                for (const noteId in activeOscillators) {
                     stopTone(noteId);
                 }
             });
