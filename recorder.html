@@ -31,9 +31,9 @@
 
         @media (prefers-color-scheme: dark) {
             :root {
-                --background-color: #1e2a38;
+                --background-color: #ffffff;
                 --container-bg: #2c3e50;
-                --text-color: #ecf0f1;
+                --text-color: #000000;
                 --header-color: #e74c3c;
                 --key-border: #34495e;
                 --white-key-bg: #bdc3c7;
@@ -44,7 +44,7 @@
         html, body {
             height: 100%;
             margin: 0;
-            overflow: hidden; /* Prevent scrolling */
+            overflow: hidden; /* Prevent scrolling on the main body */
         }
 
         body {
@@ -70,17 +70,12 @@
             text-align: center;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 15px; /* Adjusted gap */
             box-sizing: border-box;
+            overflow: hidden; /* Hide overflow from container */
         }
 
-        h1 {
-            margin: 0;
-            font-family: 'Fredoka One', cursive;
-            font-size: 2.5em;
-            color: var(--header-color);
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-        }
+   
 
         .fingering-display {
             background-color: var(--background-color);
@@ -117,17 +112,20 @@
         }
 
         .piano-keyboard-wrapper {
-             display: flex;
-             justify-content: center;
-             align-items: center;
-             flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            width: 100%;
         }
 
         .piano-keyboard {
             position: relative;
             display: flex;
             justify-content: center;
-            height: 180px; /* Base height for mobile */
+            height: 150px;
+            width: 100%;
+            max-width: 700px;
         }
 
         .key {
@@ -137,7 +135,7 @@
         }
 
         .key.white {
-            width: 45px; /* Slightly smaller keys for mobile */
+            width: 10%;
             height: 100%;
             background-color: var(--white-key-bg);
             border-bottom-left-radius: 8px;
@@ -146,11 +144,11 @@
         }
 
         .key.black {
-            width: 28px;
+            width: 6.5%;
             height: 60%;
             background-color: var(--black-key-bg);
-            margin-left: -14px;
-            margin-right: -14px;
+            margin-left: -3.25%;
+            margin-right: -3.25%;
             border-radius: 6px;
             z-index: 2;
         }
@@ -189,10 +187,50 @@
             color: rgba(255, 255, 255, 0.7);
         }
 
-        /* Make specific sharp key labels dark for readability */
         .key[data-note="Fs5"] .note-label,
+        .key[data-note="As5"] .note-label,
         .key[data-note="Cs6"] .note-label {
             color: rgba(0, 0, 0, 0.6);
+        }
+        
+        /* --- Accordion Styles --- */
+        #accordion-btn {
+            background-color: #6c5ce7;
+            color: white;
+            cursor: pointer;
+            padding: 8px 15px;
+            width: auto;
+            border: none;
+            text-align: center;
+            outline: none;
+            font-size: 15px;
+            transition: background-color 0.3s;
+            border-radius: 20px;
+            font-weight: 700;
+            margin: 0 auto; /* Center the button */
+            flex-shrink: 0;
+        }
+
+        #accordion-btn:hover, #accordion-btn.active {
+            background-color: #a29bfe;
+        }
+
+        #accordion-panel {
+            padding: 0;
+            background-color: white;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            flex-grow: 1; /* Allow panel to grow */
+            display: flex; /* Use flexbox for the iframe */
+            flex-direction: column;
+        }
+        
+        #accordion-panel iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            flex-grow: 1; /* Iframe fills the panel */
         }
 
 
@@ -205,31 +243,24 @@
                 padding: 30px;
             }
 
+            .main-content {
+                display: flex;
+                flex-direction: column;
+                flex: 1 1 40%;
+                gap: 20px;
+            }
+
             .fingering-display {
                 flex: 1 1 60%;
                 padding: 20px;
             }
-
+            
             .piano-keyboard-wrapper {
-                flex: 1 1 40%;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
+                 flex: 0 0 auto; /* Don't grow, don't shrink */
             }
 
             .piano-keyboard {
                 height: 220px;
-            }
-
-             .key.white {
-                width: 50px;
-            }
-
-            .key.black {
-                width: 30px;
-                margin-left: -15px;
-                margin-right: -15px;
             }
 
             #note-name {
@@ -241,14 +272,20 @@
 <body>
 
     <div class="app-container">
-        <h1></h1>
         <div class="fingering-display">
             <img id="fingering-image" src="" alt="Recorder Fingering">
-            <p id="note-name">Press a colorful key to play!</p>
+            <p id="note-name">Press a colorful key to play</p>
         </div>
-        <div class="piano-keyboard-wrapper">
-            <div id="piano-keyboard" class="piano-keyboard">
+
+        <div class="main-content">
+          
+            <div class="piano-keyboard-wrapper">
+                <div id="piano-keyboard" class="piano-keyboard"></div>
             </div>
+          <a href="https://americanrecorder.org/docs/Fingering_Chart_for_Soprano_Recorder.pdf" target="_blank">
+  <button id="accordion-btn">Full Fingering Chart</button>
+</a>
+
         </div>
     </div>
 
@@ -284,11 +321,10 @@
                 oscillator.connect(gainNode);
                 gainNode.connect(audioContext.destination);
 
-                oscillator.type = 'triangle'; // Simple, clean wave for the sound
+                oscillator.type = 'triangle';
                 oscillator.frequency.value = NOTE_FREQUENCIES[noteId];
                 
                 const now = audioContext.currentTime;
-                // Attack: Fade in quickly to avoid a "click" sound
                 gainNode.gain.setValueAtTime(0, now);
                 gainNode.gain.linearRampToValueAtTime(0.5, now + 0.02);
 
@@ -301,9 +337,8 @@
                 if (!active) return;
 
                 const now = audioContext.currentTime;
-                const releaseTime = now + 0.1; // 100ms release time
+                const releaseTime = now + 0.1; 
                 
-                // Release: Fade out to avoid a "click"
                 active.gainNode.gain.setValueAtTime(active.gainNode.gain.value, now);
                 active.gainNode.gain.linearRampToValueAtTime(0, releaseTime);
 
@@ -313,7 +348,7 @@
             }
 
             // --- DATA CONFIGURATION ---
-            const NOTES_DATA = {
+             const NOTES_DATA = {
                 'C5':  { displayName: 'C',       img: 'recorder/C_LOW.png' },
                 'D5':  { displayName: 'D',       img: 'recorder/D.png' },
                 'E5':  { displayName: 'E',       img: 'recorder/E.png' },
@@ -321,6 +356,7 @@
                 'Fs5': { displayName: 'F♯',      img: 'recorder/Fs.png' },
                 'G5':  { displayName: 'G',       img: 'recorder/G.png' },
                 'A5':  { displayName: 'A',       img: 'recorder/A.png' },
+                'As5': { displayName: 'B♭',      img: 'recorder/Bb.png' },
                 'B5':  { displayName: 'B',       img: 'recorder/B.png' },
                 'C6':  { displayName: 'High C',  img: 'recorder/C_HIGH.png' },
                 'Cs6': { displayName: 'High C♯', img: 'recorder/Cs_HIGH.png' },
@@ -347,41 +383,57 @@
             // --- UI GENERATION & EVENT LISTENERS ---
             pianoKeysLayout.forEach(keyInfo => {
                 const noteData = NOTES_DATA[keyInfo.note];
+                const keyElement = document.createElement('div');
+                keyElement.className = `key ${keyInfo.type}`;
+                keyElement.dataset.note = keyInfo.note;
 
-                // Only create a key if it is playable in NOTES_DATA
                 if (noteData) {
-                    const keyElement = document.createElement('div');
-                    keyElement.className = `key ${keyInfo.type} playable`;
-                    keyElement.dataset.note = keyInfo.note;
+                    keyElement.classList.add('playable');
                     
                     const noteLetter = keyInfo.note.charAt(0);
                     keyElement.classList.add(`key-${noteLetter}`);
 
                     const label = document.createElement('span');
                     label.className = 'note-label';
-                    label.textContent = noteData.displayName.replace('Low ', '').replace('High ', '');
+                    if (noteData.displayName.includes('♭')) {
+                         label.textContent = 'B♭';
+                    } else {
+                         label.textContent = noteData.displayName.replace('Low ', '').replace('High ', '');
+                    }
                     
-                    // Event listeners for holding notes
                     keyElement.addEventListener('mousedown', () => handleKeyDown(keyInfo.note));
                     keyElement.addEventListener('mouseup', () => handleKeyUp(keyInfo.note));
                     keyElement.addEventListener('mouseleave', () => handleKeyUp(keyInfo.note));
                     
-                    // Touch events for mobile
                     keyElement.addEventListener('touchstart', (e) => { e.preventDefault(); handleKeyDown(keyInfo.note); });
                     keyElement.addEventListener('touchend', () => handleKeyUp(keyInfo.note));
                     keyElement.addEventListener('touchcancel', () => handleKeyUp(keyInfo.note));
 
                     keyElement.appendChild(label);
-                    pianoContainer.appendChild(keyElement);
-                }
+                } 
+                pianoContainer.appendChild(keyElement);
             });
 
-            // Failsafe to stop all sounds if the mouse is released anywhere on the page
             window.addEventListener('mouseup', () => {
                 for (const noteId in activeOscillators) {
                     stopTone(noteId);
                 }
             });
+            
+            // --- ACCORDION LOGIC ---
+            const accBtn = document.getElementById("accordion-btn");
+            const panel = document.getElementById("accordion-panel");
+
+            accBtn.addEventListener("click", function() {
+                this.classList.toggle("active");
+                if (panel.style.maxHeight) {
+                    panel.style.maxHeight = null;
+                } else {
+                    // Set a flexible max height that can adapt to available space
+                    panel.style.maxHeight = "100%"; 
+                } 
+            });
+
 
             // --- MAIN HANDLER FUNCTIONS ---
             function handleKeyDown(noteId) {
@@ -389,13 +441,11 @@
                 const noteData = NOTES_DATA[noteId];
                 if (!noteData) return;
 
-                // Update display
                 imageDisplay.src = noteData.img;
                 imageDisplay.alt = `${noteData.displayName} Fingering Chart`;
-                imageDisplay.style.visibility = 'visible'; // Make image visible
+                imageDisplay.style.visibility = 'visible';
                 noteNameDisplay.textContent = noteData.displayName;
 
-                // Play sound
                 startTone(noteId);
             }
 
