@@ -54,22 +54,23 @@
             margin-bottom: 1rem;
         }
 
-        .random-chant-btn {
-            background-color: transparent;
-            color: white;
-            border: 2px solid white;
-            padding: 1rem 2rem;
-            font-size: 1rem;
-            cursor: pointer;
-            margin: 1rem 0;
-            text-decoration: none;
-            display: inline-block;
-            transition: background-color 0.3s ease;
-        }
+     .random-chant-btn {
+position: fixed;
+top: 20px;
+left: 50%;
+transform: translateX(-50%);
+z-index: 1000;
+background-color: black;
+color: white;
+border: 2px solid white;
+padding: 1rem 2rem;
+font-size: 1rem;
+cursor: pointer;
+text-decoration: none;
+transition: background-color 0.3s ease;
+}
 
-        .random-chant-btn:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
+       
 
         .chant {
             border-top: 2px solid white;
@@ -121,6 +122,7 @@
 <body>
   <center>
     <header class="site-header">
+      <br><br><br>
         <img class="intro-image" alt="kirtan" src="img.jpg">
   
         <p class="intro-message">
@@ -132,8 +134,7 @@
 </center> 
     <main class="chants-list">
         <form method="post" style="text-align: center;">
-<p><input class="random-chant-btn" name="B1" value="Random Chant" onclick="scrollToRandom()" type="button"></p>        </form>
-     
+<input class="random-chant-btn" name="B1" value="Random Chant" onclick="scrollToRandom()" type="button">
 
         <article class="chant">
             <h2 class="chant-title">Jai Shiva Shankara</h2>
