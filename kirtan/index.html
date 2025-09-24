@@ -1989,15 +1989,26 @@ Ganapati Bappa Moraya</pre>
     </main>
 
     
-      <script>
+    <script>
+    function stopAllAudio() {
+        // Select all audio elements on the page
+        const audioPlayers = document.querySelectorAll('audio');
+
+        // Loop through each audio player and pause it
+        audioPlayers.forEach(player => {
+            player.pause();
+            player.currentTime = 0; // Optional: Reset the playback to the beginning
+        });
+    }
+
     function scrollToRandom() {
-        // Calculate the maximum scrollable height of the page
+        // First, stop all playing audio on the page
+        stopAllAudio();
+
+        // Then, proceed with the scrolling logic
         const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
-        
-        // Generate a random position between 0 and the maximum scrollable height
         const randomPosition = Math.random() * scrollableHeight;
-        
-        // Scroll the page to the random position with a smooth animation
+
         window.scrollTo({
             top: randomPosition,
             behavior: 'smooth'
