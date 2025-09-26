@@ -8,19 +8,17 @@
     <form id="loginForm">
         <input type="text" id="username" placeholder="Username" required><br>
         <input type="password" id="password" placeholder="Password" required><br>
-        <button type="submit">Login</button>
+        <button type="button" onclick="login()">Login</button>
     </form>
     <p id="message"></p>
-    <script >
-document.getElementById('loginForm').addEventListener('submit', async (event) => {
-    event.preventDefault(); // Prevent the form from reloading the page
-
+    <script>
+async function login() {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
     const messageEl = document.getElementById('message');
 
     //  Tunnel URL
-    const apiUrl = 'https://tasty-yaks-happen.loca.lt/login';
+const apiUrl = 'https://rgjp.duckdns.org:3000/login';
 
     try {
         const response = await fetch(apiUrl, {
@@ -44,8 +42,7 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
         messageEl.textContent = 'Failed to connect to the server.';
         messageEl.style.color = 'red';
     }
-});
-
+}
 </script>
 </body>
 </html>
