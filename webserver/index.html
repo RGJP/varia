@@ -259,11 +259,23 @@
             justify-content: center;
             border-radius: 12px;
         }
+
+        /* Sublte version string style */
+        .version-string {
+            position: fixed;
+            bottom: 5px;
+            right: 5px;
+            font-size: 10px;
+            color: white;
+            opacity: 0.2; /* Low opacity for subtlety */
+            font-family: monospace;
+            z-index: 1000; /* Ensure it stays above other content */
+            pointer-events: none; /* Ignore mouse events */
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Login View -->
         <div class="login-view" id="loginView">
             <div class="logo">
                 <div class="logo-icon">🔐</div>
@@ -289,7 +301,6 @@
             <div class="message" id="message"></div>
         </div>
 
-        <!-- Welcome View -->
         <div class="welcome-view" id="welcomeView">
             <div class="welcome-content">
                 <div class="welcome-icon">✓</div>
@@ -299,6 +310,8 @@
             </div>
         </div>
     </div>
+    
+    <div class="version-string">v1.0.1</div>
 
     <script>
         let currentUser = '';
@@ -396,7 +409,7 @@
             messageEl.classList.remove('show');
         }
 
-        // Hide message after some time
+        // Hide message after some time (Keep for completeness but note it's not currently used)
         function autoHideMessage() {
             setTimeout(() => {
                 hideMessage();
