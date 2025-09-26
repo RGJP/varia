@@ -19,8 +19,8 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
     const password = document.getElementById('password').value;
     const messageEl = document.getElementById('message');
 
-    // IMPORTANT: Replace this with your Cloudflare Tunnel URL
-    const apiUrl = 'https://something-random.trycloudflare.com/login';
+    //  Tunnel URL
+    const apiUrl = 'https://thirty-trees-prove.loca.lt/login';
 
     try {
         const response = await fetch(apiUrl, {
