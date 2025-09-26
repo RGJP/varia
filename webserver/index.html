@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern Login</title>
+    <style>
+        /* --- Google Font & Basic Reset --- */
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+        :root {
+            --primary-color: #007bff;
+            --primary-hover: #0056b3;
+            --background-color: #f4f7f6;
+            --card-background: #ffffff;
+            --text-color: #333;
+            --input-border: #ccc;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+
+        /* --- Main Card Styling --- */
+        .card {
+            background-color: var(--card-background);
+            padding: 2.5rem 2rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .card h2 {
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+
+        .card .subtitle {
+            margin-bottom: 2rem;
+            color: #666;
+        }
+
+        /* --- Form Elements --- */
+        #loginForm {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .input-group {
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+        }
+
+        #message {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            height: 1.2rem; /* Reserve space to prevent layout shifts */
+        }
+        
+        /* --- Welcome View Styling --- */
+        .welcome-icon {
+            font-size: 4rem;
+            color: var(--success-color);
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+
+    <main>
+        <section id="login-view" class="card">
+            <h2>Welcome Back! ✨</h2>
+            <p class="subtitle">Please enter your details to sign in.</p>
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" placeholder="Enter your username" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" placeholder="••••••••••" required>
+                </div>
+                <button type="submit" class="btn">Login</button>
+                <p id="message"></p>
+            </form>
+        </section>
+
+        <section id="welcome-view" class="card" style="display: none;">
+            <div class="welcome-icon">✔</div>
+            <h2>Login Successful!</h2>
+            <p id="welcome-message"></p>
+        </section>
+    </main>
+
+    <script>
+        // --- Get DOM Elements ---
+        const loginForm = document.getElementById('loginForm');
+        const loginView = document.getElementById('login-view');
+        const welcomeView = document.getElementById('welcome-view');
+        const messageEl = document.getElementById('message');
+        const welcomeMessageEl = document.getElementById('welcome-message');
+
+        // --- Add Event Listener to the Form ---
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent the form from reloading the page
+
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+            
+            // Your Tunnel URL
+            const apiUrl = 'https://rgjp.duckdns.org/login';
+            
+            messageEl.textContent = 'Logging in...';
+            messageEl.style.color = 'var(--text-color)';
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ username, password }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // --- SUCCESS: Show Welcome View ---
+                    welcomeMessageEl.textContent = `Welcome ${username}, you have successfully logged in.`;
+                    loginView.style.display = 'none';
+                    welcomeView.style.display = 'block';
+                } else {
+                    // --- ERROR: Show Error Message ---
+                    messageEl.textContent = "Error: " + data.message;
+                    messageEl.style.color = 'var(--error-color)';
+                }
+            } catch (error) {
+                console.error('Login Error:', error);
+                messageEl.textContent = 'Failed to connect to the server.';
+                messageEl.style.color = 'var(--error-color)';
+            }
+        });
+    </script>
+</body>
+</html>
