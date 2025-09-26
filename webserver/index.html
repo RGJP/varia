@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Login</title>
+    <title>Secure Portal</title>
     <style>
         * {
             margin: 0;
@@ -19,6 +19,7 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            transition: background-color 0.5s ease;
         }
 
         .container {
@@ -149,20 +150,7 @@
             border-radius: 8px;
             font-size: 14px;
             text-align: center;
-            opacity: 0;
-            transform: translateY(-10px);
-            transition: all 0.3s ease;
-        }
-
-        .message.show {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            display: none;
         }
 
         .message.error {
@@ -170,63 +158,17 @@
             color: #721c24;
             border: 1px solid #f5c6cb;
         }
-
-        .welcome-content {
-            animation: fadeInUp 0.6s ease;
-        }
-
-        .welcome-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #28a745, #20c997);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 32px;
+        
+        .version-string {
+            position: fixed;
+            bottom: 5px;
+            right: 5px;
+            font-size: 10px;
             color: white;
-        }
-
-        .welcome-title {
-            font-size: 28px;
-            color: #333;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-
-        .welcome-subtitle {
-            color: #666;
-            font-size: 16px;
-            margin-bottom: 30px;
-        }
-
-        .logout-btn {
-            padding: 12px 24px;
-            background: transparent;
-            color: #667eea;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .logout-btn:hover {
-            background: #667eea;
-            color: white;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            opacity: 0.2;
+            font-family: monospace;
+            z-index: 1000;
+            pointer-events: none;
         }
 
         @media (max-width: 480px) {
@@ -242,184 +184,139 @@
 
             .form-group input {
                 padding: 14px 16px;
-                font-size: 16px; /* Prevents zoom on iOS */
+                font-size: 16px;
             }
-        }
-
-        /* Loading overlay */
-        .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            border-radius: 12px;
-        }
-
-        /* Sublte version string style */
-        .version-string {
-            position: fixed;
-            bottom: 5px;
-            right: 5px;
-            font-size: 10px;
-            color: white;
-            opacity: 0.2; /* Low opacity for subtlety */
-            font-family: monospace;
-            z-index: 1000; /* Ensure it stays above other content */
-            pointer-events: none; /* Ignore mouse events */
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="login-view" id="loginView">
-            <div class="logo">
-                <div class="logo-icon">🔐</div>
-                <h1>Welcome Back</h1>
-                <p class="subtitle">Please sign in to your account</p>
-            </div>
-
-            <form id="loginForm">
-                <div class="form-group">
-                    <input type="text" id="username" placeholder="Username" required autocomplete="username">
+    <div id="dynamic-content-wrapper">
+        <div class="container">
+            <div class="login-view" id="loginView">
+                <div class="logo">
+                    <div class="logo-icon">🔐</div>
+                    <h1>Welcome Back</h1>
+                    <p class="subtitle">Please sign in to your account</p>
                 </div>
-                
-                <div class="form-group">
-                    <input type="password" id="password" placeholder="Password" required autocomplete="current-password">
-                </div>
-
-                <button type="submit" class="login-btn" id="loginBtn">
-                    <span class="spinner" id="spinner"></span>
-                    <span id="btnText">Sign In</span>
-                </button>
-            </form>
-
-            <div class="message" id="message"></div>
-        </div>
-
-        <div class="welcome-view" id="welcomeView">
-            <div class="welcome-content">
-                <div class="welcome-icon">✓</div>
-                <h1 class="welcome-title">Welcome <span id="welcomeUsername"></span>!</h1>
-                <p class="welcome-subtitle">You have successfully logged in</p>
-                <button class="logout-btn" onclick="logout()">Sign Out</button>
+    
+                <form id="loginForm">
+                    <div class="form-group">
+                        <input type="text" id="username" placeholder="Username" required autocomplete="username">
+                    </div>
+                    
+                    <div class="form-group">
+                        <input type="password" id="password" placeholder="Password" required autocomplete="current-password">
+                    </div>
+    
+                    <button type="submit" class="login-btn" id="loginBtn">
+                        <span class="spinner" id="spinner"></span>
+                        <span id="btnText">Sign In</span>
+                    </button>
+                </form>
+    
+                <div class="message" id="message"></div>
             </div>
         </div>
     </div>
     
-    <div class="version-string">v1.0.1</div>
+    <div class="version-string">v2.1.0</div>
 
     <script>
-        let currentUser = '';
+        const apiUrl = 'https://rgjp.duckdns.org'; // Your server's base URL
 
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        // This function will be callable from the dynamically loaded HTML
+        function logout() {
+            sessionStorage.removeItem('authToken');
+            sessionStorage.removeItem('username');
+            window.location.reload();
+        }
+
+        async function loadProtectedContent(token) {
+            const wrapper = document.getElementById('dynamic-content-wrapper');
+            // Provide a more visually appealing loading state
+            document.body.style.background = '#f4f7f9';
+            wrapper.innerHTML = `<div style="text-align: center; font-family: -apple-system, sans-serif; color: #555;"><h1>Loading Dashboard...</h1><p>Please wait a moment.</p></div>`;
+
+            try {
+                const response = await fetch(`${apiUrl}/dashboard`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const dashboardHtml = await response.text();
+                    // Replace the entire body's content with the secure page
+                    document.body.innerHTML = dashboardHtml;
+                } else {
+                    // If the token is invalid (e.g., server restarted), log out
+                    logout();
+                }
+            } catch (error) {
+                wrapper.innerHTML = `<div style="text-align: center; font-family: -apple-system, sans-serif; color: #d9534f;"><h1>Connection Error</h1><p>Could not connect to the server.</p></div>`;
+                console.error('Failed to load protected content:', error);
+            }
+        }
+        
+        async function handleLogin(e) {
             e.preventDefault();
-            await login();
-        });
-
-        // Auto-focus username field on load
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('username').focus();
-        });
-
-        async function login() {
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             const messageEl = document.getElementById('message');
             const loginBtn = document.getElementById('loginBtn');
-            const spinner = document.getElementById('spinner');
             const btnText = document.getElementById('btnText');
+            const spinner = document.getElementById('spinner');
 
-            if (!username || !password) {
-                showMessage('Please fill in all fields', 'error');
-                return;
-            }
-
-            // Show loading state
             loginBtn.disabled = true;
             spinner.style.display = 'inline-block';
             btnText.textContent = 'Signing In...';
-            hideMessage();
-
-            const apiUrl = 'https://rgjp.duckdns.org/login';
+            messageEl.style.display = 'none';
 
             try {
-                const response = await fetch(apiUrl, {
+                const response = await fetch(`${apiUrl}/login`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password }),
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    currentUser = username;
-                    showWelcomeView();
+                    // SUCCESS! Store the token and load the protected content.
+                    sessionStorage.setItem('authToken', data.token);
+                    sessionStorage.setItem('username', data.username);
+                    await loadProtectedContent(data.token);
                 } else {
-                    showMessage(data.message || 'Login failed', 'error');
+                    messageEl.textContent = data.message || 'Login failed.';
+                    messageEl.style.display = 'block';
+                    messageEl.className = 'message error';
                 }
             } catch (error) {
-                showMessage('Failed to connect to the server. Please try again.', 'error');
+                messageEl.textContent = 'Cannot connect to the server.';
+                messageEl.style.display = 'block';
+                messageEl.className = 'message error';
                 console.error('Login error:', error);
             } finally {
-                // Reset button state
                 loginBtn.disabled = false;
                 spinner.style.display = 'none';
                 btnText.textContent = 'Sign In';
             }
         }
 
-        function showWelcomeView() {
-            document.getElementById('welcomeUsername').textContent = currentUser;
-            document.getElementById('loginView').style.display = 'none';
-            document.getElementById('welcomeView').style.display = 'block';
-        }
-
-        function logout() {
-            // Clear form
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
-            currentUser = '';
-            hideMessage();
-            
-            // Show login view
-            document.getElementById('welcomeView').style.display = 'none';
-            document.getElementById('loginView').style.display = 'block';
-            
-            // Focus username field
-            setTimeout(() => {
-                document.getElementById('username').focus();
-            }, 100);
-        }
-
-        function showMessage(text, type) {
-            const messageEl = document.getElementById('message');
-            messageEl.textContent = text;
-            messageEl.className = `message ${type} show`;
-        }
-
-        function hideMessage() {
-            const messageEl = document.getElementById('message');
-            messageEl.classList.remove('show');
-        }
-
-        // Hide message after some time (Keep for completeness but note it's not currently used)
-        function autoHideMessage() {
-            setTimeout(() => {
-                hideMessage();
-            }, 5000);
-        }
-
-        // Add some nice touches
-        document.getElementById('password').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                login();
+        // --- ON PAGE LOAD ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = sessionStorage.getItem('authToken');
+            if (token) {
+                // If a token exists, try to load the dashboard immediately
+                loadProtectedContent(token);
+            } else {
+                // Otherwise, set up the login form
+                const loginForm = document.getElementById('loginForm');
+                if (loginForm) {
+                    loginForm.addEventListener('submit', handleLogin);
+                    document.getElementById('username').focus();
+                }
             }
         });
     </script>
