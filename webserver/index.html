@@ -3,22 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern Login</title>
+    <title>Secure Login</title>
     <style>
-        /* --- Google Font & Basic Reset --- */
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
-
-        :root {
-            --primary-color: #007bff;
-            --primary-hover: #0056b3;
-            --background-color: #f4f7f6;
-            --card-background: #ffffff;
-            --text-color: #333;
-            --input-border: #ccc;
-            --success-color: #28a745;
-            --error-color: #dc3545;
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -26,151 +12,327 @@
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
         }
 
-        /* --- Main Card Styling --- */
-        .card {
-            background-color: var(--card-background);
-            padding: 2.5rem 2rem;
-            border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+        .container {
             width: 100%;
             max-width: 400px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .login-view {
+            display: block;
+        }
+
+        .welcome-view {
+            display: none;
             text-align: center;
         }
 
-        .card h2 {
-            margin-bottom: 0.5rem;
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 24px;
+            color: white;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 8px;
             font-weight: 600;
         }
 
-        .card .subtitle {
-            margin-bottom: 2rem;
+        .subtitle {
             color: #666;
+            font-size: 14px;
+            margin-bottom: 30px;
         }
 
-        /* --- Form Elements --- */
-        #loginForm {
-            display: flex;
-            flex-direction: column;
-            gap: 1.2rem;
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
         }
 
-        .input-group {
-            text-align: left;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-            font-size: 0.9rem;
-        }
-
-        .input-group input {
+        .form-group input {
             width: 100%;
-            padding: 0.75rem;
-            border: 1px solid var(--input-border);
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s, box-shadow 0.3s;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #fff;
         }
 
-        .input-group input:focus {
+        .form-group input:focus {
             outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .btn {
-            background-color: var(--primary-color);
+        .form-group input::placeholder {
+            color: #999;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            padding: 0.8rem;
             border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
-        .btn:hover {
-            background-color: var(--primary-hover);
+        .login-btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
         }
 
-        #message {
-            margin-top: 1rem;
-            font-size: 0.9rem;
-            height: 1.2rem; /* Reserve space to prevent layout shifts */
+        .login-btn:active {
+            transform: translateY(0);
         }
-        
-        /* --- Welcome View Styling --- */
+
+        .login-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid transparent;
+            border-top: 2px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .welcome-content {
+            animation: fadeInUp 0.6s ease;
+        }
+
         .welcome-icon {
-            font-size: 4rem;
-            color: var(--success-color);
-            margin-bottom: 1rem;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #28a745, #20c997);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 32px;
+            color: white;
+        }
+
+        .welcome-title {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .welcome-subtitle {
+            color: #666;
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        .logout-btn {
+            padding: 12px 24px;
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+                border-radius: 16px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .form-group input {
+                padding: 14px 16px;
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <!-- Login View -->
+        <div class="login-view" id="loginView">
+            <div class="logo">
+                <div class="logo-icon">🔐</div>
+                <h1>Welcome Back</h1>
+                <p class="subtitle">Please sign in to your account</p>
+            </div>
 
-    <main>
-        <section id="login-view" class="card">
-            <h2>Welcome Back! ✨</h2>
-            <p class="subtitle">Please enter your details to sign in.</p>
             <form id="loginForm">
-                <div class="input-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" placeholder="Enter your username" required>
+                <div class="form-group">
+                    <input type="text" id="username" placeholder="Username" required autocomplete="username">
                 </div>
-                <div class="input-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" placeholder="••••••••••" required>
+                
+                <div class="form-group">
+                    <input type="password" id="password" placeholder="Password" required autocomplete="current-password">
                 </div>
-                <button type="submit" class="btn">Login</button>
-                <p id="message"></p>
-            </form>
-        </section>
 
-        <section id="welcome-view" class="card" style="display: none;">
-            <div class="welcome-icon">✔</div>
-            <h2>Login Successful!</h2>
-            <p id="welcome-message"></p>
-        </section>
-    </main>
+                <button type="submit" class="login-btn" id="loginBtn">
+                    <span class="spinner" id="spinner"></span>
+                    <span id="btnText">Sign In</span>
+                </button>
+            </form>
+
+            <div class="message" id="message"></div>
+        </div>
+
+        <!-- Welcome View -->
+        <div class="welcome-view" id="welcomeView">
+            <div class="welcome-content">
+                <div class="welcome-icon">✓</div>
+                <h1 class="welcome-title">Welcome <span id="welcomeUsername"></span>!</h1>
+                <p class="welcome-subtitle">You have successfully logged in</p>
+                <button class="logout-btn" onclick="logout()">Sign Out</button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // --- Get DOM Elements ---
-        const loginForm = document.getElementById('loginForm');
-        const loginView = document.getElementById('login-view');
-        const welcomeView = document.getElementById('welcome-view');
-        const messageEl = document.getElementById('message');
-        const welcomeMessageEl = document.getElementById('welcome-message');
+        let currentUser = '';
 
-        // --- Add Event Listener to the Form ---
-        loginForm.addEventListener('submit', async (event) => {
-            event.preventDefault(); // Prevent the form from reloading the page
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await login();
+        });
 
-            const usernameInput = document.getElementById('username');
-            const passwordInput = document.getElementById('password');
-            
-            const username = usernameInput.value;
-            const password = passwordInput.value;
-            
-            // Your Tunnel URL
+        // Auto-focus username field on load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('username').focus();
+        });
+
+        async function login() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const messageEl = document.getElementById('message');
+            const loginBtn = document.getElementById('loginBtn');
+            const spinner = document.getElementById('spinner');
+            const btnText = document.getElementById('btnText');
+
+            if (!username || !password) {
+                showMessage('Please fill in all fields', 'error');
+                return;
+            }
+
+            // Show loading state
+            loginBtn.disabled = true;
+            spinner.style.display = 'inline-block';
+            btnText.textContent = 'Signing In...';
+            hideMessage();
+
             const apiUrl = 'https://rgjp.duckdns.org/login';
-            
-            messageEl.textContent = 'Logging in...';
-            messageEl.style.color = 'var(--text-color)';
 
             try {
                 const response = await fetch(apiUrl, {
@@ -184,19 +346,67 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    // --- SUCCESS: Show Welcome View ---
-                    welcomeMessageEl.textContent = `Welcome ${username}, you have successfully logged in.`;
-                    loginView.style.display = 'none';
-                    welcomeView.style.display = 'block';
+                    currentUser = username;
+                    showWelcomeView();
                 } else {
-                    // --- ERROR: Show Error Message ---
-                    messageEl.textContent = "Error: " + data.message;
-                    messageEl.style.color = 'var(--error-color)';
+                    showMessage(data.message || 'Login failed', 'error');
                 }
             } catch (error) {
-                console.error('Login Error:', error);
-                messageEl.textContent = 'Failed to connect to the server.';
-                messageEl.style.color = 'var(--error-color)';
+                showMessage('Failed to connect to the server. Please try again.', 'error');
+                console.error('Login error:', error);
+            } finally {
+                // Reset button state
+                loginBtn.disabled = false;
+                spinner.style.display = 'none';
+                btnText.textContent = 'Sign In';
+            }
+        }
+
+        function showWelcomeView() {
+            document.getElementById('welcomeUsername').textContent = currentUser;
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('welcomeView').style.display = 'block';
+        }
+
+        function logout() {
+            // Clear form
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            currentUser = '';
+            hideMessage();
+            
+            // Show login view
+            document.getElementById('welcomeView').style.display = 'none';
+            document.getElementById('loginView').style.display = 'block';
+            
+            // Focus username field
+            setTimeout(() => {
+                document.getElementById('username').focus();
+            }, 100);
+        }
+
+        function showMessage(text, type) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `message ${type} show`;
+        }
+
+        function hideMessage() {
+            const messageEl = document.getElementById('message');
+            messageEl.classList.remove('show');
+        }
+
+        // Hide message after some time
+        function autoHideMessage() {
+            setTimeout(() => {
+                hideMessage();
+            }, 5000);
+        }
+
+        // Add some nice touches
+        document.getElementById('password').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                login();
             }
         });
     </script>
