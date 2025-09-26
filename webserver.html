@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Secure Login</title>
+</head>
+<body>
+    <h1>Login</h1>
+    <form id="loginForm">
+        <input type="text" id="username" placeholder="Username" required><br>
+        <input type="password" id="password" placeholder="Password" required><br>
+        <button type="submit">Login</button>
+    </form>
+    <p id="message"></p>
+    <script >
+document.getElementById('loginForm').addEventListener('submit', async (event) => {
+    event.preventDefault(); // Prevent the form from reloading the page
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const messageEl = document.getElementById('message');
+
+    // IMPORTANT: Replace this with your Cloudflare Tunnel URL
+    const apiUrl = 'https://something-random.trycloudflare.com/login';
+
+    try {
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            messageEl.textContent = "Success: " + data.message;
+            messageEl.style.color = 'green';
+        } else {
+            messageEl.textContent = "Error: " + data.message;
+            messageEl.style.color = 'red';
+        }
+    } catch (error) {
+        messageEl.textContent = 'Failed to connect to the server.';
+        messageEl.style.color = 'red';
+    }
+});
+
+</script>
+</body>
+</html>
