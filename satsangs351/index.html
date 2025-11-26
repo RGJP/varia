@@ -21,21 +21,26 @@
                         serif: ['Playfair Display', 'serif'],
                     },
                     colors: {
-                        midnight: {
-                            900: '#050911',
-                            800: '#0f1623',
-                            700: '#1a2233',
+                        // A custom palette for "Peace and Freedom"
+                        peace: {
+                            50: '#f0f9ff', // Alice Blue
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            800: '#075985',
+                            900: '#0c4a6e',
                         },
-                        gold: {
-                            200: '#e2d9b6',
-                            300: '#d4c596',
-                            400: '#c5b378',
-                            500: '#b09b5c',
+                        slate: {
+                            850: '#1e293b', // Deep text
                         }
                     },
                     animation: {
                         'float': 'float 6s ease-in-out infinite',
                         'fade-in-up': 'fadeInUp 1s ease-out forwards',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     },
                     keyframes: {
                         float: {
@@ -54,64 +59,79 @@
 
     <style>
         body {
-            background-color: #050911;
+            /* Light, airy gradient background */
+            background-color: #f8fafc;
             background-image: 
-                radial-gradient(circle at 50% 0%, rgba(30, 41, 59, 0.4) 0%, rgba(5, 9, 17, 0) 60%),
-                linear-gradient(to bottom, #050911, #0f1623);
-            color: #94a3b8; /* Slate 400 */
+                radial-gradient(circle at 50% 0%, rgba(224, 242, 254, 0.7) 0%, rgba(255, 255, 255, 0) 70%),
+                linear-gradient(to bottom, #f8fafc, #f1f5f9);
+            color: #334155; /* Slate 700 */
             min-height: 100vh;
         }
 
-        /* Custom Audio Player Styling */
+        /* Custom Audio Player Styling - Clean and Standard for Light Theme */
         audio {
             width: 100%;
-            height: 36px;
-            filter: invert(100%) hue-rotate(180deg) brightness(1.5) contrast(0.8) grayscale(1);
-            opacity: 0.7;
-            transition: opacity 0.3s ease;
+            height: 40px;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+            border-radius: 9999px;
         }
         audio:hover {
             opacity: 1;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        /* Soft blue tint on webkit players */
+        audio::-webkit-media-controls-panel {
+            background-color: #f1f5f9;
         }
 
-        /* Hide scrollbar for clean look */
+        /* Scrollbar Styling - Soft Blue/Grey */
         ::-webkit-scrollbar {
             width: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #050911;
+            background: #f8fafc;
         }
         ::-webkit-scrollbar-thumb {
-            background: #1e293b;
+            background: #cbd5e1;
             border-radius: 4px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: #334155;
+            background: #94a3b8;
         }
 
+        /* The New "Ethereal" Glass Card */
         .glass-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 4px 20px rgba(148, 163, 184, 0.1);
+        }
+        
+        /* Subtle selection color */
+        ::selection {
+            background-color: #bae6fd;
+            color: #0c4a6e;
         }
     </style>
 </head>
-<body class="antialiased selection:bg-gold-500/30 selection:text-gold-200">
+<body class="antialiased">
 
-    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-900/10 rounded-full blur-[120px] pointer-events-none z-0"></div>
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-peace-200/40 rounded-full blur-[100px] pointer-events-none z-0 mix-blend-multiply"></div>
 
     <div class="relative z-10 max-w-4xl mx-auto px-6 py-20 md:py-32">
         
         <header class="text-center mb-28 animate-fade-in-up">
-            <div class="inline-block mb-8 text-gold-300 animate-float opacity-80">
+            <div class="inline-block mb-6 text-peace-600 animate-float opacity-90">
                 <span class="text-7xl md:text-8xl font-serif">ॐ</span>
             </div>
-            <h1 class="text-4xl md:text-6xl font-serif text-slate-100 tracking-tight mb-4">
+            <h1 class="text-4xl md:text-6xl font-serif text-slate-800 tracking-tight mb-4">
                 Les Satsangs du 351
             </h1>
-            <div class="flex items-center justify-center gap-4 text-gold-400/80 font-serif italic text-lg md:text-xl">
+            <div class="flex items-center justify-center gap-4 text-slate-500 font-serif italic text-lg md:text-xl">
                 <span>2013</span>
-                <span class="w-1 h-1 rounded-full bg-current"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-peace-400"></span>
                 <span>2014</span>
             </div>
         </header>
@@ -119,33 +139,39 @@
         <main class="space-y-32">
             
             <section class="max-w-2xl mx-auto text-center animate-fade-in-up" style="animation-delay: 0.2s;">
-                <blockquote class="font-serif text-xl md:text-2xl text-slate-200 leading-relaxed mb-6">
-                    <span class="text-gold-500/50">"</span>Tu es comme le ciel tout entier, et non seulement les nuages qui apparaissent et disparaissent en lui.
-<span class="text-gold-500/50"></span><br><br>
-                    <span class="text-gold-500/50"></span>Tu es comme l’océan tout entier, et non seulement les vagues qui dansent à sa surface...
-<span class="text-gold-500/50">"</span>
+                <blockquote class="font-serif text-xl md:text-2xl text-slate-700 leading-relaxed mb-6">
+                    <span class="text-peace-400 font-bold text-3xl align-top">"</span>
+                    Tu es comme le ciel tout entier, et non seulement les nuages qui apparaissent et disparaissent en lui.
+                    <br><br>
+                    Tu es comme l’océan tout entier, et non seulement les vagues qui dansent à sa surface...
+                    <span class="text-peace-400 font-bold text-3xl align-bottom">"</span>
                 </blockquote>
-                <div class="h-16 w-px bg-gradient-to-b from-gold-500/50 to-transparent mx-auto mt-12"></div>
+                <div class="h-16 w-px bg-gradient-to-b from-peace-300 to-transparent mx-auto mt-12 opacity-60"></div>
             </section>
 
-            <section class="prose prose-lg prose-invert mx-auto 
+            <section class="prose prose-lg prose-slate mx-auto 
                 [&_p]:text-justify 
                 [&_p]:hyphens-auto 
-                [&_p]:text-slate-200 
+                [&_p]:text-slate-600 
                 [&_p]:font-light 
                 [&_p]:leading-loose 
-                [&_blockquote]:border-l-gold-500/50 
-                [&_blockquote]:text-gold-200 
+                [&_blockquote]:border-l-peace-400 
+                [&_blockquote]:bg-peace-50/50
+                [&_blockquote]:py-2
+                [&_blockquote]:pr-2
+                [&_blockquote]:text-slate-700 
                 [&_blockquote]:italic 
+                [&_blockquote]:not-italic
                 prose-headings:font-serif 
-                prose-headings:font-normal 
+                prose-headings:font-normal
+                prose-headings:text-slate-800
                 animate-fade-in-up" 
                 style="animation-delay: 0.3s;">
                 
-        <h3 class="text-center">Contexte</h3>
+                <h3 class="text-center !text-3xl !mb-8 text-peace-900">Contexte</h3>
                 
                 <p>
-                    Issu de la tradition spirituelle de l’Inde, le mot <em class="text-gold-200">satsang</em> signifie approximativement « être ensemble en vérité ». Il s’agit d’une rencontre où nous sommes conviés à découvrir l’essence de notre être. C’est un moment pour retourner au cœur de soi, vers ce que nous sommes vraiment.
+                    Issu de la tradition spirituelle de l’Inde, le mot <em class="text-peace-700 font-medium">satsang</em> signifie approximativement « être ensemble en vérité ». Il s’agit d’une rencontre où nous sommes conviés à découvrir l’essence de notre être. C’est un moment pour retourner au cœur de soi, vers ce que nous sommes vraiment.
                 </p>
 
                 <p>
@@ -168,36 +194,36 @@
                     Sans artifice ni prétention, j’ai offert humblement le satsang de façon spontanée durant les années 2013, 2014 et 2015, simplement pour la joie de partager avec tous ceux qui étaient présents cette lumière. Ces rencontres se déroulaient dans notre appartement, qui portait le numéro 351. Ici sont présentées des enregistrements audio et des transcriptions retrouvés en 2025. L’occasion de découvrir la paix est là, comme une fleur tendue à la main.
                 </p>
 
-                <div class="mt-16 p-8 glass-card rounded-xl text-center border-none">
-                    <p class="!text-gold-200 !text-center !font-serif !text-xl mb-6">
-                        "Un moment dans le temps, un jet de lumière provenant directement du Cœur, le Cœur libéré à tout jamais, grâce au vent d’Arunachala."
+                <div class="mt-16 p-10 glass-card rounded-2xl text-center border border-white">
+                    <p class="!text-peace-900 !text-center !font-serif !text-xl mb-6 ">
+                        Un moment au-delà du temps, un jet de lumière provenant directement du coeur, le coeur libéré à tout jamais, grâce au vent d’Arunachala.
                     </p>
-                    <div class="text-sm font-sans tracking-wide text-slate-200">
+                    <div class="text-sm font-sans tracking-wide text-slate-500">
                         Avec tout mon amour, toujours avec vous,<br>
-                        <span class="block mt-2 text-white font-serif text-lg">Shambho</span>
+                        <span class="block mt-2 text-slate-800 font-serif text-lg">Shambho</span>
                     </div>
                 </div>
             </section>
 
             <section class="max-w-3xl mx-auto">
                 <div class="flex items-center gap-4 mb-12">
-                    <div class="h-px bg-slate-800 flex-1"></div>
-                    <h2 class="font-serif text-3xl text-slate-100">Enregistrements Audio</h2>
-                    <div class="h-px bg-slate-800 flex-1"></div>
+                    <div class="h-px bg-slate-200 flex-1"></div>
+                    <h2 class="font-serif text-3xl text-slate-800">Enregistrements Audio</h2>
+                    <div class="h-px bg-slate-200 flex-1"></div>
                 </div>
 
                 <div class="space-y-4" id="audio-container">
-                    <div class="group relative overflow-hidden glass-card rounded-lg p-5 transition-all duration-300 hover:bg-slate-800/50 hover:border-gold-500/20">
+                    <div class="group relative overflow-hidden glass-card rounded-xl p-5 transition-all duration-300 hover:shadow-lg hover:bg-white">
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full bg-gold-900/20 text-gold-400 flex items-center justify-center border border-gold-500/10">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <div class="w-12 h-12 rounded-full bg-peace-50 text-peace-500 flex items-center justify-center border border-peace-100 group-hover:bg-peace-100 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-slate-200 font-medium">Satsang 01</h3>
+                                    <h3 class="text-slate-800 font-semibold text-lg">Satsang 01</h3>
                                     <p class="text-xs text-slate-500 uppercase tracking-wider mt-0.5">7 mars 2013</p>
                                 </div>
                             </div>
@@ -209,14 +235,14 @@
                         </div>
                     </div>
 
-                    <div class="group relative overflow-hidden glass-card rounded-lg p-5 transition-all duration-300 hover:bg-slate-800/50 hover:border-gold-500/20">
+                    <div class="group relative overflow-hidden glass-card rounded-xl p-5 transition-all duration-300 hover:shadow-lg hover:bg-white">
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full bg-gold-900/20 text-gold-400 flex items-center justify-center border border-gold-500/10">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <div class="w-12 h-12 rounded-full bg-peace-50 text-peace-500 flex items-center justify-center border border-peace-100 group-hover:bg-peace-100 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-slate-200 font-medium">Satsang 02</h3>
+                                    <h3 class="text-slate-800 font-semibold text-lg">Satsang 02</h3>
                                     <p class="text-xs text-slate-500 uppercase tracking-wider mt-0.5">9 mars 2013</p>
                                 </div>
                             </div>
@@ -228,14 +254,14 @@
                         </div>
                     </div>
 
-                    <div class="group relative overflow-hidden glass-card rounded-lg p-5 transition-all duration-300 hover:bg-slate-800/50 hover:border-gold-500/20">
+                    <div class="group relative overflow-hidden glass-card rounded-xl p-5 transition-all duration-300 hover:shadow-lg hover:bg-white">
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full bg-gold-900/20 text-gold-400 flex items-center justify-center border border-gold-500/10">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <div class="w-12 h-12 rounded-full bg-peace-50 text-peace-500 flex items-center justify-center border border-peace-100 group-hover:bg-peace-100 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-slate-200 font-medium">Satsang 03</h3>
+                                    <h3 class="text-slate-800 font-semibold text-lg">Satsang 03</h3>
                                     <p class="text-xs text-slate-500 uppercase tracking-wider mt-0.5">1<sup>er</sup> déc. 2013</p>
                                 </div>
                             </div>
@@ -247,14 +273,14 @@
                         </div>
                     </div>
 
-                    <div class="group relative overflow-hidden glass-card rounded-lg p-5 transition-all duration-300 hover:bg-slate-800/50 hover:border-gold-500/20">
+                    <div class="group relative overflow-hidden glass-card rounded-xl p-5 transition-all duration-300 hover:shadow-lg hover:bg-white">
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full bg-gold-900/20 text-gold-400 flex items-center justify-center border border-gold-500/10">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <div class="w-12 h-12 rounded-full bg-peace-50 text-peace-500 flex items-center justify-center border border-peace-100 group-hover:bg-peace-100 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-slate-200 font-medium">Satsang 04</h3>
+                                    <h3 class="text-slate-800 font-semibold text-lg">Satsang 04</h3>
                                     <p class="text-xs text-slate-500 uppercase tracking-wider mt-0.5">8 déc. 2013</p>
                                 </div>
                             </div>
@@ -266,14 +292,14 @@
                         </div>
                     </div>
 
-                    <div class="group relative overflow-hidden glass-card rounded-lg p-5 transition-all duration-300 hover:bg-slate-800/50 hover:border-gold-500/20">
+                    <div class="group relative overflow-hidden glass-card rounded-xl p-5 transition-all duration-300 hover:shadow-lg hover:bg-white">
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full bg-gold-900/20 text-gold-400 flex items-center justify-center border border-gold-500/10">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <div class="w-12 h-12 rounded-full bg-peace-50 text-peace-500 flex items-center justify-center border border-peace-100 group-hover:bg-peace-100 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-slate-200 font-medium">Satsang 05</h3>
+                                    <h3 class="text-slate-800 font-semibold text-lg">Satsang 05</h3>
                                     <p class="text-xs text-slate-500 uppercase tracking-wider mt-0.5">15 déc. 2013</p>
                                 </div>
                             </div>
@@ -285,14 +311,14 @@
                         </div>
                     </div>
 
-                    <div class="group relative overflow-hidden glass-card rounded-lg p-5 transition-all duration-300 hover:bg-slate-800/50 hover:border-gold-500/20">
+                    <div class="group relative overflow-hidden glass-card rounded-xl p-5 transition-all duration-300 hover:shadow-lg hover:bg-white">
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full bg-gold-900/20 text-gold-400 flex items-center justify-center border border-gold-500/10">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <div class="w-12 h-12 rounded-full bg-peace-50 text-peace-500 flex items-center justify-center border border-peace-100 group-hover:bg-peace-100 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-slate-200 font-medium">Satsang 06</h3>
+                                    <h3 class="text-slate-800 font-semibold text-lg">Satsang 06</h3>
                                     <p class="text-xs text-slate-500 uppercase tracking-wider mt-0.5">9 fév. 2014</p>
                                 </div>
                             </div>
@@ -304,14 +330,14 @@
                         </div>
                     </div>
 
-                    <div class="group relative overflow-hidden glass-card rounded-lg p-5 transition-all duration-300 hover:bg-slate-800/50 hover:border-gold-500/20">
+                    <div class="group relative overflow-hidden glass-card rounded-xl p-5 transition-all duration-300 hover:shadow-lg hover:bg-white">
                         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                             <div class="flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full bg-gold-900/20 text-gold-400 flex items-center justify-center border border-gold-500/10">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                <div class="w-12 h-12 rounded-full bg-peace-50 text-peace-500 flex items-center justify-center border border-peace-100 group-hover:bg-peace-100 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                 </div>
                                 <div>
-                                    <h3 class="text-slate-200 font-medium">Satsang 07</h3>
+                                    <h3 class="text-slate-800 font-semibold text-lg">Satsang 07</h3>
                                     <p class="text-xs text-slate-500 uppercase tracking-wider mt-0.5">16 fév. 2014</p>
                                 </div>
                             </div>
@@ -327,69 +353,69 @@
 
             <section class="max-w-3xl mx-auto">
                 <div class="flex items-center gap-4 mb-12">
-                    <div class="h-px bg-slate-800 flex-1"></div>
-                    <h2 class="font-serif text-3xl text-slate-100">Transcriptions PDF</h2>
-                    <div class="h-px bg-slate-800 flex-1"></div>
+                    <div class="h-px bg-slate-200 flex-1"></div>
+                    <h2 class="font-serif text-3xl text-slate-800">Transcriptions PDF</h2>
+                    <div class="h-px bg-slate-200 flex-1"></div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <a href="Satsang 23 juin 2013 .pdf" target="_blank" class="group flex items-center p-4 glass-card rounded-lg hover:bg-slate-800/80 hover:border-gold-500/30 transition-all duration-300">
-                        <div class="p-3 bg-slate-800/50 rounded text-slate-400 group-hover:text-gold-300 transition-colors">
+                    <a href="Satsang 23 juin 2013 .pdf" target="_blank" class="group flex items-center p-4 glass-card rounded-lg hover:bg-white hover:shadow-lg hover:border-peace-200 transition-all duration-300">
+                        <div class="p-3 bg-slate-100 rounded text-slate-400 group-hover:text-peace-500 group-hover:bg-peace-50 transition-colors">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         </div>
                         <div class="ml-4">
-                            <p class="text-slate-200 font-serif text-lg group-hover:text-white">23 juin 2013</p>
-                            <p class="text-xs text-slate-500 uppercase tracking-wider">Télécharger PDF</p>
+                            <p class="text-slate-700 font-serif text-lg group-hover:text-peace-900">23 juin 2013</p>
+                            <p class="text-xs text-slate-400 uppercase tracking-wider">Télécharger PDF</p>
                         </div>
                     </a>
 
-                    <a href="Satsang 12 juillet 2013.pdf" target="_blank" class="group flex items-center p-4 glass-card rounded-lg hover:bg-slate-800/80 hover:border-gold-500/30 transition-all duration-300">
-                        <div class="p-3 bg-slate-800/50 rounded text-slate-400 group-hover:text-gold-300 transition-colors">
+                    <a href="Satsang 12 juillet 2013.pdf" target="_blank" class="group flex items-center p-4 glass-card rounded-lg hover:bg-white hover:shadow-lg hover:border-peace-200 transition-all duration-300">
+                        <div class="p-3 bg-slate-100 rounded text-slate-400 group-hover:text-peace-500 group-hover:bg-peace-50 transition-colors">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         </div>
                         <div class="ml-4">
-                            <p class="text-slate-200 font-serif text-lg group-hover:text-white">12 juillet 2013</p>
-                            <p class="text-xs text-slate-500 uppercase tracking-wider">Télécharger PDF</p>
+                            <p class="text-slate-700 font-serif text-lg group-hover:text-peace-900">12 juillet 2013</p>
+                            <p class="text-xs text-slate-400 uppercase tracking-wider">Télécharger PDF</p>
                         </div>
                     </a>
 
-                    <a href="Satsang 21 juillet 2013.pdf" target="_blank" class="group flex items-center p-4 glass-card rounded-lg hover:bg-slate-800/80 hover:border-gold-500/30 transition-all duration-300">
-                        <div class="p-3 bg-slate-800/50 rounded text-slate-400 group-hover:text-gold-300 transition-colors">
+                    <a href="Satsang 21 juillet 2013.pdf" target="_blank" class="group flex items-center p-4 glass-card rounded-lg hover:bg-white hover:shadow-lg hover:border-peace-200 transition-all duration-300">
+                        <div class="p-3 bg-slate-100 rounded text-slate-400 group-hover:text-peace-500 group-hover:bg-peace-50 transition-colors">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         </div>
                         <div class="ml-4">
-                            <p class="text-slate-200 font-serif text-lg group-hover:text-white">21 juillet 2013</p>
-                            <p class="text-xs text-slate-500 uppercase tracking-wider">Télécharger PDF</p>
+                            <p class="text-slate-700 font-serif text-lg group-hover:text-peace-900">21 juillet 2013</p>
+                            <p class="text-xs text-slate-400 uppercase tracking-wider">Télécharger PDF</p>
                         </div>
                     </a>
 
-                    <a href="Satsang 4 août 2013.pdf" target="_blank" class="group flex items-center p-4 glass-card rounded-lg hover:bg-slate-800/80 hover:border-gold-500/30 transition-all duration-300">
-                        <div class="p-3 bg-slate-800/50 rounded text-slate-400 group-hover:text-gold-300 transition-colors">
+                    <a href="Satsang 4 août 2013.pdf" target="_blank" class="group flex items-center p-4 glass-card rounded-lg hover:bg-white hover:shadow-lg hover:border-peace-200 transition-all duration-300">
+                        <div class="p-3 bg-slate-100 rounded text-slate-400 group-hover:text-peace-500 group-hover:bg-peace-50 transition-colors">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         </div>
                         <div class="ml-4">
-                            <p class="text-slate-200 font-serif text-lg group-hover:text-white">4 août 2013</p>
-                            <p class="text-xs text-slate-500 uppercase tracking-wider">Télécharger PDF</p>
+                            <p class="text-slate-700 font-serif text-lg group-hover:text-peace-900">4 août 2013</p>
+                            <p class="text-xs text-slate-400 uppercase tracking-wider">Télécharger PDF</p>
                         </div>
                     </a>
 
-                    <a href="Satsang 15 septembre 2013.pdf" target="_blank" class="group flex items-center p-4 glass-card rounded-lg hover:bg-slate-800/80 hover:border-gold-500/30 transition-all duration-300">
-                        <div class="p-3 bg-slate-800/50 rounded text-slate-400 group-hover:text-gold-300 transition-colors">
+                    <a href="Satsang 15 septembre 2013.pdf" target="_blank" class="group flex items-center p-4 glass-card rounded-lg hover:bg-white hover:shadow-lg hover:border-peace-200 transition-all duration-300">
+                        <div class="p-3 bg-slate-100 rounded text-slate-400 group-hover:text-peace-500 group-hover:bg-peace-50 transition-colors">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         </div>
                         <div class="ml-4">
-                            <p class="text-slate-200 font-serif text-lg group-hover:text-white">15 septembre 2013</p>
-                            <p class="text-xs text-slate-500 uppercase tracking-wider">Télécharger PDF</p>
+                            <p class="text-slate-700 font-serif text-lg group-hover:text-peace-900">15 septembre 2013</p>
+                            <p class="text-xs text-slate-400 uppercase tracking-wider">Télécharger PDF</p>
                         </div>
                     </a>
 
-                    <a href="Satsang 6 octobre 2013.pdf" target="_blank" class="group flex items-center p-4 glass-card rounded-lg hover:bg-slate-800/80 hover:border-gold-500/30 transition-all duration-300">
-                        <div class="p-3 bg-slate-800/50 rounded text-slate-400 group-hover:text-gold-300 transition-colors">
+                    <a href="Satsang 6 octobre 2013.pdf" target="_blank" class="group flex items-center p-4 glass-card rounded-lg hover:bg-white hover:shadow-lg hover:border-peace-200 transition-all duration-300">
+                        <div class="p-3 bg-slate-100 rounded text-slate-400 group-hover:text-peace-500 group-hover:bg-peace-50 transition-colors">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                         </div>
                         <div class="ml-4">
-                            <p class="text-slate-200 font-serif text-lg group-hover:text-white">6 octobre 2013</p>
-                            <p class="text-xs text-slate-500 uppercase tracking-wider">Télécharger PDF</p>
+                            <p class="text-slate-700 font-serif text-lg group-hover:text-peace-900">6 octobre 2013</p>
+                            <p class="text-xs text-slate-400 uppercase tracking-wider">Télécharger PDF</p>
                         </div>
                     </a>
                 </div>
@@ -398,24 +424,24 @@
             <section class="max-w-xl mx-auto space-y-24 pb-20">
                 
                 <div class="text-center">
-                    <div class="mb-8 opacity-50 text-gold-500">❖</div>
-                    <p class="font-serif text-xl md:text-2xl text-slate-200 leading-relaxed mb-6">
+                    <div class="mb-8 opacity-40 text-peace-400">❖</div>
+                    <p class="font-serif text-xl md:text-2xl text-slate-700 leading-relaxed mb-6">
                         "Sois comme un grand arbre. Lorsque le vent souffle, les branches et les feuilles sont secouées mais le tronc demeure stable. Si tu vis à partir de l'esprit, tu seras toujours secoué... Lorsque tu réalises que ce que tu es n'est que la Conscience, il n'y a aucun mouvement."
                     </p>
-                    <cite class="not-italic text-sm text-gold-400 tracking-widest uppercase">— Annamalai Swami</cite>
+                    <cite class="not-italic text-sm text-peace-600 tracking-widest uppercase font-medium">— Annamalai Swami</cite>
                 </div>
 
                 <div class="text-center">
-                    <div class="mb-8 opacity-50 text-gold-500">❖</div>
-                    <p class="font-serif text-xl md:text-2xl text-slate-200 leading-relaxed mb-6">
+                    <div class="mb-8 opacity-40 text-peace-400">❖</div>
+                    <p class="font-serif text-xl md:text-2xl text-slate-700 leading-relaxed mb-6">
                         "Sous les pensées et les émotions positives ou négatives, il y a un vaste océan de paix qui est encore plus réel que n'importe quelle activité de l'esprit."
                     </p>
-                    <cite class="not-italic text-sm text-gold-400 tracking-widest uppercase">— Adyashanti</cite>
+                    <cite class="not-italic text-sm text-peace-600 tracking-widest uppercase font-medium">— Adyashanti</cite>
                 </div>
 
                 <div class="text-center">
-                    <div class="mb-8 opacity-50 text-gold-500">❖</div>
-                    <p class="font-serif text-xl md:text-2xl text-slate-200 leading-relaxed mb-6">
+                    <div class="mb-8 opacity-40 text-peace-400">❖</div>
+                    <p class="font-serif text-xl md:text-2xl text-slate-700 leading-relaxed mb-6">
                         "La conscience pure est comme l'espace, infini et ouvert. Elle est toujours là. Nous n'avons pas à la créer ou la maintenir. Tout ce que nous avons à faire c'est de se reposer en elle."
                     </p>
                 </div>
@@ -425,11 +451,10 @@
         </main>
 
         <footer class="text-center pb-20">
-            <a href="mailto:raffael.jomphe@gmail.com" class="inline-flex items-center gap-3 px-8 py-4 rounded-full border border-slate-700 bg-slate-900/50 text-slate-300 hover:text-white hover:border-gold-500/50 hover:bg-slate-800 transition-all duration-300 group">
-                <svg class="w-5 h-5 group-hover:text-gold-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                <span class="font-light tracking-wide">Me contacter</span>
+            <a href="mailto:raffael.jomphe@gmail.com" class="inline-flex items-center gap-3 px-8 py-4 rounded-full border border-peace-200 bg-white/50 text-slate-600 hover:text-peace-600 hover:border-peace-400 hover:bg-white hover:shadow-lg transition-all duration-300 group">
+                <svg class="w-5 h-5 group-hover:text-peace-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                <span class="font-medium tracking-wide">Me contacter</span>
             </a>
-
         </footer>
 
     </div>
