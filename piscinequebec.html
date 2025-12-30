@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Piscine Québec - Horaires & Infos</title>
+    <title>Piscine Québec - Tableau de Bord</title>
     <style>
         /* --- RESET & BASE STYLES --- */
         * {
@@ -14,10 +14,8 @@
 
         body {
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background-color: #001f3f; /* Deep Navy Fallback */
-            /* Deep Aquatic Gradient Background */
-            background: linear-gradient(135deg, #02111b 0%, #0b3fa1 50%, #00d2ff 100%);
-            background-attachment: fixed;
+            /* Deep Ocean Gradient */
+            background: linear-gradient(180deg, #00172e 0%, #003666 100%);
             color: #ffffff;
             min-height: 100vh;
             display: flex;
@@ -26,80 +24,89 @@
             padding: 20px;
         }
 
-        /* --- LAYOUT CONTAINER --- */
+        /* --- GLASS CONTAINER --- */
         .container {
             width: 100%;
             max-width: 1000px;
-            background: rgba(255, 255, 255, 0.1); /* Glass effect */
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
             padding: 30px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            margin-top: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            margin-top: 10px;
         }
 
         /* --- HEADER --- */
         header {
             text-align: center;
             margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 20px;
         }
 
         h1 {
-            font-size: 2.5rem;
+            font-size: 2.2rem;
             font-weight: 700;
-            letter-spacing: 1px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             margin-bottom: 10px;
         }
 
         .subtitle {
-            color: #bcdff5;
-            font-size: 1.1rem;
+            color: #a0c4e0;
+            font-size: 1rem;
         }
 
         /* --- CONTROLS --- */
         .controls {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             text-align: center;
         }
 
         label {
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             font-weight: 600;
-            color: #e0f7fa;
+            color: #00d2ff;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        /* Custom Select Styling */
         .select-wrapper {
             position: relative;
-            max-width: 500px;
+            max-width: 600px;
             margin: 0 auto;
         }
 
         select {
             width: 100%;
-            padding: 15px 20px;
-            font-size: 1rem;
-            border-radius: 50px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            background-color: rgba(0, 30, 60, 0.6);
+            padding: 16px 25px;
+            font-size: 1.1rem;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background-color: rgba(13, 37, 66, 0.8);
             color: #fff;
-            appearance: none; /* Remove default arrow */
+            appearance: none;
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
-        select:hover, select:focus {
-            outline: none;
+        select:hover {
             border-color: #00d2ff;
-            background-color: rgba(0, 30, 60, 0.8);
-            box-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
+            background-color: rgba(13, 37, 66, 1);
         }
 
-        /* Custom Arrow */
+        select:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.2);
+        }
+
         .select-wrapper::after {
             content: '▼';
             font-size: 0.8rem;
@@ -111,95 +118,114 @@
             pointer-events: none;
         }
 
-        /* --- CONTENT DISPLAY AREA --- */
+        /* --- CONTENT DISPLAY --- */
         #pool-display {
-            display: none; /* Hidden by default until selection */
-            animation: fadeIn 0.5s ease-in-out;
+            display: none;
+            animation: slideUp 0.5s ease-out;
         }
 
-        .info-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .action-card {
             background: rgba(0, 0, 0, 0.2);
-            padding: 15px 20px;
-            border-radius: 12px 12px 0 0;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-bottom: none;
-            flex-wrap: wrap;
-            gap: 10px;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .pool-title {
-            font-size: 1.2rem;
-            font-weight: 600;
+        .pool-name-display {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
             color: #ffffff;
         }
 
-        /* Map Button Styling */
-        .map-link {
+        .status-note {
+            font-size: 0.9rem;
+            color: #ffcc00;
+            margin-bottom: 15px;
+            background: rgba(255, 204, 0, 0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        /* THE BIG SCHEDULE BUTTON */
+        .schedule-btn {
             display: inline-flex;
             align-items: center;
-            background-color: #00d2ff;
-            color: #00334e;
-            padding: 8px 16px;
-            border-radius: 20px;
+            justify-content: center;
+            background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+            color: #001f3f;
             text-decoration: none;
-            font-weight: 700;
-            font-size: 0.9rem;
-            transition: transform 0.2s, background-color 0.2s;
+            font-weight: 800;
+            font-size: 1.1rem;
+            padding: 15px 40px;
+            border-radius: 50px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.4);
+            width: 100%;
+            max-width: 400px;
         }
 
-        .map-link:hover {
-            background-color: #fff;
+        .schedule-btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 210, 255, 0.6);
+            color: #001f3f;
         }
 
-        .map-icon {
-            margin-right: 6px;
+        .schedule-btn span {
+            margin-right: 10px;
+            font-size: 1.3rem;
         }
 
-        /* --- IFRAME STYLING --- */
+        /* --- MAP IFRAME --- */
+        .map-label {
+            margin-top: 20px;
+            margin-bottom: 10px;
+            color: #a0c4e0;
+            font-size: 0.9rem;
+            display: block;
+        }
+
         .iframe-container {
             position: relative;
             width: 100%;
-            height: 70vh; /* Takes up nice vertical space */
-            background-color: #fff;
-            border-radius: 0 0 12px 12px;
+            height: 400px;
+            background-color: #0d2542;
+            border-radius: 15px;
             overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         iframe {
             width: 100%;
             height: 100%;
             border: none;
+            filter: grayscale(20%) contrast(1.1); /* Slight filter to blend map */
         }
 
-        /* --- UTILS --- */
-        .placeholder-text {
+        /* --- PLACEHOLDER --- */
+        .placeholder {
             text-align: center;
-            padding: 50px;
-            color: rgba(255,255,255,0.5);
-            font-style: italic;
+            padding: 60px 20px;
+            color: rgba(255,255,255,0.3);
+            border: 2px dashed rgba(255,255,255,0.1);
+            border-radius: 15px;
         }
 
         footer {
-            margin-top: 30px;
+            margin-top: 40px;
+            color: rgba(255,255,255,0.3);
             font-size: 0.8rem;
-            color: rgba(255,255,255,0.4);
             text-align: center;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Mobile Adjustments */
-        @media (max-width: 600px) {
-            h1 { font-size: 1.8rem; }
-            .info-bar { flex-direction: column; text-align: center; }
-            .iframe-container { height: 500px; }
         }
     </style>
 </head>
@@ -208,47 +234,58 @@
     <div class="container">
         <header>
             <h1>Piscine Québec</h1>
-            <p class="subtitle">Sélectionnez une piscine pour voir l'horaire et la localisation</p>
+            <p class="subtitle">Trouvez votre piscine et consultez l'horaire officiel</p>
         </header>
 
         <section class="controls">
-            <label for="pool-select">Choisir une installation :</label>
+            <label for="pool-select">Sélectionnez une installation</label>
             <div class="select-wrapper">
                 <select id="pool-select">
-                    <option value="" disabled selected>-- Liste des piscines --</option>
+                    <option value="" disabled selected>-- Choisir une piscine --</option>
                     </select>
             </div>
         </section>
 
         <div id="pool-display">
-            <div class="info-bar">
-                <div class="pool-title" id="display-title">Nom de la piscine</div>
+            
+            <div class="action-card">
+                <h2 class="pool-name-display" id="display-title">Nom de la piscine</h2>
                 
-                <a href="#" target="_blank" id="map-btn" class="map-link">
-                    <span class="map-icon">📍</span> Voir sur Google Maps
-                </a>
-                
-                <a href="#" target="_blank" id="direct-link" class="map-link" style="background-color: #2c5364; color: #fff;">
-                    <span>🔗</span> Ouvrir le site
+                <div class="status-note">
+                    ⚠️ La Ville de Québec bloque l'affichage direct.
+                </div>
+
+                <a href="#" target="_blank" id="schedule-btn" class="schedule-btn">
+                    <span>📅</span> Voir l'horaire sur ville.quebec.qc.ca
                 </a>
             </div>
 
-            <div class="iframe-container">
-                <iframe id="pool-frame" src="" title="Horaire Piscine" loading="lazy"></iframe>
+            <div style="text-align:left;">
+                <span class="map-label">📍 Localisation (Google Maps)</span>
+                <div class="iframe-container">
+                    <iframe 
+                        id="map-frame" 
+                        src="" 
+                        loading="lazy" 
+                        referrerpolicy="no-referrer-when-downgrade">
+                    </iframe>
+                </div>
             </div>
+
         </div>
 
-        <div id="placeholder" class="placeholder-text">
-            Veuillez sélectionner une piscine dans le menu déroulant ci-dessus.
+        <div id="placeholder" class="placeholder">
+            <h3>En attente de sélection...</h3>
+            <p>Choisissez une piscine dans le menu ci-dessus pour afficher la carte et le lien.</p>
         </div>
     </div>
 
     <footer>
-        
+        Développé pour les nageurs de Québec. Données © Ville de Québec.
     </footer>
 
     <script>
-        // Data derived from the user provided list
+        // Data Structure
         const pools = [
             { name: "Arpidrome (Charlesbourg)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=163" },
             { name: "Centre communautaire Ferland (La Cité-Limoilou)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=165" },
@@ -257,63 +294,55 @@
             { name: "Centre municipal Monseigneur-De Laval (Beauport)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=167" },
             { name: "Complexe Jean-Paul-Nolin (Les Rivières)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=168" },
             { name: "École secondaire de La Seigneurie (Beauport)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=169" },
-            { name: "Pavillon de l'éducation physique et des sports (PEPS - Université Laval)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=712" },
-            { name: "Piscine A. Couture - Collège François-de-Laval (La Cité-Limoilou)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=171" },
-            { name: "Piscine de l'école L'Odyssée (La Haute-Saint-Charles)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=175" },
-            { name: "Piscine de l'édifice Denis-Giguère (La Haute-Saint-Charles)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=172" },
-            { name: "Piscine du Campus Notre-Dame-de-Foy (Sainte-Foy)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=331" },
+            { name: "PEPS Université Laval (Sainte-Foy)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=712" },
+            { name: "Piscine A. Couture - Collège François-de-Laval", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=171" },
+            { name: "Piscine de l'école L'Odyssée (Haute-Saint-Charles)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=175" },
+            { name: "Piscine de l'édifice Denis-Giguère", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=172" },
+            { name: "Piscine du Campus Notre-Dame-de-Foy", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=331" },
             { name: "Piscine Jacques-Amyot (Sainte-Foy)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=173" },
             { name: "Piscine Jos.-A.-Lachance (Les Rivières)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=174" },
-            { name: "Piscine Jules-Dallaire - Patro Roc-Amadour (La Cité-Limoilou)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=333" },
+            { name: "Piscine Jules-Dallaire - Patro Roc-Amadour", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=333" },
             { name: "Piscine Lucien-Flamand - Centre Wilbrod-Bhérer", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=176" },
-            { name: "Piscine municipale du Bourg-Royal (Charlesbourg)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=177" },
+            { name: "Piscine municipale du Bourg-Royal", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=177" },
             { name: "Piscine Sylvie-Bernier (Sainte-Foy)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=178" },
             { name: "Piscine Wilfrid-Hamel (La Cité-Limoilou)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=179" },
             { name: "YMCA St-Roch (La Cité-Limoilou)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=793" },
             { name: "YWCA Québec (La Cité-Limoilou)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=164" }
         ];
 
-        // Element References
+        // DOM Elements
         const selectBox = document.getElementById('pool-select');
         const displaySection = document.getElementById('pool-display');
         const placeholder = document.getElementById('placeholder');
-        const iframe = document.getElementById('pool-frame');
+        
         const titleLabel = document.getElementById('display-title');
-        const mapBtn = document.getElementById('map-btn');
-        const directBtn = document.getElementById('direct-link');
+        const scheduleBtn = document.getElementById('schedule-btn');
+        const mapFrame = document.getElementById('map-frame');
 
         // Initialize Dropdown
         pools.forEach((pool, index) => {
             const option = document.createElement('option');
-            option.value = index; // Store index as value to access full object later
+            option.value = index;
             option.textContent = pool.name;
             selectBox.appendChild(option);
         });
 
-        // Event Listener for Selection
+        // Handle Selection
         selectBox.addEventListener('change', function() {
-            const selectedIndex = this.value;
-            const selectedPool = pools[selectedIndex];
+            const selectedPool = pools[this.value];
+            if (!selectedPool) return;
 
-            if (selectedPool) {
-                // Hide placeholder, show display
-                placeholder.style.display = 'none';
-                displaySection.style.display = 'block';
+            // UI Updates
+            placeholder.style.display = 'none';
+            displaySection.style.display = 'block';
+            
+            titleLabel.textContent = selectedPool.name;
+            scheduleBtn.href = selectedPool.url;
 
-                // Update text
-                titleLabel.textContent = selectedPool.name;
-
-                // Update Iframe
-                iframe.src = selectedPool.url;
-
-                // Update Direct Link (Fallback)
-                directBtn.href = selectedPool.url;
-
-                // Generate Google Maps Query Link
-                // We create a search query like: https://www.google.com/maps/search/?api=1&query=Piscine+Name+Quebec
-                const mapQuery = encodeURIComponent(selectedPool.name + " Québec");
-                mapBtn.href = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
-            }
+            // Generate Google Maps Embed URL (Standard Output)
+            // We use 'maps.google.com' with 'output=embed' which doesn't strictly require an API key for simple searches
+            const mapQuery = encodeURIComponent(selectedPool.name + ", Québec, QC");
+            mapFrame.src = `https://maps.google.com/maps?q=${mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
         });
     </script>
 </body>
