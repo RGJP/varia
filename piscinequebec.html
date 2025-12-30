@@ -1,349 +1,59 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Piscine Québec - Tableau de Bord</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Map View | Full Screen</title>
     <style>
-        /* --- RESET & BASE STYLES --- */
+        /* RESET & BASIC TYPOGRAPHY 
+           Standardizing fonts to system defaults for maximum performance.
+        */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
 
-        body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            /* Deep Ocean Gradient */
-            background: linear-gradient(180deg, #00172e 0%, #003666 100%);
-            color: #ffffff;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px;
-        }
-
-        /* --- GLASS CONTAINER --- */
-        .container {
+        body, html {
+            height: 100%;
             width: 100%;
-            max-width: 1000px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-            margin-top: 10px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f0f0;
+            overflow: hidden; /* Prevents scrollbars on the main page */
         }
 
-        /* --- HEADER --- */
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 20px;
-        }
-
-        h1 {
-            font-size: 2.2rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            color: #a0c4e0;
-            font-size: 1rem;
-        }
-
-        /* --- CONTROLS --- */
-        .controls {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 12px;
-            font-weight: 600;
-            color: #00d2ff;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .select-wrapper {
-            position: relative;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        select {
-            width: 100%;
-            padding: 16px 25px;
-            font-size: 1.1rem;
-            border-radius: 12px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            background-color: rgba(13, 37, 66, 0.8);
-            color: #fff;
-            appearance: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        select:hover {
-            border-color: #00d2ff;
-            background-color: rgba(13, 37, 66, 1);
-        }
-
-        select:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(0, 210, 255, 0.2);
-        }
-
-        .select-wrapper::after {
-            content: '▼';
-            font-size: 0.8rem;
-            color: #00d2ff;
+        /* MAP CONTAINER 
+           This ensures the map takes up exactly 100% of the viewport 
+           regardless of device size.
+        */
+        .map-wrapper {
             position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            pointer-events: none;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
         }
 
-        /* --- CONTENT DISPLAY --- */
-        #pool-display {
-            display: none;
-            animation: slideUp 0.5s ease-out;
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .action-card {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .pool-name-display {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 15px;
-            color: #ffffff;
-        }
-
-        .status-note {
-            font-size: 0.9rem;
-            color: #ffcc00;
-            margin-bottom: 15px;
-            background: rgba(255, 204, 0, 0.1);
-            padding: 5px 15px;
-            border-radius: 20px;
-        }
-
-        /* THE BIG SCHEDULE BUTTON */
-        .schedule-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(45deg, #00d2ff, #3a7bd5);
-            color: #001f3f;
-            text-decoration: none;
-            font-weight: 800;
-            font-size: 1.1rem;
-            padding: 15px 40px;
-            border-radius: 50px;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 15px rgba(0, 210, 255, 0.4);
-            width: 100%;
-            max-width: 400px;
-        }
-
-        .schedule-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 210, 255, 0.6);
-            color: #001f3f;
-        }
-
-        .schedule-btn span {
-            margin-right: 10px;
-            font-size: 1.3rem;
-        }
-
-        /* --- MAP IFRAME --- */
-        .map-label {
-            margin-top: 20px;
-            margin-bottom: 10px;
-            color: #a0c4e0;
-            font-size: 0.9rem;
-            display: block;
-        }
-
-        .iframe-container {
-            position: relative;
-            width: 100%;
-            height: 400px;
-            background-color: #0d2542;
-            border-radius: 15px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        iframe {
+        .map-wrapper iframe {
             width: 100%;
             height: 100%;
-            border: none;
-            filter: grayscale(20%) contrast(1.1); /* Slight filter to blend map */
-        }
-
-        /* --- PLACEHOLDER --- */
-        .placeholder {
-            text-align: center;
-            padding: 60px 20px;
-            color: rgba(255,255,255,0.3);
-            border: 2px dashed rgba(255,255,255,0.1);
-            border-radius: 15px;
-        }
-
-        footer {
-            margin-top: 40px;
-            color: rgba(255,255,255,0.3);
-            font-size: 0.8rem;
-            text-align: center;
+            border: 0;
+            display: block; /* Removes default inline-block spacing */
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1>Piscine Québec</h1>
-            <p class="subtitle">Trouvez votre piscine et consultez l'horaire officiel</p>
-        </header>
-
-        <section class="controls">
-            <label for="pool-select">Sélectionnez une installation</label>
-            <div class="select-wrapper">
-                <select id="pool-select">
-                    <option value="" disabled selected>-- Choisir une piscine --</option>
-                    </select>
-            </div>
-        </section>
-
-        <div id="pool-display">
-            
-            <div class="action-card">
-                <h2 class="pool-name-display" id="display-title">Nom de la piscine</h2>
-                
-                <div class="status-note">
-                    ⚠️ La Ville de Québec bloque l'affichage direct.
-                </div>
-
-                <a href="#" target="_blank" id="schedule-btn" class="schedule-btn">
-                    <span>📅</span> Voir l'horaire sur ville.quebec.qc.ca
-                </a>
-            </div>
-
-            <div style="text-align:left;">
-                <span class="map-label">📍 Localisation (Google Maps)</span>
-                <div class="iframe-container">
-                    <iframe 
-                        id="map-frame" 
-                        src="" 
-                        loading="lazy" 
-                        referrerpolicy="no-referrer-when-downgrade">
-                    </iframe>
-                </div>
-            </div>
-
-        </div>
-
-        <div id="placeholder" class="placeholder">
-            <h3>En attente de sélection...</h3>
-            <p>Choisissez une piscine dans le menu ci-dessus pour afficher la carte et le lien.</p>
-        </div>
+    <div class="map-wrapper">
+        <iframe 
+            src="https://www.google.com/maps/d/embed?mid=1mpy24AC97LDXYx0JiF1ZowC5CRyWtHg&ehbc=2E312F" 
+            allowfullscreen="" 
+            loading="lazy" 
+            referrerpolicy="no-referrer-when-downgrade"
+            title="Custom Google Map">
+        </iframe>
     </div>
 
-    <footer>
-        Développé pour les nageurs de Québec. Données © Ville de Québec.
-    </footer>
-
-    <script>
-        // Data Structure
-        const pools = [
-            { name: "Arpidrome (Charlesbourg)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=163" },
-            { name: "Centre communautaire Ferland (La Cité-Limoilou)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=165" },
-            { name: "Centre communautaire Lucien-Borne (La Cité-Limoilou)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=320" },
-            { name: "Centre communautaire Michel-Labadie (Les Rivières)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=166" },
-            { name: "Centre municipal Monseigneur-De Laval (Beauport)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=167" },
-            { name: "Complexe Jean-Paul-Nolin (Les Rivières)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=168" },
-            { name: "École secondaire de La Seigneurie (Beauport)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=169" },
-            { name: "PEPS Université Laval (Sainte-Foy)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=712" },
-            { name: "Piscine A. Couture - Collège François-de-Laval", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=171" },
-            { name: "Piscine de l'école L'Odyssée (Haute-Saint-Charles)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=175" },
-            { name: "Piscine de l'édifice Denis-Giguère", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=172" },
-            { name: "Piscine du Campus Notre-Dame-de-Foy", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=331" },
-            { name: "Piscine Jacques-Amyot (Sainte-Foy)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=173" },
-            { name: "Piscine Jos.-A.-Lachance (Les Rivières)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=174" },
-            { name: "Piscine Jules-Dallaire - Patro Roc-Amadour", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=333" },
-            { name: "Piscine Lucien-Flamand - Centre Wilbrod-Bhérer", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=176" },
-            { name: "Piscine municipale du Bourg-Royal", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=177" },
-            { name: "Piscine Sylvie-Bernier (Sainte-Foy)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=178" },
-            { name: "Piscine Wilfrid-Hamel (La Cité-Limoilou)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=179" },
-            { name: "YMCA St-Roch (La Cité-Limoilou)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=793" },
-            { name: "YWCA Québec (La Cité-Limoilou)", url: "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=164" }
-        ];
-
-        // DOM Elements
-        const selectBox = document.getElementById('pool-select');
-        const displaySection = document.getElementById('pool-display');
-        const placeholder = document.getElementById('placeholder');
-        
-        const titleLabel = document.getElementById('display-title');
-        const scheduleBtn = document.getElementById('schedule-btn');
-        const mapFrame = document.getElementById('map-frame');
-
-        // Initialize Dropdown
-        pools.forEach((pool, index) => {
-            const option = document.createElement('option');
-            option.value = index;
-            option.textContent = pool.name;
-            selectBox.appendChild(option);
-        });
-
-        // Handle Selection
-        selectBox.addEventListener('change', function() {
-            const selectedPool = pools[this.value];
-            if (!selectedPool) return;
-
-            // UI Updates
-            placeholder.style.display = 'none';
-            displaySection.style.display = 'block';
-            
-            titleLabel.textContent = selectedPool.name;
-            scheduleBtn.href = selectedPool.url;
-
-            // Generate Google Maps Embed URL (Standard Output)
-            // We use 'maps.google.com' with 'output=embed' which doesn't strictly require an API key for simple searches
-            const mapQuery = encodeURIComponent(selectedPool.name + ", Québec, QC");
-            mapFrame.src = `https://maps.google.com/maps?q=${mapQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-        });
-    </script>
 </body>
 </html>
