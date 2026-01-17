@@ -364,12 +364,12 @@
                     statusLink.innerHTML = '';
                     statusLink.style.color = 'var(--status-done)';
                 } else {
-                    statusLink.innerHTML = '⚠️ Click here to log to Puter before using';
+                    statusLink.innerHTML = '⚠️ Click here to log in to Puter before using';
                     statusLink.style.color = 'var(--status-thinking)';
                 }
             } catch (err) {
                 console.warn("Puter auth check failed:", err);
-                statusLink.innerHTML = '⚠️ Click here to log to Puter before using';
+                statusLink.innerHTML = '⚠️ Click here to log in to Puter before using';
                 statusLink.style.color = 'var(--status-thinking)';
             }
         }
