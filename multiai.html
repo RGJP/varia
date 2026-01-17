@@ -47,12 +47,12 @@
         }
 
         .header-content {
-            max-width: 800px; /* Reduced max-width for a better centered look */
+            max-width: 800px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            align-items: center; /* Center align the Logo and Input Group */
+            align-items: center;
         }
 
         .brand {
@@ -71,22 +71,21 @@
             flex-direction: column;
             gap: 10px;
             position: relative;
-            align-items: center; /* Centers the button inside */
+            align-items: center;
             width: 100%;
         }
 
-
-        /* New style for the moved link */
+        /* Link style */
         .powered-by {
             font-size: 0.8rem;
             color: var(--text-muted);
             text-decoration: none;
-            margin-top: -10px; /* Pulls it closer to the header title */
+            margin-top: -10px;
             margin-bottom: 5px;
             transition: color 0.2s;
+            font-weight: 500; /* Added slightly more weight for visibility */
         }
        
-
         textarea {
             width: 100%;
             flex-grow: 1;
@@ -114,7 +113,7 @@
             color: white;
             border: none;
             border-radius: 12px;
-            padding: 0 40px; /* Slightly wider button looks better centered */
+            padding: 0 40px;
             height: 50px;
             font-weight: 600;
             cursor: pointer;
@@ -122,7 +121,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            align-self: center; /* Centers the button horizontally */
+            align-self: center;
         }
 
         button#sendBtn:hover { background: var(--accent-hover); }
@@ -145,14 +144,13 @@
             height: 100%;
         }
 
-    /* Desktop: 2x2 Grid */
         @media (min-width: 1024px) {
             .grid-container {
                 grid-template-columns: 1fr 1fr;
-                /* This ensures each row is AT LEAST 450px tall, but will stretch if there is space */
                 grid-template-rows: minmax(450px, 1fr) minmax(450px, 1fr);
             }
         }
+        
         /* --- Model Card --- */
         .model-card {
             background: var(--bg-panel);
@@ -226,7 +224,7 @@
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.2s;
-            display: none; /* Hidden by default until done */
+            display: none;
             align-items: center;
             gap: 4px;
         }
@@ -249,7 +247,6 @@
             position: relative;
         }
 
-        /* Error Text Styling */
         .error-block {
             color: #f87171;
             background: rgba(127, 29, 29, 0.2);
@@ -261,27 +258,22 @@
             white-space: pre-wrap;
         }
 
-        /* Scrollbar Styling */
         .card-body::-webkit-scrollbar { width: 8px; }
         .card-body::-webkit-scrollbar-track { background: transparent; }
         .card-body::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
         .card-body::-webkit-scrollbar-thumb:hover { background: #444; }
 
-        /* Animations */
         @keyframes pulse {
             0% { opacity: 1; box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
             70% { opacity: 0.5; box-shadow: 0 0 0 4px rgba(234, 179, 8, 0); }
             100% { opacity: 1; box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
         }
 
-        
-
-        /* Responsive Mobile Adjustments */
         @media (max-width: 768px) {
             header { padding: 1rem; }
             .grid-container { display: flex; flex-direction: column; gap: 1rem; height: auto; }
             .model-card { min-height: 300px; }
-            main { overflow-y: scroll; } /* Allow full page scroll on mobile */
+            main { overflow-y: scroll; }
         }
     </style>
 </head>
@@ -293,8 +285,8 @@
                 <span>⚡</span> Multi-AI
             </div>
             
-            <a href="https://puter.com/" target="_blank" class="powered-by">
-                Powered by Puter.js - Log in to Puter before using.
+            <a id="puterStatusLink" href="https://puter.com/" target="_blank" class="powered-by">
+                Checking status...
             </a>
 
             <div class="input-group">
@@ -310,8 +302,6 @@
         <div class="grid-container" id="gridContainer">
             </div>
     </main>
-
-   
 
     <script src="https://js.puter.com/v2/"></script>
 
@@ -329,10 +319,8 @@
         const promptInput = document.getElementById('promptInput');
         const sendBtn = document.getElementById('sendBtn');
         
-        // Wake Lock Variable
         let wakeLock = null;
 
-        // Dynamically create model cards on load
         function initUI() {
             gridContainer.innerHTML = '';
             models.forEach(model => {
@@ -364,30 +352,48 @@
 
         initUI();
 
+        // --- NEW: Puter Status Check ---
+        async function checkPuterStatus() {
+            const statusLink = document.getElementById('puterStatusLink');
+            
+            try {
+                // Returns user object if signed in, null if not
+                const user = await puter.auth.getUser();
+
+                if (user) {
+                    statusLink.innerHTML = '';
+                    statusLink.style.color = 'var(--status-done)';
+                } else {
+                    statusLink.innerHTML = '⚠️ Click here to log to Puter before using';
+                    statusLink.style.color = 'var(--status-thinking)';
+                }
+            } catch (err) {
+                console.warn("Puter auth check failed:", err);
+                statusLink.innerHTML = '⚠️ Click here to log to Puter before using';
+                statusLink.style.color = 'var(--status-thinking)';
+            }
+        }
+
+        // Call status check on load
+        checkPuterStatus();
+
+
         // --- Wake Lock Logic ---
-        
-        // Function to request wake lock
         async function requestWakeLock() {
             try {
                 if ('wakeLock' in navigator) {
                     wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Wake Lock is active - Screen will not turn off');
-                } else {
-                    console.log('Wake Lock API not supported in this browser');
                 }
             } catch (err) {
-                // Fail silently (e.g. low battery might block this) so app doesn't break
                 console.warn(`Wake Lock request failed: ${err.name}, ${err.message}`);
             }
         }
 
-        // Function to release wake lock
         async function releaseWakeLock() {
             if (wakeLock !== null) {
                 try {
                     await wakeLock.release();
                     wakeLock = null;
-                    console.log('Wake Lock released');
                 } catch (err) {
                     console.warn(`Wake Lock release failed: ${err.name}, ${err.message}`);
                 }
@@ -395,7 +401,6 @@
         }
 
         // --- Core Logic ---
-
         async function broadcastPrompt() {
             const prompt = promptInput.value.trim();
             if (!prompt) {
@@ -407,7 +412,6 @@
             sendBtn.disabled = true;
             sendBtn.innerText = '...';
 
-            // Activate Screen Wake Lock
             await requestWakeLock();
 
             // Reset all cards
@@ -417,18 +421,15 @@
                 const card = document.getElementById(`card-${model.id}`);
                 const copyBtn = document.getElementById(`copy-${model.id}`);
                 
-                outputDiv.innerText = ''; // Clear previous text
+                outputDiv.innerText = '';
                 statusBadge.querySelector('.status-text').innerText = 'Processing...';
                 card.classList.remove('done');
                 card.classList.add('streaming');
                 
-                // Reset Copy Button
                 copyBtn.style.display = 'none';
                 copyBtn.innerHTML = '📋 Copy Text';
             });
 
-            // Launch 4 parallel streams
-            // We use map to trigger all async functions immediately, then Promise.all to wait for button unlock
             const promises = models.map(model => streamModel(model, prompt));
 
             try {
@@ -436,7 +437,6 @@
             } catch (e) {
                 console.error("Global processing error", e);
             } finally {
-                // Unlock Interface & Release Wake Lock
                 sendBtn.disabled = false;
                 sendBtn.innerHTML = '<span>Run</span>';
                 await releaseWakeLock();
@@ -451,31 +451,24 @@
             const copyBtn = document.getElementById(`copy-${model.id}`);
 
             try {
-                // Initialize Puter Chat Stream
                 const response = await puter.ai.chat(prompt, { 
                     model: model.id, 
                     stream: true 
                 });
 
-                // Read Stream
                 for await (const part of response) {
                     if (part?.text) {
                         outputDiv.innerText += part.text;
-                        // Auto-scroll to bottom of this specific card
                         outputDiv.scrollTop = outputDiv.scrollHeight;
                     }
                 }
 
-                // Success State
                 statusText.innerText = 'Completed';
                 card.classList.remove('streaming');
                 card.classList.add('done');
-                
-                // Show Copy Button
                 copyBtn.style.display = 'flex';
 
             } catch (error) {
-                // Error State
                 console.error(`Error with ${model.name}:`, error);
                 
                 const errorDetails = error.stack || JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
@@ -491,7 +484,7 @@
                 `;
 
                 statusText.innerText = 'Failed';
-                statusBadge.style.color = '#ef4444'; // Red
+                statusBadge.style.color = '#ef4444';
                 card.classList.remove('streaming');
             }
         }
@@ -506,7 +499,6 @@
             try {
                 await navigator.clipboard.writeText(text);
                 
-                // Visual Feedback
                 const originalText = copyBtn.innerHTML;
                 copyBtn.innerText = '✅ Copied!';
                 copyBtn.style.borderColor = 'var(--status-done)';
@@ -523,7 +515,6 @@
             }
         }
 
-        // Enable Ctrl+Enter to send
         promptInput.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 'Enter') {
                 broadcastPrompt();
