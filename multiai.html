@@ -361,7 +361,7 @@
                 const user = await puter.auth.getUser();
 
                 if (user) {
-                    statusLink.innerHTML = '';
+                    statusLink.innerHTML = `🟢 ${user.username}`;
                     statusLink.style.color = 'var(--status-done)';
                 } else {
                     statusLink.innerHTML = '⚠️ Click here to log in to Puter before using';
