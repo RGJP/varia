@@ -61,14 +61,16 @@
 
         .brand span { color: var(--accent); }
 
-        .input-group {
+   .input-group {
             display: flex;
+            flex-direction: column; /* Changed from row to column */
             gap: 10px;
             position: relative;
-            align-items: flex-start; /* Align top for taller textarea */
+            align-items: flex-start;
         }
 
-        textarea {
+ textarea {
+            width: 100%; /* Added to ensure full width */
             flex-grow: 1;
             background: var(--bg-input);
             border: 1px solid var(--border);
@@ -77,8 +79,8 @@
             padding: 12px 16px;
             font-size: 1rem;
             font-family: inherit;
-            resize: vertical; /* Allow user resizing if needed */
-            height: 120px; /* IMPROVEMENT 1: Taller input area */
+            resize: vertical;
+            height: 120px;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
             outline: none;
             line-height: 1.5;
@@ -89,20 +91,20 @@
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
         }
 
-        button#sendBtn {
+  button#sendBtn {
             background: var(--accent);
             color: white;
             border: none;
             border-radius: 12px;
             padding: 0 24px;
-            height: 50px; /* Fixed height for button */
+            height: 50px;
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.1s, background-color 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
-            align-self: flex-start; /* Stick to top even if textarea grows */
+            align-self: flex-start; 
         }
 
         button#sendBtn:hover { background: var(--accent-hover); }
