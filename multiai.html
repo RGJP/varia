@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Multi-AI</title>
+    <link rel="icon" href="data:image/svg+xml,
+<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
+  <text y='0.9em' font-size='90'>⚡</text>
+</svg>">
     <style>
         :root {
             --bg-app: #0a0a0a;
@@ -263,11 +267,11 @@
             text-align: center;
             padding: 10px;
             font-size: 0.75rem;
-            color: #444;
+            color: #ffffff;
             background: var(--bg-app);
             flex-shrink: 0;
         }
-        footer a { color: #555; text-decoration: none; }
+        footer a { color: #ffffff; text-decoration: none; }
         footer a:hover { color: var(--accent); }
 
         /* Responsive Mobile Adjustments */
@@ -301,7 +305,7 @@
     </main>
 
     <footer>
-        <a href="https://developer.puter.com/" target="_blank">Powered by Puter.js</a>
+        <a href="https://puter.com/" target="_blank">Powered by Puter.js - Make sure you are logged in to Puter before using.</a>
         
     </footer>
 
@@ -310,10 +314,10 @@
     <script>
         // --- Configuration ---
         const models = [
-            { id: 'gemini-3-flash-preview', name: 'Gemini 3', icon: '✨', vendor: 'Google' },
-            { id: 'gpt-5.2', name: 'GPT-5.2', icon: '🤖', vendor: 'OpenAI' },
-            { id: 'claude-opus-4-5-latest', name: 'Claude Opus 4.5', icon: '🧠', vendor: 'Anthropic' },
-            { id: 'grok-4', name: 'Grok 4', icon: '🚀', vendor: 'xAI' }
+            { id: 'gemini-3-pro-preview', name: 'Gemini 3', icon: '⚙️', vendor: 'Google' },
+            { id: 'gpt-5.2', name: 'GPT 5.2', icon: '⚙️', vendor: 'OpenAI' },
+            { id: 'claude-opus-4-5-latest', name: 'Claude Opus 4.5', icon: '⚙️', vendor: 'Anthropic' },
+            { id: 'grok-4.1-fast', name: 'Grok 4.1', icon: '⚙️', vendor: 'xAI' }
         ];
 
         // --- Initialization ---
