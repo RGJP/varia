@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-AI</title>
+    <style>
+        :root {
+            --bg-app: #0a0a0a;
+            --bg-panel: #161616;
+            --bg-input: #1f1f1f;
+            --accent: #6366f1; /* Indigo 500 */
+            --accent-hover: #4f46e5;
+            --text-main: #ededed;
+            --text-muted: #a1a1aa;
+            --border: #27272a;
+            --status-thinking: #eab308;
+            --status-done: #22c55e;
+            --status-error: #ef4444;
+            --font-stack: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-stack);
+            background-color: var(--bg-app);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Header & Input Area --- */
+        header {
+            background-color: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            flex-shrink: 0;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand span { color: var(--accent); }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            position: relative;
+            align-items: flex-start; /* Align top for taller textarea */
+        }
+
+        textarea {
+            flex-grow: 1;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-main);
+            padding: 12px 16px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical; /* Allow user resizing if needed */
+            height: 120px; /* IMPROVEMENT 1: Taller input area */
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            outline: none;
+            line-height: 1.5;
+        }
+
+        textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        button#sendBtn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0 24px;
+            height: 50px; /* Fixed height for button */
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            align-self: flex-start; /* Stick to top even if textarea grows */
+        }
+
+        button#sendBtn:hover { background: var(--accent-hover); }
+        button#sendBtn:active { transform: scale(0.96); }
+        button:disabled { background: var(--bg-input); color: var(--text-muted); cursor: not-allowed; }
+
+        /* --- Main Grid Layout --- */
+        main {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            height: 100%;
+        }
+
+        /* Desktop: 2x2 Grid */
+        @media (min-width: 1024px) {
+            .grid-container {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 1fr 1fr;
+            }
+        }
+
+        /* --- Model Card --- */
+        .model-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: border-color 0.3s;
+        }
+
+        .card-header {
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        .model-name {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .model-icon { font-size: 1.2em; }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Status Indicator */
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.1);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--text-muted);
+        }
+
+        .model-card.streaming .status-dot {
+            background-color: var(--status-thinking);
+            animation: pulse 1.5s infinite;
+        }
+        
+        .model-card.done .status-dot { background-color: var(--status-done); }
+
+        /* Copy Button Styles */
+        .copy-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: none; /* Hidden by default until done */
+            align-items: center;
+            gap: 4px;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: var(--text-main);
+            border-color: var(--text-muted);
+        }
+
+        .card-body {
+            flex-grow: 1;
+            padding: 16px;
+            overflow-y: auto;
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #d4d4d4;
+            white-space: pre-wrap;
+            position: relative;
+        }
+
+        /* Error Text Styling */
+        .error-block {
+            color: #f87171;
+            background: rgba(127, 29, 29, 0.2);
+            border: 1px solid #7f1d1d;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+
+        /* Scrollbar Styling */
+        .card-body::-webkit-scrollbar { width: 8px; }
+        .card-body::-webkit-scrollbar-track { background: transparent; }
+        .card-body::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        .card-body::-webkit-scrollbar-thumb:hover { background: #444; }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { opacity: 1; box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
+            70% { opacity: 0.5; box-shadow: 0 0 0 4px rgba(234, 179, 8, 0); }
+            100% { opacity: 1; box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 0.75rem;
+            color: #444;
+            background: var(--bg-app);
+            flex-shrink: 0;
+        }
+        footer a { color: #555; text-decoration: none; }
+        footer a:hover { color: var(--accent); }
+
+        /* Responsive Mobile Adjustments */
+        @media (max-width: 768px) {
+            header { padding: 1rem; }
+            .grid-container { display: flex; flex-direction: column; gap: 1rem; height: auto; }
+            .model-card { min-height: 300px; }
+            main { overflow-y: scroll; } /* Allow full page scroll on mobile */
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-content">
+            <div class="brand">
+                <span>⚡</span> Multi-AI
+            </div>
+            <div class="input-group">
+                <textarea id="promptInput" placeholder="Ask anything..."></textarea>
+                <button id="sendBtn" onclick="broadcastPrompt()">
+                    <span>Run</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="grid-container" id="gridContainer">
+            </div>
+    </main>
+
+    <footer>
+        <a href="https://developer.puter.com/" target="_blank">Powered by Puter.js</a>
+    </footer>
+
+    <script src="https://js.puter.com/v2/"></script>
+
+    <script>
+        // --- Configuration ---
+        const models = [
+            { id: 'gemini-3-flash-preview', name: 'Gemini 3', icon: '✨', vendor: 'Google' },
+            { id: 'gpt-5.2', name: 'GPT-5.2', icon: '🤖', vendor: 'OpenAI' },
+            { id: 'claude-opus-4-5-latest', name: 'Claude Opus 4.5', icon: '🧠', vendor: 'Anthropic' },
+            { id: 'grok-4', name: 'Grok 4', icon: '🚀', vendor: 'xAI' }
+        ];
+
+        // --- Initialization ---
+        const gridContainer = document.getElementById('gridContainer');
+        const promptInput = document.getElementById('promptInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        // Dynamically create model cards on load
+        function initUI() {
+            gridContainer.innerHTML = '';
+            models.forEach(model => {
+                const card = document.createElement('div');
+                card.className = 'model-card';
+                card.id = `card-${model.id}`;
+                
+                // IMPROVEMENT 3: Added Copy Text button to header actions
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="model-name">
+                            <span class="model-icon">${model.icon}</span>
+                            <span>${model.name}</span>
+                        </div>
+                        <div class="header-actions">
+                            <button class="copy-btn" id="copy-${model.id}" onclick="copyResult('${model.id}')" title="Copy text">
+                                📋 Copy Text
+                            </button>
+                            <div class="status-badge" id="status-${model.id}">
+                                <div class="status-dot"></div>
+                                <span class="status-text">Idle</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body" id="output-${model.id}"></div>
+                `;
+                gridContainer.appendChild(card);
+            });
+        }
+
+        initUI();
+
+        // --- Core Logic ---
+
+        async function broadcastPrompt() {
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                promptInput.focus();
+                return;
+            }
+
+            // Lock Interface
+            sendBtn.disabled = true;
+            sendBtn.innerText = '...';
+
+            // Reset all cards
+            models.forEach(model => {
+                const outputDiv = document.getElementById(`output-${model.id}`);
+                const statusBadge = document.getElementById(`status-${model.id}`);
+                const card = document.getElementById(`card-${model.id}`);
+                const copyBtn = document.getElementById(`copy-${model.id}`);
+                
+                outputDiv.innerText = ''; // Clear previous text
+                statusBadge.querySelector('.status-text').innerText = 'Processing...';
+                card.classList.remove('done');
+                card.classList.add('streaming');
+                
+                // Reset Copy Button
+                copyBtn.style.display = 'none';
+                copyBtn.innerHTML = '📋 Copy Text';
+            });
+
+            // Launch 4 parallel streams
+            // We use map to trigger all async functions immediately, then Promise.all to wait for button unlock
+            const promises = models.map(model => streamModel(model, prompt));
+
+            await Promise.all(promises);
+
+            // Unlock Interface
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = '<span>Run</span>';
+        }
+
+        async function streamModel(model, prompt) {
+            const outputDiv = document.getElementById(`output-${model.id}`);
+            const statusBadge = document.getElementById(`status-${model.id}`);
+            const card = document.getElementById(`card-${model.id}`);
+            const statusText = statusBadge.querySelector('.status-text');
+            const copyBtn = document.getElementById(`copy-${model.id}`);
+
+            try {
+                // Initialize Puter Chat Stream
+                const response = await puter.ai.chat(prompt, { 
+                    model: model.id, 
+                    stream: true 
+                });
+
+                // Read Stream
+                for await (const part of response) {
+                    if (part?.text) {
+                        outputDiv.innerText += part.text;
+                        // Auto-scroll to bottom of this specific card
+                        outputDiv.scrollTop = outputDiv.scrollHeight;
+                    }
+                }
+
+                // Success State
+                statusText.innerText = 'Completed';
+                card.classList.remove('streaming');
+                card.classList.add('done');
+                
+                // Show Copy Button (Improvement 3)
+                copyBtn.style.display = 'flex';
+
+            } catch (error) {
+                // Error State
+                console.error(`Error with ${model.name}:`, error);
+                
+                // IMPROVEMENT 2: Detailed error reporting
+                const errorDetails = error.stack || JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
+                
+                outputDiv.innerHTML += `
+                    <div class="error-block">
+                        <strong>[System Error]</strong><br>
+                        ${error.message || 'Unknown error occurred'}
+                        <br><br>
+                        <em>Technical Details:</em><br>
+                        ${errorDetails}
+                    </div>
+                `;
+
+                statusText.innerText = 'Failed';
+                statusBadge.style.color = '#ef4444'; // Red
+                card.classList.remove('streaming');
+            }
+        }
+
+        // IMPROVEMENT 3: Copy Functionality
+        async function copyResult(modelId) {
+            const outputDiv = document.getElementById(`output-${modelId}`);
+            const copyBtn = document.getElementById(`copy-${modelId}`);
+            const text = outputDiv.innerText;
+
+            if (!text) return;
+
+            try {
+                await navigator.clipboard.writeText(text);
+                
+                // Visual Feedback
+                const originalText = copyBtn.innerHTML;
+                copyBtn.innerText = '✅ Copied!';
+                copyBtn.style.borderColor = 'var(--status-done)';
+                copyBtn.style.color = 'var(--status-done)';
+
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalText;
+                    copyBtn.style.borderColor = '';
+                    copyBtn.style.color = '';
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                copyBtn.innerText = '❌ Error';
+            }
+        }
+
+        // Enable Ctrl+Enter to send
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                broadcastPrompt();
+            }
+        });
+
+    </script>
+</body>
+</html>
