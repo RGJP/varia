@@ -75,6 +75,18 @@
             width: 100%;
         }
 
+
+        /* New style for the moved link */
+        .powered-by {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            margin-top: -10px; /* Pulls it closer to the header title */
+            margin-bottom: 5px;
+            transition: color 0.2s;
+        }
+       
+
         textarea {
             width: 100%;
             flex-grow: 1;
@@ -133,14 +145,14 @@
             height: 100%;
         }
 
-        /* Desktop: 2x2 Grid */
+    /* Desktop: 2x2 Grid */
         @media (min-width: 1024px) {
             .grid-container {
                 grid-template-columns: 1fr 1fr;
-                grid-template-rows: 1fr 1fr;
+                /* This ensures each row is AT LEAST 450px tall, but will stretch if there is space */
+                grid-template-rows: minmax(450px, 1fr) minmax(450px, 1fr);
             }
         }
-
         /* --- Model Card --- */
         .model-card {
             background: var(--bg-panel);
@@ -262,17 +274,7 @@
             100% { opacity: 1; box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
         }
 
-        /* Footer */
-        footer {
-            text-align: center;
-            padding: 10px;
-            font-size: 0.75rem;
-            color: #ffffff;
-            background: var(--bg-app);
-            flex-shrink: 0;
-        }
-        footer a { color: #ffffff; text-decoration: none; }
-        footer a:hover { color: var(--accent); }
+        
 
         /* Responsive Mobile Adjustments */
         @media (max-width: 768px) {
@@ -286,10 +288,15 @@
 <body>
 
     <header>
-        <div class="header-content">
+    <div class="header-content">
             <div class="brand">
                 <span>⚡</span> Multi-AI
             </div>
+            
+            <a href="https://puter.com/" target="_blank" class="powered-by">
+                Powered by Puter.js - Log in to Puter before using.
+            </a>
+
             <div class="input-group">
                 <textarea id="promptInput" placeholder="Ask anything..."></textarea>
                 <button id="sendBtn" onclick="broadcastPrompt()">
@@ -304,10 +311,7 @@
             </div>
     </main>
 
-    <footer>
-        <a href="https://puter.com/" target="_blank">Powered by Puter.js - Make sure you are logged in to Puter before using.</a>
-        
-    </footer>
+   
 
     <script src="https://js.puter.com/v2/"></script>
 
