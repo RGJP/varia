@@ -83,7 +83,13 @@
             margin-top: -10px;
             margin-bottom: 5px;
             transition: color 0.2s;
-            font-weight: 500; /* Added slightly more weight for visibility */
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        .powered-by:hover {
+            color: var(--text-main);
+            text-decoration: underline;
         }
        
         textarea {
@@ -108,12 +114,20 @@
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
         }
 
-        button#sendBtn {
-            background: var(--accent);
+        /* Button Group Wrapper */
+        .button-group {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Shared Button Styles */
+        .btn {
             color: white;
             border: none;
             border-radius: 12px;
-            padding: 0 40px;
             height: 50px;
             font-weight: 600;
             cursor: pointer;
@@ -121,12 +135,33 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            align-self: center;
         }
+        
+        .btn:active { transform: scale(0.96); }
+        .btn:disabled { background: var(--bg-input); color: var(--text-muted); cursor: not-allowed; }
 
+        /* Specific Button Styles */
+        button#sendBtn {
+            background: var(--accent);
+            padding: 0 40px;
+            flex: 2; /* Takes up more space */
+            max-width: 300px;
+        }
         button#sendBtn:hover { background: var(--accent-hover); }
-        button#sendBtn:active { transform: scale(0.96); }
-        button:disabled { background: var(--bg-input); color: var(--text-muted); cursor: not-allowed; }
+
+        button#resetBtn {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0 20px;
+            flex: 1;
+            max-width: 120px;
+        }
+        button#resetBtn:hover {
+            background: var(--status-error);
+            color: white;
+            border-color: var(--status-error);
+        }
 
         /* --- Main Grid Layout --- */
         main {
@@ -285,15 +320,21 @@
                 <span>⚡</span> Multi-AI
             </div>
             
-            <a id="puterStatusLink" href="https://puter.com/" target="_blank" class="powered-by">
+            <a id="puterStatusLink" href="#" class="powered-by" onclick="handleAuthClick(event)">
                 Checking Puter status...
             </a>
 
             <div class="input-group">
                 <textarea id="promptInput" placeholder="Ask anything..."></textarea>
-                <button id="sendBtn" onclick="broadcastPrompt()">
-                    <span>Run</span>
-                </button>
+                
+                <div class="button-group">
+                    <button id="resetBtn" class="btn" onclick="resetSession()" title="Sign out and reset everything">
+                        <span>Reset</span>
+                    </button>
+                    <button id="sendBtn" class="btn" onclick="broadcastPrompt()">
+                        <span>Run</span>
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -318,6 +359,7 @@
         const gridContainer = document.getElementById('gridContainer');
         const promptInput = document.getElementById('promptInput');
         const sendBtn = document.getElementById('sendBtn');
+        const resetBtn = document.getElementById('resetBtn');
         
         let wakeLock = null;
 
@@ -352,7 +394,9 @@
 
         initUI();
 
-        // --- NEW: Puter Status Check ---
+        // --- NEW: Puter Status Check Logic ---
+        
+        // 1. Core status check function
         async function checkPuterStatus() {
             const statusLink = document.getElementById('puterStatusLink');
             
@@ -363,9 +407,17 @@
                 if (user) {
                     statusLink.innerHTML = `🟢 ${user.username}`;
                     statusLink.style.color = 'var(--status-done)';
+                    statusLink.title = "You are logged in";
+                    statusLink.href = "https://puter.com/account";
+                    statusLink.target = "_blank";
+                    statusLink.onclick = null; // Remove the login click handler once logged in
                 } else {
                     statusLink.innerHTML = '⚠️ Click here to log in to Puter before using';
                     statusLink.style.color = 'var(--status-thinking)';
+                    statusLink.title = "Click to log in";
+                    statusLink.href = "#";
+                    statusLink.target = "_self";
+                    statusLink.onclick = handleAuthClick; // Ensure handler is present
                 }
             } catch (err) {
                 console.warn("Puter auth check failed:", err);
@@ -374,8 +426,30 @@
             }
         }
 
-        // Call status check on load
+        // 2. Click handler for the warning text
+        async function handleAuthClick(e) {
+            e.preventDefault();
+            const statusLink = document.getElementById('puterStatusLink');
+            statusLink.innerText = "Connecting...";
+            
+            try {
+                // Attempt programmatic sign in
+                await puter.auth.signIn();
+                // If successful, re-check status
+                await checkPuterStatus();
+            } catch (err) {
+                console.error("Sign in failed or cancelled", err);
+                // Revert text on failure
+                checkPuterStatus();
+            }
+        }
+
+        // 3. Listeners to ensure status stays in sync
+        // Run on load
         checkPuterStatus();
+        
+        // Run when window gains focus (e.g. returning from login popup or other tab)
+        window.addEventListener('focus', checkPuterStatus);
 
 
         // --- Wake Lock Logic ---
@@ -400,6 +474,32 @@
             }
         }
 
+        // --- Reset Logic ---
+        async function resetSession() {
+            const confirmReset = confirm("Are you sure you want to reset the page? This will log you out of Puter and clear the session.");
+            
+            if (confirmReset) {
+                resetBtn.disabled = true;
+                resetBtn.innerText = "Clearing...";
+
+                try {
+                    // Attempt to sign out of Puter
+                    if (puter && puter.auth) {
+                        await puter.auth.signOut();
+                    }
+                } catch (e) {
+                    console.warn("Puter sign-out warning:", e);
+                }
+
+                // Clear browser storage
+                localStorage.clear();
+                sessionStorage.clear();
+
+                // Aggressive Reload
+                window.location.reload();
+            }
+        }
+
         // --- Core Logic ---
         async function broadcastPrompt() {
             const prompt = promptInput.value.trim();
@@ -411,6 +511,10 @@
             // Lock Interface
             sendBtn.disabled = true;
             sendBtn.innerText = '...';
+
+            // Immediate check: If the user is running a prompt, they might have just logged in
+            // This ensures the header updates immediately when they click Run
+            checkPuterStatus();
 
             await requestWakeLock();
 
@@ -440,6 +544,8 @@
                 sendBtn.disabled = false;
                 sendBtn.innerHTML = '<span>Run</span>';
                 await releaseWakeLock();
+                // One final check in case auth state settled during generation
+                checkPuterStatus();
             }
         }
 
