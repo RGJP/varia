@@ -144,24 +144,10 @@
         button#sendBtn {
             background: var(--accent);
             padding: 0 40px;
-            flex: 2; /* Takes up more space */
+            width: 100%; /* Full width now that reset is gone */
             max-width: 300px;
         }
         button#sendBtn:hover { background: var(--accent-hover); }
-
-        button#resetBtn {
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            color: var(--text-muted);
-            padding: 0 20px;
-            flex: 1;
-            max-width: 120px;
-        }
-        button#resetBtn:hover {
-            background: var(--status-error);
-            color: white;
-            border-color: var(--status-error);
-        }
 
         /* --- Main Grid Layout --- */
         main {
@@ -321,16 +307,13 @@
             </div>
             
             <a id="puterStatusLink" href="#" class="powered-by" onclick="handleAuthClick(event)">
-                Checking Puter status...
+                Initializing fresh environment...
             </a>
 
             <div class="input-group">
                 <textarea id="promptInput" placeholder="Ask anything..."></textarea>
                 
                 <div class="button-group">
-                    <button id="resetBtn" class="btn" onclick="resetSession()" title="Sign out and reset everything">
-                        <span>Reset</span>
-                    </button>
                     <button id="sendBtn" class="btn" onclick="broadcastPrompt()">
                         <span>Run</span>
                     </button>
@@ -359,10 +342,30 @@
         const gridContainer = document.getElementById('gridContainer');
         const promptInput = document.getElementById('promptInput');
         const sendBtn = document.getElementById('sendBtn');
-        const resetBtn = document.getElementById('resetBtn');
+        const statusLink = document.getElementById('puterStatusLink');
         
         let wakeLock = null;
 
+        // --- CORE LOGIC FOR FRESH START ---
+        // This function forces a complete wipe of memory and session
+        // --- CORE LOGIC FOR FRESH START ---
+async function enforceFreshStart() {
+    // 1. Sign out FIRST while the token still exists in storage
+    try {
+        if (typeof puter !== 'undefined' && puter.auth) {
+            // This ensures the session is invalidated on the Puter domain
+            await puter.auth.signOut();
+        }
+    } catch (err) {
+        console.log("Sign out attempt:", err);
+    }
+
+    // 2. Wipe Browser Storage AFTER signing out
+    localStorage.clear();
+    sessionStorage.clear();
+}
+
+        // --- UI Setup ---
         function initUI() {
             gridContainer.innerHTML = '';
             models.forEach(model => {
@@ -392,17 +395,12 @@
             });
         }
 
-        initUI();
-
-        // --- NEW: Puter Status Check Logic ---
-        
-        // 1. Core status check function
+        // --- Puter Status Check Logic ---
         async function checkPuterStatus() {
-            const statusLink = document.getElementById('puterStatusLink');
-            
             try {
                 // Returns user object if signed in, null if not
                 const user = await puter.auth.getUser();
+                console.log("Puter User Data:", user);
 
                 if (user) {
                     statusLink.innerHTML = `🟢 ${user.username}`;
@@ -410,47 +408,38 @@
                     statusLink.title = "You are logged in";
                     statusLink.href = "https://puter.com/account";
                     statusLink.target = "_blank";
-                    statusLink.onclick = null; // Remove the login click handler once logged in
+                    statusLink.onclick = null;
                 } else {
-                    statusLink.innerHTML = '⚠️ Click here to log in to Puter before using';
+                    statusLink.innerHTML = '🔴 Not Logged In (Click to Connect)';
                     statusLink.style.color = 'var(--status-thinking)';
                     statusLink.title = "Click to log in";
                     statusLink.href = "#";
                     statusLink.target = "_self";
-                    statusLink.onclick = handleAuthClick; // Ensure handler is present
+                    statusLink.onclick = handleAuthClick;
                 }
             } catch (err) {
                 console.warn("Puter auth check failed:", err);
-                statusLink.innerHTML = '⚠️ Click here to log in to Puter before using';
-                statusLink.style.color = 'var(--status-thinking)';
+                statusLink.innerHTML = ' ';
+                statusLink.style.color = 'var(--status-error)';
             }
         }
 
-        // 2. Click handler for the warning text
-        async function handleAuthClick(e) {
-            e.preventDefault();
-            const statusLink = document.getElementById('puterStatusLink');
-            statusLink.innerText = "Connecting...";
-            
-            try {
-                // Attempt programmatic sign in
-                await puter.auth.signIn();
-                // If successful, re-check status
-                await checkPuterStatus();
-            } catch (err) {
-                console.error("Sign in failed or cancelled", err);
-                // Revert text on failure
-                checkPuterStatus();
-            }
-        }
-
-        // 3. Listeners to ensure status stays in sync
-        // Run on load
+        // Click handler for login
+// Click handler for login
+async function handleAuthClick(e) {
+    e.preventDefault();
+    statusLink.innerText = "Connecting...";
+    
+    try {
+        // Add { prompt: 'login' } to force the account picker/login screen
+        // instead of auto-reconnecting to the active cookie.
+        await puter.auth.signIn({ prompt: 'login' });
+        await checkPuterStatus();
+    } catch (err) {
+        console.error("Sign in failed or cancelled", err);
         checkPuterStatus();
-        
-        // Run when window gains focus (e.g. returning from login popup or other tab)
-        window.addEventListener('focus', checkPuterStatus);
-
+    }
+}
 
         // --- Wake Lock Logic ---
         async function requestWakeLock() {
@@ -474,33 +463,7 @@
             }
         }
 
-        // --- Reset Logic ---
-        async function resetSession() {
-            const confirmReset = confirm("Are you sure you want to reset the page? This will log you out of Puter and clear the session.");
-            
-            if (confirmReset) {
-                resetBtn.disabled = true;
-                resetBtn.innerText = "Clearing...";
-
-                try {
-                    // Attempt to sign out of Puter
-                    if (puter && puter.auth) {
-                        await puter.auth.signOut();
-                    }
-                } catch (e) {
-                    console.warn("Puter sign-out warning:", e);
-                }
-
-                // Clear browser storage
-                localStorage.clear();
-                sessionStorage.clear();
-
-                // Aggressive Reload
-                window.location.reload();
-            }
-        }
-
-        // --- Core Logic ---
+        // --- Main Execution Logic ---
         async function broadcastPrompt() {
             const prompt = promptInput.value.trim();
             if (!prompt) {
@@ -512,13 +475,9 @@
             sendBtn.disabled = true;
             sendBtn.innerText = '...';
 
-            // Immediate check: If the user is running a prompt, they might have just logged in
-            // This ensures the header updates immediately when they click Run
-            checkPuterStatus();
-
             await requestWakeLock();
 
-            // Reset all cards
+            // Reset all cards visual state
             models.forEach(model => {
                 const outputDiv = document.getElementById(`output-${model.id}`);
                 const statusBadge = document.getElementById(`status-${model.id}`);
@@ -544,8 +503,6 @@
                 sendBtn.disabled = false;
                 sendBtn.innerHTML = '<span>Run</span>';
                 await releaseWakeLock();
-                // One final check in case auth state settled during generation
-                checkPuterStatus();
             }
         }
 
@@ -557,6 +514,9 @@
             const copyBtn = document.getElementById(`copy-${model.id}`);
 
             try {
+                // IMPORTANT: Since we force logout on load, the user MUST have logged in 
+                // via the prompt trigger or the link before this works.
+                // If they are not logged in, puter.ai.chat usually triggers a popup automatically.
                 const response = await puter.ai.chat(prompt, { 
                     model: model.id, 
                     stream: true 
@@ -573,6 +533,9 @@
                 card.classList.remove('streaming');
                 card.classList.add('done');
                 copyBtn.style.display = 'flex';
+                
+                // If successful, update header status to show logged in state
+                checkPuterStatus();
 
             } catch (error) {
                 console.error(`Error with ${model.name}:`, error);
@@ -626,6 +589,22 @@
                 broadcastPrompt();
             }
         });
+
+        // --- APP ENTRY POINT ---
+        // We use an immediately invoked async function to manage startup order
+        (async () => {
+            // 1. First, aggressively clean everything
+            await enforceFreshStart();
+            
+            // 2. Only then initialize UI and listeners
+            initUI();
+            
+            // 3. Update status (should definitely be logged out now)
+            await checkPuterStatus();
+            
+            // 4. Ensure status checks happen if window regains focus (e.g. after login popup)
+            window.addEventListener('focus', checkPuterStatus);
+        })();
 
     </script>
 </body>
