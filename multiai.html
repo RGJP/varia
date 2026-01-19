@@ -307,7 +307,7 @@
             </div>
             
             <a id="puterStatusLink" href="#" class="powered-by" onclick="handleAuthClick(event)">
-                Initializing fresh environment...
+             
             </a>
 
             <div class="input-group">
@@ -330,13 +330,13 @@
     <script src="https://js.puter.com/v2/"></script>
 
     <script>
-        // --- Configuration ---
-        const models = [
-            { id: 'gemini-3-pro-preview', name: 'Gemini 3', icon: '⚙️', vendor: 'Google' },
-            { id: 'gpt-5.2', name: 'GPT 5.2', icon: '⚙️', vendor: 'OpenAI' },
-            { id: 'claude-opus-4-5-latest', name: 'Claude Opus 4.5', icon: '⚙️', vendor: 'Anthropic' },
-            { id: 'grok-4.1-fast', name: 'Grok 4.1', icon: '⚙️', vendor: 'xAI' }
-        ];
+      // --- Configuration ---
+const models = [
+    { id: 'gemini-3-pro-preview', name: 'Gemini 3', icon: '⚙️', vendor: 'Google' },
+    { id: 'openrouter/openai/gpt-5.2', name: 'GPT 5.2', icon: '⚙️', vendor: 'OpenAI' }, // Fixed ID
+    { id: 'openrouter/anthropic/claude-opus-4.5', name: 'Claude 4.5', icon: '⚙️', vendor: 'Anthropic' },
+    { id: 'openrouter/x-ai/grok-4.1-fast', name: 'Grok 4.1', icon: '⚙️', vendor: 'xAI' }
+];
 
         // --- Initialization ---
         const gridContainer = document.getElementById('gridContainer');
@@ -400,7 +400,6 @@ async function enforceFreshStart() {
             try {
                 // Returns user object if signed in, null if not
                 const user = await puter.auth.getUser();
-                console.log("Puter User Data:", user);
 
                 if (user) {
                     statusLink.innerHTML = `🟢 ${user.username}`;
@@ -429,11 +428,11 @@ async function enforceFreshStart() {
 async function handleAuthClick(e) {
     e.preventDefault();
     statusLink.innerText = "Connecting...";
-    
+
     try {
         // Add { prompt: 'login' } to force the account picker/login screen
         // instead of auto-reconnecting to the active cookie.
-        await puter.auth.signIn({ prompt: 'login' });
+        await puter.auth.signIn({ attempt_temp_user_creation: true });
         await checkPuterStatus();
     } catch (err) {
         console.error("Sign in failed or cancelled", err);
@@ -506,7 +505,7 @@ async function handleAuthClick(e) {
             }
         }
 
-        async function streamModel(model, prompt) {
+    async function streamModel(model, prompt) {
             const outputDiv = document.getElementById(`output-${model.id}`);
             const statusBadge = document.getElementById(`status-${model.id}`);
             const card = document.getElementById(`card-${model.id}`);
@@ -514,15 +513,14 @@ async function handleAuthClick(e) {
             const copyBtn = document.getElementById(`copy-${model.id}`);
 
             try {
-                // IMPORTANT: Since we force logout on load, the user MUST have logged in 
-                // via the prompt trigger or the link before this works.
-                // If they are not logged in, puter.ai.chat usually triggers a popup automatically.
+                // Use the exact simple call from your working snippets
                 const response = await puter.ai.chat(prompt, { 
                     model: model.id, 
                     stream: true 
                 });
 
                 for await (const part of response) {
+                    // Mimic the safety check from your working code
                     if (part?.text) {
                         outputDiv.innerText += part.text;
                         outputDiv.scrollTop = outputDiv.scrollHeight;
@@ -534,21 +532,15 @@ async function handleAuthClick(e) {
                 card.classList.add('done');
                 copyBtn.style.display = 'flex';
                 
-                // If successful, update header status to show logged in state
                 checkPuterStatus();
 
             } catch (error) {
                 console.error(`Error with ${model.name}:`, error);
                 
-                const errorDetails = error.stack || JSON.stringify(error, Object.getOwnPropertyNames(error), 2);
-                
                 outputDiv.innerHTML += `
                     <div class="error-block">
                         <strong>[System Error]</strong><br>
                         ${error.message || 'Unknown error occurred'}
-                        <br><br>
-                        <em>Technical Details:</em><br>
-                        ${errorDetails}
                     </div>
                 `;
 
@@ -590,21 +582,32 @@ async function handleAuthClick(e) {
             }
         });
 
-        // --- APP ENTRY POINT ---
-        // We use an immediately invoked async function to manage startup order
-        (async () => {
-            // 1. First, aggressively clean everything
-            await enforceFreshStart();
-            
-            // 2. Only then initialize UI and listeners
-            initUI();
-            
-            // 3. Update status (should definitely be logged out now)
-            await checkPuterStatus();
-            
-            // 4. Ensure status checks happen if window regains focus (e.g. after login popup)
-            window.addEventListener('focus', checkPuterStatus);
-        })();
+      // --- APP ENTRY POINT ---
+(async () => {
+    // 1. Initialize the UI first so the user sees the grid
+    initUI();
+    
+    try {
+        // 2. Check if we already have a session
+        let user = await puter.auth.getUser();
+        
+        // 3. If no session, try to create a temporary one (Silent Login)
+        if (!user) {
+            statusLink.innerText = "Creating session...";
+            user = await puter.auth.signIn({ attempt_temp_user_creation: true });
+        }
+        
+        // 4. Final UI Update
+        await checkPuterStatus();
+        
+    } catch (err) {
+        console.error("Initialization failed:", err);
+        statusLink.innerHTML = '🔴 Connection Error (Click to Retry)';
+    }
+
+    // Refresh status if user returns from a login popup
+    window.addEventListener('focus', checkPuterStatus);
+})();
 
     </script>
 </body>
