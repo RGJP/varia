@@ -402,8 +402,9 @@ async function enforceFreshStart() {
                 const user = await puter.auth.getUser();
 
                 if (user) {
-                    statusLink.innerHTML = ` `;
+                  statusLink.innerHTML = `Session ID: ${user.username}`;
                     statusLink.style.color = 'var(--status-done)';
+                    statusLink.style.opacity = '0.3';
                     statusLink.title = "You are logged in";
                     statusLink.href = "https://puter.com";
                     statusLink.target = "_blank";
