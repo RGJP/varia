@@ -500,12 +500,12 @@
     <script src="https://js.puter.com/v2/"></script>
 
     <script>
-        // --- Configuration ---
+             // --- Configuration ---
         const models = [
             { id: 'gemini-3-pro-preview', name: 'GEMINI 3', icon: '🔵', vendor: 'Google' },
-            { id: 'openrouter/openai/gpt-5.2', name: 'GPT 5.2', icon: '🟢', vendor: 'OpenAI' },
-            { id: 'openrouter/anthropic/claude-opus-4.5', name: 'CLAUDE OPUS 4.5', icon: '🟠', vendor: 'Anthropic' },
-            { id: 'openrouter/x-ai/grok-4.1-fast', name: 'GROK 4.1', icon: '⚫', vendor: 'xAI' }
+            { id: 'gpt-5.2-2025-12-11', name: 'GPT 5.2', icon: '🟢', vendor: 'OpenAI' },
+            { id: 'claude-opus-4-5-20251101', name: 'CLAUDE 4.5', icon: '🟠', vendor: 'Anthropic' },
+            { id: 'openrouter:x-ai/grok-4.1-fast', name: 'GROK 4.1', icon: '⚫', vendor: 'xAI' }
         ];
 
         // --- Global State ---
@@ -669,7 +669,12 @@
                 copyBtn.innerHTML = '📋 Copy';
             });
 
-            const promises = models.map(model => streamModel(model, prompt));
+            // --- STAGGERED START FIX ---
+    // Instead of launching all at once, we add a tiny delay between each start
+    const promises = models.map(async (model, index) => {
+        await new Promise(resolve => setTimeout(resolve, index * 200)); // 200ms gap
+        return streamModel(model, prompt);
+    });
 
             try {
                 await Promise.all(promises);
