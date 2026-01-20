@@ -4,339 +4,431 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Multi-AI</title>
-    <link rel="icon" href="data:image/svg+xml,
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>
-  <text y='0.9em' font-size='90'>⚡</text>
-</svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>⚡</text></svg>">
+    
     <style>
         :root {
-            --bg-app: #0a0a0a;
-            --bg-panel: #161616;
-            --bg-input: #1f1f1f;
-            --accent: #6366f1; /* Indigo 500 */
+            /* Palette */
+            --bg-body: #030305;
+            --bg-gradient: radial-gradient(circle at 50% 0%, #1a1b26, #030305 60%);
+            
+            --glass-panel: rgba(20, 20, 23, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-highlight: rgba(255, 255, 255, 0.03);
+            
+            --input-bg: rgba(10, 10, 12, 0.8);
+            
+            --accent-primary: #6366f1; /* Indigo */
+            --accent-glow: rgba(99, 102, 241, 0.4);
             --accent-hover: #4f46e5;
-            --text-main: #ededed;
-            --text-muted: #a1a1aa;
-            --border: #27272a;
+            
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-tertiary: #64748b;
+
             --status-thinking: #eab308;
-            --status-done: #22c55e;
+            --status-done: #10b981;
             --status-error: #ef4444;
-            --font-stack: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+            /* Spacing & Layout */
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            
+            --font-sans: 'Inter', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Menlo', monospace;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: var(--font-stack);
-            background-color: var(--bg-app);
+            font-family: var(--font-sans);
+            background-color: var(--bg-body);
+            background-image: var(--bg-gradient);
             color: var(--text-main);
-            height: 100dvh;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            -webkit-font-smoothing: antialiased;
         }
 
-        /* --- Header & Input Area --- */
-        header {
-            background-color: rgba(10, 10, 10, 0.8);
-            backdrop-filter: blur(10px);
-            padding: 1.5rem;
-            border-bottom: 1px solid var(--border);
-            z-index: 100;
-            flex-shrink: 0;
-        }
-
-        .header-content {
-            max-width: 800px;
-            margin: 0 auto;
+        /* --- Layout Structures --- */
+        
+        .app-container {
             display: flex;
             flex-direction: column;
-            gap: 1rem;
+            height: 100%;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* --- Header Area --- */
+        header {
+            flex-shrink: 0;
+            padding: 1.5rem 2rem 1rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            z-index: 50;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
             align-items: center;
         }
 
         .brand {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             font-weight: 700;
-            letter-spacing: -0.025em;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .brand span { color: var(--accent); }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            position: relative;
-            align-items: center;
-            width: 100%;
-        }
-
-        /* Link style */
-        .powered-by {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            text-decoration: none;
-            margin-top: -10px;
-            margin-bottom: 5px;
-            transition: color 0.2s;
-            font-weight: 500;
-            cursor: pointer;
-        }
-        
-        .powered-by:hover {
             color: var(--text-main);
-            text-decoration: underline;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-shadow: 0 0 20px rgba(255,255,255,0.1);
         }
-       
+
+        .brand span { 
+            color: var(--accent-primary);
+            filter: drop-shadow(0 0 8px var(--accent-glow));
+        }
+
+        /* Status / Login Link */
+        .auth-status {
+            font-size: 0.85rem;
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .auth-status:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        /* --- Input Area --- */
+        .input-wrapper {
+            position: relative;
+            background: var(--glass-panel);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 6px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 1px var(--accent-primary), 0 10px 40px -10px rgba(0,0,0,0.5);
+        }
+
         textarea {
             width: 100%;
-            flex-grow: 1;
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            border-radius: 12px;
+            background: transparent;
+            border: none;
             color: var(--text-main);
-            padding: 12px 16px;
+            padding: 14px 18px;
             font-size: 1rem;
-            font-family: inherit;
-            resize: vertical;
-            height: 120px;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            font-family: var(--font-sans);
+            resize: none;
+            height: 80px;
             outline: none;
             line-height: 1.5;
         }
 
-        textarea:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        textarea::placeholder {
+            color: var(--text-tertiary);
         }
 
-        /* Button Group Wrapper */
-        .button-group {
+        .controls-row {
             display: flex;
-            gap: 12px;
-            width: 100%;
-            justify-content: center;
-            align-items: center;
+            justify-content: flex-end;
+            padding: 0 10px 10px 0;
         }
 
-        /* Shared Button Styles */
-        .btn {
+        button#sendBtn {
+            background: var(--accent-primary);
             color: white;
             border: none;
-            border-radius: 12px;
-            height: 50px;
+            border-radius: var(--radius-md);
+            padding: 0 24px;
+            height: 40px;
             font-weight: 600;
+            font-size: 0.9rem;
             cursor: pointer;
-            transition: transform 0.1s, background-color 0.2s;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
             display: flex;
             align-items: center;
-            justify-content: center;
+       
         }
-        
-        .btn:active { transform: scale(0.96); }
-        .btn:disabled { background: var(--bg-input); color: var(--text-muted); cursor: not-allowed; }
 
-        /* Specific Button Styles */
-        button#sendBtn {
-            background: var(--accent);
-            padding: 0 40px;
-            width: 100%; /* Full width now that reset is gone */
-            max-width: 300px;
+        button#sendBtn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
         }
-        button#sendBtn:hover { background: var(--accent-hover); }
 
-        /* --- Main Grid Layout --- */
+        button#sendBtn:active {
+            transform: translateY(0);
+        }
+
+        button#sendBtn:disabled {
+            background: var(--glass-border);
+            color: var(--text-tertiary);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* --- Main Grid --- */
         main {
             flex-grow: 1;
             overflow-y: auto;
-            padding: 1.5rem;
+            padding: 0 2rem 2rem 2rem;
+            scrollbar-width: thin;
+            scrollbar-color: #333 transparent;
         }
 
         .grid-container {
             display: grid;
             grid-template-columns: 1fr;
             gap: 1.5rem;
-            max-width: 1400px;
-            margin: 0 auto;
             height: 100%;
+            padding-bottom: 2rem;
         }
 
-        @media (min-width: 1024px) {
-            .grid-container {
-                grid-template-columns: 1fr 1fr;
-                grid-template-rows: minmax(450px, 1fr) minmax(450px, 1fr);
-            }
-        }
-        
-        /* --- Model Card --- */
+  @media (min-width: 1024px) {
+    .grid-container {
+        grid-template-columns: 1fr 1fr;
+        /* NEW: Forces rows to be at least 350px tall, but grow if there's space */
+        grid-template-rows: repeat(2, minmax(350px, 1fr)); 
+    }
+}
+
+        /* --- Model Cards --- */
         .model-card {
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            border-radius: 16px;
+            background: var(--glass-panel);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            transition: border-color 0.3s;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        /* Card Hover Effect */
+        .model-card:hover {
+            border-color: rgba(255,255,255,0.15);
+            background: rgba(30, 30, 35, 0.8);
+        }
+
+        /* Streaming State */
+        .model-card.streaming {
+            border-color: var(--accent-primary);
+            box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.05);
         }
 
         .card-header {
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.03);
-            border-bottom: 1px solid var(--border);
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid var(--glass-border);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.875rem;
-            font-weight: 600;
         }
 
         .model-name {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 0.02em;
+            color: var(--text-main);
         }
 
-        .model-icon { font-size: 1.2em; }
+        .model-icon { 
+            font-size: 1.1em; 
+            filter: grayscale(0.2);
+        }
 
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
-        /* Status Indicator */
+        /* Status Badge */
         .status-badge {
-            font-size: 0.75rem;
-            padding: 2px 8px;
-            border-radius: 999px;
-            background: rgba(255,255,255,0.1);
-            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
             display: flex;
             align-items: center;
             gap: 6px;
+            min-width: 80px;
+            justify-content: center;
         }
 
         .status-dot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            background-color: var(--text-muted);
+            background-color: var(--text-tertiary);
+            transition: background-color 0.3s;
         }
 
         .model-card.streaming .status-dot {
             background-color: var(--status-thinking);
+            box-shadow: 0 0 8px var(--status-thinking);
             animation: pulse 1.5s infinite;
         }
         
-        .model-card.done .status-dot { background-color: var(--status-done); }
+        .model-card.done .status-dot { 
+            background-color: var(--status-done);
+            box-shadow: 0 0 8px var(--status-done); 
+        }
 
-        /* Copy Button Styles */
+        /* Copy Button */
         .copy-btn {
             background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-muted);
+            border: 1px solid transparent;
+            color: var(--text-secondary);
             font-size: 0.75rem;
-            padding: 4px 10px;
-            border-radius: 6px;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
             cursor: pointer;
             transition: all 0.2s;
-            display: none;
+            display: none; /* Hidden by default */
             align-items: center;
-            gap: 4px;
+            gap: 6px;
+            font-family: var(--font-sans);
         }
 
         .copy-btn:hover {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05);
             color: var(--text-main);
-            border-color: var(--text-muted);
         }
 
+        /* Output Area */
         .card-body {
             flex-grow: 1;
-            padding: 16px;
+            padding: 20px;
             overflow-y: auto;
-            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-family: var(--font-mono);
             font-size: 0.9rem;
-            line-height: 1.6;
-            color: #d4d4d4;
+            line-height: 1.7;
+            color: #e2e8f0;
             white-space: pre-wrap;
-            position: relative;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.2);
         }
 
         .error-block {
-            color: #f87171;
+            color: #fca5a5;
             background: rgba(127, 29, 29, 0.2);
             border: 1px solid #7f1d1d;
-            padding: 10px;
-            border-radius: 8px;
+            padding: 12px;
+            border-radius: var(--radius-sm);
             margin-top: 10px;
-            font-family: monospace;
-            white-space: pre-wrap;
+            font-size: 0.85rem;
         }
-
-        .card-body::-webkit-scrollbar { width: 8px; }
-        .card-body::-webkit-scrollbar-track { background: transparent; }
-        .card-body::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        .card-body::-webkit-scrollbar-thumb:hover { background: #444; }
 
         @keyframes pulse {
-            0% { opacity: 1; box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
-            70% { opacity: 0.5; box-shadow: 0 0 0 4px rgba(234, 179, 8, 0); }
-            100% { opacity: 1; box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
         }
 
+        /* Mobile Responsive */
         @media (max-width: 768px) {
             header { padding: 1rem; }
-            .grid-container { display: flex; flex-direction: column; gap: 1rem; height: auto; }
-            .model-card { min-height: 300px; }
-            main { overflow-y: scroll; }
+            main { padding: 1rem; }
+            .grid-container { 
+                display: flex; 
+                flex-direction: column; 
+                height: auto;
+            }
+            .model-card { min-height: 350px; }
+            body { overflow-y: auto; height: auto; }
+            .app-container { height: auto; }
         }
     </style>
 </head>
 <body>
 
-    <header>
-    <div class="header-content">
-            <div class="brand">
-                <span>⚡</span> Multi-AI
+    <div class="app-container">
+        <header>
+            <div class="top-bar">
+                <div class="brand">
+                    <span>⚡</span> Multi-AI
+                </div>
+                <a id="puterStatusLink" href="#" class="auth-status" onclick="handleAuthClick(event)">
+                    Checking...
+                </a>
             </div>
-            
-            <a id="puterStatusLink" href="#" class="powered-by" onclick="handleAuthClick(event)">
-             
-            </a>
 
-            <div class="input-group">
-                <textarea id="promptInput" placeholder="Ask anything..."></textarea>
-                
-                <div class="button-group">
-                    <button id="sendBtn" class="btn" onclick="broadcastPrompt()">
-                        <span>Send</span>
+            <div class="input-wrapper">
+                <textarea id="promptInput" placeholder="Ask anything... "></textarea>
+                <div class="controls-row">
+                    <button id="sendBtn" onclick="broadcastPrompt()">
+                        <span></span>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"></path></svg>
                     </button>
                 </div>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <main>
-        <div class="grid-container" id="gridContainer">
-            </div>
-    </main>
+        <main>
+            <div class="grid-container" id="gridContainer">
+                </div>
+        </main>
+    </div>
 
     <script src="https://js.puter.com/v2/"></script>
 
     <script>
-      // --- Configuration ---
-const models = [
-    { id: 'gemini-3-pro-preview', name: 'GEMINI 3', icon: '🔵', vendor: 'Google' },
-    { id: 'openrouter/openai/gpt-5.2', name: 'GPT 5.2', icon: '🟢', vendor: 'OpenAI' }, // Fixed ID
-    { id: 'openrouter/anthropic/claude-opus-4.5', name: 'CLAUDE OPUS 4.5', icon: '🟠', vendor: 'Anthropic' },
-    { id: 'openrouter/x-ai/grok-4.1-fast', name: 'GROK 4.1', icon: '⚫', vendor: 'xAI' }
-];
+        // --- Configuration ---
+        const models = [
+            { id: 'gemini-3-pro-preview', name: 'GEMINI 3', icon: '🔵', vendor: 'Google' },
+            { id: 'openrouter/openai/gpt-5.2', name: 'GPT 5.2', icon: '🟢', vendor: 'OpenAI' },
+            { id: 'openrouter/anthropic/claude-opus-4.5', name: 'CLAUDE OPUS 4.5', icon: '🟠', vendor: 'Anthropic' },
+            { id: 'openrouter/x-ai/grok-4.1-fast', name: 'GROK 4.1', icon: '⚫', vendor: 'xAI' }
+        ];
 
         // --- Initialization ---
         const gridContainer = document.getElementById('gridContainer');
@@ -347,23 +439,17 @@ const models = [
         let wakeLock = null;
 
         // --- CORE LOGIC FOR FRESH START ---
-        // This function forces a complete wipe of memory and session
-        // --- CORE LOGIC FOR FRESH START ---
-async function enforceFreshStart() {
-    // 1. Sign out FIRST while the token still exists in storage
-    try {
-        if (typeof puter !== 'undefined' && puter.auth) {
-            // This ensures the session is invalidated on the Puter domain
-            await puter.auth.signOut();
+        async function enforceFreshStart() {
+            try {
+                if (typeof puter !== 'undefined' && puter.auth) {
+                    await puter.auth.signOut();
+                }
+            } catch (err) {
+                console.log("Sign out attempt:", err);
+            }
+            localStorage.clear();
+            sessionStorage.clear();
         }
-    } catch (err) {
-        console.log("Sign out attempt:", err);
-    }
-
-    // 2. Wipe Browser Storage AFTER signing out
-    localStorage.clear();
-    sessionStorage.clear();
-}
 
         // --- UI Setup ---
         function initUI() {
@@ -381,7 +467,7 @@ async function enforceFreshStart() {
                         </div>
                         <div class="header-actions">
                             <button class="copy-btn" id="copy-${model.id}" onclick="copyResult('${model.id}')" title="Copy text">
-                                📋 Copy Text
+                                📋 Copy
                             </button>
                             <div class="status-badge" id="status-${model.id}">
                                 <div class="status-dot"></div>
@@ -398,20 +484,21 @@ async function enforceFreshStart() {
         // --- Puter Status Check Logic ---
         async function checkPuterStatus() {
             try {
-                // Returns user object if signed in, null if not
                 const user = await puter.auth.getUser();
 
                 if (user) {
-                  statusLink.innerHTML = `Session ID: ${user.username}`;
-                    statusLink.style.color = 'gray';
-                    statusLink.style.opacity = '0.3';
+                    statusLink.innerHTML = `Session ID: ${user.username}`;
+                    statusLink.style.borderColor = 'var(--status-done)';
+                    statusLink.style.color = 'var(--status-done)';
+                        statusLink.style.opacity = '0.3';
                     statusLink.title = "You are logged in";
                     statusLink.href = "https://puter.com";
                     statusLink.target = "_blank";
                     statusLink.onclick = null;
                 } else {
-                    statusLink.innerHTML = '🔴 Not Logged In (Click to Connect)';
-                    statusLink.style.color = 'var(--status-thinking)';
+                    statusLink.innerHTML = '⚡ Connect Account';
+                    statusLink.style.borderColor = 'var(--accent-primary)';
+                    statusLink.style.color = 'var(--accent-primary)';
                     statusLink.title = "Click to log in";
                     statusLink.href = "#";
                     statusLink.target = "_self";
@@ -419,27 +506,26 @@ async function enforceFreshStart() {
                 }
             } catch (err) {
                 console.warn("Puter auth check failed:", err);
-                statusLink.innerHTML = ' ';
+                statusLink.innerHTML = 'Auth Error';
                 statusLink.style.color = 'var(--status-error)';
             }
         }
 
-        // Click handler for login
-// Click handler for login
-async function handleAuthClick(e) {
-    e.preventDefault();
-    statusLink.innerText = "Connecting...";
+        // --- Auth Handler ---
+        async function handleAuthClick(e) {
+            e.preventDefault();
+            const originalText = statusLink.innerText;
+            statusLink.innerText = "Connecting...";
 
-    try {
-        // Add { prompt: 'login' } to force the account picker/login screen
-        // instead of auto-reconnecting to the active cookie.
-        await puter.auth.signIn({ attempt_temp_user_creation: true });
-        await checkPuterStatus();
-    } catch (err) {
-        console.error("Sign in failed or cancelled", err);
-        checkPuterStatus();
-    }
-}
+            try {
+                await puter.auth.signIn({ attempt_temp_user_creation: true });
+                await checkPuterStatus();
+            } catch (err) {
+                console.error("Sign in failed or cancelled", err);
+                statusLink.innerText = originalText;
+                checkPuterStatus();
+            }
+        }
 
         // --- Wake Lock Logic ---
         async function requestWakeLock() {
@@ -473,7 +559,7 @@ async function handleAuthClick(e) {
 
             // Lock Interface
             sendBtn.disabled = true;
-            sendBtn.innerText = '...';
+            sendBtn.innerHTML = '<span>Processing...</span>';
 
             await requestWakeLock();
 
@@ -485,12 +571,12 @@ async function handleAuthClick(e) {
                 const copyBtn = document.getElementById(`copy-${model.id}`);
                 
                 outputDiv.innerText = '';
-                statusBadge.querySelector('.status-text').innerText = 'Processing...';
+                statusBadge.querySelector('.status-text').innerText = 'Processing';
                 card.classList.remove('done');
                 card.classList.add('streaming');
                 
                 copyBtn.style.display = 'none';
-                copyBtn.innerHTML = '📋 Copy Text';
+                copyBtn.innerHTML = '📋 Copy';
             });
 
             const promises = models.map(model => streamModel(model, prompt));
@@ -501,12 +587,12 @@ async function handleAuthClick(e) {
                 console.error("Global processing error", e);
             } finally {
                 sendBtn.disabled = false;
-                sendBtn.innerHTML = '<span>Send</span>';
+                sendBtn.innerHTML = `<span></span><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"></path></svg>`;
                 await releaseWakeLock();
             }
         }
 
-    async function streamModel(model, prompt) {
+        async function streamModel(model, prompt) {
             const outputDiv = document.getElementById(`output-${model.id}`);
             const statusBadge = document.getElementById(`status-${model.id}`);
             const card = document.getElementById(`card-${model.id}`);
@@ -514,21 +600,19 @@ async function handleAuthClick(e) {
             const copyBtn = document.getElementById(`copy-${model.id}`);
 
             try {
-                // Use the exact simple call from your working snippets
                 const response = await puter.ai.chat(prompt, { 
                     model: model.id, 
                     stream: true 
                 });
 
                 for await (const part of response) {
-                    // Mimic the safety check from your working code
                     if (part?.text) {
                         outputDiv.innerText += part.text;
                         outputDiv.scrollTop = outputDiv.scrollHeight;
                     }
                 }
 
-                statusText.innerText = 'Completed';
+                statusText.innerText = 'Done';
                 card.classList.remove('streaming');
                 card.classList.add('done');
                 copyBtn.style.display = 'flex';
@@ -545,7 +629,7 @@ async function handleAuthClick(e) {
                     </div>
                 `;
 
-                statusText.innerText = 'Failed';
+                statusText.innerText = '-';
                 statusBadge.style.color = '#ef4444';
                 card.classList.remove('streaming');
             }
@@ -583,33 +667,27 @@ async function handleAuthClick(e) {
             }
         });
 
-      // --- APP ENTRY POINT ---
-(async () => {
-    // 1. Initialize the UI first so the user sees the grid
-    initUI();
-    
-    try {
-        // 2. Check if we already have a session
-        let user = await puter.auth.getUser();
-        
-        // 3. If no session, try to create a temporary one (Silent Login)
-        if (!user) {
-            statusLink.innerText = "Creating session...";
-            user = await puter.auth.signIn({ attempt_temp_user_creation: true });
-        }
-        
-        // 4. Final UI Update
-        await checkPuterStatus();
-        
-    } catch (err) {
-        console.error("Initialization failed:", err);
-        statusLink.innerHTML = ' ';
-    }
+        // --- APP ENTRY POINT ---
+        (async () => {
+            initUI();
+            
+            try {
+                let user = await puter.auth.getUser();
+                
+                if (!user) {
+                    statusLink.innerText = "Initializing...";
+                    user = await puter.auth.signIn({ attempt_temp_user_creation: true });
+                }
+                
+                await checkPuterStatus();
+                
+            } catch (err) {
+                console.error("Initialization failed:", err);
+                statusLink.innerHTML = '🪪';
+            }
 
-    // Refresh status if user returns from a login popup
-    window.addEventListener('focus', checkPuterStatus);
-})();
-
+            window.addEventListener('focus', checkPuterStatus);
+        })();
     </script>
 </body>
 </html>
