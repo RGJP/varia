@@ -315,7 +315,7 @@
                 
                 <div class="button-group">
                     <button id="sendBtn" class="btn" onclick="broadcastPrompt()">
-                        <span>Run</span>
+                        <span>Send</span>
                     </button>
                 </div>
             </div>
@@ -501,7 +501,7 @@ async function handleAuthClick(e) {
                 console.error("Global processing error", e);
             } finally {
                 sendBtn.disabled = false;
-                sendBtn.innerHTML = '<span>Run</span>';
+                sendBtn.innerHTML = '<span>Send</span>';
                 await releaseWakeLock();
             }
         }
