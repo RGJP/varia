@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro OBD2 Diagnostic Interpreter (MP69033 Edition)</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+            --border-color: #334155;
+            --gauge-bg: #334155;
+            --scanner-lcd: #00ff41; /* Classic LCD Green */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        /* Header Area */
+        header {
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        h1 span {
+            color: var(--accent);
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        button.secondary {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+        }
+
+        button.secondary:hover {
+            border-color: var(--text-main);
+            color: var(--text-main);
+        }
+
+        /* Main Grid */
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Sensor Cards */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            align-items: center;
+        }
+
+        .sensor-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        /* Badge for MP69033 Code */
+        .scanner-badge {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: rgba(0, 0, 0, 0.4);
+            border: 1px solid #475569;
+            color: var(--scanner-lcd);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        
+        .unit-badge {
+            background-color: rgba(255,255,255,0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            align-self: flex-start;
+        }
+
+        /* Input Area */
+        .input-group {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="number"] {
+            background-color: var(--bg-color);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 1.2rem;
+            width: 120px;
+            font-family: monospace;
+        }
+
+        input[type="number"]:focus {
+            outline: 2px solid var(--accent);
+            border-color: transparent;
+        }
+
+        /* Visual Gauge/Bar */
+        .range-container {
+            position: relative;
+            height: 8px;
+            background-color: var(--gauge-bg);
+            border-radius: 4px;
+            margin: 25px 0 10px 0;
+        }
+
+        .range-fill {
+            position: absolute;
+            height: 100%;
+            top: 0;
+            left: 0;
+            background-color: var(--accent);
+            border-radius: 4px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s;
+        }
+
+        .marker {
+            position: absolute;
+            top: -5px;
+            width: 2px;
+            height: 18px;
+            background-color: rgba(255,255,255,0.3);
+            transform: translateX(-50%);
+        }
+
+        .marker-label {
+            position: absolute;
+            top: -25px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            transform: translateX(-50%);
+            white-space: nowrap;
+        }
+
+        /* Analysis Output */
+        .analysis-box {
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 6px;
+            padding: 12px;
+            border-left: 4px solid var(--text-muted);
+        }
+
+        .status-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Status Colors */
+        .status-normal { border-left-color: var(--success); }
+        .status-normal .status-title { color: var(--success); }
+        
+        .status-warning { border-left-color: var(--warning); }
+        .status-warning .status-title { color: var(--warning); }
+        
+        .status-danger { border-left-color: var(--danger); }
+        .status-danger .status-title { color: var(--danger); }
+
+        /* Global Analysis Section */
+        .global-analysis {
+            max-width: 1200px;
+            margin: 30px auto;
+            background-color: #262f45;
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 25px;
+        }
+
+        .global-header {
+            margin-bottom: 15px;
+            color: var(--accent);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Responsive overrides */
+        @media (max-width: 600px) {
+            .input-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            input[type="number"] {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h1>OBD2 <span>Interpreter</span> <small style="font-size:0.5em; opacity:0.6; font-weight:400;">(MP69033 Support)</small></h1>
+        <div class="subtitle">Enter values from your MOTOPOWER scanner to diagnose vehicle health</div>
+    </div>
+    <div class="controls">
+        <button class="secondary" onclick="resetAll()">Reset All</button>
+        <button onclick="window.print()">Print Report</button>
+    </div>
+</header>
+
+<div class="global-analysis" id="globalAnalysisBox" style="display: none;">
+    <div class="global-header">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        SYSTEM DIAGNOSIS
+    </div>
+    <div id="globalOutput">Waiting for sufficient data input...</div>
+</div>
+
+<div class="dashboard" id="dashboard">
+    </div>
+
+<script>
+    /**
+     * OBD2 PID DEFINITIONS AND LOGIC ENGINE
+     * Updated with 'scannerCode' to match MOTOPOWER MP69033 Displays.
+     */
+    const sensors = [
+        {
+            id: 'stft',
+            name: 'Short Term Fuel Trim',
+            scannerCode: 'SHRTFT1', // Standard OBD2 Label
+            unit: '%',
+            min: -30,
+            max: 30,
+            default: 0,
+            description: "Immediate fuel correction. Look for SHRTFT1 on your screen.",
+            evaluate: (val) => {
+                if (val >= -10 && val <= 10) return { type: 'normal', title: 'Optimal', desc: 'ECU is controlling mixture efficiently.' };
+                if (val > 10 && val <= 20) return { type: 'warning', title: 'Lean Condition', desc: 'ECU adding fuel. Check for minor vacuum leaks.' };
+                if (val > 20) return { type: 'danger', title: 'System Too Lean', desc: 'Major vacuum leak, low fuel pressure, or bad MAF.' };
+                if (val < -10 && val >= -20) return { type: 'warning', title: 'Rich Condition', desc: 'ECU removing fuel. Possible leaking injector.' };
+                if (val < -20) return { type: 'danger', title: 'System Too Rich', desc: 'Severe rich condition. Check injectors/FPR.' };
+                return { type: 'danger', title: 'Out of Range', desc: 'Value exceeds diagnostic limits.' };
+            }
+        },
+        {
+            id: 'ltft',
+            name: 'Long Term Fuel Trim',
+            scannerCode: 'LONGFT1', // Standard OBD2 Label
+            unit: '%',
+            min: -30,
+            max: 30,
+            default: 0,
+            description: "Historical learned fuel value. Look for LONGFT1.",
+            evaluate: (val) => {
+                if (val >= -10 && val <= 10) return { type: 'normal', title: 'Healthy', desc: 'Long term fueling within normal limits.' };
+                if (val > 10 && val <= 20) return { type: 'warning', title: 'Compensating Lean', desc: 'History of running lean. Check vacuum lines.' };
+                if (val > 20) return { type: 'danger', title: 'Lean Limit', desc: 'P0171 Likely. Check fuel pump/filter or major air leak.' };
+                if (val < -10 && val >= -20) return { type: 'warning', title: 'Compensating Rich', desc: 'History of running rich. Check air filter/MAF.' };
+                if (val < -20) return { type: 'danger', title: 'Rich Limit', desc: 'P0172 Likely. Leaking injectors/Bad O2.' };
+                return { type: 'danger', title: 'Out of Range', desc: 'Value exceeds diagnostic limits.' };
+            }
+        },
+        {
+            id: 'ect',
+            name: 'Engine Coolant Temp',
+            scannerCode: 'ECT',
+            unit: '°C',
+            min: 0,
+            max: 130,
+            default: 90,
+            description: "Engine Temp. Look for ECT.",
+            evaluate: (val) => {
+                if (val < 70) return { type: 'warning', title: 'Open Loop / Cold', desc: 'Engine cold. High emissions/fuel use.' };
+                if (val >= 70 && val <= 105) return { type: 'normal', title: 'Operating Temp', desc: 'Optimal thermal range.' };
+                if (val > 105 && val <= 115) return { type: 'warning', title: 'Running Hot', desc: 'Check coolant/fans.' };
+                if (val > 115) return { type: 'danger', title: 'Overheating', desc: 'STOP ENGINE. Head gasket risk.' };
+                return { type: 'danger', title: 'Extreme', desc: 'Sensor failure or extreme condition.' };
+            }
+        },
+        {
+            id: 'maf',
+            name: 'Mass Air Flow',
+            scannerCode: 'MAF',
+            unit: 'g/s',
+            min: 0,
+            max: 300,
+            default: 5,
+            description: "Airflow rate. Rule of thumb: 1 g/s per Liter at idle.",
+            evaluate: (val) => {
+                if (val < 2) return { type: 'warning', title: 'Low Flow', desc: 'Possible vacuum leak bypassing sensor.' };
+                if (val >= 2 && val < 50) return { type: 'normal', title: 'Idle/Cruise', desc: 'Normal light load flow.' };
+                if (val >= 50) return { type: 'normal', title: 'Load/Accel', desc: 'Normal acceleration flow.' };
+                return { type: 'normal', title: 'High Load', desc: 'WOT flow.' };
+            }
+        },
+        {
+            id: 'o2b1s1',
+            name: 'O2 Sensor Voltage',
+            scannerCode: 'O2B1S1', // Often O2S11 or O2B1S1
+            unit: 'V',
+            min: 0,
+            max: 1.2,
+            default: 0.45,
+            step: 0.01,
+            description: "Upstream Oxygen Sensor. Look for O2B1S1 or O2S11.",
+            evaluate: (val) => {
+                if (val < 0.1) return { type: 'warning', title: 'Lean (Low V)', desc: 'High oxygen in exhaust.' };
+                if (val > 0.9) return { type: 'warning', title: 'Rich (High V)', desc: 'Low oxygen in exhaust.' };
+                if (val >= 0.1 && val <= 0.9) return { type: 'normal', title: 'Oscillating', desc: 'Ensure value fluctuates rapidly.' };
+                return { type: 'danger', title: 'Sensor Error', desc: 'Outside 0-1V range.' };
+            }
+        },
+        {
+            id: 'load',
+            name: 'Calculated Load',
+            scannerCode: 'LOAD_PCT',
+            unit: '%',
+            min: 0,
+            max: 100,
+            default: 20,
+            description: "Engine Load. Look for LOAD_PCT.",
+            evaluate: (val) => {
+                if (val > 90) return { type: 'warning', title: 'High Load', desc: 'WOT conditions. Open loop likely.' };
+                if (val < 15) return { type: 'normal', title: 'Idle/Coast', desc: 'Low load.' };
+                return { type: 'normal', title: 'Cruising', desc: 'Moderate load.' };
+            }
+        },
+        {
+            id: 'voltage',
+            name: 'Control Module Volt',
+            scannerCode: 'VPWR', // Or CONTROL MOD
+            unit: 'V',
+            min: 9,
+            max: 16,
+            default: 13.8,
+            step: 0.1,
+            description: "System Voltage. Look for VPWR.",
+            evaluate: (val) => {
+                if (val < 12.0) return { type: 'danger', title: 'Low Voltage', desc: 'Battery dying or Alternator dead.' };
+                if (val >= 12.0 && val < 13.2) return { type: 'warning', title: 'Battery Only', desc: 'Alternator likely not charging.' };
+                if (val >= 13.2 && val <= 14.8) return { type: 'normal', title: 'Charging', desc: 'Alternator healthy.' };
+                if (val > 15.0) return { type: 'danger', title: 'Overcharging', desc: 'Regulator failure. Risk to electronics.' };
+                return { type: 'warning', title: 'Check System', desc: 'Borderline voltage.' };
+            }
+        },
+        {
+            id: 'rpm',
+            name: 'Engine RPM',
+            scannerCode: 'RPM',
+            unit: 'rpm',
+            min: 0,
+            max: 8000,
+            default: 800,
+            step: 50,
+            description: "Revolutions Per Minute. Look for RPM.",
+            evaluate: (val) => {
+                if (val < 500 && val > 0) return { type: 'warning', title: 'Low Idle', desc: 'Stalling risk. Clean throttle body.' };
+                if (val >= 600 && val <= 900) return { type: 'normal', title: 'Standard Idle', desc: 'Normal idle speed.' };
+                if (val > 900 && val < 2000) return { type: 'normal', title: 'High Idle/Drive', desc: 'Normal if moving or cold start.' };
+                return { type: 'normal', title: 'Operating', desc: 'Engine running.' };
+            }
+        }
+    ];
+
+    // State storage
+    const state = {};
+
+    function init() {
+        const container = document.getElementById('dashboard');
+        
+        sensors.forEach(sensor => {
+            // Initialize state
+            state[sensor.id] = sensor.default;
+
+            // Create HTML structure
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="card-header">
+                    <div class="header-top">
+                        <span class="sensor-name">${sensor.name}</span>
+                        <span class="unit-badge">${sensor.unit}</span>
+                    </div>
+                    <span class="scanner-badge">${sensor.scannerCode}</span>
+                </div>
+                <div class="input-group">
+                    <input 
+                        type="number" 
+                        id="input-${sensor.id}" 
+                        value="${sensor.default}" 
+                        min="${sensor.min}" 
+                        max="${sensor.max}"
+                        step="${sensor.step || 1}"
+                        oninput="updateSensor('${sensor.id}', this.value)"
+                    >
+                    <small style="color:var(--text-muted)">${sensor.description}</small>
+                </div>
+                <div class="range-container">
+                    <div class="range-fill" id="fill-${sensor.id}" style="width: 50%"></div>
+                    <div class="marker" style="left: 20%"><span class="marker-label">${Math.round(sensor.min + (sensor.max - sensor.min)*0.2)}</span></div>
+                    <div class="marker" style="left: 50%"><span class="marker-label">${Math.round(sensor.min + (sensor.max - sensor.min)*0.5)}</span></div>
+                    <div class="marker" style="left: 80%"><span class="marker-label">${Math.round(sensor.min + (sensor.max - sensor.min)*0.8)}</span></div>
+                </div>
+                <div class="analysis-box status-normal" id="status-${sensor.id}">
+                    <div class="status-title" id="title-${sensor.id}">Initializing...</div>
+                    <div class="status-desc" id="desc-${sensor.id}">Waiting for input.</div>
+                </div>
+            `;
+            container.appendChild(card);
+            
+            // Trigger initial render
+            updateSensor(sensor.id, sensor.default);
+        });
+
+        runGlobalDiagnosis();
+    }
+
+    function updateSensor(id, value) {
+        value = parseFloat(value);
+        if (isNaN(value)) return;
+        
+        state[id] = value;
+        const sensor = sensors.find(s => s.id === id);
+        
+        // Update Gauge Logic
+        const range = sensor.max - sensor.min;
+        const percentage = ((value - sensor.min) / range) * 100;
+        const clampedPercentage = Math.max(0, Math.min(100, percentage));
+        
+        const fillElem = document.getElementById(`fill-${id}`);
+        fillElem.style.width = `${clampedPercentage}%`;
+
+        // Run Analysis Logic
+        const result = sensor.evaluate(value);
+        
+        // Visual Color Updates
+        let colorVar = '--accent';
+        if (result.type === 'normal') colorVar = '--success';
+        if (result.type === 'warning') colorVar = '--warning';
+        if (result.type === 'danger') colorVar = '--danger';
+        
+        fillElem.style.backgroundColor = `var(${colorVar})`;
+
+        // Text Updates
+        const statusBox = document.getElementById(`status-${id}`);
+        statusBox.className = `analysis-box status-${result.type}`;
+        document.getElementById(`title-${id}`).innerText = result.title;
+        document.getElementById(`desc-${id}`).innerText = result.desc;
+
+        // Trigger global diagnosis check
+        runGlobalDiagnosis();
+    }
+
+    // Advanced Feature: Cross-Reference Logic
+    function runGlobalDiagnosis() {
+        const box = document.getElementById('globalAnalysisBox');
+        const output = document.getElementById('globalOutput');
+        
+        let diagnoses = [];
+
+        // 1. Vacuum Leak Logic
+        // High Positive Fuel Trims + Low Load/Idle
+        if (state.stft > 10 && state.ltft > 10) {
+            diagnoses.push(`<strong style="color:var(--danger)">POSSIBLE VACUUM LEAK:</strong> Both SHRTFT1 and LONGFT1 are adding fuel (>10%). If this improves at higher RPM, look for intake manifold leaks or disconnected vacuum lines.`);
+        }
+
+        // 2. Leaking Injector Logic
+        // Negative Trims
+        if (state.stft < -10 && state.ltft < -10) {
+            diagnoses.push(`<strong style="color:var(--danger)">POSSIBLE FUEL SYSTEM FAULT:</strong> System is removing fuel aggressively (Negative SHRTFT1/LONGFT1). Check for stuck open injectors or high fuel pressure regulator failure.`);
+        }
+
+        // 3. MAF vs Trim Logic
+        if (state.maf < 2 && (state.stft > 10 || state.ltft > 10)) {
+            diagnoses.push(`<strong style="color:var(--warning)">MAF/AIR METERING:</strong> Very low MAF readings combined with Lean trims suggests unmetered air entering the engine (after the MAF sensor).`);
+        }
+
+        // 4. Coolant/Loop Logic
+        if (state.ect < 70 && state.ltft !== 0) {
+            diagnoses.push(`<strong style="color:var(--text-muted)">NOTE:</strong> Engine is cold (ECT < 70°C). Fuel trim data may be unreliable until Closed Loop status is achieved.`);
+        }
+
+        // 5. Alternator Check
+        if (state.voltage < 13.0 && state.ect > 80 && state.rpm > 600) {
+            diagnoses.push(`<strong style="color:var(--warning)">CHARGING SYSTEM:</strong> Engine is running (RPM > 600) but VPWR is low (<13V). Check alternator output.`);
+        }
+
+        if (diagnoses.length > 0) {
+            box.style.display = 'block';
+            output.innerHTML = diagnoses.join('<br><br>');
+        } else {
+            box.style.display = 'none';
+        }
+    }
+
+    function resetAll() {
+        sensors.forEach(s => {
+            const input = document.getElementById(`input-${s.id}`);
+            input.value = s.default;
+            updateSensor(s.id, s.default);
+        });
+    }
+
+    // Boot
+    window.addEventListener('DOMContentLoaded', init);
+
+</script>
+
+</body>
+</html>
