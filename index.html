@@ -2,279 +2,290 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>RGJP Navigator</title>
     <link rel="icon" type="image/png" href="favico.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     
     <style>
         :root {
-            --primary: #3b82f6; /* Blue 500 */
-            --primary-light: #60a5fa; /* Blue 400 */
-            --primary-dark: #1d4ed8; /* Blue 700 */
-            --accent: #f59e0b;
-            --accent-light: #fbbf24;
-            --bg-primary: #0f0f23;
-            --bg-secondary: #1a1a3a;
-            --text-primary: #f8fafc;
-            --text-secondary: #cbd5e1;
-            --glass: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
+            /* Deep Space Theme */
+            --bg-dark: #000000;
+            --bg-light: #1a1a2e;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --glass-active: rgba(255, 255, 255, 0.2);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --accent-glow: rgba(56, 189, 248, 0.15);
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-        }
-
-        html, body {
-            height: 100vh;
-            height: 100dvh; /* Use dynamic viewport height */
-            overflow: hidden; /* Prevent all scrolling */
-            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent; /* Remove mobile tap highlight */
         }
 
         body {
-            background: linear-gradient(-45deg, #0f0f23, #1a1a3a, #1c2b5c, #1e293b);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
-            color: var(--text-primary);
-        }
-
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* Main container - fits exactly in viewport */
-        .main-container {
+            background: radial-gradient(circle at top right, #1e1e40, #000000);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
             height: 100vh;
-            height: 100dvh;
+            height: 100dvh; /* Dynamic viewport height for mobile browsers */
+            width: 100vw;
+            overflow: hidden; /* STRICTLY NO SCROLLING */
             display: flex;
             flex-direction: column;
-            position: relative;
-            z-index: 2;
-            /* Use clamp() with vmin for fully fluid padding */
-            padding: clamp(0.5rem, 2vmin, 1.5rem);
+            padding: 2vh 4vw;
         }
 
-        /* Header - compact and responsive */
-        .header {
-            font-family: 'Space Grotesk', sans-serif;
-            font-weight: 700;
-            /* Use clamp() with vmin for fluid font sizing */
-            font-size: clamp(1.4rem, 4.5vmin, 2.8rem);
-            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+        /* Compact Header */
+        header {
+            flex: 0 0 auto;
+            height: 8%; /* Fixed small percentage for header */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1vh;
+        }
+
+        h1 {
+            font-size: 5vmin;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, #60a5fa, #c084fc);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-align: center;
-            letter-spacing: -0.02em;
-            /* Use clamp() for fluid margins */
-            margin-bottom: clamp(0.2rem, 1vh, 0.75rem);
         }
 
-        /* Grid layout - perfectly fills remaining space with 4 rows */
-        .projects-grid {
-            flex: 1; /* This is crucial for filling space */
+        /* The Grid - The Core Logic */
+        .app-grid {
+            flex: 1; /* Take remaining space */
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            grid-template-rows: repeat(4, 1fr); /* Changed to 4 rows to fit more items */
-            /* Use clamp() with vmin for fluid gaps */
-            gap: clamp(0.4rem, 1.25vmin, 0.8rem);
-            min-height: 0; /* Prevent grid from overflowing its container */
+            /* 4 Columns x 5 Rows = 20 Slots exactly */
+            grid-template-columns: repeat(4, 1fr); 
+            grid-template-rows: repeat(5, 1fr);
+            gap: 3vmin; /* Fluid gap */
+            padding-bottom: 2vh; /* Bottom safety padding */
         }
 
-        /* Cards - uniform size and slightly smaller */
-        .project-card {
-            position: relative;
-            backdrop-filter: blur(20px);
-            background: var(--glass);
-            border: 1px solid var(--glass-border);
-            border-radius: clamp(10px, 2vmin, 16px);
+        /* App Icon Button */
+        .app-item {
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-            text-align: center;
+            justify-content: center;
             text-decoration: none;
-            color: inherit;
-            transition: all 0.3s ease;
-            box-shadow: 
-                0 8px 32px -8px rgba(0, 0, 0, 0.3),
-                0 4px 16px -4px rgba(59, 130, 246, 0.2),
-                inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            /* Use clamp() with vmin for smaller, fluid padding */
-            padding: clamp(0.25rem, 1.5vmin, 1rem);
+            position: relative;
+            transition: transform 0.1s ease;
         }
 
-        .project-card::before {
+        /* The Icon Container (Squarcle) */
+        .icon-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            /* Aspect ratio trick for perfect squares */
+            width: 100%;
+            aspect-ratio: 1 / 1; 
+            border-radius: 22%; /* "Squarcle" shape like iOS/OneUI */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.8vh;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .icon-box::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, var(--primary), var(--accent));
-            opacity: 0.05;
-            border-radius: inherit;
-            z-index: -1;
+            inset: 0;
+            background: radial-gradient(circle at top left, var(--glass-border), transparent 70%);
+            opacity: 0.5;
         }
 
-        .project-card:active {
-            transform: scale(0.98);
+        /* Interaction States */
+        .app-item:active {
+            transform: scale(0.92);
         }
 
-        .project-card:focus {
-            outline: none;
-            box-shadow: 
-                0 0 0 2px var(--primary),
-                0 8px 32px -8px rgba(0, 0, 0, 0.3),
-                0 4px 16px -4px rgba(59, 130, 246, 0.2);
+        .app-item:active .icon-box {
+            background: var(--glass-active);
+            border-color: rgba(255,255,255,0.4);
         }
 
-        /* Icon styling - smaller and responsive */
-        .project-icon {
-            /* Use clamp() with vmin for smaller fluid icon size */
-            font-size: clamp(1.4rem, 4.5vmin, 2.2rem);
-            margin-bottom: clamp(0.2rem, 1vmin, 0.5rem);
-            display: block;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        /* Fluid sizing for content */
+        .emoji-icon {
+            font-size: 8vmin; /* Scales with viewport */
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
         }
 
-        .project-title {
-            font-family: 'Space Grotesk', sans-serif;
-            /* Use clamp() with vmin for smaller fluid title size */
-            font-size: clamp(0.7rem, 2.25vmin, 1rem);
-            font-weight: 600;
-            color: var(--text-primary);
-            line-height: 1.2;
+        .app-label {
+            color: var(--text-main);
+            font-size: 2.8vmin;
+            font-weight: 400;
             text-align: center;
-            display: block;
+            line-height: 1;
+            width: 120%; /* Allow slight overflow width */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 0.9;
         }
 
-        /* Loading animation */
-        .fade-in {
-            animation: fadeInUp 0.5s ease forwards;
+        /* Entry Animation */
+        .app-item {
             opacity: 0;
-        }
-        
-        .fade-in:nth-child(1) { animation-delay: 0.05s; }
-        .fade-in:nth-child(2) { animation-delay: 0.1s; }
-        .fade-in:nth-child(3) { animation-delay: 0.15s; }
-        .fade-in:nth-child(4) { animation-delay: 0.2s; }
-        .fade-in:nth-child(5) { animation-delay: 0.25s; }
-        .fade-in:nth-child(6) { animation-delay: 0.3s; }
-        .fade-in:nth-child(7) { animation-delay: 0.35s; }
-        .fade-in:nth-child(8) { animation-delay: 0.4s; }
-        .fade-in:nth-child(9) { animation-delay: 0.45s; }
-        .fade-in:nth-child(10) { animation-delay: 0.5s; }
-        .fade-in:nth-child(11) { animation-delay: 0.55s; }
-        .fade-in:nth-child(12) { animation-delay: 0.6s; } /* Added delay for new item */
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
-        /* Ultra-wide screen optimization */
-        @media (min-width: 1400px) and (min-height: 800px) {
-            .main-container {
-                max-width: 1200px;
-                margin: 0 auto;
-            }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.5); }
+            to { opacity: 1; transform: scale(1); }
         }
+
+        /* Staggered delays for up to 20 items */
+        .app-item:nth-child(1) { animation-delay: 0.05s; }
+        .app-item:nth-child(2) { animation-delay: 0.08s; }
+        .app-item:nth-child(3) { animation-delay: 0.11s; }
+        .app-item:nth-child(4) { animation-delay: 0.14s; }
+        .app-item:nth-child(5) { animation-delay: 0.17s; }
+        .app-item:nth-child(6) { animation-delay: 0.20s; }
+        .app-item:nth-child(7) { animation-delay: 0.23s; }
+        .app-item:nth-child(8) { animation-delay: 0.26s; }
+        .app-item:nth-child(9) { animation-delay: 0.29s; }
+        .app-item:nth-child(10) { animation-delay: 0.32s; }
+        .app-item:nth-child(11) { animation-delay: 0.35s; }
+        .app-item:nth-child(12) { animation-delay: 0.38s; }
+        .app-item:nth-child(13) { animation-delay: 0.41s; }
+        .app-item:nth-child(14) { animation-delay: 0.44s; }
     </style>
 </head>
 <body>
-    <div class="main-container">
-      
 
-        <div class="projects-grid">
-            <a href="eqc.html" class="project-card fade-in" tabindex="0" aria-label="Rendre grâce">
-                <span class="project-icon">🙏</span>
-                <span class="project-title">Rendre grâce</span>
-            </a>
+    <header>
+        <h1>RGJP Navigator</h1>
+    </header>
 
-            <a href="guitar.html" class="project-card fade-in" tabindex="0" aria-label="Guitar">
-                <span class="project-icon">🎸</span>
-                <span class="project-title">Guitare</span>
-            </a>
+    <div class="app-grid">
+        <a href="piscinequebec.html" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">🏊</span>
+            </div>
+            <span class="app-label">Piscine</span>
+        </a>
 
-            <a href="homelie.html" class="project-card fade-in" tabindex="0" aria-label="Homélie">
-                <span class="project-icon">📖</span>
-                <span class="project-title">Homélie</span>
-            </a>
+        <a href="odb.html" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">🍞</span>
+            </div>
+            <span class="app-label">ODB</span>
+        </a>
 
-            <a href="luminaira.html" class="project-card fade-in" tabindex="0" aria-label="Luminaira">
-                <span class="project-icon">✨</span>
-                <span class="project-title">Luminaira</span>
-            </a>
+        <a href="eqc.html" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">🙏</span>
+            </div>
+            <span class="app-label">Rendre grâce</span>
+        </a>
 
-            <a href="https://mariusjomphe.com" target="_blank" rel="noopener noreferrer" class="project-card fade-in" tabindex="0" aria-label="Marius Jomphe Photography">
-                <span class="project-icon">📷</span>
-                <span class="project-title">MariusJomphe.com</span>
-            </a>
+        <a href="guitar.html" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">🎸</span>
+            </div>
+            <span class="app-label">Guitare</span>
+        </a>
 
-            <a href="mindfulpause.html" class="project-card fade-in" tabindex="0" aria-label="Mindfulness Pause">
-                <span class="project-icon">🪷</span>
-                <span class="project-title">Mindfulness</span>
-            </a>
+        <a href="homelie.html" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">📖</span>
+            </div>
+            <span class="app-label">Homélie</span>
+        </a>
 
-            <a href="mooji.html" class="project-card fade-in" tabindex="0" aria-label="Mooji Satsangs">
-                <span class="project-icon">🕉️</span>
-                <span class="project-title">Mooji Satsangs</span>
-            </a>
+        <a href="luminaira.html" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">✨</span>
+            </div>
+            <span class="app-label">Luminaira</span>
+        </a>
 
-            <a href="yoga.html" class="project-card fade-in" tabindex="0" aria-label="Serendipity Yoga">
-                <span class="project-icon">🧘</span>
-                <span class="project-title">Serendipity Yoga</span>
-            </a>
+        <a href="https://mariusjomphe.com" target="_blank" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">📷</span>
+            </div>
+            <span class="app-label">Marius J.</span>
+        </a>
 
-            <a href="mudra.html" class="project-card fade-in" tabindex="0" aria-label="Serendipity Mudra">
-                <span class="project-icon">🤚</span>
-                <span class="project-title">Serendipity Mudra</span>
-            </a>
+        <a href="mindfulpause.html" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">🪷</span>
+            </div>
+            <span class="app-label">Mindful</span>
+        </a>
 
-            <a href="cv.html" class="project-card fade-in" tabindex="0" aria-label="CV">
-                <span class="project-icon">📄</span>
-                <span class="project-title">CV</span>
-            </a>
+        <a href="mooji.html" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">🕉️</span>
+            </div>
+            <span class="app-label">Mooji</span>
+        </a>
 
-            <a href="eos.html" class="project-card fade-in" tabindex="0" aria-label="Echoes of Silence">
-                <span class="project-icon">🔔</span>
-                <span class="project-title">Echoes of Silence</span>
-            </a>
+        <a href="yoga.html" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">🧘</span>
+            </div>
+            <span class="app-label">Yoga</span>
+        </a>
 
-            <a href="recorder.html" class="project-card fade-in" tabindex="0" aria-label="Recorder">
-                <span class="project-icon">🪈</span>
-                <span class="project-title">Recorder</span>
-            </a>
+        <a href="mudra.html" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">🤚</span>
+            </div>
+            <span class="app-label">Mudra</span>
+        </a>
+
+        <a href="cv.html" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">📄</span>
+            </div>
+            <span class="app-label">CV</span>
+        </a>
+
+        <a href="eos.html" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">🔔</span>
+            </div>
+            <span class="app-label">Echoes</span>
+        </a>
+
+        <a href="recorder.html" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">🪈</span>
+            </div>
+            <span class="app-label">Recorder</span>
+        </a>
+
         </div>
-    </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const cards = document.querySelectorAll('.project-card');
-            
-            cards.forEach(card => {
-                card.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        card.click();
-                    }
-                });
+        // Simple script to handle touch feedback on older devices
+        document.addEventListener('DOMContentLoaded', () => {
+            const items = document.querySelectorAll('.app-item');
+            items.forEach(item => {
+                item.addEventListener('touchstart', function() {
+                    this.style.transform = 'scale(0.92)';
+                }, {passive: true});
+                
+                item.addEventListener('touchend', function() {
+                    this.style.transform = 'scale(1)';
+                }, {passive: true});
             });
         });
     </script>
