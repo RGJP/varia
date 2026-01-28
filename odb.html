@@ -3,600 +3,406 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pro OBD2 Diagnostic Interpreter (MP69033 Edition)</title>
+    <title>OBD Data Reminder</title>
     <style>
-        :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent: #3b82f6;
-            --accent-hover: #2563eb;
-            --success: #22c55e;
-            --warning: #eab308;
-            --danger: #ef4444;
-            --border-color: #334155;
-            --gauge-bg: #334155;
-            --scanner-lcd: #00ff41; /* Classic LCD Green */
-        }
-
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            box-sizing: border-box;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            padding: 20px;
-            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            /* Dark background */
+            background: #1a202c;
+            min-height: 100vh;
+            padding: 20px 15px;
+            color: #e2e8f0;
         }
 
-        /* Header Area */
-        header {
-            max-width: 1200px;
-            margin: 0 auto 30px auto;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        h1 span {
-            color: var(--accent);
-        }
-
-        .subtitle {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        /* Controls */
-        .controls {
-            display: flex;
-            gap: 10px;
-        }
-
-        button {
-            background-color: var(--accent);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background 0.2s;
-        }
-
-        button:hover {
-            background-color: var(--accent-hover);
-        }
-
-        button.secondary {
-            background-color: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-muted);
-        }
-
-        button.secondary:hover {
-            border-color: var(--text-main);
-            color: var(--text-main);
-        }
-
-        /* Main Grid */
-        .dashboard {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-            max-width: 1200px;
+        .container {
+            max-width: 600px;
             margin: 0 auto;
         }
 
-        /* Sensor Cards */
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
+        header {
+            /* Darker card background */
+            background: #2d3748;
             padding: 20px;
-            transition: transform 0.2s, box-shadow 0.2s;
-            position: relative;
-            overflow: hidden;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+            text-align: center;
+            border: 1px solid #4a5568;
         }
 
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        h1 {
+            /* Lighter accent color for dark mode */
+            color: #a3bffa;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
         }
 
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 15px;
-            flex-direction: column;
-            gap: 8px;
+        .subtitle {
+            color: #a0aec0;
+            font-size: 0.9rem;
         }
 
-        .header-top {
-            display: flex;
-            justify-content: space-between;
+        .search-box {
+            background: #2d3748;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+            border: 1px solid #4a5568;
+        }
+
+        #searchInput {
             width: 100%;
-            align-items: center;
+            padding: 12px 15px;
+            /* Dark input field */
+            background: #1a202c;
+            border: 2px solid #4a5568;
+            border-radius: 10px;
+            font-size: 1rem;
+            color: #fff;
+            transition: border-color 0.3s;
         }
 
-        .sensor-name {
+        #searchInput::placeholder {
+            color: #718096;
+        }
+
+        #searchInput:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .obd-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .obd-card {
+            background: #2d3748;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s, box-shadow 0.3s, background-color 0.3s;
+            cursor: pointer;
+            border: 1px solid #4a5568;
+        }
+
+        .obd-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.4);
+            background: #364152;
+        }
+
+        .obd-card.hidden {
+            display: none;
+        }
+
+        .obd-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .obd-name {
             font-size: 1.1rem;
+            font-weight: 700;
+            color: #a3bffa;
+        }
+
+        .obd-range {
+            background: linear-gradient(135deg, #5a67d8, #4c51bf);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .obd-description {
+            color: #cbd5e0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-top: 10px;
+        }
+        
+        /* Updated 'Simple terms' style for dark mode contrast */
+        .obd-description strong {
+            color: #63b3ed; /* Light blue for emphasis */
+            display: block;
+            margin-top: 8px;
             font-weight: 600;
         }
 
-        /* Badge for MP69033 Code */
-        .scanner-badge {
-            font-family: 'Courier New', Courier, monospace;
-            background-color: rgba(0, 0, 0, 0.4);
-            border: 1px solid #475569;
-            color: var(--scanner-lcd);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            font-weight: 700;
-        }
-        
-        .unit-badge {
-            background-color: rgba(255,255,255,0.1);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            align-self: flex-start;
+        .no-results {
+            background: #2d3748;
+            padding: 40px 20px;
+            border-radius: 15px;
+            text-align: center;
+            color: #a0aec0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            border: 1px solid #4a5568;
         }
 
-        /* Input Area */
-        .input-group {
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .no-results.hidden {
+            display: none;
         }
 
-        input[type="number"] {
-            background-color: var(--bg-color);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 1.2rem;
-            width: 120px;
-            font-family: monospace;
-        }
-
-        input[type="number"]:focus {
-            outline: 2px solid var(--accent);
-            border-color: transparent;
-        }
-
-        /* Visual Gauge/Bar */
-        .range-container {
-            position: relative;
-            height: 8px;
-            background-color: var(--gauge-bg);
-            border-radius: 4px;
-            margin: 25px 0 10px 0;
-        }
-
-        .range-fill {
-            position: absolute;
-            height: 100%;
-            top: 0;
-            left: 0;
-            background-color: var(--accent);
-            border-radius: 4px;
-            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s;
-        }
-
-        .marker {
-            position: absolute;
-            top: -5px;
-            width: 2px;
-            height: 18px;
-            background-color: rgba(255,255,255,0.3);
-            transform: translateX(-50%);
-        }
-
-        .marker-label {
-            position: absolute;
-            top: -25px;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            transform: translateX(-50%);
-            white-space: nowrap;
-        }
-
-        /* Analysis Output */
-        .analysis-box {
-            background-color: rgba(0,0,0,0.2);
-            border-radius: 6px;
-            padding: 12px;
-            border-left: 4px solid var(--text-muted);
-        }
-
-        .status-title {
-            font-size: 0.9rem;
-            font-weight: 700;
-            margin-bottom: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .status-desc {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        /* Status Colors */
-        .status-normal { border-left-color: var(--success); }
-        .status-normal .status-title { color: var(--success); }
-        
-        .status-warning { border-left-color: var(--warning); }
-        .status-warning .status-title { color: var(--warning); }
-        
-        .status-danger { border-left-color: var(--danger); }
-        .status-danger .status-title { color: var(--danger); }
-
-        /* Global Analysis Section */
-        .global-analysis {
-            max-width: 1200px;
-            margin: 30px auto;
-            background-color: #262f45;
-            border: 1px solid var(--accent);
-            border-radius: 12px;
-            padding: 25px;
-        }
-
-        .global-header {
-            margin-bottom: 15px;
-            color: var(--accent);
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Responsive overrides */
-        @media (max-width: 600px) {
-            .input-group {
-                flex-direction: column;
-                align-items: stretch;
+        @media (min-width: 768px) {
+            body {
+                padding: 40px 20px;
             }
-            input[type="number"] {
-                width: 100%;
+
+            h1 {
+                font-size: 2.2rem;
+            }
+
+            .obd-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>🚗 OBD Data Reminder</h1>
+            <p class="subtitle">Quick reference for OBD-II parameters</p>
+        </header>
 
-<header>
-    <div>
-        <h1>OBD2 <span>Interpreter</span> <small style="font-size:0.5em; opacity:0.6; font-weight:400;">(MP69033 Support)</small></h1>
-        <div class="subtitle">Enter values from your MOTOPOWER scanner to diagnose vehicle health</div>
-    </div>
-    <div class="controls">
-        <button class="secondary" onclick="resetAll()">Reset All</button>
-        <button onclick="window.print()">Print Report</button>
-    </div>
-</header>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search parameters...">
+        </div>
 
-<div class="global-analysis" id="globalAnalysisBox" style="display: none;">
-    <div class="global-header">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        SYSTEM DIAGNOSIS
-    </div>
-    <div id="globalOutput">Waiting for sufficient data input...</div>
-</div>
-
-<div class="dashboard" id="dashboard">
+        <div class="obd-grid" id="obdGrid"></div>
+        <div class="no-results hidden" id="noResults">
+            <p>No parameters found matching your search.</p>
+        </div>
     </div>
 
-<script>
-    /**
-     * OBD2 PID DEFINITIONS AND LOGIC ENGINE
-     * Updated with 'scannerCode' to match MOTOPOWER MP69033 Displays.
-     */
-    const sensors = [
-        {
-            id: 'stft',
-            name: 'Short Term Fuel Trim',
-            scannerCode: 'SHRTFT1', // Standard OBD2 Label
-            unit: '%',
-            min: -30,
-            max: 30,
-            default: 0,
-            description: "Immediate fuel correction. Look for SHRTFT1 on your screen.",
-            evaluate: (val) => {
-                if (val >= -10 && val <= 10) return { type: 'normal', title: 'Optimal', desc: 'ECU is controlling mixture efficiently.' };
-                if (val > 10 && val <= 20) return { type: 'warning', title: 'Lean Condition', desc: 'ECU adding fuel. Check for minor vacuum leaks.' };
-                if (val > 20) return { type: 'danger', title: 'System Too Lean', desc: 'Major vacuum leak, low fuel pressure, or bad MAF.' };
-                if (val < -10 && val >= -20) return { type: 'warning', title: 'Rich Condition', desc: 'ECU removing fuel. Possible leaking injector.' };
-                if (val < -20) return { type: 'danger', title: 'System Too Rich', desc: 'Severe rich condition. Check injectors/FPR.' };
-                return { type: 'danger', title: 'Out of Range', desc: 'Value exceeds diagnostic limits.' };
+    <script>
+        const obdData = [
+            {
+                name: "AAT",
+                unit: "°C",
+                range: "-20 to 60°C",
+                description: "Ambient air temperature measures outside air temperature. The ECU uses this for various calculations including cold start enrichment and HVAC control.<br><strong>In simple terms:</strong> It tells the car how hot or cold it is outside so it can adjust the AC and help the engine start easily."
+            },
+            {
+                name: "APP_D",
+                unit: "%",
+                range: "0-100%",
+                description: "Accelerator pedal position D shows the primary sensor reading of how far the gas pedal is pressed. Multiple sensors provide redundancy for safety.<br><strong>In simple terms:</strong> This tells the computer exactly how hard your foot is pressing on the gas pedal."
+            },
+            {
+                name: "APP_E",
+                unit: "%",
+                range: "0-100%",
+                description: "Accelerator pedal position E provides a secondary reading of pedal position for validation. Both sensors must agree for drive-by-wire systems.<br><strong>In simple terms:</strong> A backup sensor that double-checks your gas pedal position to make sure the car doesn't accelerate by mistake."
+            },
+            {
+                name: "BARO",
+                unit: "kPa",
+                range: "90-105 kPa",
+                description: "Barometric pressure measures atmospheric pressure at the vehicle's location. The ECU uses this to adjust fuel delivery for altitude compensation.<br><strong>In simple terms:</strong> It detects if you are driving at sea level or high up in the mountains so the engine can breathe correctly."
+            },
+            {
+                name: "CLR_DIST",
+                unit: "KM",
+                range: "0-65535",
+                description: "Distance traveled since codes cleared tracks how far the vehicle has been driven since diagnostic trouble codes were reset. Used for emissions monitoring readiness.<br><strong>In simple terms:</strong> This tracks how many miles you've driven since the mechanic last turned off your 'Check Engine' light."
+            },
+            {
+                name: "ECT",
+                unit: "°C",
+                range: "80-105°C",
+                description: "Engine coolant temperature measures the temperature of the coolant circulating through the engine. Normal operating temperature is typically around 90°C.<br><strong>In simple terms:</strong> This is a thermometer for the engine; it makes sure the car isn't overheating."
+            },
+            {
+                name: "EQ_RAT",
+                unit: "ratio",
+                range: "0.95-1.05",
+                description: "Commanded equivalence ratio shows what air-fuel ratio the ECU is targeting. Values above 1.0 indicate rich conditions, below 1.0 indicate lean conditions.<br><strong>In simple terms:</strong> The 'recipe' target for mixing air and gas. The computer aims for 1.0 to get the perfect burn."
+            },
+            {
+                name: "EQ_RATB1S1",
+                unit: "ratio",
+                range: "0.95-1.05",
+                description: "Equivalence ratio for bank 1 sensor 1 shows the actual air-fuel ratio compared to stoichiometric (ideal). A value of 1.0 indicates perfect combustion.<br><strong>In simple terms:</strong> This confirms if the engine is actually burning the fuel perfectly, or if it's wasting gas (rich) or starving for gas (lean)."
+            },
+            {
+                name: "EQR_PTC",
+                unit: "%",
+                range: "-10 to +10%",
+                description: "Equivalence ratio percentage shows deviation from ideal air-fuel ratio as a percentage. Small variations are normal as the system constantly adjusts.<br><strong>In simple terms:</strong> A percentage score of how far off the fuel mix is from being perfect."
+            },
+            {
+                name: "EVAP_PCT",
+                unit: "%",
+                range: "0-100%",
+                description: "EVAP purge valve duty cycle controls fuel vapor flow from the charcoal canister to the engine. Higher percentages allow more vapor to be burned.<br><strong>In simple terms:</strong> This controls a valve that recycles gas fumes from your tank to be burned by the engine instead of smelling up your garage."
+            },
+            {
+                name: "EVAP_VP",
+                unit: "Pa",
+                range: "-500 to 0",
+                description: "EVAP system vapor pressure measures pressure in the fuel tank and vapor system. Negative values indicate vacuum, used for leak detection testing.<br><strong>In simple terms:</strong> It checks the pressure inside your gas tank to make sure there are no leaks where fuel vapors could escape."
+            },
+            {
+                name: "FLI",
+                unit: "%",
+                range: "0-100%",
+                description: "Fuel level input shows the amount of fuel remaining in the tank as a percentage. The reading comes from the fuel tank sending unit.<br><strong>In simple terms:</strong> This is the computer version of the gas gauge needle on your dashboard."
+            },
+            {
+                name: "IAT",
+                unit: "°C",
+                range: "10-50°C",
+                description: "Intake air temperature measures the temperature of air entering the engine. Cooler air is denser and allows for better combustion efficiency.<br><strong>In simple terms:</strong> Measures how cold the air is going into the engine. Cold air helps the car run stronger."
+            },
+            {
+                name: "LOAD_ABS",
+                unit: "%",
+                range: "0-100%",
+                description: "Absolute load value represents engine load independent of atmospheric pressure. Unlike calculated load, this accounts for altitude and provides a standardized measurement.<br><strong>In simple terms:</strong> A precise score of how much work the engine is doing, regardless of whether you are at the beach or on a mountain."
+            },
+            {
+                name: "LOAD_PCT",
+                unit: "%",
+                range: "0-100%",
+                description: "Calculated engine load represents the current engine output as a percentage of peak available torque. It indicates how hard the engine is working at any given moment.<br><strong>In simple terms:</strong> Tells you if the engine is cruising easily (low %) or struggling uphill/towing something (high %)."
+            },
+            {
+                name: "LONGFT1",
+                unit: "%",
+                range: "-10 to +10%",
+                description: "Long term fuel trim represents learned fuel adjustments over time to compensate for engine variations. Consistent deviations may indicate a fuel system issue.<br><strong>In simple terms:</strong> The computer's long-term habit of adding or removing fuel to keep the engine running smoothly as parts get older."
+            },
+            {
+                name: "MAF",
+                unit: "g/s",
+                range: "2-200 g/s",
+                description: "Mass air flow indicates the mass of air entering the engine per second. The ECU uses this to calculate the proper amount of fuel to inject.<br><strong>In simple terms:</strong> A sensor that counts exactly how much air is being sucked into the engine so it knows how much gas to spray."
+            },
+            {
+                name: "MAP",
+                unit: "kPa",
+                range: "20-100 kPa",
+                description: "Manifold absolute pressure measures the air pressure in the intake manifold. It helps the ECU calculate engine load and fuel requirements.<br><strong>In simple terms:</strong> Measures the vacuum pressure inside the engine to help guess how much fuel is needed."
+            },
+            {
+                name: "O2B1S2",
+                unit: "V",
+                range: "0.1-0.9V",
+                description: "Oxygen sensor bank 1 sensor 2 voltage measures exhaust oxygen content after the catalytic converter. It monitors converter efficiency.<br><strong>In simple terms:</strong> A sensor that checks if your catalytic converter (the pollution filter) is actually doing its job cleaning the exhaust."
+            },
+            {
+                name: "RPM",
+                unit: "r/min",
+                range: "600-7000",
+                description: "Engine revolutions per minute indicates how fast the crankshaft is rotating. Idle is typically 600-900 RPM, while redline varies by engine.<br><strong>In simple terms:</strong> How fast the engine is spinning. Higher numbers mean the engine is working harder and making more noise."
+            },
+            {
+                name: "SHRTFT1",
+                unit: "%",
+                range: "-10 to +10%",
+                description: "Short term fuel trim shows immediate fuel adjustments the engine makes to maintain optimal air-fuel ratio. Values near zero indicate proper fuel mixture.<br><strong>In simple terms:</strong> The computer making split-second corrections to the fuel mix right now to keep the engine smooth."
+            },
+            {
+                name: "SPARKADV",
+                unit: "°",
+                range: "5-40°",
+                description: "Spark advance timing shows when the spark plug fires relative to piston position. Advanced timing improves efficiency but can cause knock if excessive.<br><strong>In simple terms:</strong> The exact millisecond the computer decides to ignite the fuel to get the best power without damaging the engine."
+            },
+            {
+                name: "TAC_PCT",
+                unit: "%",
+                range: "0-100%",
+                description: "Throttle actuator control percentage shows the commanded throttle opening from the ECU. In drive-by-wire systems, this may differ from pedal position.<br><strong>In simple terms:</strong> This reports how wide the computer has actually opened the engine's air valve."
+            },
+            {
+                name: "TP",
+                unit: "%",
+                range: "0-100%",
+                description: "Throttle position shows how far open the throttle plate is. 0% is closed (idle), 100% is wide open throttle (WOT) for maximum acceleration.<br><strong>In simple terms:</strong> Tells you how wide open the engine's 'throat' is to let air in."
+            },
+            {
+                name: "TP_B",
+                unit: "%",
+                range: "0-100%",
+                description: "Throttle position B provides a secondary reading of throttle position for redundancy. Multiple sensors ensure accurate throttle control in electronic systems.<br><strong>In simple terms:</strong> A backup sensor to verify the main throttle reading is correct."
+            },
+            {
+                name: "TP_R",
+                unit: "%",
+                range: "0-100%",
+                description: "Relative throttle position shows throttle opening relative to the learned minimum and maximum positions. This compensates for variations in calibration.<br><strong>In simple terms:</strong> Shows how open the throttle is based on what the computer learned is 'fully closed' and 'fully open'."
+            },
+            {
+                name: "VPWR",
+                unit: "V",
+                range: "12-14.5V",
+                description: "Vehicle power supply voltage indicates the electrical system voltage. Running voltage should be 13.5-14.5V with the alternator charging properly.<br><strong>In simple terms:</strong> Checks the health of your battery and charging system to ensure the car has enough electricity."
+            },
+            {
+                name: "WARM_UPS",
+                unit: "count",
+                range: "0-255",
+                description: "Warm-ups since codes cleared counts engine warm-up cycles since diagnostic codes were last cleared. A warm-up occurs when coolant rises 40°F and reaches 160°F.<br><strong>In simple terms:</strong> Counts how many times you've started the car and driven it until it got hot since the last reset."
             }
-        },
-        {
-            id: 'ltft',
-            name: 'Long Term Fuel Trim',
-            scannerCode: 'LONGFT1', // Standard OBD2 Label
-            unit: '%',
-            min: -30,
-            max: 30,
-            default: 0,
-            description: "Historical learned fuel value. Look for LONGFT1.",
-            evaluate: (val) => {
-                if (val >= -10 && val <= 10) return { type: 'normal', title: 'Healthy', desc: 'Long term fueling within normal limits.' };
-                if (val > 10 && val <= 20) return { type: 'warning', title: 'Compensating Lean', desc: 'History of running lean. Check vacuum lines.' };
-                if (val > 20) return { type: 'danger', title: 'Lean Limit', desc: 'P0171 Likely. Check fuel pump/filter or major air leak.' };
-                if (val < -10 && val >= -20) return { type: 'warning', title: 'Compensating Rich', desc: 'History of running rich. Check air filter/MAF.' };
-                if (val < -20) return { type: 'danger', title: 'Rich Limit', desc: 'P0172 Likely. Leaking injectors/Bad O2.' };
-                return { type: 'danger', title: 'Out of Range', desc: 'Value exceeds diagnostic limits.' };
-            }
-        },
-        {
-            id: 'ect',
-            name: 'Engine Coolant Temp',
-            scannerCode: 'ECT',
-            unit: '°C',
-            min: 0,
-            max: 130,
-            default: 90,
-            description: "Engine Temp. Look for ECT.",
-            evaluate: (val) => {
-                if (val < 70) return { type: 'warning', title: 'Open Loop / Cold', desc: 'Engine cold. High emissions/fuel use.' };
-                if (val >= 70 && val <= 105) return { type: 'normal', title: 'Operating Temp', desc: 'Optimal thermal range.' };
-                if (val > 105 && val <= 115) return { type: 'warning', title: 'Running Hot', desc: 'Check coolant/fans.' };
-                if (val > 115) return { type: 'danger', title: 'Overheating', desc: 'STOP ENGINE. Head gasket risk.' };
-                return { type: 'danger', title: 'Extreme', desc: 'Sensor failure or extreme condition.' };
-            }
-        },
-        {
-            id: 'maf',
-            name: 'Mass Air Flow',
-            scannerCode: 'MAF',
-            unit: 'g/s',
-            min: 0,
-            max: 300,
-            default: 5,
-            description: "Airflow rate. Rule of thumb: 1 g/s per Liter at idle.",
-            evaluate: (val) => {
-                if (val < 2) return { type: 'warning', title: 'Low Flow', desc: 'Possible vacuum leak bypassing sensor.' };
-                if (val >= 2 && val < 50) return { type: 'normal', title: 'Idle/Cruise', desc: 'Normal light load flow.' };
-                if (val >= 50) return { type: 'normal', title: 'Load/Accel', desc: 'Normal acceleration flow.' };
-                return { type: 'normal', title: 'High Load', desc: 'WOT flow.' };
-            }
-        },
-        {
-            id: 'o2b1s1',
-            name: 'O2 Sensor Voltage',
-            scannerCode: 'O2B1S1', // Often O2S11 or O2B1S1
-            unit: 'V',
-            min: 0,
-            max: 1.2,
-            default: 0.45,
-            step: 0.01,
-            description: "Upstream Oxygen Sensor. Look for O2B1S1 or O2S11.",
-            evaluate: (val) => {
-                if (val < 0.1) return { type: 'warning', title: 'Lean (Low V)', desc: 'High oxygen in exhaust.' };
-                if (val > 0.9) return { type: 'warning', title: 'Rich (High V)', desc: 'Low oxygen in exhaust.' };
-                if (val >= 0.1 && val <= 0.9) return { type: 'normal', title: 'Oscillating', desc: 'Ensure value fluctuates rapidly.' };
-                return { type: 'danger', title: 'Sensor Error', desc: 'Outside 0-1V range.' };
-            }
-        },
-        {
-            id: 'load',
-            name: 'Calculated Load',
-            scannerCode: 'LOAD_PCT',
-            unit: '%',
-            min: 0,
-            max: 100,
-            default: 20,
-            description: "Engine Load. Look for LOAD_PCT.",
-            evaluate: (val) => {
-                if (val > 90) return { type: 'warning', title: 'High Load', desc: 'WOT conditions. Open loop likely.' };
-                if (val < 15) return { type: 'normal', title: 'Idle/Coast', desc: 'Low load.' };
-                return { type: 'normal', title: 'Cruising', desc: 'Moderate load.' };
-            }
-        },
-        {
-            id: 'voltage',
-            name: 'Control Module Volt',
-            scannerCode: 'VPWR', // Or CONTROL MOD
-            unit: 'V',
-            min: 9,
-            max: 16,
-            default: 13.8,
-            step: 0.1,
-            description: "System Voltage. Look for VPWR.",
-            evaluate: (val) => {
-                if (val < 12.0) return { type: 'danger', title: 'Low Voltage', desc: 'Battery dying or Alternator dead.' };
-                if (val >= 12.0 && val < 13.2) return { type: 'warning', title: 'Battery Only', desc: 'Alternator likely not charging.' };
-                if (val >= 13.2 && val <= 14.8) return { type: 'normal', title: 'Charging', desc: 'Alternator healthy.' };
-                if (val > 15.0) return { type: 'danger', title: 'Overcharging', desc: 'Regulator failure. Risk to electronics.' };
-                return { type: 'warning', title: 'Check System', desc: 'Borderline voltage.' };
-            }
-        },
-        {
-            id: 'rpm',
-            name: 'Engine RPM',
-            scannerCode: 'RPM',
-            unit: 'rpm',
-            min: 0,
-            max: 8000,
-            default: 800,
-            step: 50,
-            description: "Revolutions Per Minute. Look for RPM.",
-            evaluate: (val) => {
-                if (val < 500 && val > 0) return { type: 'warning', title: 'Low Idle', desc: 'Stalling risk. Clean throttle body.' };
-                if (val >= 600 && val <= 900) return { type: 'normal', title: 'Standard Idle', desc: 'Normal idle speed.' };
-                if (val > 900 && val < 2000) return { type: 'normal', title: 'High Idle/Drive', desc: 'Normal if moving or cold start.' };
-                return { type: 'normal', title: 'Operating', desc: 'Engine running.' };
-            }
-        }
-    ];
+        ];
 
-    // State storage
-    const state = {};
+        const obdGrid = document.getElementById('obdGrid');
+        const searchInput = document.getElementById('searchInput');
+        const noResults = document.getElementById('noResults');
 
-    function init() {
-        const container = document.getElementById('dashboard');
-        
-        sensors.forEach(sensor => {
-            // Initialize state
-            state[sensor.id] = sensor.default;
-
-            // Create HTML structure
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.innerHTML = `
-                <div class="card-header">
-                    <div class="header-top">
-                        <span class="sensor-name">${sensor.name}</span>
-                        <span class="unit-badge">${sensor.unit}</span>
-                    </div>
-                    <span class="scanner-badge">${sensor.scannerCode}</span>
-                </div>
-                <div class="input-group">
-                    <input 
-                        type="number" 
-                        id="input-${sensor.id}" 
-                        value="${sensor.default}" 
-                        min="${sensor.min}" 
-                        max="${sensor.max}"
-                        step="${sensor.step || 1}"
-                        oninput="updateSensor('${sensor.id}', this.value)"
-                    >
-                    <small style="color:var(--text-muted)">${sensor.description}</small>
-                </div>
-                <div class="range-container">
-                    <div class="range-fill" id="fill-${sensor.id}" style="width: 50%"></div>
-                    <div class="marker" style="left: 20%"><span class="marker-label">${Math.round(sensor.min + (sensor.max - sensor.min)*0.2)}</span></div>
-                    <div class="marker" style="left: 50%"><span class="marker-label">${Math.round(sensor.min + (sensor.max - sensor.min)*0.5)}</span></div>
-                    <div class="marker" style="left: 80%"><span class="marker-label">${Math.round(sensor.min + (sensor.max - sensor.min)*0.8)}</span></div>
-                </div>
-                <div class="analysis-box status-normal" id="status-${sensor.id}">
-                    <div class="status-title" id="title-${sensor.id}">Initializing...</div>
-                    <div class="status-desc" id="desc-${sensor.id}">Waiting for input.</div>
-                </div>
-            `;
-            container.appendChild(card);
+        function renderCards(data) {
+            obdGrid.innerHTML = '';
             
-            // Trigger initial render
-            updateSensor(sensor.id, sensor.default);
-        });
-
-        runGlobalDiagnosis();
-    }
-
-    function updateSensor(id, value) {
-        value = parseFloat(value);
-        if (isNaN(value)) return;
-        
-        state[id] = value;
-        const sensor = sensors.find(s => s.id === id);
-        
-        // Update Gauge Logic
-        const range = sensor.max - sensor.min;
-        const percentage = ((value - sensor.min) / range) * 100;
-        const clampedPercentage = Math.max(0, Math.min(100, percentage));
-        
-        const fillElem = document.getElementById(`fill-${id}`);
-        fillElem.style.width = `${clampedPercentage}%`;
-
-        // Run Analysis Logic
-        const result = sensor.evaluate(value);
-        
-        // Visual Color Updates
-        let colorVar = '--accent';
-        if (result.type === 'normal') colorVar = '--success';
-        if (result.type === 'warning') colorVar = '--warning';
-        if (result.type === 'danger') colorVar = '--danger';
-        
-        fillElem.style.backgroundColor = `var(${colorVar})`;
-
-        // Text Updates
-        const statusBox = document.getElementById(`status-${id}`);
-        statusBox.className = `analysis-box status-${result.type}`;
-        document.getElementById(`title-${id}`).innerText = result.title;
-        document.getElementById(`desc-${id}`).innerText = result.desc;
-
-        // Trigger global diagnosis check
-        runGlobalDiagnosis();
-    }
-
-    // Advanced Feature: Cross-Reference Logic
-    function runGlobalDiagnosis() {
-        const box = document.getElementById('globalAnalysisBox');
-        const output = document.getElementById('globalOutput');
-        
-        let diagnoses = [];
-
-        // 1. Vacuum Leak Logic
-        // High Positive Fuel Trims + Low Load/Idle
-        if (state.stft > 10 && state.ltft > 10) {
-            diagnoses.push(`<strong style="color:var(--danger)">POSSIBLE VACUUM LEAK:</strong> Both SHRTFT1 and LONGFT1 are adding fuel (>10%). If this improves at higher RPM, look for intake manifold leaks or disconnected vacuum lines.`);
+            data.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'obd-card';
+                card.innerHTML = `
+                    <div class="obd-header">
+                        <div class="obd-name">${item.name}${item.unit ? ` (${item.unit})` : ''}</div>
+                        <div class="obd-range">${item.range}</div>
+                    </div>
+                    <div class="obd-description">${item.description}</div>
+                `;
+                obdGrid.appendChild(card);
+            });
         }
 
-        // 2. Leaking Injector Logic
-        // Negative Trims
-        if (state.stft < -10 && state.ltft < -10) {
-            diagnoses.push(`<strong style="color:var(--danger)">POSSIBLE FUEL SYSTEM FAULT:</strong> System is removing fuel aggressively (Negative SHRTFT1/LONGFT1). Check for stuck open injectors or high fuel pressure regulator failure.`);
+        function filterCards() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredData = obdData.filter(item => {
+                return item.name.toLowerCase().includes(searchTerm) ||
+                       item.description.toLowerCase().includes(searchTerm) ||
+                       item.unit.toLowerCase().includes(searchTerm);
+            });
+
+            if (filteredData.length === 0) {
+                obdGrid.style.display = 'none';
+                noResults.classList.remove('hidden');
+            } else {
+                obdGrid.style.display = 'grid';
+                noResults.classList.add('hidden');
+                renderCards(filteredData);
+            }
         }
 
-        // 3. MAF vs Trim Logic
-        if (state.maf < 2 && (state.stft > 10 || state.ltft > 10)) {
-            diagnoses.push(`<strong style="color:var(--warning)">MAF/AIR METERING:</strong> Very low MAF readings combined with Lean trims suggests unmetered air entering the engine (after the MAF sensor).`);
-        }
+        searchInput.addEventListener('input', filterCards);
 
-        // 4. Coolant/Loop Logic
-        if (state.ect < 70 && state.ltft !== 0) {
-            diagnoses.push(`<strong style="color:var(--text-muted)">NOTE:</strong> Engine is cold (ECT < 70°C). Fuel trim data may be unreliable until Closed Loop status is achieved.`);
-        }
-
-        // 5. Alternator Check
-        if (state.voltage < 13.0 && state.ect > 80 && state.rpm > 600) {
-            diagnoses.push(`<strong style="color:var(--warning)">CHARGING SYSTEM:</strong> Engine is running (RPM > 600) but VPWR is low (<13V). Check alternator output.`);
-        }
-
-        if (diagnoses.length > 0) {
-            box.style.display = 'block';
-            output.innerHTML = diagnoses.join('<br><br>');
-        } else {
-            box.style.display = 'none';
-        }
-    }
-
-    function resetAll() {
-        sensors.forEach(s => {
-            const input = document.getElementById(`input-${s.id}`);
-            input.value = s.default;
-            updateSensor(s.id, s.default);
-        });
-    }
-
-    // Boot
-    window.addEventListener('DOMContentLoaded', init);
-
-</script>
-
+        // Initial render
+        renderCards(obdData);
+    </script>
 </body>
 </html>
