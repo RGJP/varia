@@ -10,6 +10,10 @@
     <meta name="theme-color" content="#0f0f23">
     <meta name="color-scheme" content="dark">
 
+    <script src="https://js.puter.com/v2/"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
     <style>
         /* --- Global Styles & Variables --- */
         :root {
@@ -91,15 +95,8 @@
         }
 
         @keyframes float {
-
-            0%,
-            100% {
-                transform: translateY(0px) rotate(0deg);
-            }
-
-            50% {
-                transform: translateY(-20px) rotate(180deg);
-            }
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
         }
 
         /* --- Layout & Main Components --- */
@@ -148,25 +145,14 @@
         }
 
         @keyframes glow {
-            from {
-                filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.3));
-            }
-
-            to {
-                filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.6));
-            }
+            from { filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.3)); }
+            to { filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.6)); }
         }
 
         .subtitle {
             font-size: 1rem;
             color: var(--text-secondary);
             font-weight: 300;
-        }
-
-        .model-info {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-top: 0.5rem;
         }
 
         .chat-container {
@@ -225,15 +211,8 @@
         }
 
         @keyframes messageSlide {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .message-content-wrapper {
@@ -278,29 +257,6 @@
         .ai-message .message-content {
             background: var(--bg-input);
             border: 1px solid var(--border);
-        }
-
-        .streaming-indicator {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background: var(--primary);
-            border-radius: 50%;
-            animation: pulse 1.5s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 0.4;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 1;
-                transform: scale(1.2);
-            }
         }
 
         /* --- Copy Button for Messages --- */
@@ -372,15 +328,11 @@
             font-family: inherit;
             resize: none;
             overflow-y: hidden;
-            /* will be toggled to auto via JS when needed */
             transition: all 0.3s ease;
             line-height: 1.5;
             height: 48px;
             max-height: 120px;
-            /* desktop: overwritten later */
-            /* Hide scrollbar but keep scroll functionality */
             scrollbar-width: none;
-            /* Firefox */
         }
 
         .prompt-input::-webkit-scrollbar {
@@ -454,14 +406,8 @@
             animation: spin 1s linear infinite;
         }
 
-        .send-button.loading:not(:disabled) {
-            cursor: pointer;
-        }
-
         @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
+            to { transform: rotate(360deg); }
         }
 
         /* --- Status Bar --- */
@@ -491,45 +437,15 @@
             animation: pulse 2s ease-in-out infinite;
         }
 
-        .status-dot.error {
-            background: #ef4444;
+        .status-dot.error { background: #ef4444; }
+        .status-dot.processing { background: #f59e0b; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
         }
 
-        .status-dot.processing {
-            background: #f59e0b;
-        }
-
-        .status-dot.cancelled {
-            background: #a1a1aa;
-            animation: none;
-        }
-
-        .response-time {
-            margin-left: 0.5rem;
-        }
-
-        /* Mute Button Styles */
-        .mute-button {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 1.2em;
-            padding: 0;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 0.5rem;
-            transition: color 0.2s ease;
-        }
-
-        .mute-button:hover {
-            color: var(--primary-light);
-        }
-
-        /* --- Empty State & Prompt Suggestions --- */
+        /* --- Empty State --- */
         .empty-state {
             text-align: center;
             padding: 2rem 1rem;
@@ -551,32 +467,6 @@
             color: var(--text-primary);
             font-size: 1.25rem;
             margin-bottom: 0.5rem;
-        }
-
-        .prompt-suggestions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin-top: 1.5rem;
-            justify-content: center;
-        }
-
-        .suggestion-btn {
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            padding: 0.5rem 1rem;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-size: 0.875rem;
-        }
-
-        .suggestion-btn:hover {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary-light);
-            transform: translateY(-2px);
         }
 
         /* --- Markdown and Code Block Styles --- */
@@ -644,174 +534,86 @@
             border-radius: 6px;
         }
 
-        .message-content ul,
-        .message-content ol {
-            padding-left: 1.5rem;
-            margin: 1rem 0;
+        /* --- Markdown Content Elements --- */
+        .message-content ul, .message-content ol { 
+            padding-left: 1.5rem; 
+            margin: 1rem 0; 
         }
-
-        .message-content li {
-            margin-bottom: 0.5rem;
+        
+        .message-content li { 
+            margin-bottom: 0.5rem; 
         }
+        
+        .message-content strong { font-weight: 700; }
+        .message-content em { font-style: italic; }
+        
+        .message-content p { margin: 1rem 0; }
+        .message-content p:first-child { margin-top: 0; }
+        .message-content p:last-child { margin-bottom: 0; }
 
-        .message-content strong {
-            font-weight: 700;
-        }
-
-        .message-content em {
-            font-style: italic;
-        }
-
-        .message-content p {
-            margin: 1rem 0;
-        }
-
-        .message-content p:first-child {
-            margin-top: 0;
-        }
-
-        .message-content p:last-child {
-            margin-bottom: 0;
-        }
-
-        /* --- CSS Styles for Headings --- */
-        .message-content h1,
-        .message-content h2,
-        .message-content h3,
-        .message-content h4,
-        .message-content h5,
-        .message-content h6 {
+        .message-content h1, .message-content h2, .message-content h3, .message-content h4 {
             color: var(--primary-light);
             margin-top: 1.5rem;
             margin-bottom: 0.75rem;
             line-height: 1.3;
             font-weight: 600;
         }
-
-        .message-content h1 {
-            font-size: 1.75em;
-        }
-
-        .message-content h2 {
-            font-size: 1.5em;
-        }
-
-        .message-content h3 {
-            font-size: 1.25em;
-        }
-
-        .message-content p+h1,
-        .message-content p+h2,
-        .message-content ul+h2,
-        .message-content ol+h2 {
-            margin-top: 2rem;
-        }
-
-        /* --- ADDED: Styles for other Markdown elements --- */
+        
         .message-content blockquote {
             border-left: 4px solid var(--primary);
             padding-left: 1rem;
             margin: 1rem 0;
             color: var(--text-secondary);
+            background: rgba(99, 102, 241, 0.05);
+            padding: 0.5rem 1rem;
+            border-radius: 0 8px 8px 0;
         }
 
-        .message-content hr {
-            border: none;
-            border-top: 1px solid var(--border);
-            margin: 1.5rem 0;
-        }
-
-        .message-content li.task-list-item {
-            list-style-type: none;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .message-content input[type="checkbox"] {
-            margin: 0;
-            width: 1em;
-            height: 1em;
-        }
-
+        /* --- Table Styling (New) --- */
         .message-content table {
             width: 100%;
             border-collapse: collapse;
             margin: 1rem 0;
-            border: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.2);
             border-radius: 8px;
             overflow: hidden;
+            display: block;
+            overflow-x: auto;
         }
 
-        .message-content th,
-        .message-content td {
-            padding: 0.75rem 1rem;
+        .message-content th, .message-content td {
+            padding: 0.75rem;
             border: 1px solid var(--border);
             text-align: left;
         }
 
         .message-content th {
-            background-color: var(--code-bg);
-            color: var(--primary-light);
+            background-color: rgba(99, 102, 241, 0.1);
             font-weight: 600;
+            color: var(--primary-light);
         }
 
-        .message-content tbody tr:nth-child(odd) {
+        .message-content tr:hover td {
             background-color: rgba(255, 255, 255, 0.02);
         }
 
         /* --- Desktop-Specific Adjustments --- */
         @media (min-width: 769px) {
-            .container {
-                padding: 2rem;
-            }
-
-            .header {
-                margin-bottom: 2rem;
-            }
-
-            .header-icon {
-                width: 100px;
-            }
-
-            .title {
-                font-size: 3.5rem;
-            }
-
-            .subtitle {
-                font-size: 1.1rem;
-            }
-
-            .output-area {
-                padding: 2rem;
-            }
-
-            .message-content {
-                padding: 1rem 1.5rem;
-            }
-
-            .input-section {
-                padding: 1.5rem;
-            }
-
-            .input-container {
-                gap: 1rem;
-            }
-
-            .prompt-input {
-                padding: 1rem 1.5rem;
-                max-height: 200px;
-            }
-
-            .send-button {
-                width: 52px;
-                height: 52px;
-            }
-
-            .status-bar {
-                padding: 0.75rem 1.5rem;
-                font-size: 0.875rem;
-            }
+            .container { padding: 2rem; }
+            .header { margin-bottom: 2rem; }
+            .header-icon { width: 100px; }
+            .title { font-size: 3.5rem; }
+            .subtitle { font-size: 1.1rem; }
+            .output-area { padding: 2rem; }
+            .message-content { padding: 1rem 1.5rem; }
+            .input-section { padding: 1.5rem; }
+            .input-container { gap: 1rem; }
+            .prompt-input { padding: 1rem 1.5rem; max-height: 200px; }
+            .send-button { width: 52px; height: 52px; }
+            .status-bar { padding: 0.75rem 1.5rem; font-size: 0.875rem; }
+            
+            /* Better table display on desktop */
+            .message-content table { display: table; }
         }
 
         /* --- Overlay Styles --- */
@@ -848,78 +650,9 @@
             color: var(--text-secondary);
             border: 1px solid var(--border);
             box-shadow: var(--shadow);
-            transform: scale(0.9);
-            transition: transform 0.3s ease;
-            cursor: default;
         }
 
-        .overlay-content #dynamicModelName {
-            color: var(--primary-light);
-            font-weight: 500;
-        }
-
-        .overlay.visible .overlay-content {
-            transform: scale(1);
-        }
-
-        /* --- Confirmation Dialog Styles --- */
-        .confirmation-dialog {
-            background-color: var(--bg-card);
-            padding: 2rem;
-            border-radius: 16px;
-            text-align: center;
-            border: 1px solid var(--border);
-            box-shadow: var(--shadow);
-            transform: scale(0.9);
-            transition: transform 0.3s ease;
-            cursor: default;
-        }
-
-        .overlay.visible .confirmation-dialog {
-            transform: scale(1);
-        }
-
-        .confirmation-dialog p {
-            font-size: 1.25rem;
-            color: var(--text-primary);
-            margin: 0 0 1.5rem 0;
-        }
-
-        .confirmation-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-        }
-
-        .confirm-btn {
-            border: none;
-            border-radius: 8px;
-            padding: 0.75rem 1.5rem;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .confirm-btn.yes {
-            background-color: #ef4444;
-            color: white;
-        }
-
-        .confirm-btn.yes:hover {
-            background-color: #dc2626;
-        }
-
-        .confirm-btn.no {
-            background-color: var(--border);
-            color: var(--text-primary);
-        }
-
-        .confirm-btn.no:hover {
-            background-color: #4b5563;
-        }
-
-        /* --- New Chat/Reload Button --- */
+        /* --- Reload Button --- */
         .reload-button {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             border: none;
@@ -944,16 +677,8 @@
             box-shadow: 0 12px 40px rgba(99, 102, 241, 0.4);
         }
 
-        .reload-button:active {
-            transform: translateY(0) scale(1);
-        }
-
         @media (min-width: 769px) {
-            .reload-button {
-                width: 52px;
-                height: 52px;
-                font-size: 32px;
-            }
+            .reload-button { width: 52px; height: 52px; font-size: 32px; }
         }
     </style>
 </head>
@@ -967,20 +692,7 @@
 
     <div id="overlay" class="overlay">
         <div class="overlay-content">
-            <p>LUMINAIRA is a small personal AI assistant experiment I created using the <span
-                    id="dynamicModelName"></span> model, running entirely locally on a 12 years-old Dell Latitude
-                E6440 (i5-4310M, 8 GB DDR3 SDRAM), which is available for interaction via this webpage. The old meets
-                the new.</p>
-        </div>
-    </div>
-
-    <div id="cancelConfirmationOverlay" class="overlay">
-        <div class="confirmation-dialog">
-            <p>Stop response?</p>
-            <div class="confirmation-buttons">
-                <button id="confirmCancelBtn" class="confirm-btn yes">YES</button>
-                <button id="denyCancelBtn" class="confirm-btn no">NO</button>
-            </div>
+            <p>LUMINAIRA is an AI interface experiment.</p>
         </div>
     </div>
 
@@ -988,8 +700,7 @@
         <header class="header">
             <img src="luminairaicon.png" alt="Luminaira Icon" class="header-icon">
             <h1 class="title" id="clickableTitle">LUMIN<span class="highlight-ai">AI</span>RA</h1>
-            <p class="subtitle"></p>
-            <p class="model-info" id="modelInfo"></p>
+          
         </header>
 
         <main class="chat-container">
@@ -998,22 +709,17 @@
                     <div class="empty-state-icon">✨</div>
                     <h2>Start a new conversation</h2>
                     <p>What can I help you with today?</p>
-                    <div class="prompt-suggestions" id="promptSuggestions">
-                    </div>
                 </div>
             </div>
 
             <section class="input-section">
                 <div class="input-container">
-                    <button class="reload-button" id="reloadButton" aria-label="Reload Page"
-                        title="Start New Chat">&#43;</button>
+                    <button class="reload-button" id="reloadButton" aria-label="Reload Page" title="Start New Chat">&#43;</button>
                     <textarea class="prompt-input" id="promptInput" placeholder="Ask anything..." rows="1"></textarea>
                     <button class="send-button" id="sendButton" aria-label="Send Message">
                         <span class="send-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
-                                xmlns="http://www.w3.org/2000/svg">
-                                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" />
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                         </span>
                         <span class="loader"></span>
@@ -1025,85 +731,36 @@
                 <div class="status-indicator">
                     <div class="status-dot" id="statusDot"></div>
                     <span id="statusText">Ready</span>
-                    <span id="responseTime" class="response-time"></span>
+                    <span id="responseTime" style="margin-left: 0.5rem;"></span>
                 </div>
-                <div style="display: flex; align-items: center;">
-                    <button id="muteButton" class="mute-button" aria-label="Toggle mute sound" title="Toggle Mute Sound">
-                        <svg id="volumeOnIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
-                            <path d="M11 5L6 9H2V15H6L11 19V5Z"></path>
-                            <path d="M15.54 8.46A5.47 5.47 0 0 1 18.04 12A5.47 5.47 0 0 1 15.54 15.54"></path>
-                            <path d="M19.07 4.93A10 10 0 0 1 21.57 12A10 10 0 0 1 19.07 19.07"></path>
-                        </svg>
-                <svg id="volumeOffIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor"
-    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
-  <path d="M11 5L6 9H2V15H6L11 19V5Z"></path>
-  <line x1="23" y1="9" x2="17" y2="15"></line>
-  <line x1="17" y1="9" x2="23" y2="15"></line>
-</svg>
-
-                    </button>
-                    <div id="tokenCount">0 tokens</div>
-                </div>
+                <div id="tokenCount">0 tokens</div>
             </footer>
         </main>
-
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const chat = new LLMChat();
-            const modelName = chat.getModelName();
-
+            
+            // UI interactions for Title and Overlay
             const clickableTitle = document.getElementById('clickableTitle');
             const overlay = document.getElementById('overlay');
-            const dynamicModelNameSpan = document.getElementById('dynamicModelName');
             const reloadButton = document.getElementById('reloadButton');
 
-            if (dynamicModelNameSpan) {
-                dynamicModelNameSpan.textContent = modelName;
-            }
-
-            clickableTitle.addEventListener('click', () => {
-                overlay.classList.add('visible');
-            });
-
-            overlay.addEventListener('click', () => {
-                overlay.classList.remove('visible');
-            });
-
-            if (reloadButton) {
-                reloadButton.addEventListener('click', () => {
-                    location.reload(true);
-                });
-            }
+            clickableTitle.addEventListener('click', () => overlay.classList.add('visible'));
+            overlay.addEventListener('click', () => overlay.classList.remove('visible'));
+            reloadButton.addEventListener('click', () => location.reload());
         });
 
         class LLMChat {
-            #config = {
-                apiUrl: 'https://f4419173df06.ngrok-free.app/v1/chat/completions',
-                model: 'gemma-3n-e2b-it@q4_k_m', // BM
-                bearerToken: 'lm-studio',
-                systemPrompt: 'Answer user queries clearly, accurately, and concisely. Be brief and precise. Omit filler and disclaimers. Use a neutral, professional tone. If unsure, say so and suggest next steps.'
-            };
-
             #elements = {};
-            #isStreaming = false;
-            #messages = [];
-            #abortController = null;
-
-            #wakeLock = null;
-            #doneSound = new Audio('done.mp3'); // Load the sound file
-            #isMuted = false; // Mute state for the sound
+            #isProcessing = false;
 
             constructor() {
                 this.#initializeElements();
                 this.#bindEvents();
+                this.#configureMarkdown();
                 this.#updateStatus('Ready', 'success');
-                this.#loadMuteState(); // Load mute state from local storage
-            }
-
-            getModelName() {
-                return this.#config.model;
             }
 
             #initializeElements() {
@@ -1115,27 +772,15 @@
                     statusText: document.getElementById('statusText'),
                     tokenCount: document.getElementById('tokenCount'),
                     emptyState: document.getElementById('emptyState'),
-                    promptSuggestions: document.getElementById('promptSuggestions'),
-                    modelInfo: document.getElementById('modelInfo'),
-                    responseTime: document.getElementById('responseTime'),
-                    cancelConfirmationOverlay: document.getElementById('cancelConfirmationOverlay'),
-                    confirmCancelBtn: document.getElementById('confirmCancelBtn'),
-                    denyCancelBtn: document.getElementById('denyCancelBtn'),
-                    muteButton: document.getElementById('muteButton'),
-                    volumeOnIcon: document.getElementById('volumeOnIcon'),
-                    volumeOffIcon: document.getElementById('volumeOffIcon')
+                    responseTime: document.getElementById('responseTime')
                 };
             }
 
             #bindEvents() {
-                this.#elements.sendButton.addEventListener('click', () => {
-                    if (this.#isStreaming) {
-                        this.#elements.cancelConfirmationOverlay.classList.add('visible');
-                    } else {
-                        this.#sendMessage();
-                    }
-                });
+                // Send button click
+                this.#elements.sendButton.addEventListener('click', () => this.#sendMessage());
 
+                // Enter key (submit) / Shift+Enter (newline)
                 this.#elements.promptInput.addEventListener('keydown', (e) => {
                     const isMobile = window.matchMedia('(pointer: coarse)').matches;
                     if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
@@ -1144,11 +789,13 @@
                     }
                 });
 
+                // Auto-resize textarea
                 this.#elements.promptInput.addEventListener('input', () => {
                     this.#updateTokenCount();
                     this.#autoResizeTextarea();
                 });
 
+                // Copy buttons delegation
                 this.#elements.outputArea.addEventListener('click', (e) => {
                     const button = e.target.closest('button');
                     if (!button) return;
@@ -1160,113 +807,98 @@
                         this.#handleCopyMessageClick(button);
                     }
                 });
-
-                if (this.#elements.promptSuggestions) {
-                    this.#elements.promptSuggestions.addEventListener('click', (e) => {
-                        if (e.target.matches('.suggestion-btn')) {
-                            this.#elements.promptInput.value = e.target.textContent;
-                            this.#elements.promptInput.focus();
-                            this.#updateTokenCount();
-                            this.#autoResizeTextarea();
+            }
+            
+            #configureMarkdown() {
+                if (typeof marked !== 'undefined') {
+                    // Custom renderer to maintain the specific Code Block UI (Header + Copy Button)
+                    const renderer = {
+                        code(code, infostring, escaped) {
+                            const lang = (infostring || '').match(/\S*/)[0];
+                            // Manual escaping for the content inside code
+                            const escapedCode = code.replace(/&/g, '&amp;')
+                                                    .replace(/</g, '&lt;')
+                                                    .replace(/>/g, '&gt;');
+                            
+                            return `
+                                <pre>
+                                    <div class="code-block-header">
+                                        <span>${lang || 'text'}</span>
+                                        <button class="copy-code-btn">Copy</button>
+                                    </div>
+                                    <code>${escapedCode}</code>
+                                </pre>
+                            `;
                         }
+                    };
+
+                    marked.use({ renderer });
+                    
+                    // Set options: GFM (GitHub Flavored Markdown) enables tables
+                    marked.setOptions({
+                        breaks: true, // Convert \n to <br>
+                        gfm: true
                     });
                 }
-
-                this.#elements.confirmCancelBtn.addEventListener('click', () => this.#cancelStream());
-
-                this.#elements.denyCancelBtn.addEventListener('click', () => {
-                    this.#elements.cancelConfirmationOverlay.classList.remove('visible');
-                });
-
-                this.#elements.cancelConfirmationOverlay.addEventListener('click', (e) => {
-                    if (e.target === this.#elements.cancelConfirmationOverlay) {
-                        this.#elements.cancelConfirmationOverlay.classList.remove('visible');
-                    }
-                });
-
-                // Re-acquire wake lock if tab becomes visible again
-                document.addEventListener('visibilitychange', () => {
-                    if (this.#wakeLock !== null && document.visibilityState === 'visible') {
-                        this.#requestWakeLock();
-                    }
-                });
-
-
-                window.addEventListener('wheel', (e) => {
-                    const textarea = this.#elements.promptInput;
-                    if (document.activeElement === textarea) {
-                        textarea.scrollTop += e.deltaY;
-                        e.preventDefault();
-                    }
-                }, {
-                    passive: false
-                });
-
-                // Touch support (mobile)
-                let startY = 0;
-                let startScrollTop = 0;
-                this.#elements.promptInput.addEventListener('touchstart', (e) => {
-                    if (document.activeElement === this.#elements.promptInput) {
-                        startY = e.touches[0].clientY;
-                        startScrollTop = this.#elements.promptInput.scrollTop;
-                    }
-                }, {
-                    passive: true
-                });
-
-                this.#elements.promptInput.addEventListener('touchmove', (e) => {
-                    if (document.activeElement === this.#elements.promptInput) {
-                        const deltaY = startY - e.touches[0].clientY;
-                        this.#elements.promptInput.scrollTop = startScrollTop + deltaY;
-                        if (Math.abs(deltaY) > 0) e.stopPropagation();
-                    }
-                }, {
-                    passive: true
-                });
-
-                // Mute button event listener
-                this.#elements.muteButton.addEventListener('click', () => {
-                    this.#toggleMute();
-                });
-            }
-
-            #scrollToInputArea() {
-                setTimeout(() => {
-                    this.#elements.statusText.scrollIntoView({
-                        behavior: 'auto',
-                        block: 'end'
-                    });
-                }, 0);
-            }
-
-            #cancelStream() {
-                if (this.#abortController) {
-                    this.#abortController.abort();
-                }
-                this.#elements.cancelConfirmationOverlay.classList.remove('visible');
-            }
-
-            #autoResizeTextarea() {
-                const textarea = this.#elements.promptInput;
-                textarea.style.height = 'auto';
-
-                const maxHeight = parseInt(window.getComputedStyle(textarea).maxHeight, 10) || textarea.scrollHeight;
-                const newHeight = Math.min(textarea.scrollHeight, maxHeight);
-                textarea.style.height = `${newHeight}px`;
-
-                // Toggle overflow based on whether content exceeds the visible area
-                textarea.style.overflowY = textarea.scrollHeight > newHeight ? 'auto' : 'hidden';
-            }
-
-            #updateTokenCount() {
-                const text = this.#elements.promptInput.value;
-                const estimatedTokens = Math.ceil(text.length / 4);
-                this.#elements.tokenCount.textContent = `${estimatedTokens} tokens`;
             }
 
             #updateStatus(text, type = 'success') {
                 this.#elements.statusText.textContent = text;
                 this.#elements.statusDot.className = `status-dot ${type}`;
+            }
+
+            #toggleLoading(isLoading) {
+                this.#isProcessing = isLoading;
+                this.#elements.promptInput.disabled = isLoading;
+                this.#elements.sendButton.classList.toggle('loading', isLoading);
+            }
+
+            async #sendMessage() {
+                const prompt = this.#elements.promptInput.value.trim();
+                
+                if (!prompt || this.#isProcessing) return;
+
+                // 1. Prepare UI
+                this.#toggleLoading(true);
+                this.#updateStatus('Thinking...', 'processing');
+                this.#elements.responseTime.textContent = '';
+                
+                // Add User Message
+                this.#addMessage(prompt, 'user');
+                
+                // Clear input
+                this.#elements.promptInput.value = '';
+                this.#autoResizeTextarea();
+                this.#updateTokenCount();
+
+                const startTime = performance.now();
+
+                try {
+                    //  Fetch using Puter's network layer
+                    const response = await puter.net.fetch(`https://818233.xyz/${encodeURIComponent(prompt)}`);
+
+                    if (!response.ok) {
+                        throw new Error(`Server returned ${response.status}`);
+                    }
+
+                    // 3. Get text response
+                    const text = await response.text();
+
+                    // 4. Calculate time and display
+                    const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+                    this.#elements.responseTime.textContent = `(${duration}s)`;
+
+                    // 5. Add AI Message
+                    this.#addMessage(text.trim(), 'ai');
+                    this.#updateStatus('Ready', 'success');
+
+                } catch (error) {
+                    console.error('Fetch error:', error);
+                    this.#addMessage(`**Error:** ${error.message}`, 'ai');
+                    this.#updateStatus('Error', 'error');
+                } finally {
+                    this.#toggleLoading(false);
+                }
             }
 
             #addMessage(content, role) {
@@ -1278,425 +910,68 @@
                 const messageWrapper = document.createElement('div');
                 messageWrapper.className = `message ${role}-message`;
 
-                const renderedContent = this.#renderMarkdown(content);
-
-                const finalContent = role === 'user' ?
-                    `<p>${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>` :
-                    renderedContent;
+                // Use Marked.js if available for AI messages, otherwise fallback to simple text
+                let finalContent = content;
+                
+                if (role === 'user') {
+                     // Simple escape for user messages
+                     finalContent = `<p>${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`;
+                } else if (typeof marked !== 'undefined') {
+                    // Parse Markdown using marked.js
+                    finalContent = marked.parse(content);
+                } else {
+                    // Fallback if marked didn't load (unlikely)
+                    finalContent = `<p>${content.replace(/</g, '&lt;')}</p>`;
+                }
 
                 messageWrapper.innerHTML = `
                     <div class="message-content-wrapper">
                         <div class="message-actions">
-                            <button class="copy-message-btn" title="Copy message">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                            </button>
+                            <button class="copy-message-btn" title="Copy message">Copy</button>
                         </div>
                         <div class="message-content">${finalContent}</div>
                     </div>
                 `;
 
                 this.#elements.outputArea.appendChild(messageWrapper);
-                this.#scrollToInputArea();
-
-                return messageWrapper;
+                
+                // Scroll to bottom
+                setTimeout(() => {
+                    this.#elements.statusText.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                }, 100);
             }
 
-            #updateStreamingMessage(messageWrapper, content, isComplete = false) {
-                let renderedContent = this.#renderMarkdown(content);
-                if (!isComplete && content.length > 0) {
-                    renderedContent += '<span class="streaming-indicator"></span>';
-                }
+            /* --- Utilities: Resize, Token Count --- */
 
-                const contentDiv = messageWrapper.querySelector('.message-content');
-                if (contentDiv) {
-                    contentDiv.innerHTML = renderedContent;
-                }
+            #autoResizeTextarea() {
+                const textarea = this.#elements.promptInput;
+                textarea.style.height = 'auto';
+                const newHeight = Math.min(textarea.scrollHeight, 200);
+                textarea.style.height = `${newHeight}px`;
+                textarea.style.overflowY = textarea.scrollHeight > newHeight ? 'auto' : 'hidden';
             }
 
-            async #sendMessage() {
-                const prompt = this.#elements.promptInput.value.trim();
-                if (!prompt || this.#isStreaming) return;
-
-                this.#abortController = new AbortController();
-                let aiMessageWrapper = null;
-                let fullResponse = '';
-                let startTime;
-
-                this.#toggleLoading(true);
-                this.#requestWakeLock();
-                this.#updateStatus('Sending...', 'processing');
-                this.#elements.responseTime.textContent = '';
-
-                this.#addMessage(prompt, 'user');
-                this.#messages.push({
-                    role: 'user',
-                    content: prompt
-                });
-
-                this.#elements.promptInput.value = '';
-                this.#autoResizeTextarea();
-                this.#updateTokenCount();
-
-                try {
-                    startTime = performance.now();
-
-                    const response = await fetch(this.#config.apiUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${this.#config.bearerToken}`,
-                            'Content-Type': 'application/json'
-                        },
-                        signal: this.#abortController.signal,
-                        body: JSON.stringify({
-                            model: this.#config.model,
-                            messages: [{
-                                    role: 'system',
-                                    content: this.#config.systemPrompt
-                                },
-                                ...this.#messages
-                            ],
-                            temperature: 1.0, // Lowered for less randomness and more determinism
-                            top_k: 64, // Lowered to consider fewer top tokens
-                            top_p: 0.95, // Lowered to restrict sampling pool
-                            min_p: 0.01, // Slightly increased to require minimum probability
-                            repetition_penalty: 1.0, // No penalty for repetition
-                            stream: true,
-                        })
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json().catch(() => ({
-                            message: 'An unknown HTTP error occurred.'
-                        }));
-                        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-                    }
-
-                    this.#updateStatus('Receiving...', 'processing');
-                    aiMessageWrapper = this.#addMessage('', 'ai');
-
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder();
-
-                    while (true) {
-                        const {
-                            done,
-                            value
-                        } = await reader.read();
-                        if (done) break;
-
-                        const chunk = decoder.decode(value);
-                        const lines = chunk.split('\n');
-
-                        for (const line of lines) {
-                            if (line.startsWith('data: ')) {
-                                const data = line.slice(6).trim();
-                                if (data === '[DONE]') continue;
-                                try {
-                                    const parsed = JSON.parse(data);
-                                    const delta = parsed.choices?.[0]?.delta?.content;
-                                    if (delta) {
-                                        fullResponse += delta;
-                                        this.#updateStreamingMessage(aiMessageWrapper, fullResponse);
-                                    }
-                                } catch (e) {
-                                    console.error('Could not parse a chunk of the stream:', data);
-                                }
-                            }
-                        }
-                    }
-
-                    if (fullResponse.trim() === '') {
-                        throw new Error('Empty response. Prompt too long or unknown error.');
-                    }
-
-                    const endTime = performance.now();
-                    const duration = ((endTime - startTime) / 1000).toFixed(2);
-                    this.#elements.responseTime.textContent = `(responded in ${duration}s)`;
-
-                    this.#updateStreamingMessage(aiMessageWrapper, fullResponse, true);
-                    this.#messages.push({
-                        role: 'assistant',
-                        content: fullResponse
-                    });
-                    this.#updateStatus('Ready', 'success');
-                    if (!this.#isMuted) { // Play sound only if not muted
-                        this.#doneSound.play();
-                    }
-
-                } catch (error) {
-                    if (error.name === 'AbortError') {
-                        console.log('Fetch aborted by user.');
-                        this.#updateStatus('Cancelled', 'cancelled');
-                        if (aiMessageWrapper) {
-                            this.#updateStreamingMessage(aiMessageWrapper, fullResponse, true);
-                        }
-                        if (fullResponse) {
-                            this.#messages.push({
-                                role: 'assistant',
-                                content: fullResponse
-                            });
-                        }
-                    } else {
-                        console.error('Error:', error);
-                        this.#addMessage(`**Error:**\n\`\`\`\n${error.message}\n\`\`\``, 'ai');
-                        this.#updateStatus('Error', 'error');
-                        this.#elements.responseTime.textContent = '';
-                    }
-                } finally {
-                    this.#toggleLoading(false);
-                    this.#releaseWakeLock();
-                    this.#abortController = null;
-                }
-            }
-
-            #toggleLoading(isLoading) {
-                this.#isStreaming = isLoading;
-                this.#elements.promptInput.disabled = isLoading;
-                this.#elements.sendButton.classList.toggle('loading', isLoading);
-            }
-
-            // --- Screen Wake Lock API Implementation ---
-            async #requestWakeLock() {
-                if ('wakeLock' in navigator) {
-                    try {
-                        this.#wakeLock = await navigator.wakeLock.request('screen');
-                        this.#wakeLock.addEventListener('release', () => {
-                            console.log('Screen Wake Lock released automatically.');
-                        });
-                        console.log('Screen Wake Lock acquired.');
-                    } catch (err) {
-                        console.error(`Failed to acquire Wake Lock: ${err.name}, ${err.message}`);
-                    }
-                } else {
-                    console.warn('Wake Lock API not supported.');
-                }
-            }
-
-            #releaseWakeLock() {
-                if (this.#wakeLock !== null) {
-                    this.#wakeLock.release();
-                    this.#wakeLock = null;
-                    console.log('Screen Wake Lock released.');
-                }
-            }
-
-            // Mute/Unmute functionality
-            #toggleMute() {
-                this.#isMuted = !this.#isMuted;
-                this.#updateMuteButtonIcon();
-                localStorage.setItem('luminaira_mute_state', this.#isMuted); // Save mute state
-            }
-
-            #updateMuteButtonIcon() {
-                if (this.#isMuted) {
-                    this.#elements.volumeOnIcon.style.display = 'none';
-                    this.#elements.volumeOffIcon.style.display = 'block';
-                } else {
-                    this.#elements.volumeOnIcon.style.display = 'block';
-                    this.#elements.volumeOffIcon.style.display = 'none';
-                }
-            }
-
-            #loadMuteState() {
-                const savedMuteState = localStorage.getItem('luminaira_mute_state');
-                if (savedMuteState !== null) {
-                    this.#isMuted = JSON.parse(savedMuteState);
-                }
-                this.#updateMuteButtonIcon();
-            }
-
-
-            #renderMarkdown(text) {
-                let html = text
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .trim();
-
-                // Fenced code blocks ```lang\ncode\n```
-                html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
-                    const language = lang || 'plaintext';
-                    const escapedCode = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    return `
-                    <pre><div class="code-block-header"><span>${language}</span><button class="copy-code-btn">Copy</button></div><code class="language-${language}">${escapedCode}</code></pre>
-                `;
-                });
-
-                // Split by lines to process block-level elements
-                const lines = html.split('\n');
-                let processedHtml = '';
-                let inList = null;
-                let inTable = false;
-                let paragraphBuffer = []; // Buffer for paragraph lines
-
-                const flushParagraphBuffer = () => {
-                    if (paragraphBuffer.length > 0) {
-                        processedHtml += `<p>${paragraphBuffer.join('\n')}</p>`;
-                        paragraphBuffer = [];
-                    }
-                };
-
-                for (let i = 0; i < lines.length; i++) {
-                    let line = lines[i];
-
-                    // Preserve preformatted blocks (including their HTML structure)
-                    if (line.includes('<pre>')) {
-                        flushParagraphBuffer();
-                        if (inList) {
-                            processedHtml += `</${inList}>`;
-                            inList = null;
-                        }
-                        const preStartIndex = html.indexOf(line);
-                        const preEndIndex = html.indexOf('</pre>', preStartIndex) + 6;
-                        const block = html.substring(preStartIndex, preEndIndex);
-                        processedHtml += block;
-                        i += block.split('\n').length - 1; // Advance loop index past the block
-                        continue;
-                    }
-
-                    const trimmedLine = line.trim();
-
-                    // Table processing
-                    const isTableLine = trimmedLine.startsWith('|') && trimmedLine.endsWith('|');
-                    // Regex for table separator line: e.g., |---|---|
-                    const isTableSeparator = /^\s*\|?(:?-+:?\|)+\s*$/.test(trimmedLine);
-
-
-                    if (isTableLine) {
-                        flushParagraphBuffer(); // Flush any pending paragraphs before a table
-                        if (!inTable) {
-                            // Check for separator on the next line to confirm it's a table header
-                            if (i + 1 < lines.length && /^\s*\|?(:?-+:?\|)+\s*$/.test(lines[i + 1].trim())) {
-                                inTable = true;
-                                if (inList) {
-                                    processedHtml += `</${inList}>`;
-                                    inList = null;
-                                }
-                                processedHtml += '<table><thead>';
-                                const headers = trimmedLine.split('|').slice(1, -1);
-                                processedHtml += '<tr>';
-                                headers.forEach(h => processedHtml += `<th>${this.#parseInlineMarkdown(h.trim())}</th>`);
-                                processedHtml += '</tr></thead><tbody>';
-                                i++; // Skip the separator line
-                                continue;
-                            }
-                        } else {
-                            if (isTableSeparator) continue; // Should already be skipped
-                            const cells = trimmedLine.split('|').slice(1, -1);
-                            processedHtml += '<tr>';
-                            cells.forEach(c => processedHtml += `<td>${this.#parseInlineMarkdown(c.trim())}</td>`);
-                            processedHtml += '</tr>';
-                            continue;
-                        }
-                    } else if (inTable) {
-                        processedHtml += '</tbody></table>';
-                        inTable = false;
-                    }
-
-                    const closeListIfNeeded = () => {
-                        if (inList) {
-                            flushParagraphBuffer(); // Ensure any buffered paragraphs within a list are flushed
-                            processedHtml += `</${inList}>`;
-                            inList = null;
-                        }
-                    };
-
-                    // Block elements
-                    if (line.match(/^#{1,6}\s/)) {
-                        flushParagraphBuffer();
-                        closeListIfNeeded();
-                        const match = line.match(/^(#+)\s(.*)/);
-                        const level = Math.min(match[1].length, 6);
-                        processedHtml += `<h${level}>${this.#parseInlineMarkdown(match[2])}</h${level}>`;
-                    } else if (trimmedLine.match(/^(---|___|\*\*\*)$/)) {
-                        flushParagraphBuffer();
-                        closeListIfNeeded();
-                        processedHtml += '<hr>';
-                    } else if (line.match(/^>\s/)) {
-                        flushParagraphBuffer();
-                        closeListIfNeeded();
-                        // For blockquotes, collect consecutive lines and wrap them in a single blockquote
-                        let blockquoteContent = [line.replace(/^>\s/, '')];
-                        while (i + 1 < lines.length && lines[i + 1].match(/^>\s/)) {
-                            i++;
-                            blockquoteContent.push(lines[i].replace(/^>\s/, ''));
-                        }
-                        processedHtml += `<blockquote>${this.#parseInlineMarkdown(blockquoteContent.join('\n'))}</blockquote>`;
-                    } else if (line.match(/^\s*([\-\*+])\s/)) {
-                        flushParagraphBuffer();
-                        const isTaskItem = /^\s*[\-\*+]\s\[[ x]\]\s/.test(line);
-                        const content = line.replace(/^\s*[\-\*+]\s/, '');
-
-                        if (inList !== 'ul') {
-                            closeListIfNeeded();
-                            processedHtml += '<ul>';
-                            inList = 'ul';
-                        }
-                        if (isTaskItem) {
-                            const checked = content.startsWith('[x]');
-                            const text = content.replace(/^\[[ x]\]\s/, '');
-                            processedHtml += `<li class="task-list-item"><input type="checkbox" ${checked ? 'checked' : ''} disabled> ${this.#parseInlineMarkdown(text)}</li>`;
-                        } else {
-                            processedHtml += `<li>${this.#parseInlineMarkdown(content)}</li>`;
-                        }
-                    } else if (line.match(/^\s*\d+\.\s/)) {
-                        flushParagraphBuffer();
-                        if (inList !== 'ol') {
-                            closeListIfNeeded();
-                            processedHtml += '<ol>';
-                            inList = 'ol';
-                        }
-                        processedHtml += `<li>${this.#parseInlineMarkdown(line.replace(/^\s*\d+\.\s/, ''))}</li>`;
-                    } else if (trimmedLine.length > 0) {
-                        paragraphBuffer.push(this.#parseInlineMarkdown(line));
-                    } else {
-                        // Empty line, flush the paragraph buffer
-                        flushParagraphBuffer();
-                        closeListIfNeeded();
-                    }
-                }
-
-                flushParagraphBuffer(); // Flush any remaining buffered paragraphs
-                if (inList) processedHtml += `</${inList}>`;
-                if (inTable) processedHtml += '</tbody></table>'; // Close table if it's the last element
-
-                // Remove any empty paragraph tags that might have been created
-                return processedHtml.replace(/<p>\s*<\/p>/g, '');
-            }
-
-            #parseInlineMarkdown(text) {
-                let parsedText = text;
-                // Bold and Italic (***bold italic***, ___bold italic___)
-                parsedText = parsedText.replace(/\*\*\*([^\*]+?)\*\*\*|\_\_\_([^_]+?)\_\_\_/g, '<strong><em>$1$2</em></strong>');
-                // Bold (**bold**, __bold__)
-                parsedText = parsedText.replace(/\*\*([^\*]+?)\*\*|\_\_([^_]+?)\_\_/g, '<strong>$1$2</strong>');
-                // Italic (*italic*, _italic_)
-                parsedText = parsedText.replace(/\*([^\*]+?)\*|\_([^_]+?)\_/g, '<em>$1$2</em>');
-                // Inline code (`code`)
-                parsedText = parsedText.replace(/`([^`]+?)`/g, '<code>$1</code>');
-                // Links ([text](url))
-                parsedText = parsedText.replace(/\[([^\]]+?)\]\((https?:\/\/[^)]+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-                return parsedText;
+            #updateTokenCount() {
+                const text = this.#elements.promptInput.value;
+                this.#elements.tokenCount.textContent = `${Math.ceil(text.length / 4)} tokens`;
             }
 
             #handleCopyMessageClick(button) {
-                const messageContent = button.closest('.message-content-wrapper').querySelector('.message-content');
-                if (!messageContent) return;
-
-                navigator.clipboard.writeText(messageContent.innerText).then(() => {
-                    const originalContent = button.innerHTML;
-                    button.innerHTML = 'Copied!';
+                const content = button.closest('.message-content-wrapper').querySelector('.message-content').innerText;
+                navigator.clipboard.writeText(content).then(() => {
+                    const originalText = button.innerText;
+                    button.innerText = 'Copied!';
                     button.classList.add('copied');
                     setTimeout(() => {
-                        button.innerHTML = originalContent;
+                        button.innerText = originalText;
                         button.classList.remove('copied');
                     }, 2000);
                 });
             }
 
             #handleCopyCodeClick(button) {
-                const pre = button.closest('pre');
-                const code = pre.querySelector('code');
-                navigator.clipboard.writeText(code.innerText).then(() => {
+                const code = button.closest('pre').querySelector('code').innerText;
+                navigator.clipboard.writeText(code).then(() => {
                     button.textContent = 'Copied!';
                     button.classList.add('copied');
                     setTimeout(() => {
@@ -1708,5 +983,4 @@
         }
     </script>
 </body>
-
 </html>
