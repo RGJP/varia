@@ -924,14 +924,14 @@
                     finalContent = `<p>${content.replace(/</g, '&lt;')}</p>`;
                 }
 
-                messageWrapper.innerHTML = `
-                    <div class="message-content-wrapper">
-                        <div class="message-actions">
-                            <button class="copy-message-btn" title="Copy message">Copy</button>
-                        </div>
-                        <div class="message-content">${finalContent}</div>
-                    </div>
-                `;
+              messageWrapper.innerHTML = `
+    <div class="message-content-wrapper">
+        <div class="message-actions">
+            <button class="copy-message-btn" title="Copy message">Copy</button>
+        </div>
+        <div class="message-content" data-raw="${content.replace(/"/g, '&quot;')}">${finalContent}</div>
+    </div>
+`;
 
                 this.#elements.outputArea.appendChild(messageWrapper);
                 
@@ -956,18 +956,21 @@
                 this.#elements.tokenCount.textContent = `${Math.ceil(text.length / 4)} tokens`;
             }
 
-            #handleCopyMessageClick(button) {
-                const content = button.closest('.message-content-wrapper').querySelector('.message-content').innerText;
-                navigator.clipboard.writeText(content).then(() => {
-                    const originalText = button.innerText;
-                    button.innerText = 'Copied!';
-                    button.classList.add('copied');
-                    setTimeout(() => {
-                        button.innerText = originalText;
-                        button.classList.remove('copied');
-                    }, 2000);
-                });
-            }
+        #handleCopyMessageClick(button) {
+    // Look for the data-raw attribute we just added
+    const contentDiv = button.closest('.message-content-wrapper').querySelector('.message-content');
+    const rawContent = contentDiv.getAttribute('data-raw') || contentDiv.innerText;
+
+    navigator.clipboard.writeText(rawContent).then(() => {
+        const originalText = button.innerText;
+        button.innerText = 'Copied!';
+        button.classList.add('copied');
+        setTimeout(() => {
+            button.innerText = originalText;
+            button.classList.remove('copied');
+        }, 2000);
+    });
+}
 
             #handleCopyCodeClick(button) {
                 const code = button.closest('pre').querySelector('code').innerText;
