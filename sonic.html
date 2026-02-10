@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonic Sanctuary | Ambient Mixer</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --text-color: #e6edf3;
+            --accent: #58a6ff;
+            --glass-bg: rgba(22, 27, 34, 0.7);
+            --glass-border: rgba(240, 246, 252, 0.1);
+            --track-bg: #30363d;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 2s ease;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .container {
+            position: relative;
+            z-index: 10;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            width: 400px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: fadeIn 1s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+
+        p.subtitle {
+            color: #8b949e;
+            font-size: 0.9rem;
+            margin-bottom: 30px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .channel {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .channel-icon {
+            width: 24px;
+            text-align: center;
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        .slider-container {
+            flex-grow: 1;
+            position: relative;
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--text-color);
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: var(--track-bg);
+            border-radius: 2px;
+        }
+
+        /* Firefox styles */
+        input[type=range]::-moz-range-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--text-color);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        input[type=range]::-moz-range-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: var(--track-bg);
+            border-radius: 2px;
+        }
+
+        .channel-label {
+            font-size: 0.8rem;
+            width: 60px;
+            text-align: left;
+            color: #8b949e;
+        }
+
+        #play-btn {
+            background: var(--text-color);
+            color: var(--bg-color);
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #play-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+        }
+
+        #play-btn:active {
+            transform: scale(0.95);
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="canvas-container">
+        <canvas id="visualizer"></canvas>
+    </div>
+
+    <div class="container">
+        <h1>Sonic Sanctuary</h1>
+        <p class="subtitle">Procedural Soundscape Generator</p>
+
+        <div class="controls">
+            <!-- White Noise -->
+            <div class="channel" title="White Noise">
+                <span class="channel-icon">🌫️</span>
+                <div class="slider-container">
+                    <input type="range" min="0" max="1" step="0.01" value="0" data-type="white" class="vol-slider">
+                </div>
+                <span class="channel-label">Focus</span>
+            </div>
+
+            <!-- Pink Noise (Rain) -->
+            <div class="channel" title="Pink Noise (Rain)">
+                <span class="channel-icon">🌧️</span>
+                <div class="slider-container">
+                    <input type="range" min="0" max="1" step="0.01" value="0.5" data-type="pink" class="vol-slider">
+                </div>
+                <span class="channel-label">Rain</span>
+            </div>
+
+            <!-- Brown Noise (Thunder/Deep) -->
+            <div class="channel" title="Brown Noise (Thunder)">
+                <span class="channel-icon">⚡</span>
+                <div class="slider-container">
+                    <input type="range" min="0" max="1" step="0.01" value="0" data-type="brown" class="vol-slider">
+                </div>
+                <span class="channel-label">Deep</span>
+            </div>
+
+            <!-- Binaural Beats (Theta) -->
+            <div class="channel" title="Binaural Theta (6Hz)">
+                <span class="channel-icon">🧠</span>
+                <div class="slider-container">
+                    <input type="range" min="0" max="1" step="0.01" value="0" data-type="binaural" class="vol-slider">
+                </div>
+                <span class="channel-label">Theta</span>
+            </div>
+        </div>
+
+        <button id="play-btn">▶</button>
+    </div>
+
+    <script>
+        // --- Audio Engine ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        let isPlaying = false;
+        let analyser;
+
+        // Nodes
+        let whiteNoiseNode, pinkNoiseNode, brownNoiseNode;
+        let binauralLeft, binauralRight, binauralMerger;
+        let masterGain;
+        let gains = {};
+
+        // Configuration
+        const BUFFER_SIZE = 4096;
+        const THETA_FREQ = 6; // 6Hz difference for Theta waves
+        const BASE_FREQ = 200; // Carrier frequency
+
+        function initAudio() {
+            if (audioCtx) return;
+            audioCtx = new AudioContext();
+
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.8;
+
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 256;
+            masterGain.connect(analyser);
+            analyser.connect(audioCtx.destination);
+
+            // Create Generators
+            createWhiteNoise(); // Focus
+            createPinkNoise();  // Rain
+            createBrownNoise(); // Deep/Thunder
+            createBinaural();   // Theta
+        }
+
+        function createWhiteNoise() {
+            const bufferSize = 2 * audioCtx.sampleRate;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1;
+            }
+
+            whiteNoiseNode = audioCtx.createBufferSource();
+            whiteNoiseNode.buffer = buffer;
+            whiteNoiseNode.loop = true;
+
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0;
+            whiteNoiseNode.connect(gain);
+            gain.connect(masterGain);
+
+            gains['white'] = gain;
+            whiteNoiseNode.start();
+        }
+
+        function createPinkNoise() {
+            const bufferSize = 2 * audioCtx.sampleRate;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = buffer.getChannelData(0);
+            let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+
+            // Paul Kellet's refined method
+            for (let i = 0; i < bufferSize; i++) {
+                const white = Math.random() * 2 - 1;
+                b0 = 0.99886 * b0 + white * 0.0555179;
+                b1 = 0.99332 * b1 + white * 0.0750759;
+                b2 = 0.96900 * b2 + white * 0.1538520;
+                b3 = 0.86650 * b3 + white * 0.3104856;
+                b4 = 0.55000 * b4 + white * 0.5329522;
+                b5 = -0.7616 * b5 - white * 0.0168980;
+                output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+                output[i] *= 0.11; // transform to roughly -1..1
+                b6 = white * 0.115926;
+            }
+
+            pinkNoiseNode = audioCtx.createBufferSource();
+            pinkNoiseNode.buffer = buffer;
+            pinkNoiseNode.loop = true;
+
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0.5; // Default starts at 0.5
+            pinkNoiseNode.connect(gain);
+            gain.connect(masterGain);
+
+            gains['pink'] = gain;
+            pinkNoiseNode.start();
+        }
+
+        function createBrownNoise() {
+            const bufferSize = 2 * audioCtx.sampleRate;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = buffer.getChannelData(0);
+            let lastOut = 0;
+
+            for (let i = 0; i < bufferSize; i++) {
+                const white = Math.random() * 2 - 1;
+                output[i] = (lastOut + (0.02 * white)) / 1.02;
+                lastOut = output[i];
+                output[i] *= 3.5; // Compensate for gain loss
+            }
+
+            brownNoiseNode = audioCtx.createBufferSource();
+            brownNoiseNode.buffer = buffer;
+            brownNoiseNode.loop = true;
+
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0;
+            brownNoiseNode.connect(gain);
+            gain.connect(masterGain);
+
+            gains['brown'] = gain;
+            brownNoiseNode.start();
+        }
+
+        function createBinaural() {
+            // Left Ear
+            const oscL = audioCtx.createOscillator();
+            oscL.type = 'sine';
+            oscL.frequency.value = BASE_FREQ;
+
+            const pannerL = audioCtx.createStereoPanner();
+            pannerL.pan.value = -1; // Full Left
+
+            oscL.connect(pannerL);
+
+            // Right Ear
+            const oscR = audioCtx.createOscillator();
+            oscR.type = 'sine';
+            oscR.frequency.value = BASE_FREQ + THETA_FREQ;
+
+            const pannerR = audioCtx.createStereoPanner();
+            pannerR.pan.value = 1; // Full Right
+
+            oscR.connect(pannerR);
+
+            // Check if user is on minimal inputs, update gain
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0;
+
+            pannerL.connect(gain);
+            pannerR.connect(gain);
+            gain.connect(masterGain);
+
+            gains['binaural'] = gain;
+
+            oscL.start();
+            oscR.start();
+
+            binauralLeft = oscL;
+            binauralRight = oscR;
+        }
+
+        // --- Visualizer ---
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        let animationId;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function drawVisualizer() {
+            if (!isPlaying) return;
+
+            animationId = requestAnimationFrame(drawVisualizer);
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+            analyser.getByteFrequencyData(dataArray);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Mood calculation (simple average)
+            let avg = 0;
+            for (let i = 0; i < bufferLength; i++) avg += dataArray[i];
+            avg /= bufferLength;
+
+            // Dynamic Background tint
+            const r = 13 + (avg / 10);
+            const g = 17 + (avg / 5);
+            const b = 23 + (avg / 3);
+            document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+
+            // Draw Waves
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = `rgba(88, 166, 255, 0.4)`;
+            ctx.beginPath();
+
+            const sliceWidth = canvas.width * 1.0 / bufferLength;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                const v = dataArray[i] / 128.0;
+                const y = (canvas.height / 2) + Math.sin(i * 0.1 + Date.now() * 0.001) * (v * 100);
+
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+
+                x += sliceWidth * 2; // Spread out more
+            }
+
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+
+            // Draw "Particles/Dust" based on high freqs
+            for (let i = bufferLength / 2; i < bufferLength; i += 5) {
+                if (dataArray[i] > 10) {
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    const size = (dataArray[i] / 255) * 3;
+
+                    ctx.fillStyle = `rgba(255, 255, 255, ${dataArray[i] / 500})`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+
+        // --- Interaction ---
+        const playBtn = document.getElementById('play-btn');
+        const sliders = document.querySelectorAll('.vol-slider');
+
+        playBtn.addEventListener('click', () => {
+            if (!audioCtx) {
+                initAudio();
+            }
+
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            if (!isPlaying) {
+                isPlaying = true;
+                playBtn.innerHTML = '⏸';
+                // Sync sliders to gains in case they were moved before start
+                sliders.forEach(s => {
+                    if (gains[s.dataset.type]) {
+                        // Smooth ramp
+                        const val = parseFloat(s.value);
+                        gains[s.dataset.type].gain.setTargetAtTime(val, audioCtx.currentTime, 0.1);
+                    }
+                });
+                drawVisualizer();
+            } else {
+                isPlaying = false;
+                playBtn.innerHTML = '▶';
+                cancelAnimationFrame(animationId);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                document.body.style.backgroundColor = 'var(--bg-color)';
+
+                // Mute all without losing slider pos
+                Object.values(gains).forEach(g => {
+                    g.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
+                });
+            }
+        });
+
+        sliders.forEach(slider => {
+            slider.addEventListener('input', (e) => {
+                const type = e.target.dataset.type;
+                const val = parseFloat(e.target.value);
+
+                if (gains[type] && isPlaying) {
+                    gains[type].gain.setTargetAtTime(val, audioCtx.currentTime, 0.1);
+                }
+            });
+        });
+
+    </script>
+</body>
+
+</html>
