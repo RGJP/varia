@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Oblique Strategies | Daily Stoic</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --text-color: #e6edf3;
+            --card-width: 300px;
+            --card-height: 480px;
+            --card-radius: 20px;
+            --accent: #d2a8ff;
+            --card-bg: #161b22;
+            --card-border: rgba(240, 246, 252, 0.1);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            perspective: 1000px;
+            /* Essential for 3D effect */
+        }
+
+        /* Container for the card to allow flipping */
+        .card-container {
+            width: var(--card-width);
+            height: var(--card-height);
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* The Card Itself - Double Sided */
+        .card {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            transform-style: preserve-3d;
+            border-radius: var(--card-radius);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border-radius: var(--card-radius);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid var(--card-border);
+            overflow: hidden;
+        }
+
+        /* Front of card (The Pattern/Back of physical card) */
+        .card-front {
+            background:
+                linear-gradient(45deg, rgba(0, 0, 0, 0.8), transparent),
+                repeating-linear-gradient(45deg,
+                    #161b22,
+                    #161b22 10px,
+                    #21262d 10px,
+                    #21262d 20px);
+            background-size: cover;
+        }
+
+        /* Decorative element on front */
+        .card-logo {
+            width: 60px;
+            height: 60px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: rgba(255, 255, 255, 0.4);
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(5px);
+        }
+
+        .tap-hint {
+            position: absolute;
+            bottom: 30px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+
+            100% {
+                opacity: 0.3;
+            }
+        }
+
+        /* Back of card (The Content) */
+        .card-back {
+            background: var(--card-bg);
+            transform: rotateY(180deg);
+            padding: 40px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .card-content {
+            font-size: 1.4rem;
+            line-height: 1.6;
+            font-weight: 500;
+            color: var(--text-color);
+            max-height: 70%;
+            overflow-y: auto;
+        }
+
+        .card-author {
+            margin-top: 30px;
+            font-size: 0.9rem;
+            color: #8b949e;
+            font-style: italic;
+            border-top: 1px solid var(--card-border);
+            padding-top: 15px;
+            width: 50%;
+        }
+
+        /* Flip Class */
+        .card-container.flipped {
+            transform: rotateY(180deg);
+        }
+
+        /* Shuffle Animation */
+        @keyframes shuffle {
+            0% {
+                transform: translateX(0) rotateY(0);
+            }
+
+            25% {
+                transform: translateX(-20px) rotateY(-5deg);
+            }
+
+            50% {
+                transform: translateX(20px) rotateY(5deg);
+            }
+
+            75% {
+                transform: translateX(-10px) rotateY(-2deg);
+            }
+
+            100% {
+                transform: translateX(0) rotateY(0);
+            }
+        }
+
+        .shuffling {
+            animation: shuffle 0.4s ease-in-out;
+        }
+
+        /* UI Controls */
+        .controls {
+            margin-top: 50px;
+            display: flex;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-color);
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card-container" id="deck">
+        <div class="card">
+            <div class="card-face card-front">
+                <div class="card-logo">✦</div>
+                <div class="tap-hint">Tap to Draw</div>
+            </div>
+            <div class="card-face card-back">
+                <div class="card-content" id="card-text">Trust in the you of now.</div>
+                <div class="card-author" id="card-author">Oblique Strategy</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="shuffle-btn">
+            <span>↺</span> Shuffle
+        </button>
+        <button id="share-btn">
+            <span>↗</span> Next
+        </button>
+    </div>
+
+    <script>
+        // --- Data ---
+        const strategies = [
+            // Oblique Strategies (Brian Eno / Peter Schmidt)
+            { text: "Use an old idea.", author: "Oblique Strategy" },
+            { text: "State the problem in words as clearly as possible.", author: "Oblique Strategy" },
+            { text: "Only one element of each kind.", author: "Oblique Strategy" },
+            { text: "What would your closest friend do?", author: "Oblique Strategy" },
+            { text: "What to increase? What to reduce?", author: "Oblique Strategy" },
+            { text: "Are there sections? Consider transitions.", author: "Oblique Strategy" },
+            { text: "Don't be afraid of things because they're easy to do.", author: "Oblique Strategy" },
+            { text: "Honor thy error as a hidden intention.", author: "Oblique Strategy" },
+            { text: "Is there something missing?", author: "Oblique Strategy" },
+            { text: "Look at the order in which you do things.", author: "Oblique Strategy" },
+            { text: "Simple subtraction.", author: "Oblique Strategy" },
+            { text: "Trust in the you of now.", author: "Oblique Strategy" },
+            { text: "Work at a different speed.", author: "Oblique Strategy" },
+
+            // Stoic Wisdom
+            { text: "You have power over your mind - not outside events. Realize this, and you will find strength.", author: "Marcus Aurelius" },
+            { text: "We suffer more often in imagination than in reality.", author: "Seneca" },
+            { text: "It is not death that a man should fear, but he should fear never beginning to live.", author: "Marcus Aurelius" },
+            { text: "The happiness of your life depends upon the quality of your thoughts.", author: "Marcus Aurelius" },
+            { text: "Waste no more time arguing about what a good man should be. Be one.", author: "Marcus Aurelius" },
+            { text: "If it is not right do not do it; if it is not true do not say it.", author: "Marcus Aurelius" },
+            { text: "Wealth consists not in having great possessions, but in having few wants.", author: "Epictetus" },
+            { text: "Man is not worried by real problems so much as by his imagined anxieties about real problems.", author: "Epictetus" },
+            { text: "The best revenge is to be unlike him who performed the injury.", author: "Marcus Aurelius" },
+            { text: "Luck is what happens when preparation meets opportunity.", author: "Seneca" }
+        ];
+
+        // --- Logic ---
+        const deck = document.getElementById('deck');
+        const cardText = document.getElementById('card-text');
+        const cardAuthor = document.getElementById('card-author');
+        const shuffleBtn = document.getElementById('shuffle-btn');
+        const shareBtn = document.getElementById('share-btn'); // reusing as "Next" / Draw new
+
+        let isFlipped = false;
+
+        function vibrate() {
+            if (navigator.vibrate) {
+                navigator.vibrate(40);
+            }
+        }
+
+        function getRandomCard() {
+            const randomIndex = Math.floor(Math.random() * strategies.length);
+            return strategies[randomIndex];
+        }
+
+        function drawCard() {
+            if (!isFlipped) {
+                // If not flipped (showing back), just flip to show content
+                // But first update content while hidden
+                const card = getRandomCard();
+                cardText.textContent = card.text;
+                cardAuthor.textContent = card.author;
+
+                deck.classList.add('flipped');
+                isFlipped = true;
+                vibrate();
+            } else {
+                // If already showing content, flip back to reset, wait, then draw new?
+                // Or just swap content with a quick transition?
+                // Let's do the flip back to "reset" deck feel.
+                deck.classList.remove('flipped');
+                isFlipped = false;
+                vibrate();
+
+                // Optional: Auto-flip back after a delay? No, let user "Draw" again.
+            }
+        }
+
+        function shuffleDeck() {
+            deck.classList.remove('flipped');
+            isFlipped = false;
+
+            // Trigger shake animation
+            deck.classList.add('shuffling');
+            vibrate();
+
+            // Remove animation class after it plays so it can be triggered again
+            setTimeout(() => {
+                deck.classList.remove('shuffling');
+            }, 400);
+        }
+
+        // --- Event Listeners ---
+
+        // Tap on deck to interact
+        deck.addEventListener('click', () => {
+            if (!isFlipped) {
+                // Create a new card on the fly before revealing
+                const card = getRandomCard();
+                cardText.textContent = card.text;
+                cardAuthor.textContent = card.author;
+            }
+            deck.classList.toggle('flipped');
+            isFlipped = deck.classList.contains('flipped');
+            vibrate();
+        });
+
+        // Buttons
+        shuffleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            shuffleDeck();
+        });
+
+        shareBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Behavior: If showing card, get NEW card. If hidden, show card.
+            if (isFlipped) {
+                // Quick flip transition simulation or just swap?
+                // Let's flip back, then flip forward with new card for drama.
+                deck.classList.remove('flipped');
+                isFlipped = false;
+                setTimeout(() => {
+                    const card = getRandomCard();
+                    cardText.textContent = card.text;
+                    cardAuthor.textContent = card.author;
+                    deck.classList.add('flipped');
+                    isFlipped = true;
+                    vibrate();
+                }, 300); // Wait for half-flip or so
+            } else {
+                const card = getRandomCard();
+                cardText.textContent = card.text;
+                cardAuthor.textContent = card.author;
+                deck.classList.add('flipped');
+                isFlipped = true;
+                vibrate();
+            }
+        });
+
+        // Initialize with a random card ready
+        const initialCard = getRandomCard();
+        cardText.textContent = initialCard.text;
+        cardAuthor.textContent = initialCard.author;
+
+    </script>
+</body>
+
+</html>
