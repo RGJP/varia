@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -9,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
-    
+
     <style>
         :root {
             /* Deep Space Theme */
@@ -27,7 +28,8 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent; /* Remove mobile tap highlight */
+            -webkit-tap-highlight-color: transparent;
+            /* Remove mobile tap highlight */
         }
 
         body {
@@ -35,9 +37,11 @@
             color: var(--text-main);
             font-family: 'Inter', sans-serif;
             height: 100vh;
-            height: 100dvh; /* Dynamic viewport height for mobile browsers */
+            height: 100dvh;
+            /* Dynamic viewport height for mobile browsers */
             width: 100vw;
-            overflow: hidden; /* STRICTLY NO SCROLLING */
+            overflow: hidden;
+            /* STRICTLY NO SCROLLING */
             display: flex;
             flex-direction: column;
             padding: 2vh 4vw;
@@ -46,7 +50,8 @@
         /* Compact Header */
         header {
             flex: 0 0 auto;
-            height: 8%; /* Fixed small percentage for header */
+            height: 8%;
+            /* Fixed small percentage for header */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -64,13 +69,16 @@
 
         /* The Grid - The Core Logic */
         .app-grid {
-            flex: 1; /* Take remaining space */
+            flex: 1;
+            /* Take remaining space */
             display: grid;
             /* 4 Columns x 5 Rows = 20 Slots exactly */
-            grid-template-columns: repeat(4, 1fr); 
+            grid-template-columns: repeat(4, 1fr);
             grid-template-rows: repeat(5, 1fr);
-            gap: 3vmin; /* Fluid gap */
-            padding-bottom: 2vh; /* Bottom safety padding */
+            gap: 3vmin;
+            /* Fluid gap */
+            padding-bottom: 2vh;
+            /* Bottom safety padding */
         }
 
         /* App Icon Button */
@@ -90,8 +98,9 @@
             border: 1px solid var(--glass-border);
             /* Aspect ratio trick for perfect squares */
             width: 100%;
-            aspect-ratio: 1 / 1; 
-            border-radius: 22%; /* "Squarcle" shape like iOS/OneUI */
+            aspect-ratio: 1 / 1;
+            border-radius: 22%;
+            /* "Squarcle" shape like iOS/OneUI */
             display: flex;
             align-items: center;
             justify-content: center;
@@ -117,13 +126,14 @@
 
         .app-item:active .icon-box {
             background: var(--glass-active);
-            border-color: rgba(255,255,255,0.4);
+            border-color: rgba(255, 255, 255, 0.4);
         }
 
         /* Fluid sizing for content */
         .emoji-icon {
-            font-size: 8vmin; /* Scales with viewport */
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            font-size: 8vmin;
+            /* Scales with viewport */
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
         }
 
         .app-label {
@@ -132,7 +142,8 @@
             font-weight: 400;
             text-align: center;
             line-height: 1;
-            width: 120%; /* Allow slight overflow width */
+            width: 120%;
+            /* Allow slight overflow width */
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -146,27 +157,76 @@
         }
 
         @keyframes popIn {
-            from { opacity: 0; transform: scale(0.5); }
-            to { opacity: 1; transform: scale(1); }
+            from {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
         /* Staggered delays for up to 20 items */
-        .app-item:nth-child(1) { animation-delay: 0.05s; }
-        .app-item:nth-child(2) { animation-delay: 0.08s; }
-        .app-item:nth-child(3) { animation-delay: 0.11s; }
-        .app-item:nth-child(4) { animation-delay: 0.14s; }
-        .app-item:nth-child(5) { animation-delay: 0.17s; }
-        .app-item:nth-child(6) { animation-delay: 0.20s; }
-        .app-item:nth-child(7) { animation-delay: 0.23s; }
-        .app-item:nth-child(8) { animation-delay: 0.26s; }
-        .app-item:nth-child(9) { animation-delay: 0.29s; }
-        .app-item:nth-child(10) { animation-delay: 0.32s; }
-        .app-item:nth-child(11) { animation-delay: 0.35s; }
-        .app-item:nth-child(12) { animation-delay: 0.38s; }
-        .app-item:nth-child(13) { animation-delay: 0.41s; }
-        .app-item:nth-child(14) { animation-delay: 0.44s; }
+        .app-item:nth-child(1) {
+            animation-delay: 0.05s;
+        }
+
+        .app-item:nth-child(2) {
+            animation-delay: 0.08s;
+        }
+
+        .app-item:nth-child(3) {
+            animation-delay: 0.11s;
+        }
+
+        .app-item:nth-child(4) {
+            animation-delay: 0.14s;
+        }
+
+        .app-item:nth-child(5) {
+            animation-delay: 0.17s;
+        }
+
+        .app-item:nth-child(6) {
+            animation-delay: 0.20s;
+        }
+
+        .app-item:nth-child(7) {
+            animation-delay: 0.23s;
+        }
+
+        .app-item:nth-child(8) {
+            animation-delay: 0.26s;
+        }
+
+        .app-item:nth-child(9) {
+            animation-delay: 0.29s;
+        }
+
+        .app-item:nth-child(10) {
+            animation-delay: 0.32s;
+        }
+
+        .app-item:nth-child(11) {
+            animation-delay: 0.35s;
+        }
+
+        .app-item:nth-child(12) {
+            animation-delay: 0.38s;
+        }
+
+        .app-item:nth-child(13) {
+            animation-delay: 0.41s;
+        }
+
+        .app-item:nth-child(14) {
+            animation-delay: 0.44s;
+        }
     </style>
 </head>
+
 <body>
 
     <header>
@@ -174,7 +234,8 @@
     </header>
 
     <div class="app-grid">
-      <a href="https://www.google.com/maps/d/edit?mid=1mpy24AC97LDXYx0JiF1ZowC5CRyWtHg&usp=sharing" target="_blank" class="app-item">
+        <a href="https://www.google.com/maps/d/edit?mid=1mpy24AC97LDXYx0JiF1ZowC5CRyWtHg&usp=sharing" target="_blank"
+            class="app-item">
             <div class="icon-box">
                 <span class="emoji-icon">🏊</span>
             </div>
@@ -273,22 +334,30 @@
             <span class="app-label">Recorder</span>
         </a>
 
-        </div>
+        <a href="aura.html" class="app-item">
+            <div class="icon-box">
+                <span class="emoji-icon">🌬️</span>
+            </div>
+            <span class="app-label">Hridayam</span>
+        </a>
+
+    </div>
 
     <script>
         // Simple script to handle touch feedback on older devices
         document.addEventListener('DOMContentLoaded', () => {
             const items = document.querySelectorAll('.app-item');
             items.forEach(item => {
-                item.addEventListener('touchstart', function() {
+                item.addEventListener('touchstart', function () {
                     this.style.transform = 'scale(0.92)';
-                }, {passive: true});
-                
-                item.addEventListener('touchend', function() {
+                }, { passive: true });
+
+                item.addEventListener('touchend', function () {
                     this.style.transform = 'scale(1)';
-                }, {passive: true});
+                }, { passive: true });
             });
         });
     </script>
 </body>
+
 </html>
