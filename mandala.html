@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mandala Maker 🌸</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌸</text></svg>">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌸</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500&display=swap" rel="stylesheet">
@@ -23,7 +25,8 @@
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            touch-action: none; /* Prevent scrolling on mobile while drawing */
+            touch-action: none;
+            /* Prevent scrolling on mobile while drawing */
         }
 
         body {
@@ -58,12 +61,13 @@
             transition: opacity 0.3s ease, transform 0.3s ease;
             z-index: 10;
         }
-        
+
         /* Auto-hide UI when idle (optional, but keeps it clean) */
         body.idle .ui-overlay {
             opacity: 0.3;
             transform: translateX(-50%) translateY(10px);
         }
+
         body.idle .ui-overlay:hover {
             opacity: 1;
             transform: translateX(-50%) translateY(0);
@@ -79,7 +83,7 @@
             font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 0.05em;
-            color: rgba(255,255,255,0.7);
+            color: rgba(255, 255, 255, 0.7);
             user-select: none;
         }
 
@@ -89,6 +93,7 @@
             width: 100px;
             background: transparent;
         }
+
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
             height: 16px;
@@ -99,18 +104,19 @@
             margin-top: -6px;
             box-shadow: 0 0 10px rgba(165, 180, 252, 0.5);
         }
+
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
             height: 4px;
             cursor: pointer;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             border-radius: 2px;
         }
 
         /* Buttons */
         button {
             background: transparent;
-            border: 1px solid rgba(255,255,255,0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: var(--text);
             padding: 0.5rem 1rem;
             border-radius: 20px;
@@ -140,6 +146,7 @@
             display: flex;
             gap: 0.5rem;
         }
+
         .color-option {
             width: 24px;
             height: 24px;
@@ -148,34 +155,21 @@
             border: 2px solid transparent;
             transition: transform 0.2s;
         }
+
         .color-option.selected {
             border-color: #fff;
             transform: scale(1.1);
         }
 
         /* Header / Title */
-        h1 {
-            position: absolute;
-            top: 2rem;
-            left: 0; 
-            width: 100%;
-            text-align: center;
-            font-weight: 300;
-            font-size: 1.5rem;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            color: rgba(255,255,255,0.3);
-            pointer-events: none;
-            z-index: 5;
-            user-select: none;
-        }
-        
+
+
         .tip {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: rgba(255,255,255,0.2);
+            color: rgba(255, 255, 255, 0.2);
             font-size: 1.2rem;
             pointer-events: none;
             opacity: 1;
@@ -183,15 +177,71 @@
             text-transform: uppercase;
             letter-spacing: 0.1em;
         }
+
         .tip.hidden {
             opacity: 0;
         }
 
+
+
+        @media (max-width: 800px) {
+            .ui-overlay {
+                width: 94%;
+                flex-wrap: wrap;
+                justify-content: center;
+                padding: 0.8rem 0.5rem;
+                bottom: 1rem;
+                border-radius: 20px;
+                gap: 0.8rem;
+            }
+
+            .control-group {
+                justify-content: center;
+                gap: 0.4rem;
+                flex-wrap: wrap;
+            }
+
+            label {
+                font-size: 0.7rem;
+            }
+
+
+
+            button {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.7rem;
+            }
+
+            input[type=range] {
+                width: 70px;
+            }
+
+            .color-option {
+                width: 24px;
+                height: 24px;
+            }
+        }
+
+        /* Canvas Wrapper for Centering */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--bg-deep);
+        }
+
+        canvas {
+            /* Canvas size will be set in JS, but it shouldn't distort */
+            flex-shrink: 0;
+            box-shadow: 0 0 100px rgba(0, 0, 0, 0.5);
+            /* Subtle shadow to see bounds when zoomed out */
+        }
     </style>
 </head>
+
 <body>
 
-    <h1>Mandala Maker</h1>
+
     <div class="tip" id="startTip">Click & Drag to Draw</div>
     <canvas id="zenCanvas"></canvas>
 
@@ -205,7 +255,7 @@
         <div class="control-group">
             <button id="sandModeBtn" title="Lines fade over time">Sand Mode</button>
         </div>
-        
+
         <div class="control-group color-picker" id="colorPicker">
             <!-- Populated by JS -->
         </div>
@@ -214,7 +264,7 @@
             <button id="clearBtn">Clear</button>
             <button id="saveBtn">Save</button>
         </div>
-        
+
         <div class="control-group">
             <button id="audioToggle" class="active">Audio On</button>
         </div>
@@ -238,7 +288,7 @@
         const symmetryVal = document.getElementById('symmetryVal');
         const sandModeBtn = document.getElementById('sandModeBtn');
         const clearBtn = document.getElementById('clearBtn');
-        const saveBtn = document.getElementById('saveBtn'); 
+        const saveBtn = document.getElementById('saveBtn');
         const audioToggle = document.getElementById('audioToggle');
         const colorPicker = document.getElementById('colorPicker');
         const startTip = document.getElementById('startTip');
@@ -256,11 +306,11 @@
 
         // Configuration
         const PALETTES = [
-            { color: 'hsl(220, 100%, 80%)', name: 'Ice' }, 
+            { color: 'hsl(220, 100%, 80%)', name: 'Ice' },
             { color: 'hsl(280, 100%, 80%)', name: 'Void' },
             { color: 'hsl(30, 100%, 70%)', name: 'Sand' },
             { color: 'hsl(150, 100%, 70%)', name: 'Zen' },
-            { color: 'rainbow', name: 'Flow' } 
+            { color: 'rainbow', name: 'Flow' }
         ];
         let currentColor = PALETTES[4]; // Default to Rainbow
 
@@ -295,7 +345,7 @@
                 el.style.background = p.color;
             }
             if (index === 4) el.classList.add('selected'); // Select rainbow by default
-            
+
             el.addEventListener('click', () => {
                 document.querySelectorAll('.color-option').forEach(e => e.classList.remove('selected'));
                 el.classList.add('selected');
@@ -339,7 +389,7 @@
             // Draw for each symmetry sector
             for (let i = 0; i < symmetry; i++) {
                 ctx.rotate(angleStep);
-                
+
                 // Draw normal line
                 ctx.beginPath();
                 ctx.moveTo(lastX - centerX, lastY - centerY);
@@ -387,12 +437,12 @@
             startTip.classList.add('hidden');
             initAudio();
         }, { passive: false });
-        
+
         canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault(); 
+            e.preventDefault();
             draw(e);
         }, { passive: false });
-        
+
         canvas.addEventListener('touchend', () => drawing = false);
 
 
@@ -423,11 +473,11 @@
         });
 
         clearBtn.addEventListener('click', () => {
-             // Create a flash effect
+            // Create a flash effect
             ctx.fillStyle = '#fff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             setTimeout(() => {
-                 resize(); // Resets to dark background
+                resize(); // Resets to dark background
             }, 50);
         });
 
@@ -465,14 +515,14 @@
 
         // Simple throttle to prevent audio chaos
         let lastSoundTime = 0;
-        
+
         function playGenerativeSound(x, y, speed) {
             if (!audioEnabled || !audioCtx) return;
 
             const now = audioCtx.currentTime;
-            
+
             // Limit triggering rate
-            if (now - lastSoundTime < 0.08) return; 
+            if (now - lastSoundTime < 0.08) return;
             lastSoundTime = now;
 
             // Map Y position to Pitch (Higher Y = Lower Pitch, usually, but let's invert for 'sky' feeling)
@@ -482,7 +532,7 @@
             const centerY = canvas.height / 2;
             const distFromCenter = Math.hypot(x - centerX, y - centerY);
             const maxDist = Math.max(canvas.width, canvas.height) / 2;
-            
+
             // Map 0 -> maxDist to Scale Index (high -> low)
             const normalizedDist = Math.min(distFromCenter / maxDist, 1);
             const noteIndex = Math.floor((1 - normalizedDist) * (SCALE.length - 1));
@@ -494,14 +544,14 @@
 
             osc.type = 'sine'; // Pure tone
             osc.frequency.setValueAtTime(freq, now);
-            
+
             // Random slight detune for organic feel
-            osc.detune.value = (Math.random() - 0.5) * 10; 
+            osc.detune.value = (Math.random() - 0.5) * 10;
 
             // Envelope (Bell-like)
             // Volume based on speed? Faster = Louder
             const volume = Math.min(Math.max(speed / 50, 0.1), 0.5);
-            
+
             gain.gain.setValueAtTime(0, now);
             gain.gain.linearRampToValueAtTime(volume, now + 0.02);
             gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5); // Long tail
@@ -515,4 +565,5 @@
 
     </script>
 </body>
+
 </html>
