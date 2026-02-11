@@ -5,24 +5,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Oblique Strategies | Daily Stoic</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap"
+        rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0d1117;
-            --text-color: #e6edf3;
-            --card-width: 300px;
-            --card-height: 480px;
-            --card-radius: 20px;
-            --accent: #d2a8ff;
-            --card-bg: #161b22;
-            --card-border: rgba(240, 246, 252, 0.1);
+            --card-width: 320px;
+            --card-height: 520px;
+            --card-radius: 24px;
+            --text-color: #2c3e50;
+            --accent-color: #ff6b6b;
         }
 
         body {
             margin: 0;
             padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            /* Uplifting Gradient */
+            background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #fad0c4, #a18cd1, #fbc2eb);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            font-family: 'Inter', sans-serif;
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -30,10 +34,24 @@
             align-items: center;
             overflow: hidden;
             perspective: 1000px;
-            /* Essential for 3D effect */
+            color: var(--text-color);
         }
 
-        /* Container for the card to allow flipping */
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Card Container */
         .card-container {
             width: var(--card-width);
             height: var(--card-height);
@@ -44,16 +62,11 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* The Card Itself - Double Sided */
-        .card {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            transform-style: preserve-3d;
-            border-radius: var(--card-radius);
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        .card-container.flipped {
+            transform: rotateY(180deg);
         }
 
+        /* Card Faces */
         .card-face {
             position: absolute;
             width: 100%;
@@ -65,64 +78,66 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            border: 1px solid var(--card-border);
             overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1), 0 5px 15px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.4);
         }
 
-        /* Front of card (The Pattern/Back of physical card) */
+        /* Front (Logo side) */
         .card-front {
-            background:
-                linear-gradient(45deg, rgba(0, 0, 0, 0.8), transparent),
-                repeating-linear-gradient(45deg,
-                    #161b22,
-                    #161b22 10px,
-                    #21262d 10px,
-                    #21262d 20px);
-            background-size: cover;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
         }
 
-        /* Decorative element on front */
+        /* Decorative circle on front */
         .card-logo {
-            width: 60px;
-            height: 60px;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            width: 80px;
+            height: 80px;
             border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            color: rgba(255, 255, 255, 0.4);
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(5px);
+            font-size: 2.5rem;
+            color: #fff;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         .tap-hint {
             position: absolute;
-            bottom: 30px;
-            font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.3);
-            text-transform: uppercase;
+            bottom: 40px;
+            font-size: 0.85rem;
             letter-spacing: 2px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 600;
             animation: pulse 2s infinite;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         @keyframes pulse {
-            0% {
-                opacity: 0.3;
+
+            0%,
+            100% {
+                opacity: 0.6;
+                transform: scale(1);
             }
 
             50% {
-                opacity: 0.7;
-            }
-
-            100% {
-                opacity: 0.3;
+                opacity: 1;
+                transform: scale(1.05);
             }
         }
 
-        /* Back of card (The Content) */
+        /* Back (Content side) */
         .card-back {
-            background: var(--card-bg);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
             transform: rotateY(180deg);
             padding: 40px;
             box-sizing: border-box;
@@ -130,57 +145,39 @@
         }
 
         .card-content {
-            font-size: 1.4rem;
+            font-family: 'Merriweather', serif;
+            font-size: 1.5rem;
             line-height: 1.6;
-            font-weight: 500;
-            color: var(--text-color);
-            max-height: 70%;
+            color: #333;
+            max-height: 75%;
             overflow-y: auto;
+            /* Scrollbar styling */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+        }
+
+        .card-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .card-content::-webkit-scrollbar-thumb {
+            background-color: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
         }
 
         .card-author {
-            margin-top: 30px;
+            margin-top: auto;
+            margin-bottom: 10px;
             font-size: 0.9rem;
-            color: #8b949e;
+            color: #7f8c8d;
             font-style: italic;
-            border-top: 1px solid var(--card-border);
+            border-top: 2px solid rgba(0, 0, 0, 0.05);
             padding-top: 15px;
-            width: 50%;
+            width: 60%;
+            font-family: 'Inter', sans-serif;
         }
 
-        /* Flip Class */
-        .card-container.flipped {
-            transform: rotateY(180deg);
-        }
-
-        /* Shuffle Animation */
-        @keyframes shuffle {
-            0% {
-                transform: translateX(0) rotateY(0);
-            }
-
-            25% {
-                transform: translateX(-20px) rotateY(-5deg);
-            }
-
-            50% {
-                transform: translateX(20px) rotateY(5deg);
-            }
-
-            75% {
-                transform: translateX(-10px) rotateY(-2deg);
-            }
-
-            100% {
-                transform: translateX(0) rotateY(0);
-            }
-        }
-
-        .shuffling {
-            animation: shuffle 0.4s ease-in-out;
-        }
-
-        /* UI Controls */
+        /* Controls */
         .controls {
             margin-top: 50px;
             display: flex;
@@ -189,26 +186,59 @@
         }
 
         button {
-            background: transparent;
-            border: 1px solid var(--card-border);
-            color: var(--text-color);
-            padding: 10px 20px;
-            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            color: #fff;
+            padding: 12px 28px;
+            border-radius: 30px;
             cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.2s;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            font-family: 'Inter', sans-serif;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         button:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.45);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
         }
 
         button:active {
             transform: scale(0.95);
+        }
+
+        /* Shuffling Animation */
+        @keyframes shuffle {
+            0% {
+                transform: translateX(0) rotateY(0);
+            }
+
+            25% {
+                transform: translateX(-30px) rotateY(-5deg);
+            }
+
+            50% {
+                transform: translateX(30px) rotateY(5deg);
+            }
+
+            75% {
+                transform: translateX(-15px) rotateY(-2deg);
+            }
+
+            100% {
+                transform: translateX(0) rotateY(0);
+            }
+        }
+
+        .shuffling {
+            animation: shuffle 0.5s ease-in-out;
         }
     </style>
 </head>
@@ -216,15 +246,13 @@
 <body>
 
     <div class="card-container" id="deck">
-        <div class="card">
-            <div class="card-face card-front">
-                <div class="card-logo">✦</div>
-                <div class="tap-hint">Tap to Draw</div>
-            </div>
-            <div class="card-face card-back">
-                <div class="card-content" id="card-text">Trust in the you of now.</div>
-                <div class="card-author" id="card-author">Oblique Strategy</div>
-            </div>
+        <div class="card-face card-front">
+            <div class="card-logo">✦</div>
+            <div class="tap-hint">Tap to Reflect</div>
+        </div>
+        <div class="card-face card-back">
+            <div class="card-content" id="card-text">Trust in the you of now.</div>
+            <div class="card-author" id="card-author">Oblique Strategy</div>
         </div>
     </div>
 
@@ -233,14 +261,17 @@
             <span>↺</span> Shuffle
         </button>
         <button id="share-btn">
-            <span>↗</span> Next
+            <span>✨</span> Next Insight
         </button>
     </div>
 
     <script>
-        // --- Data ---
         const strategies = [
-            // Oblique Strategies (Brian Eno / Peter Schmidt)
+            // -----------------------------------------------------------------
+            // OBLIQUE STRATEGIES (Brian Eno / Peter Schmidt)
+            // -----------------------------------------------------------------
+
+            // --- Original Items ---
             { text: "Use an old idea.", author: "Oblique Strategy" },
             { text: "State the problem in words as clearly as possible.", author: "Oblique Strategy" },
             { text: "Only one element of each kind.", author: "Oblique Strategy" },
@@ -255,7 +286,100 @@
             { text: "Trust in the you of now.", author: "Oblique Strategy" },
             { text: "Work at a different speed.", author: "Oblique Strategy" },
 
-            // Stoic Wisdom
+            // --- Added Items (50+) ---
+            { text: "Abandon normal instruments.", author: "Oblique Strategy" },
+            { text: "Accept advice.", author: "Oblique Strategy" },
+            { text: "Accretion.", author: "Oblique Strategy" },
+            { text: "A line has two sides.", author: "Oblique Strategy" },
+            { text: "Allow an easement (an easement is the abandonment of a stricture).", author: "Oblique Strategy" },
+            { text: "Always first steps.", author: "Oblique Strategy" },
+            { text: "Ask people to work against their better judgment.", author: "Oblique Strategy" },
+            { text: "Be dirty.", author: "Oblique Strategy" },
+            { text: "Be extravagant.", author: "Oblique Strategy" },
+            { text: "Be less critical more often.", author: "Oblique Strategy" },
+            { text: "Breathe more deeply.", author: "Oblique Strategy" },
+            { text: "Bridges -build -burn.", author: "Oblique Strategy" },
+            { text: "Change nothing and continue with immaculate consistency.", author: "Oblique Strategy" },
+            { text: "Cluster analysis.", author: "Oblique Strategy" },
+            { text: "Consider different fading systems.", author: "Oblique Strategy" },
+            { text: "Consult other sources -promising -unpromising.", author: "Oblique Strategy" },
+            { text: "Courage!", author: "Oblique Strategy" },
+            { text: "Cut a vital connection.", author: "Oblique Strategy" },
+            { text: "Decorate, decorate.", author: "Oblique Strategy" },
+            { text: "Define an area as 'safe' and use it as an anchor.", author: "Oblique Strategy" },
+            { text: "Destroy -nothing -the most important thing.", author: "Oblique Strategy" },
+            { text: "Discard an axiom.", author: "Oblique Strategy" },
+            { text: "Disciplined self-indulgence.", author: "Oblique Strategy" },
+            { text: "Disconnect from desire.", author: "Oblique Strategy" },
+            { text: "Discover the recipes you are using and abandon them.", author: "Oblique Strategy" },
+            { text: "Distorting time.", author: "Oblique Strategy" },
+            { text: "Do nothing for as long as possible.", author: "Oblique Strategy" },
+            { text: "Don't be frightened of cliches.", author: "Oblique Strategy" },
+            { text: "Don't break the silence.", author: "Oblique Strategy" },
+            { text: "Don't stress one thing more than another.", author: "Oblique Strategy" },
+            { text: "Emphasize differences.", author: "Oblique Strategy" },
+            { text: "Emphasize the flaws.", author: "Oblique Strategy" },
+            { text: "Faced with a choice, do both.", author: "Oblique Strategy" },
+            { text: "Feed the recording back out of the medium.", author: "Oblique Strategy" },
+            { text: "Fill every beat with something.", author: "Oblique Strategy" },
+            { text: "Get your neck massaged.", author: "Oblique Strategy" },
+            { text: "Ghost echoes.", author: "Oblique Strategy" },
+            { text: "Give the game away.", author: "Oblique Strategy" },
+            { text: "Give way to your worst impulse.", author: "Oblique Strategy" },
+            { text: "Go slowly all the way round the outside.", author: "Oblique Strategy" },
+            { text: "Humanize something free of error.", author: "Oblique Strategy" },
+            { text: "Idiot glee.", author: "Oblique Strategy" },
+            { text: "Imagine the music as a set of disconnected events.", author: "Oblique Strategy" },
+            { text: "Infinitesimal gradations.", author: "Oblique Strategy" },
+            { text: "Intentions -credibility of -nobility of -humility of.", author: "Oblique Strategy" },
+            { text: "Into the impossible.", author: "Oblique Strategy" },
+            { text: "It is quite possible (after all).", author: "Oblique Strategy" },
+            { text: "Just carry on.", author: "Oblique Strategy" },
+            { text: "Listen to the quiet voice.", author: "Oblique Strategy" },
+            { text: "Look at a very small object, look at its centre.", author: "Oblique Strategy" },
+            { text: "Look closely at the most embarrassing details and amplify them.", author: "Oblique Strategy" },
+            { text: "Lost in useless territory.", author: "Oblique Strategy" },
+            { text: "Lowest common denominator.", author: "Oblique Strategy" },
+            { text: "Make a blank valuable by putting it in an exquisite frame.", author: "Oblique Strategy" },
+            { text: "Make an exhaustive list of everything you might do and do the last thing on the list.", author: "Oblique Strategy" },
+            { text: "Make it more sensual.", author: "Oblique Strategy" },
+            { text: "Mechanicalize something perfectly.", author: "Oblique Strategy" },
+            { text: "Move towards the unimportant.", author: "Oblique Strategy" },
+            { text: "Mute and continue.", author: "Oblique Strategy" },
+            { text: "Not building a wall but making a brick.", author: "Oblique Strategy" },
+            { text: "Once the search is in progress, something will be found.", author: "Oblique Strategy" },
+            { text: "Question the heroic approach.", author: "Oblique Strategy" },
+            { text: "Remember those quiet evenings.", author: "Oblique Strategy" },
+            { text: "Remove specifics and convert to ambiguities.", author: "Oblique Strategy" },
+            { text: "Repetition is a form of change.", author: "Oblique Strategy" },
+            { text: "Reverse.", author: "Oblique Strategy" },
+            { text: "Short circuit (example; a man eating peas with the idea that they will improve his virility).", author: "Oblique Strategy" },
+            { text: "Shut the door and listen from the outside.", author: "Oblique Strategy" },
+            { text: "Spectrum analysis.", author: "Oblique Strategy" },
+            { text: "Take a break.", author: "Oblique Strategy" },
+            { text: "Take away the elements in order of apparent non-importance.", author: "Oblique Strategy" },
+            { text: "The inconsistency principle.", author: "Oblique Strategy" },
+            { text: "The tape is now the music.", author: "Oblique Strategy" },
+            { text: "Think of the radio.", author: "Oblique Strategy" },
+            { text: "Tidy up.", author: "Oblique Strategy" },
+            { text: "Towards the insignificant.", author: "Oblique Strategy" },
+            { text: "Turn it upside down.", author: "Oblique Strategy" },
+            { text: "Twist the spine.", author: "Oblique Strategy" },
+            { text: "Use 'unqualified' people.", author: "Oblique Strategy" },
+            { text: "Voice your suspicions.", author: "Oblique Strategy" },
+            { text: "Water.", author: "Oblique Strategy" },
+            { text: "What are you really thinking about just now?", author: "Oblique Strategy" },
+            { text: "What is the reality of the situation?", author: "Oblique Strategy" },
+            { text: "What mistakes did you make last time?", author: "Oblique Strategy" },
+            { text: "What wouldn't you do?", author: "Oblique Strategy" },
+            { text: "You are an engineer.", author: "Oblique Strategy" },
+
+
+            // -----------------------------------------------------------------
+            // STOIC WISDOM
+            // -----------------------------------------------------------------
+
+            // --- Original Items ---
             { text: "You have power over your mind - not outside events. Realize this, and you will find strength.", author: "Marcus Aurelius" },
             { text: "We suffer more often in imagination than in reality.", author: "Seneca" },
             { text: "It is not death that a man should fear, but he should fear never beginning to live.", author: "Marcus Aurelius" },
@@ -265,7 +389,64 @@
             { text: "Wealth consists not in having great possessions, but in having few wants.", author: "Epictetus" },
             { text: "Man is not worried by real problems so much as by his imagined anxieties about real problems.", author: "Epictetus" },
             { text: "The best revenge is to be unlike him who performed the injury.", author: "Marcus Aurelius" },
-            { text: "Luck is what happens when preparation meets opportunity.", author: "Seneca" }
+            { text: "Luck is what happens when preparation meets opportunity.", author: "Seneca" },
+
+            // --- Added Items (50+) ---
+            { text: "No man is free who is not master of himself.", author: "Epictetus" },
+            { text: "Associate with people who are likely to improve you.", author: "Seneca" },
+            { text: "The soul becomes dyed with the color of its thoughts.", author: "Marcus Aurelius" },
+            { text: "He who fears death will never do anything worth of a man who is alive.", author: "Seneca" },
+            { text: "First say to yourself what you would be; and then do what you have to do.", author: "Epictetus" },
+            { text: "If you are distressed by anything external, the pain is not due to the thing itself, but to your estimate of it.", author: "Marcus Aurelius" },
+            { text: "It is the power of the mind to be unconquerable.", author: "Seneca" },
+            { text: "Don't explain your philosophy. Embodiment it.", author: "Epictetus" },
+            { text: "Dwell on the beauty of life. Watch the stars, and see yourself running with them.", author: "Marcus Aurelius" },
+            { text: "Time discovers truth.", author: "Seneca" },
+            { text: "It is impossible for a man to learn what he thinks he already knows.", author: "Epictetus" },
+            { text: "Accept the things to which fate binds you, and love the people with whom fate brings you together, but do so with all your heart.", author: "Marcus Aurelius" },
+            { text: "To be everywhere is to be nowhere.", author: "Seneca" },
+            { text: "There is no easy way from the earth to the stars.", author: "Seneca" },
+            { text: "When you arise in the morning think of what a privilege it is to be alive, to think, to enjoy, to love.", author: "Marcus Aurelius" },
+            { text: "Make the best use of what is in your power, and take the rest as it happens.", author: "Epictetus" },
+            { text: "The whole future lies in uncertainty: live immediately.", author: "Seneca" },
+            { text: "Very little is needed to make a happy life; it is all within yourself, in your way of thinking.", author: "Marcus Aurelius" },
+            { text: "He suffers more than necessary, who suffers before it is necessary.", author: "Seneca" },
+            { text: "Circumstances don't make the man, they only reveal him to himself.", author: "Epictetus" },
+            { text: "Reject your sense of injury and the injury itself disappears.", author: "Marcus Aurelius" },
+            { text: "Life is long if you know how to use it.", author: "Seneca" },
+            { text: "You become what you give your attention to.", author: "Epictetus" },
+            { text: "Everything we hear is an opinion, not a fact. Everything we see is a perspective, not the truth.", author: "Marcus Aurelius" },
+            { text: "As is a tale, so is life: not how long it is, but how good it is, is what matters.", author: "Seneca" },
+            { text: "If you wish to be a writer, write.", author: "Epictetus" },
+            { text: "Look back over the past, with its changing empires that rose and fell, and you can foresee the future, too.", author: "Marcus Aurelius" },
+            { text: "If a man knows not to which port he sails, no wind is favorable.", author: "Seneca" },
+            { text: "Freedom is the only worthy goal in life. It is won by disregarding things that lie beyond our control.", author: "Epictetus" },
+            { text: "Because a thing seems difficult for you, do not think it impossible for anyone to accomplish.", author: "Marcus Aurelius" },
+            { text: "While we wait for life, life passes.", author: "Seneca" },
+            { text: "Know, first, who you are, and then adorn yourself accordingly.", author: "Epictetus" },
+            { text: "Confine yourself to the present.", author: "Marcus Aurelius" },
+            { text: "Difficulties strengthen the mind, as labor does the body.", author: "Seneca" },
+            { text: "It is a rough road that leads to the heights of greatness.", author: "Seneca" },
+            { text: "Loss is nothing else but change, and change is Nature's delight.", author: "Marcus Aurelius" },
+            { text: "What is the point of dragging up sufferings that are over, of being miserable now because you were miserable then?", author: "Seneca" },
+            { text: "Any person capable of angering you becomes your master.", author: "Epictetus" },
+            { text: "Receive without conceit, release without struggle.", author: "Marcus Aurelius" },
+            { text: "Often a very old man has no other proof of his long life than his age.", author: "Seneca" },
+            { text: "Only the educated are free.", author: "Epictetus" },
+            { text: "Dig deep within yourself, for there is a fountain of goodness ever ready to flow if you will keep digging.", author: "Marcus Aurelius" },
+            { text: "Hang on to your youthful enthusiasms -- you’ll be able to use them better when you’re older.", author: "Seneca" },
+            { text: "Don't hope that events will turn out the way you want, welcome events in whichever way they happen.", author: "Epictetus" },
+            { text: "How much time he gains who does not look to see what his neighbor says or does or thinks.", author: "Marcus Aurelius" },
+            { text: "Brave men rejoice in adversity, just as brave soldiers triumph in war.", author: "Seneca" },
+            { text: "Small-minded people blame others. Average people blame themselves. The wise see all blame as foolishness.", author: "Epictetus" },
+            { text: "The object of life is not to be on the side of the majority, but to escape finding oneself in the ranks of the insane.", author: "Marcus Aurelius" },
+            { text: "Every night before going to sleep, we must ask ourselves: what weakness did I overcome today? What virtue did I acquire?", author: "Seneca" },
+            { text: "No great thing is created suddenly.", author: "Epictetus" },
+            { text: "The universe is change; our life is what our thoughts make it.", author: "Marcus Aurelius" },
+            { text: "They lose the day in expectation of the night, and the night in fear of the dawn.", author: "Seneca" },
+            { text: "Silence is safer than speech.", author: "Epictetus" },
+            { text: "To live a good life: We have the potential for it. If we can learn to be indifferent to what makes no difference.", author: "Marcus Aurelius" },
+            { text: "One of the most beautiful qualities of true friendship is to understand and to be understood.", author: "Seneca" }
         ];
 
         // --- Logic ---
