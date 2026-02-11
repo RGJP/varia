@@ -265,9 +265,7 @@
             <button id="saveBtn">Save</button>
         </div>
 
-        <div class="control-group">
-            <button id="audioToggle" class="active">Audio On</button>
-        </div>
+
     </div>
 
     <script>
@@ -275,11 +273,10 @@
          * Mandala Maker
          * 
          * Core Logic:
-         * 1. Mouse/Touch input maps to canvas coordinates.
-         * 2. Coordinates are rotated around the center 'N' times (Symmetry).
-         * 3. Lines are drawn connecting previous point to current point for each rotation.
-         * 4. "Sand Mode" works by drawing a semi-transparent rectangle over the whole canvas every frame, creating a trail/fade effect.
-         * 5. Audio: Web Audio API oscillators triggered on drawing distance.
+         * 1. Canvas is larger than viewport (1.5x) and centered via Flexbox.
+         * 2. Zoom is handled via CSS transform: scale().
+         * 3. Input coordinates are mapped from viewport space to canvas space using getBoundingClientRect().
+         * 4. Symmetry & Drawing logic remains same.
          */
 
         const canvas = document.getElementById('zenCanvas');
@@ -289,7 +286,6 @@
         const sandModeBtn = document.getElementById('sandModeBtn');
         const clearBtn = document.getElementById('clearBtn');
         const saveBtn = document.getElementById('saveBtn');
-        const audioToggle = document.getElementById('audioToggle');
         const colorPicker = document.getElementById('colorPicker');
         const startTip = document.getElementById('startTip');
 
@@ -297,12 +293,16 @@
         let drawing = false;
         let lastX = 0;
         let lastY = 0;
-        let centerX = window.innerWidth / 2;
-        let centerY = window.innerHeight / 2;
+        let centerX = 0;
+        let centerY = 0;
         let symmetry = 6;
         let hue = 0;
         let isSandMode = false;
-        let audioEnabled = true;
+
+        // Zoom State
+        let currentScale = 1;
+        let initialPinchDist = 0;
+        let initialScale = 1;
 
         // Configuration
         const PALETTES = [
@@ -314,25 +314,32 @@
         ];
         let currentColor = PALETTES[4]; // Default to Rainbow
 
-        // Audio Context
-        let audioCtx;
-        let masterGain;
-
         // --- Initialization ---
 
         function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            // Make canvas large enough to cover screens even if rotated or zoomed out a bit
+            const size = Math.max(window.innerWidth, window.innerHeight) * 1.5;
+            canvas.width = size;
+            canvas.height = size;
+            canvas.style.width = `${size}px`;
+            canvas.style.height = `${size}px`;
+
             centerX = canvas.width / 2;
             centerY = canvas.height / 2;
-            // Fill black on resize to prevent clearing content (optional, but good for consistent background)
-            // But usually we want to keep drawing. For now we clear on resize or just let it be.
-            // Let's just fill with background color to ensure no transparency issues.
+
             ctx.fillStyle = '#050510';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Re-apply scale
+            updateTransform();
+        }
+
+        function updateTransform() {
+            canvas.style.transform = `scale(${currentScale})`;
         }
 
         window.addEventListener('resize', resize);
+        // Initial call
         resize();
 
         // --- Color Picker Generator ---
@@ -354,6 +361,20 @@
             colorPicker.appendChild(el);
         });
 
+        // --- Coordinate Mapping ---
+        function getCanvasCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
 
         // --- Drawing Logic ---
 
@@ -361,8 +382,7 @@
             if (!drawing) return;
 
             // Get Position
-            const x = (e.touches ? e.touches[0].clientX : e.clientX);
-            const y = (e.touches ? e.touches[0].clientY : e.clientY);
+            const { x, y } = getCanvasCoordinates(e);
 
             // Determine Color
             let strokeColor;
@@ -373,7 +393,7 @@
                 strokeColor = currentColor.color;
             }
 
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 2; // Fixed width remains good on high-res canvas
             ctx.strokeStyle = strokeColor;
             ctx.lineCap = 'round';
             ctx.shadowBlur = 10;
@@ -390,68 +410,106 @@
             for (let i = 0; i < symmetry; i++) {
                 ctx.rotate(angleStep);
 
-                // Draw normal line
                 ctx.beginPath();
                 ctx.moveTo(lastX - centerX, lastY - centerY);
                 ctx.lineTo(x - centerX, y - centerY);
                 ctx.stroke();
-
-                // Draw mirrored line (optional, for kaleidoscope effect)
-                // To do true mirror, we'd scale(1, -1) but that gets complex with rotation.
-                // For simple rotational symmetry, just rotating is enough.
-                // Let's add a "Mirror" mode implies adjusting 'x' relative to center? 
-                // For now, simple rotation is "Mandala" style.
             }
 
             ctx.restore();
-
-            // Trigger Audio based on movement
-            const dist = Math.hypot(x - lastX, y - lastY);
-            if (dist > 10) { // Only play if moved enough
-                playGenerativeSound(x, y, dist);
-            }
 
             lastX = x;
             lastY = y;
         }
 
-        // Input Listeners
-        canvas.addEventListener('mousedown', (e) => {
+        // --- Input Listeners ---
+
+        // Start Drawing
+        function handleStart(e) {
+            // Ignore if multi-touch (pinch)
+            if (e.touches && e.touches.length > 1) return;
+
+            if (e.cancelable) e.preventDefault(); // Prevent default touch actions except pinch
+
             drawing = true;
-            lastX = e.clientX;
-            lastY = e.clientY;
+            const pos = getCanvasCoordinates(e);
+            lastX = pos.x;
+            lastY = pos.y;
             startTip.classList.add('hidden');
-            initAudio(); // Initialize audio on first interaction
-        });
+        }
 
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', () => drawing = false);
-        canvas.addEventListener('mouseout', () => drawing = false);
+        // Move / Draw / Zoom
+        function handleMove(e) {
+            if (e.cancelable) e.preventDefault();
 
-        // Touch support
+            // Handle Pinch Zoom
+            if (e.touches && e.touches.length === 2) {
+                drawing = false; // Stop drawing when pinching
+                const dist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+
+                if (initialPinchDist > 0) {
+                    const delta = dist / initialPinchDist;
+                    currentScale = Math.min(Math.max(0.1, initialScale * delta), 5);
+                    updateTransform();
+                } else {
+                    // First move frame of pinch? No, touchstart handles initial.
+                    // But if 2nd finger added during move?
+                    initialPinchDist = dist;
+                    initialScale = currentScale;
+                }
+                return;
+            }
+
+            if (drawing) {
+                draw(e);
+            }
+        }
+
+        function handleEnd(e) {
+            drawing = false;
+            initialPinchDist = 0; // Reset pinch
+        }
+
+        // Event Attachment
+        canvas.addEventListener('mousedown', handleStart);
+        canvas.addEventListener('mousemove', handleMove);
+        canvas.addEventListener('mouseup', handleEnd);
+        canvas.addEventListener('mouseout', handleEnd);
+
         canvas.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            drawing = true;
-            lastX = e.touches[0].clientX;
-            lastY = e.touches[0].clientY;
-            startTip.classList.add('hidden');
-            initAudio();
+            if (e.touches.length === 2) {
+                drawing = false;
+                initialPinchDist = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                initialScale = currentScale;
+            } else {
+                handleStart(e);
+            }
         }, { passive: false });
 
-        canvas.addEventListener('touchmove', (e) => {
+        canvas.addEventListener('touchmove', handleMove, { passive: false });
+        canvas.addEventListener('touchend', handleEnd);
+
+        // Wheel Zoom for Desktop
+        canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
-            draw(e);
+            const direction = e.deltaY > 0 ? -1 : 1;
+            const factor = 0.1;
+            currentScale += direction * factor * currentScale;
+            currentScale = Math.min(Math.max(0.1, currentScale), 5);
+            updateTransform();
         }, { passive: false });
 
-        canvas.addEventListener('touchend', () => drawing = false);
-
-
-        // --- Game Loop (For Sand Mode) ---
+        // --- Game Loop (Sand Mode) ---
         function animate() {
             if (isSandMode) {
-                // Fade out effect
                 ctx.save();
-                ctx.fillStyle = 'rgba(5, 5, 16, 0.05)'; // Deep background with very low opacity
+                ctx.fillStyle = 'rgba(5, 5, 16, 0.05)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.restore();
             }
@@ -473,11 +531,11 @@
         });
 
         clearBtn.addEventListener('click', () => {
-            // Create a flash effect
             ctx.fillStyle = '#fff';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             setTimeout(() => {
-                resize(); // Resets to dark background
+                ctx.fillStyle = '#050510'; // Use fillRect instead of resize to keep scale
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
             }, 50);
         });
 
@@ -488,80 +546,7 @@
             link.click();
         });
 
-        audioToggle.addEventListener('click', () => {
-            audioEnabled = !audioEnabled;
-            audioToggle.classList.toggle('active', audioEnabled);
-            audioToggle.textContent = audioEnabled ? "Audio On" : "Audio Muted";
-        });
 
-
-        // --- Audio Engine (Web Audio API) ---
-        // Pentatonic Scale (C Major Pentatonic: C, D, E, G, A) or variations.
-        // Frequencies for C4, D4, E4, G4, A4, C5...
-        const SCALE = [
-            261.63, 293.66, 329.63, 392.00, 440.00, // 4
-            523.25, 587.33, 659.25, 783.99, 880.00, // 5
-            1046.50, 1174.66 // 6
-        ];
-
-        function initAudio() {
-            if (audioCtx) return;
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            audioCtx = new AudioContext();
-            masterGain = audioCtx.createGain();
-            masterGain.connect(audioCtx.destination);
-            masterGain.gain.value = 0.3; // Specific volume
-        }
-
-        // Simple throttle to prevent audio chaos
-        let lastSoundTime = 0;
-
-        function playGenerativeSound(x, y, speed) {
-            if (!audioEnabled || !audioCtx) return;
-
-            const now = audioCtx.currentTime;
-
-            // Limit triggering rate
-            if (now - lastSoundTime < 0.08) return;
-            lastSoundTime = now;
-
-            // Map Y position to Pitch (Higher Y = Lower Pitch, usually, but let's invert for 'sky' feeling)
-            // Actually, let's map Distance from Center to Pitch.
-            // Center = High frequency (intense), Edge = Low frequency (grounded).
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            const distFromCenter = Math.hypot(x - centerX, y - centerY);
-            const maxDist = Math.max(canvas.width, canvas.height) / 2;
-
-            // Map 0 -> maxDist to Scale Index (high -> low)
-            const normalizedDist = Math.min(distFromCenter / maxDist, 1);
-            const noteIndex = Math.floor((1 - normalizedDist) * (SCALE.length - 1));
-            const freq = SCALE[noteIndex] || SCALE[0];
-
-            // Oscillator
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-
-            osc.type = 'sine'; // Pure tone
-            osc.frequency.setValueAtTime(freq, now);
-
-            // Random slight detune for organic feel
-            osc.detune.value = (Math.random() - 0.5) * 10;
-
-            // Envelope (Bell-like)
-            // Volume based on speed? Faster = Louder
-            const volume = Math.min(Math.max(speed / 50, 0.1), 0.5);
-
-            gain.gain.setValueAtTime(0, now);
-            gain.gain.linearRampToValueAtTime(volume, now + 0.02);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5); // Long tail
-
-            osc.connect(gain);
-            gain.connect(masterGain);
-
-            osc.start(now);
-            osc.stop(now + 1.6);
-        }
 
     </script>
 </body>
