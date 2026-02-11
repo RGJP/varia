@@ -36,12 +36,17 @@
             height: 100vh;
             overflow: hidden;
             cursor: crosshair;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         canvas {
             display: block;
             width: 100%;
             height: 100%;
+            flex-shrink: 0;
+            box-shadow: 0 0 100px rgba(0, 0, 0, 0.5);
         }
 
         /* Minimalist UI Overlay */
@@ -62,7 +67,7 @@
             z-index: 10;
         }
 
-        /* Auto-hide UI when idle (optional, but keeps it clean) */
+        /* Auto-hide UI when idle */
         body.idle .ui-overlay {
             opacity: 0.3;
             transform: translateX(-50%) translateY(10px);
@@ -141,7 +146,7 @@
             box-shadow: 0 0 15px rgba(165, 180, 252, 0.5);
         }
 
-        /* Color Picker (Radio buttons styled as circles) */
+        /* Color Picker */
         .color-picker {
             display: flex;
             gap: 0.5rem;
@@ -161,9 +166,6 @@
             transform: scale(1.1);
         }
 
-        /* Header / Title */
-
-
         .tip {
             position: absolute;
             top: 50%;
@@ -181,8 +183,6 @@
         .tip.hidden {
             opacity: 0;
         }
-
-
 
         @media (max-width: 800px) {
             .ui-overlay {
@@ -205,8 +205,6 @@
                 font-size: 0.7rem;
             }
 
-
-
             button {
                 padding: 0.4rem 0.8rem;
                 font-size: 0.7rem;
@@ -221,27 +219,10 @@
                 height: 24px;
             }
         }
-
-        /* Canvas Wrapper for Centering */
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: var(--bg-deep);
-        }
-
-        canvas {
-            /* Canvas size will be set in JS, but it shouldn't distort */
-            flex-shrink: 0;
-            box-shadow: 0 0 100px rgba(0, 0, 0, 0.5);
-            /* Subtle shadow to see bounds when zoomed out */
-        }
     </style>
 </head>
 
 <body>
-
-
     <div class="tip" id="startTip">Click & Drag to Draw</div>
     <canvas id="zenCanvas"></canvas>
 
@@ -253,32 +234,19 @@
         </div>
 
         <div class="control-group">
-            <button id="sandModeBtn" title="Lines fade over time">Sand Mode</button>
+            <button id="sandModeBtn" title="Lines fade rapidly into the void">Water Mode</button>
         </div>
 
         <div class="control-group color-picker" id="colorPicker">
-            <!-- Populated by JS -->
         </div>
 
         <div class="control-group">
             <button id="clearBtn">Clear</button>
             <button id="saveBtn">Save</button>
         </div>
-
-
     </div>
 
     <script>
-        /**
-         * Mandala Maker
-         * 
-         * Core Logic:
-         * 1. Canvas is larger than viewport (1.5x) and centered via Flexbox.
-         * 2. Zoom is handled via CSS transform: scale().
-         * 3. Input coordinates are mapped from viewport space to canvas space using getBoundingClientRect().
-         * 4. Symmetry & Drawing logic remains same.
-         */
-
         const canvas = document.getElementById('zenCanvas');
         const ctx = canvas.getContext('2d');
         const symmetryRange = document.getElementById('symmetryRange');
@@ -297,7 +265,9 @@
         let centerY = 0;
         let symmetry = 6;
         let hue = 0;
+
         let isSandMode = false;
+        let lastDrawTime = 0;
 
         // Zoom State
         let currentScale = 1;
@@ -312,25 +282,18 @@
             { color: 'hsl(150, 100%, 70%)', name: 'Zen' },
             { color: 'rainbow', name: 'Flow' }
         ];
-        let currentColor = PALETTES[4]; // Default to Rainbow
+        let currentColor = PALETTES[4];
 
         // --- Initialization ---
-
         function resize() {
-            // Make canvas large enough to cover screens even if rotated or zoomed out a bit
             const size = Math.max(window.innerWidth, window.innerHeight) * 1.5;
             canvas.width = size;
             canvas.height = size;
             canvas.style.width = `${size}px`;
             canvas.style.height = `${size}px`;
-
             centerX = canvas.width / 2;
             centerY = canvas.height / 2;
-
-            ctx.fillStyle = '#050510';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Re-apply scale
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             updateTransform();
         }
 
@@ -339,7 +302,6 @@
         }
 
         window.addEventListener('resize', resize);
-        // Initial call
         resize();
 
         // --- Color Picker Generator ---
@@ -351,7 +313,7 @@
             } else {
                 el.style.background = p.color;
             }
-            if (index === 4) el.classList.add('selected'); // Select rainbow by default
+            if (index === 4) el.classList.add('selected');
 
             el.addEventListener('click', () => {
                 document.querySelectorAll('.color-option').forEach(e => e.classList.remove('selected'));
@@ -366,10 +328,8 @@
             const rect = canvas.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
-
             return {
                 x: (clientX - rect.left) * scaleX,
                 y: (clientY - rect.top) * scaleY
@@ -377,14 +337,10 @@
         }
 
         // --- Drawing Logic ---
-
         function draw(e) {
             if (!drawing) return;
-
-            // Get Position
             const { x, y } = getCanvasCoordinates(e);
 
-            // Determine Color
             let strokeColor;
             if (currentColor.color === 'rainbow') {
                 strokeColor = `hsl(${hue}, 100%, 50%)`;
@@ -393,23 +349,24 @@
                 strokeColor = currentColor.color;
             }
 
-            ctx.lineWidth = 2; // Fixed width remains good on high-res canvas
+            ctx.lineWidth = isSandMode ? 3 : 2;
             ctx.strokeStyle = strokeColor;
             ctx.lineCap = 'round';
-            ctx.shadowBlur = 10;
+            ctx.lineJoin = 'round';
+            ctx.shadowBlur = isSandMode ? 20 : 10;
             ctx.shadowColor = strokeColor;
 
-            // Calculate Angle Step
             const angleStep = (Math.PI * 2) / symmetry;
 
-            // Save Context
             ctx.save();
+            // Slight transparency for water mode to create watercolor effect
+            if (isSandMode) {
+                ctx.globalAlpha = 0.85;
+            }
             ctx.translate(centerX, centerY);
 
-            // Draw for each symmetry sector
             for (let i = 0; i < symmetry; i++) {
                 ctx.rotate(angleStep);
-
                 ctx.beginPath();
                 ctx.moveTo(lastX - centerX, lastY - centerY);
                 ctx.lineTo(x - centerX, y - centerY);
@@ -420,17 +377,13 @@
 
             lastX = x;
             lastY = y;
+            lastDrawTime = Date.now();
         }
 
         // --- Input Listeners ---
-
-        // Start Drawing
         function handleStart(e) {
-            // Ignore if multi-touch (pinch)
             if (e.touches && e.touches.length > 1) return;
-
-            if (e.cancelable) e.preventDefault(); // Prevent default touch actions except pinch
-
+            if (e.cancelable) e.preventDefault();
             drawing = true;
             const pos = getCanvasCoordinates(e);
             lastX = pos.x;
@@ -438,47 +391,36 @@
             startTip.classList.add('hidden');
         }
 
-        // Move / Draw / Zoom
         function handleMove(e) {
             if (e.cancelable) e.preventDefault();
-
-            // Handle Pinch Zoom
             if (e.touches && e.touches.length === 2) {
-                drawing = false; // Stop drawing when pinching
+                drawing = false;
                 const dist = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
                     e.touches[0].clientY - e.touches[1].clientY
                 );
-
                 if (initialPinchDist > 0) {
                     const delta = dist / initialPinchDist;
                     currentScale = Math.min(Math.max(0.1, initialScale * delta), 5);
                     updateTransform();
                 } else {
-                    // First move frame of pinch? No, touchstart handles initial.
-                    // But if 2nd finger added during move?
                     initialPinchDist = dist;
                     initialScale = currentScale;
                 }
                 return;
             }
-
-            if (drawing) {
-                draw(e);
-            }
+            if (drawing) draw(e);
         }
 
         function handleEnd(e) {
             drawing = false;
-            initialPinchDist = 0; // Reset pinch
+            initialPinchDist = 0;
         }
 
-        // Event Attachment
         canvas.addEventListener('mousedown', handleStart);
         canvas.addEventListener('mousemove', handleMove);
         canvas.addEventListener('mouseup', handleEnd);
         canvas.addEventListener('mouseout', handleEnd);
-
         canvas.addEventListener('touchstart', (e) => {
             if (e.touches.length === 2) {
                 drawing = false;
@@ -491,11 +433,8 @@
                 handleStart(e);
             }
         }, { passive: false });
-
         canvas.addEventListener('touchmove', handleMove, { passive: false });
         canvas.addEventListener('touchend', handleEnd);
-
-        // Wheel Zoom for Desktop
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
             const direction = e.deltaY > 0 ? -1 : 1;
@@ -505,21 +444,67 @@
             updateTransform();
         }, { passive: false });
 
-        // --- Game Loop (Sand Mode) ---
+        // --- Game Loop (Water Mode Logic) ---
+        let fadePhase = 0;
+
         function animate() {
             if (isSandMode) {
+                const now = Date.now();
+                const timeSinceLastDraw = now - lastDrawTime;
+
+                // Create a natural fluid dissipation effect
+                // Phase 1: Gentle fade while drawing (like ink spreading)
+                // Phase 2: Accelerated fade after stopping (like water evaporating)
+                // Phase 3: Final dissipation (complete fade out)
+
+                let fadeStrength;
+
+                if (timeSinceLastDraw < 500) {
+                    // Active drawing - very gentle fade
+                    fadeStrength = 0.008;
+                    fadePhase = 1;
+                } else if (timeSinceLastDraw < 2000) {
+                    // Just stopped - moderate fade with smooth acceleration
+                    const progress = (timeSinceLastDraw - 500) / 1500;
+                    fadeStrength = 0.008 + (progress * 0.025); // Ramps from 0.008 to 0.033
+                    fadePhase = 2;
+                } else if (timeSinceLastDraw < 4000) {
+                    // Final dissipation - stronger fade
+                    const progress = (timeSinceLastDraw - 2000) / 2000;
+                    fadeStrength = 0.033 + (progress * 0.047); // Ramps from 0.033 to 0.08
+                    fadePhase = 3;
+                } else {
+                    // Complete fade - very aggressive to clean up any remnants
+                    fadeStrength = 0.12;
+                }
+
+                // Apply smooth, natural fade
                 ctx.save();
-                ctx.fillStyle = 'rgba(5, 5, 16, 0.05)';
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = `rgba(0, 0, 0, ${fadeStrength})`;
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.restore();
+
+                // Add subtle blur effect to simulate water diffusion
+                // Only during active fade phases
+                if (fadePhase >= 2 && timeSinceLastDraw < 3000) {
+                    const blurStrength = Math.min((timeSinceLastDraw - 500) / 2500, 1);
+                    if (blurStrength > 0) {
+                        ctx.save();
+                        ctx.globalAlpha = 0.015 * blurStrength; // Very subtle
+                        ctx.filter = 'blur(0.5px)';
+                        ctx.drawImage(canvas, 0, 0);
+                        ctx.restore();
+                        ctx.filter = 'none';
+                    }
+                }
             }
             requestAnimationFrame(animate);
         }
         animate();
 
-
         // --- UI Controls ---
-
         symmetryRange.addEventListener('input', (e) => {
             symmetry = parseInt(e.target.value);
             symmetryVal.textContent = symmetry;
@@ -528,26 +513,26 @@
         sandModeBtn.addEventListener('click', () => {
             isSandMode = !isSandMode;
             sandModeBtn.classList.toggle('active', isSandMode);
+            lastDrawTime = Date.now();
         });
 
         clearBtn.addEventListener('click', () => {
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            setTimeout(() => {
-                ctx.fillStyle = '#050510'; // Use fillRect instead of resize to keep scale
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }, 50);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
         });
 
         saveBtn.addEventListener('click', () => {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCtx.fillStyle = '#050510';
+            tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+            tempCtx.drawImage(canvas, 0, 0);
             const link = document.createElement('a');
             link.download = `mandala-${Date.now()}.png`;
-            link.href = canvas.toDataURL();
+            link.href = tempCanvas.toDataURL();
             link.click();
         });
-
-
-
     </script>
 </body>
 
