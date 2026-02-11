@@ -15,17 +15,20 @@
             --card-width: 320px;
             --card-height: 520px;
             --card-radius: 24px;
-            --text-color: #2c3e50;
-            --accent-color: #ff6b6b;
+            --text-color: #ecf0f1;
+            --accent-color: #ba64ff;
+            /* Soft lavender/purple for a magical feel */
+            --bg-gradient: linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460);
+            /* Deep night theme */
         }
 
         body {
             margin: 0;
             padding: 0;
-            /* Uplifting Gradient */
-            background: linear-gradient(-45deg, #ff9a9e, #fad0c4, #fad0c4, #a18cd1, #fbc2eb);
+            /* Soothing Dark Gradient */
+            background: var(--bg-gradient);
             background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            animation: gradientBG 20s ease infinite;
             font-family: 'Inter', sans-serif;
             height: 100vh;
             display: flex;
@@ -79,16 +82,16 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1), 0 5px 15px rgba(0, 0, 0, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 5px 15px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         /* Front (Logo side) */
         .card-front {
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(20, 20, 30, 0.6);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.1) 100%);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
         }
 
         /* Decorative circle on front */
@@ -96,15 +99,15 @@
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.05);
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 2.5rem;
-            color: #fff;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            color: var(--accent-color);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-shadow: 0 0 15px rgba(186, 100, 255, 0.6);
         }
 
         .tap-hint {
@@ -113,29 +116,29 @@
             font-size: 0.85rem;
             letter-spacing: 2px;
             text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.95);
-            font-weight: 600;
-            animation: pulse 2s infinite;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: 500;
+            animation: pulse 3s infinite;
         }
 
         @keyframes pulse {
 
             0%,
             100% {
-                opacity: 0.6;
+                opacity: 0.4;
                 transform: scale(1);
             }
 
             50% {
-                opacity: 1;
+                opacity: 0.8;
                 transform: scale(1.05);
             }
         }
 
         /* Back (Content side) */
         .card-back {
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(30, 30, 40, 0.85);
+            /* Darker card background */
             backdrop-filter: blur(30px);
             -webkit-backdrop-filter: blur(30px);
             transform: rotateY(180deg);
@@ -148,12 +151,13 @@
             font-family: 'Merriweather', serif;
             font-size: 1.5rem;
             line-height: 1.6;
-            color: #333;
+            color: #ecf0f1;
+            /* Light grey text */
             max-height: 75%;
             overflow-y: auto;
             /* Scrollbar styling */
             scrollbar-width: thin;
-            scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
+            scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
         }
 
         .card-content::-webkit-scrollbar {
@@ -161,7 +165,7 @@
         }
 
         .card-content::-webkit-scrollbar-thumb {
-            background-color: rgba(0, 0, 0, 0.1);
+            background-color: rgba(255, 255, 255, 0.1);
             border-radius: 3px;
         }
 
@@ -170,8 +174,9 @@
             margin-bottom: 10px;
             font-size: 0.9rem;
             color: #7f8c8d;
+            /* Muted grey */
             font-style: italic;
-            border-top: 2px solid rgba(0, 0, 0, 0.05);
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
             padding-top: 15px;
             width: 60%;
             font-family: 'Inter', sans-serif;
@@ -186,28 +191,29 @@
         }
 
         button {
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(0, 0, 0, 0.2);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.8);
             padding: 12px 28px;
             border-radius: 30px;
             cursor: pointer;
             font-size: 1rem;
-            font-weight: 600;
+            font-weight: 500;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
             font-family: 'Inter', sans-serif;
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         button:hover {
-            background: rgba(255, 255, 255, 0.45);
+            background: rgba(255, 255, 255, 0.1);
             transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.3);
         }
 
         button:active {
@@ -446,7 +452,103 @@
             { text: "They lose the day in expectation of the night, and the night in fear of the dawn.", author: "Seneca" },
             { text: "Silence is safer than speech.", author: "Epictetus" },
             { text: "To live a good life: We have the potential for it. If we can learn to be indifferent to what makes no difference.", author: "Marcus Aurelius" },
-            { text: "One of the most beautiful qualities of true friendship is to understand and to be understood.", author: "Seneca" }
+            { text: "One of the most beautiful qualities of true friendship is to understand and to be understood.", author: "Seneca" },
+
+
+
+            // -----------------------------------------------------------------
+            // SRI NISARGADATTA MAHARAJ
+            // -----------------------------------------------------------------
+            { text: "The mind creates the abyss, the heart crosses it.", author: "Sri Nisargadatta Maharaj" },
+            { text: "You are the screen on which the movie plays.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Stop imagining yourself being this or that.", author: "Sri Nisargadatta Maharaj" },
+            { text: "The world is but a show, glittering and empty. It is, and yet is not.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Everything happens by itself.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Love says 'I am everything'. Wisdom says 'I am nothing'.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Between the two, my life flows.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Let go of your attachment to the unreal.", author: "Sri Nisargadatta Maharaj" },
+            { text: "The search for reality is the most dangerous of all undertakings for it will destroy you.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Give up all questions except one: 'Who am I?'", author: "Sri Nisargadatta Maharaj" },
+            { text: "To know the world, you must forget the self. To know the self, you must forget the world.", author: "Sri Nisargadatta Maharaj" },
+            { text: "You are not the body.", author: "Sri Nisargadatta Maharaj" },
+            { text: "All you need is to keep quietly being.", author: "Sri Nisargadatta Maharaj" },
+            { text: "The real does not die, the unreal never lived.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Don't be anxious about the future. The same life that cares for you now will care for you then.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Happiness is the cessation of seeking.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Your very desire to be free is the beginning of freedom.", author: "Sri Nisargadatta Maharaj" },
+            { text: "You are the conscious presence. Identify with that.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Stay in the 'I am'.", author: "Sri Nisargadatta Maharaj" },
+            { text: "There is nothing to change, only to see.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Desire is the memory of pleasure and fear is the memory of pain.", author: "Sri Nisargadatta Maharaj" },
+            { text: "To find water, you do not dig small pits all over the place.", author: "Sri Nisargadatta Maharaj" },
+            { text: "All you know is second-hand.", author: "Sri Nisargadatta Maharaj" },
+            { text: "The witness is not a person.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Action is a proof of earnestness. Do what you are told diligently.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Reject what is seen.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Ignore the mind.", author: "Sri Nisargadatta Maharaj" },
+            { text: "When you know that you lack nothing, the whole world is yours.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Events happen, deeds are done, but there is no doer.", author: "Sri Nisargadatta Maharaj" },
+            { text: "What you are, you cannot perceive; what you perceive, you are not.", author: "Sri Nisargadatta Maharaj" },
+            { text: "A quiet mind is all you need.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Once you realize that the road is the goal and that you are always on the road, not to reach a goal, but to enjoy its beauty and its wisdom, life ceases to be a task and becomes natural and simple.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Understand that you are destined for enlightenment.", author: "Sri Nisargadatta Maharaj" },
+            { text: "The person is merely the result of a misunderstanding.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Just keep in mind the feeling 'I am'.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Abandon all attempts to define yourself.", author: "Sri Nisargadatta Maharaj" },
+            { text: "You are the source of your world.", author: "Sri Nisargadatta Maharaj" },
+            { text: "To know that you are a prisoner is the first step.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Leave the mind alone.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Look at your mind, watch it, feel it, but do not be it.", author: "Sri Nisargadatta Maharaj" },
+            { text: "By forgetting, you will be remembered.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Nothing is wrong with the world, only with your way of looking at it.", author: "Sri Nisargadatta Maharaj" },
+            { text: "Be earnest.", author: "Sri Nisargadatta Maharaj" },
+
+            // -----------------------------------------------------------------
+            // SRI RAMANA MAHARSHI
+            // -----------------------------------------------------------------
+            { text: "Silence is the most powerful speech.", author: "Sri Ramana Maharshi" },
+            { text: "Your own Self-Realization is the greatest service you can render the world.", author: "Sri Ramana Maharshi" },
+            { text: "There is no greater mystery than this: that we keep seeking reality though in fact we are reality.", author: "Sri Ramana Maharshi" },
+            { text: "Happiness is your nature. It is not wrong to desire it.", author: "Sri Ramana Maharshi" },
+            { text: "Ask yourself 'Who am I?'", author: "Sri Ramana Maharshi" },
+            { text: "The mind is only a bundle of thoughts.", author: "Sri Ramana Maharshi" },
+            { text: "Let what comes come. Let what goes go.", author: "Sri Ramana Maharshi" },
+            { text: "Find out where the 'I' thought arises.", author: "Sri Ramana Maharshi" },
+            { text: "The degree of freedom from unwanted thoughts and the degree of concentration on a single thought are the measures to gauge spiritual progress.", author: "Sri Ramana Maharshi" },
+            { text: "Reform yourself and the whole world will be reformed.", author: "Sri Ramana Maharshi" },
+            { text: "Remain still.", author: "Sri Ramana Maharshi" },
+            { text: "All that is required to realize the Self is to be still.", author: "Sri Ramana Maharshi" },
+            { text: "If you hold this feeling of 'I', no other thought will come to you.", author: "Sri Ramana Maharshi" },
+            { text: "The state we call realization is simply being oneself, not knowing anything or becoming anything.", author: "Sri Ramana Maharshi" },
+            { text: "There is neither past nor future. There is only the present.", author: "Sri Ramana Maharshi" },
+            { text: "Whatever is destined not to happen will not happen, try as you may.", author: "Sri Ramana Maharshi" },
+            { text: "Whatever is destined to happen will happen, do what you may to prevent it.", author: "Sri Ramana Maharshi" },
+            { text: "The best course, therefore, is to remain silent.", author: "Sri Ramana Maharshi" },
+            { text: "Wanting to reform the world without discovering one's true self is like trying to cover the world with leather to avoid the pain of walking on stones and thorns. It is much simpler to wear shoes.", author: "Sri Ramana Maharshi" },
+            { text: "No theory is necessary for the man who seriously desires to approach God or to realize his own true being.", author: "Sri Ramana Maharshi" },
+            { text: "Only if one knows the truth of Love, which is the real nature of Self, will the strong entangled knot of life be untied.", author: "Sri Ramana Maharshi" },
+            { text: "Grace is always present. You imagine it is something somewhere high in the sky... but it is really inside you, in your Heart.", author: "Sri Ramana Maharshi" },
+            { text: "The Self is always shining.", author: "Sri Ramana Maharshi" },
+            { text: "You need not eliminate the false 'I'. How can 'I' eliminate itself? All you need to do is find its origin and stay there.", author: "Sri Ramana Maharshi" },
+            { text: "Mind is consciousness which has put on limitations.", author: "Sri Ramana Maharshi" },
+            { text: "Attend to the immediate work and not worry about the results.", author: "Sri Ramana Maharshi" },
+            { text: "Do not meditate - be.", author: "Sri Ramana Maharshi" },
+            { text: "Do not think that you are the doer.", author: "Sri Ramana Maharshi" },
+            { text: "Realization is not acquisition of anything new nor is it a new faculty. It is only removal of all camouflage.", author: "Sri Ramana Maharshi" },
+            { text: "The radio sings and speaks, but if you open it you will find no one inside.", author: "Sri Ramana Maharshi" },
+            { text: "Keep the mind in the heart.", author: "Sri Ramana Maharshi" },
+            { text: "Look within.", author: "Sri Ramana Maharshi" },
+            { text: "Be as you are.", author: "Sri Ramana Maharshi" },
+            { text: "The past is a dream; the future is a dream.", author: "Sri Ramana Maharshi" },
+            { text: "Surrender gives oneself up to the original cause of one's being.", author: "Sri Ramana Maharshi" },
+            { text: "Correcting oneself is correcting the whole world.", author: "Sri Ramana Maharshi" },
+            { text: "Solitude is in the mind of man.", author: "Sri Ramana Maharshi" },
+            { text: "One may be in the thick of the world and maintain peace of mind; such a one is in solitude.", author: "Sri Ramana Maharshi" },
+            { text: "Self-inquiry is the one infallible means.", author: "Sri Ramana Maharshi" },
+            { text: "Trace the source of the mind.", author: "Sri Ramana Maharshi" },
+            { text: "The world is not external. Fear not.", author: "Sri Ramana Maharshi" },
+            { text: "Just be.", author: "Sri Ramana Maharshi" },
+            { text: "Silence is the language of the Spirit.", author: "Sri Ramana Maharshi" }
         ];
 
         // --- Logic ---
