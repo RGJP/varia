@@ -3,25 +3,31 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>RGJP Navigator</title>
     <link rel="icon" type="image/png" href="favico.png">
-    <script src="https://cdn.tailwindcss.com"></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
         :root {
             /* Deep Space Theme */
             --bg-dark: #000000;
-            --bg-light: #1a1a2e;
+            --bg-deep: #0f172a;
             --glass-bg: rgba(255, 255, 255, 0.08);
             --glass-border: rgba(255, 255, 255, 0.15);
-            --glass-active: rgba(255, 255, 255, 0.2);
+            --glass-active: rgba(255, 255, 255, 0.25);
             --text-main: #f1f5f9;
             --text-muted: #94a3b8;
-            --accent-glow: rgba(56, 189, 248, 0.15);
+            --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
         }
 
         * {
@@ -29,99 +35,164 @@
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            /* Remove mobile tap highlight */
         }
 
         body {
-            background: radial-gradient(circle at top right, #1e1e40, #000000);
+            background: linear-gradient(135deg, #0f172a 0%, #000000 100%);
             color: var(--text-main);
             font-family: 'Inter', sans-serif;
             height: 100vh;
             height: 100dvh;
-            /* Dynamic viewport height for mobile browsers */
+            /* Dynamic viewport height */
             width: 100vw;
             overflow: hidden;
-            /* STRICTLY NO SCROLLING */
+            /* Prevent body scroll, handle in grid */
             display: flex;
             flex-direction: column;
-            padding: 2vh 4vw;
+            padding: env(safe-area-inset-top) 4vw env(safe-area-inset-bottom) 4vw;
         }
 
-        /* Compact Header */
+        /* Subtle animated background mesh */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, 0.1), transparent 60%);
+            animation: pulseBg 15s ease-in-out infinite;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        @keyframes pulseBg {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        /* Header */
         header {
             flex: 0 0 auto;
-            height: 8%;
-            /* Fixed small percentage for header */
+            padding: 2vh 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 1vh;
+            z-index: 10;
         }
 
         h1 {
-            font-size: 5vmin;
-            font-weight: 600;
+            font-size: 1.75rem;
+            font-weight: 700;
             letter-spacing: -0.02em;
             background: linear-gradient(to right, #60a5fa, #c084fc);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(96, 165, 250, 0.2);
         }
 
-        /* The Grid - The Core Logic */
-        .app-grid {
+        /* Scrollable Grid Container */
+        .app-grid-container {
             flex: 1;
-            /* Take remaining space */
-            display: grid;
-            /* 4 Columns x 5 Rows = 20 Slots exactly */
-            grid-template-columns: repeat(4, 1fr);
-            grid-template-rows: repeat(5, 1fr);
-            gap: 3vmin;
-            /* Fluid gap */
+            overflow-y: auto;
+            /* Allow scrolling if content is too tall */
             padding-bottom: 2vh;
-            /* Bottom safety padding */
+            scrollbar-width: none;
+            /* Firefox */
+            -ms-overflow-style: none;
+            /* IE/Edge */
+            mask-image: linear-gradient(to bottom, black 90%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 95%, transparent 100%);
         }
 
-        /* App Icon Button */
+        .app-grid-container::-webkit-scrollbar {
+            display: none;
+            /* Chrome/Safari */
+        }
+
+        /* The Grid */
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px 15px;
+            /* Vertical gap, Horizontal gap */
+            padding: 10px 5px 40px 5px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* App Item */
         .app-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            gap: 8px;
             text-decoration: none;
             position: relative;
-            transition: transform 0.1s ease;
+            cursor: pointer;
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        /* The Icon Container (Squarcle) */
+        /* Icon Container (Squarcle) */
         .icon-box {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            /* Aspect ratio trick for perfect squares */
             width: 100%;
             aspect-ratio: 1 / 1;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
             border-radius: 22%;
-            /* "Squarcle" shape like iOS/OneUI */
+            /* iOS Squarcle style */
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 0.8vh;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             position: relative;
             overflow: hidden;
-            backdrop-filter: blur(10px);
+            transition: background 0.2s ease, border-color 0.2s ease;
         }
 
-        .icon-box::before {
+        /* Inner Shine Effect */
+        .icon-box::after {
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(circle at top left, var(--glass-border), transparent 70%);
-            opacity: 0.5;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
         }
 
-        /* Interaction States */
+        .emoji-icon {
+            font-size: clamp(24px, 8vmin, 42px);
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+            user-select: none;
+        }
+
+        .app-label {
+            color: var(--text-main);
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-align: center;
+            line-height: 1.2;
+            width: 110%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            opacity: 0.9;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        /* Active/Touch States */
         .app-item:active {
-            transform: scale(0.92);
+            transform: scale(0.9);
         }
 
         .app-item:active .icon-box {
@@ -129,46 +200,25 @@
             border-color: rgba(255, 255, 255, 0.4);
         }
 
-        /* Fluid sizing for content */
-        .emoji-icon {
-            font-size: 8vmin;
-            /* Scales with viewport */
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-        }
-
-        .app-label {
-            color: var(--text-main);
-            font-size: 2.8vmin;
-            font-weight: 400;
-            text-align: center;
-            line-height: 1;
-            width: 120%;
-            /* Allow slight overflow width */
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            opacity: 0.9;
-        }
-
         /* Entry Animation */
         .app-item {
             opacity: 0;
-            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
         @keyframes popIn {
-            from {
+            0% {
                 opacity: 0;
-                transform: scale(0.5);
+                transform: scale(0.5) translateY(20px);
             }
 
-            to {
+            100% {
                 opacity: 1;
-                transform: scale(1);
+                transform: scale(1) translateY(0);
             }
         }
 
-        /* Staggered delays for up to 20 items */
+        /* Animation Delays (Covering 20 items) */
         .app-item:nth-child(1) {
             animation-delay: 0.05s;
         }
@@ -224,150 +274,179 @@
         .app-item:nth-child(14) {
             animation-delay: 0.44s;
         }
+
+        .app-item:nth-child(15) {
+            animation-delay: 0.47s;
+        }
+
+        .app-item:nth-child(16) {
+            animation-delay: 0.50s;
+        }
+
+        .app-item:nth-child(17) {
+            animation-delay: 0.53s;
+        }
+
+        .app-item:nth-child(18) {
+            animation-delay: 0.56s;
+        }
+
+        .app-item:nth-child(19) {
+            animation-delay: 0.59s;
+        }
+
+        .app-item:nth-child(20) {
+            animation-delay: 0.62s;
+        }
+
+        /* Media Queries for Small Screens */
+        @media (max-width: 350px) {
+            .app-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 15px;
+            }
+        }
     </style>
 </head>
 
 <body>
 
+    <header>
+        <h1>RGJP Navigator</h1>
+    </header>
 
+    <div class="app-grid-container">
+        <div class="app-grid">
 
-    <div class="app-grid">
-        <a href="https://www.google.com/maps/d/edit?mid=1mpy24AC97LDXYx0JiF1ZowC5CRyWtHg&usp=sharing" target="_blank"
-            class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">🏊</span>
-            </div>
-            <span class="app-label">Piscines</span>
-        </a>
+            <a href="https://maps.google.com" target="_blank" class="app-item" aria-label="Piscines">
+                <div class="icon-box">
+                    <span class="emoji-icon">🏊</span>
+                </div>
+                <span class="app-label">Piscines</span>
+            </a>
 
+            <a href="odb.html" class="app-item" aria-label="ODB">
+                <div class="icon-box">
+                    <span class="emoji-icon">🚗</span>
+                </div>
+                <span class="app-label">ODB</span>
+            </a>
 
-        <a href="odb.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">🚗</span>
-            </div>
-            <span class="app-label">ODB</span>
-        </a>
+            <a href="eqc.html" class="app-item" aria-label="Rendre grâce">
+                <div class="icon-box">
+                    <span class="emoji-icon">🙏</span>
+                </div>
+                <span class="app-label">Rendre grâce</span>
+            </a>
 
-        <a href="eqc.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">🙏</span>
-            </div>
-            <span class="app-label">Rendre grâce</span>
-        </a>
+            <a href="guitar.html" class="app-item" aria-label="Guitare">
+                <div class="icon-box">
+                    <span class="emoji-icon">🎸</span>
+                </div>
+                <span class="app-label">Guitare</span>
+            </a>
 
-        <a href="guitar.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">🎸</span>
-            </div>
-            <span class="app-label">Guitare</span>
-        </a>
+            <a href="homelie.html" class="app-item" aria-label="Homélie">
+                <div class="icon-box">
+                    <span class="emoji-icon">📖</span>
+                </div>
+                <span class="app-label">Homélie</span>
+            </a>
 
-        <a href="homelie.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">📖</span>
-            </div>
-            <span class="app-label">Homélie</span>
-        </a>
+            <a href="luminaira.html" class="app-item" aria-label="Luminaira">
+                <div class="icon-box">
+                    <span class="emoji-icon">✨</span>
+                </div>
+                <span class="app-label">Luminaira</span>
+            </a>
 
-        <a href="luminaira.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">✨</span>
-            </div>
-            <span class="app-label">Luminaira</span>
-        </a>
+            <a href="https://mariusjomphe.com" target="_blank" class="app-item" aria-label="Marius J.">
+                <div class="icon-box">
+                    <span class="emoji-icon">📷</span>
+                </div>
+                <span class="app-label">Marius J.</span>
+            </a>
 
-        <a href="https://mariusjomphe.com" target="_blank" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">📷</span>
-            </div>
-            <span class="app-label">Marius J.</span>
-        </a>
+            <a href="mindfulpause.html" class="app-item" aria-label="Mindful">
+                <div class="icon-box">
+                    <span class="emoji-icon">🪷</span>
+                </div>
+                <span class="app-label">Mindful</span>
+            </a>
 
-        <a href="mindfulpause.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">🪷</span>
-            </div>
-            <span class="app-label">Mindful</span>
-        </a>
+            <a href="mooji.html" class="app-item" aria-label="Mooji">
+                <div class="icon-box">
+                    <span class="emoji-icon">🕉️</span>
+                </div>
+                <span class="app-label">Mooji</span>
+            </a>
 
-        <a href="mooji.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">🕉️</span>
-            </div>
-            <span class="app-label">Mooji</span>
-        </a>
+            <a href="yoga.html" class="app-item" aria-label="Yoga">
+                <div class="icon-box">
+                    <span class="emoji-icon">🧘</span>
+                </div>
+                <span class="app-label">Yoga</span>
+            </a>
 
-        <a href="yoga.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">🧘</span>
-            </div>
-            <span class="app-label">Yoga</span>
-        </a>
+            <a href="mudra.html" class="app-item" aria-label="Mudra">
+                <div class="icon-box">
+                    <span class="emoji-icon">🤚</span>
+                </div>
+                <span class="app-label">Mudra</span>
+            </a>
 
-        <a href="mudra.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">🤚</span>
-            </div>
-            <span class="app-label">Mudra</span>
-        </a>
+            <a href="cv.html" class="app-item" aria-label="CV">
+                <div class="icon-box">
+                    <span class="emoji-icon">📄</span>
+                </div>
+                <span class="app-label">CV</span>
+            </a>
 
-        <a href="cv.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">📄</span>
-            </div>
-            <span class="app-label">CV</span>
-        </a>
+            <a href="eos.html" class="app-item" aria-label="Echoes">
+                <div class="icon-box">
+                    <span class="emoji-icon">🔔</span>
+                </div>
+                <span class="app-label">Echoes</span>
+            </a>
 
-        <a href="eos.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">🔔</span>
-            </div>
-            <span class="app-label">Echoes</span>
-        </a>
+            <a href="recorder.html" class="app-item" aria-label="Recorder">
+                <div class="icon-box">
+                    <span class="emoji-icon">🪈</span>
+                </div>
+                <span class="app-label">Recorder</span>
+            </a>
 
-        <a href="recorder.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">🪈</span>
-            </div>
-            <span class="app-label">Recorder</span>
-        </a>
+            <a href="aura.html" class="app-item" aria-label="Hridayam">
+                <div class="icon-box">
+                    <span class="emoji-icon">🌬️</span>
+                </div>
+                <span class="app-label">Hridayam</span>
+            </a>
 
-        <a href="aura.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">🌬️</span>
-            </div>
-            <span class="app-label">Hridayam</span>
-        </a>
+            <a href="oblique.html" class="app-item" aria-label="Insights">
+                <div class="icon-box">
+                    <span class="emoji-icon">🎴</span>
+                </div>
+                <span class="app-label">Insights</span>
+            </a>
 
-        <a href="oblique.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">🎴</span>
-            </div>
-            <span class="app-label">Insights</span>
-        </a>
+            <a href="solfeggio.html" class="app-item" aria-label="Solfeggio">
+                <div class="icon-box">
+                    <span class="emoji-icon">🎶</span>
+                </div>
+                <span class="app-label">Solfeggio</span>
+            </a>
 
-        <a href="solfeggio.html" class="app-item">
-            <div class="icon-box">
-                <span class="emoji-icon">🎶</span>
-            </div>
-            <span class="app-label">Solfeggio</span>
-        </a>
-
+        </div>
     </div>
 
     <script>
-        // Simple script to handle touch feedback on older devices
-        document.addEventListener('DOMContentLoaded', () => {
-            const items = document.querySelectorAll('.app-item');
-            items.forEach(item => {
-                item.addEventListener('touchstart', function () {
-                    this.style.transform = 'scale(0.92)';
-                }, { passive: true });
+        // Enable iOS active states
+        document.addEventListener('touchstart', function () { }, { passive: true });
 
-                item.addEventListener('touchend', function () {
-                    this.style.transform = 'scale(1)';
-                }, { passive: true });
-            });
+        // Prevent default pinch-zoom behaviors to maintain "App" feel
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
         });
     </script>
 </body>
