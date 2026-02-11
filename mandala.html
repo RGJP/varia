@@ -488,10 +488,8 @@
         // ── State ──
         const state = {
             drawing: false,
-            lastX: 0,
+            lastX: 0,  // world coords (center-relative CSS px)
             lastY: 0,
-            centerX: 0,
-            centerY: 0,
             symmetry: 6,
             brushSize: 2,
             hue: 0,
@@ -507,18 +505,22 @@
             hasDrawn: false,
         };
 
+        // ── Stroke Storage ──
+        // Strokes are stored in world coordinates: center-relative, zoom-independent CSS pixels.
+        // On zoom/resize, all strokes are re-rendered at the correct scale — no clipping.
+        const strokes = [];
+        let currentStroke = null;
+
         // ── Undo/Redo ──
+        // Stores shallow copies of the strokes array (stroke objects are immutable once completed).
         const history = {
             stack: [],
             index: -1,
-            maxSize: 30,
+            maxSize: 50,
 
             push() {
-                // Discard any redo states
                 this.stack.length = this.index + 1;
-                // Store canvas snapshot
-                const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                this.stack.push(data);
+                this.stack.push(strokes.slice());
                 if (this.stack.length > this.maxSize) {
                     this.stack.shift();
                 } else {
@@ -530,7 +532,9 @@
             undo() {
                 if (this.index <= 0) return;
                 this.index--;
-                ctx.putImageData(this.stack[this.index], 0, 0);
+                strokes.length = 0;
+                for (const s of this.stack[this.index]) strokes.push(s);
+                renderAllStrokes();
                 this.updateButtons();
                 showToast('Undo');
             },
@@ -538,7 +542,9 @@
             redo() {
                 if (this.index >= this.stack.length - 1) return;
                 this.index++;
-                ctx.putImageData(this.stack[this.index], 0, 0);
+                strokes.length = 0;
+                for (const s of this.stack[this.index]) strokes.push(s);
+                renderAllStrokes();
                 this.updateButtons();
                 showToast('Redo');
             },
@@ -583,34 +589,11 @@
             const dpr = window.devicePixelRatio || 1;
             const w = window.innerWidth;
             const h = window.innerHeight;
-
-            // Preserve existing content across resize
-            let imageData = null;
-            if (state.hasDrawn && canvas.width > 0 && canvas.height > 0) {
-                try {
-                    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                } catch (_) { /* empty canvas */ }
-            }
-
             canvas.width = w * dpr;
             canvas.height = h * dpr;
             canvas.style.width = w + 'px';
             canvas.style.height = h + 'px';
-
-            state.centerX = canvas.width / 2;
-            state.centerY = canvas.height / 2;
-
-            // Restore previous content (centered)
-            if (imageData) {
-                const ox = Math.round((canvas.width - imageData.width) / 2);
-                const oy = Math.round((canvas.height - imageData.height) / 2);
-                ctx.putImageData(imageData, ox, oy);
-            }
-
-            // Reinitialize history with new canvas state
-            if (state.hasDrawn) {
-                history.push();
-            }
+            renderAllStrokes();
         }
 
         window.addEventListener('resize', debounce(resize, 200));
@@ -673,46 +656,31 @@
         buildColorPicker();
 
         // ── Coordinate Mapping ──
-        function getCanvasCoords(e) {
-            const dpr = window.devicePixelRatio || 1;
+        // World coords: center-relative, zoom-independent, in CSS pixels.
+        // Screen (clientX,Y) → world by subtracting viewport center and dividing by zoom.
+        function getWorldCoords(e) {
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
             const clientY = e.touches ? e.touches[0].clientY : e.clientY;
             return {
-                x: clientX * dpr,
-                y: clientY * dpr,
+                x: (clientX - window.innerWidth / 2) / state.scale,
+                y: (clientY - window.innerHeight / 2) / state.scale,
             };
         }
 
-        // ── Drawing ──
-        function draw(e) {
-            if (!state.drawing) return;
-            const { x, y } = getCanvasCoords(e);
-            const { centerX: cx, centerY: cy, symmetry, brushSize, mirrorMode } = state;
-
-            let strokeColor;
-            if (currentColor.color === 'rainbow') {
-                strokeColor = `hsl(${state.hue}, 90%, 65%)`;
-                state.hue = (state.hue + 1.5) % 360;
-            } else {
-                strokeColor = currentColor.color;
-            }
-
-            const dpr = window.devicePixelRatio || 1;
-            const lw = brushSize * dpr;
+        // ── Rendering ──
+        // Draws a single segment with full symmetry/mirror on the canvas.
+        function drawSegment(seg, color, lw, symmetry, mirror, shadowMul, alpha, scaleFactor) {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const angleStep = (Math.PI * 2) / symmetry;
 
             ctx.lineWidth = lw;
-            ctx.strokeStyle = strokeColor;
+            ctx.strokeStyle = color;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            ctx.shadowBlur = state.waterMode ? lw * 4 : lw * 2;
-            ctx.shadowColor = strokeColor;
-            ctx.globalAlpha = state.waterMode ? 0.85 : 1;
-
-            const angleStep = (Math.PI * 2) / symmetry;
-            const lx = state.lastX - cx;
-            const ly = state.lastY - cy;
-            const nx = x - cx;
-            const ny = y - cy;
+            ctx.shadowBlur = lw * shadowMul;
+            ctx.shadowColor = color;
+            ctx.globalAlpha = alpha;
 
             ctx.save();
             ctx.translate(cx, cy);
@@ -721,19 +689,17 @@
                 ctx.save();
                 ctx.rotate(angleStep * i);
 
-                // Normal stroke
                 ctx.beginPath();
-                ctx.moveTo(lx, ly);
-                ctx.lineTo(nx, ny);
+                ctx.moveTo(seg.x1 * scaleFactor, seg.y1 * scaleFactor);
+                ctx.lineTo(seg.x2 * scaleFactor, seg.y2 * scaleFactor);
                 ctx.stroke();
 
-                // Mirror reflection across the symmetry axis
-                if (mirrorMode) {
+                if (mirror) {
                     ctx.save();
                     ctx.scale(1, -1);
                     ctx.beginPath();
-                    ctx.moveTo(lx, ly);
-                    ctx.lineTo(nx, ny);
+                    ctx.moveTo(seg.x1 * scaleFactor, seg.y1 * scaleFactor);
+                    ctx.lineTo(seg.x2 * scaleFactor, seg.y2 * scaleFactor);
                     ctx.stroke();
                     ctx.restore();
                 }
@@ -744,6 +710,58 @@
             ctx.restore();
             ctx.globalAlpha = 1;
             ctx.shadowBlur = 0;
+        }
+
+        // Re-render a completed stroke from its stored data.
+        function renderStroke(stroke) {
+            const dpr = window.devicePixelRatio || 1;
+            const s = state.scale * dpr;
+            const lw = stroke.lineWidth * s;
+            const shadowMul = stroke.waterMode ? 4 : 2;
+            const alpha = stroke.waterMode ? 0.85 : 1;
+
+            for (let i = 0; i < stroke.segments.length; i++) {
+                const seg = stroke.segments[i];
+                const color = stroke.color === 'rainbow' ? stroke.colors[i] : stroke.color;
+                drawSegment(seg, color, lw, stroke.symmetry, stroke.mirror, shadowMul, alpha, s);
+            }
+        }
+
+        // Clear canvas and re-render every stored stroke at current zoom.
+        function renderAllStrokes() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (const stroke of strokes) {
+                renderStroke(stroke);
+            }
+        }
+
+        // ── Drawing ──
+        function draw(e) {
+            if (!state.drawing || !currentStroke) return;
+            const { x, y } = getWorldCoords(e);
+            const dpr = window.devicePixelRatio || 1;
+            const s = state.scale * dpr;
+
+            let segColor;
+            if (currentStroke.color === 'rainbow') {
+                segColor = `hsl(${state.hue}, 90%, 65%)`;
+                state.hue = (state.hue + 1.5) % 360;
+            } else {
+                segColor = currentStroke.color;
+            }
+
+            // Store segment in world coordinates
+            const seg = { x1: state.lastX, y1: state.lastY, x2: x, y2: y };
+            currentStroke.segments.push(seg);
+            if (currentStroke.color === 'rainbow') {
+                currentStroke.colors.push(segColor);
+            }
+
+            // Draw this segment immediately (incremental rendering)
+            const lw = currentStroke.lineWidth * s;
+            const shadowMul = currentStroke.waterMode ? 4 : 2;
+            const alpha = currentStroke.waterMode ? 0.85 : 1;
+            drawSegment(seg, segColor, lw, currentStroke.symmetry, currentStroke.mirror, shadowMul, alpha, s);
 
             state.lastX = x;
             state.lastY = y;
@@ -756,9 +774,20 @@
             if (e.cancelable) e.preventDefault();
             state.drawing = true;
             document.body.classList.add('drawing');
-            const pos = getCanvasCoords(e);
+            const pos = getWorldCoords(e);
             state.lastX = pos.x;
             state.lastY = pos.y;
+
+            currentStroke = {
+                segments: [],
+                color: currentColor.color === 'rainbow' ? 'rainbow' : currentColor.color,
+                colors: [],
+                lineWidth: state.brushSize,
+                symmetry: state.symmetry,
+                mirror: state.mirrorMode,
+                waterMode: state.waterMode,
+            };
+
             startTip.classList.add('hidden');
             state.hasDrawn = true;
             resetIdle();
@@ -770,14 +799,15 @@
             if (e.touches && e.touches.length === 2) {
                 state.drawing = false;
                 document.body.classList.remove('drawing');
+                currentStroke = null;
                 const dist = Math.hypot(
                     e.touches[0].clientX - e.touches[1].clientX,
                     e.touches[0].clientY - e.touches[1].clientY
                 );
                 if (state.pinchDist > 0) {
                     const delta = dist / state.pinchDist;
-                    state.scale = clamp(state.pinchScale * delta, 0.25, 4);
-                    updateTransform();
+                    state.scale = clamp(state.pinchScale * delta, 0.1, 10);
+                    renderAllStrokes();
                 } else {
                     state.pinchDist = dist;
                     state.pinchScale = state.scale;
@@ -794,8 +824,11 @@
             if (state.drawing) {
                 state.drawing = false;
                 document.body.classList.remove('drawing');
-                // Save undo snapshot after each stroke
-                history.push();
+                if (currentStroke && currentStroke.segments.length > 0) {
+                    strokes.push(currentStroke);
+                    history.push();
+                }
+                currentStroke = null;
             }
             state.pinchDist = 0;
         }
@@ -819,6 +852,7 @@
                 if (e.touches.length === 2) {
                     state.drawing = false;
                     document.body.classList.remove('drawing');
+                    currentStroke = null;
                     state.pinchDist = Math.hypot(
                         e.touches[0].clientX - e.touches[1].clientX,
                         e.touches[0].clientY - e.touches[1].clientY
@@ -843,6 +877,7 @@
             canvas.addEventListener('touchstart', e => {
                 if (e.touches.length === 2) {
                     state.drawing = false;
+                    currentStroke = null;
                     state.pinchDist = Math.hypot(
                         e.touches[0].clientX - e.touches[1].clientX,
                         e.touches[0].clientY - e.touches[1].clientY
@@ -856,18 +891,13 @@
             canvas.addEventListener('touchend', handleEnd);
         }
 
-        // Mouse wheel zoom
+        // Mouse wheel zoom — re-renders all strokes at the new scale
         canvas.addEventListener('wheel', e => {
             e.preventDefault();
             const dir = e.deltaY > 0 ? -1 : 1;
-            state.scale = clamp(state.scale + dir * 0.08 * state.scale, 0.25, 4);
-            updateTransform();
+            state.scale = clamp(state.scale + dir * 0.08 * state.scale, 0.1, 10);
+            renderAllStrokes();
         }, { passive: false });
-
-        function updateTransform() {
-            canvas.style.transform = `scale(${state.scale})`;
-            canvas.style.transformOrigin = 'center center';
-        }
 
         // ── Water Mode Animation ──
         let waterAnimId = null;
@@ -979,6 +1009,7 @@
             state.clearPending = false;
             clearBtn.classList.remove('danger-confirm');
             clearBtn.textContent = 'Clear';
+            strokes.length = 0;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             history.push();
             showToast('Canvas cleared');
@@ -991,6 +1022,8 @@
 
         // ── Save ──
         function saveCanvas() {
+            // Render all strokes at scale=1 onto a temp canvas for a clean full-resolution export.
+            const dpr = window.devicePixelRatio || 1;
             const tmp = document.createElement('canvas');
             tmp.width = canvas.width;
             tmp.height = canvas.height;
