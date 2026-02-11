@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mandala Maker 🌸</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌸</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #050510;
+            --text: #e0e7ff;
+            --primary: #a5b4fc;
+            --glass: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-hover: rgba(255, 255, 255, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: none; /* Prevent scrolling on mobile while drawing */
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Minimalist UI Overlay */
+        .ui-overlay {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 2rem;
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
+            backdrop-filter: blur(12px);
+            align-items: center;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 10;
+        }
+        
+        /* Auto-hide UI when idle (optional, but keeps it clean) */
+        body.idle .ui-overlay {
+            opacity: 0.3;
+            transform: translateX(-50%) translateY(10px);
+        }
+        body.idle .ui-overlay:hover {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgba(255,255,255,0.7);
+            user-select: none;
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100px;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(165, 180, 252, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+
+        /* Buttons */
+        button {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-family: inherit;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        button:hover {
+            background: var(--glass-hover);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(165, 180, 252, 0.2);
+        }
+
+        button.active {
+            background: var(--primary);
+            color: #000;
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(165, 180, 252, 0.5);
+        }
+
+        /* Color Picker (Radio buttons styled as circles) */
+        .color-picker {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .color-option {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: transform 0.2s;
+        }
+        .color-option.selected {
+            border-color: #fff;
+            transform: scale(1.1);
+        }
+
+        /* Header / Title */
+        h1 {
+            position: absolute;
+            top: 2rem;
+            left: 0; 
+            width: 100%;
+            text-align: center;
+            font-weight: 300;
+            font-size: 1.5rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+            pointer-events: none;
+            z-index: 5;
+            user-select: none;
+        }
+        
+        .tip {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: rgba(255,255,255,0.2);
+            font-size: 1.2rem;
+            pointer-events: none;
+            opacity: 1;
+            transition: opacity 1s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .tip.hidden {
+            opacity: 0;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>Mandala Maker</h1>
+    <div class="tip" id="startTip">Click & Drag to Draw</div>
+    <canvas id="zenCanvas"></canvas>
+
+    <div class="ui-overlay">
+        <div class="control-group">
+            <label>Symmetry</label>
+            <input type="range" id="symmetryRange" min="2" max="24" value="6">
+            <span id="symmetryVal">6</span>
+        </div>
+
+        <div class="control-group">
+            <button id="sandModeBtn" title="Lines fade over time">Sand Mode</button>
+        </div>
+        
+        <div class="control-group color-picker" id="colorPicker">
+            <!-- Populated by JS -->
+        </div>
+
+        <div class="control-group">
+            <button id="clearBtn">Clear</button>
+            <button id="saveBtn">Save</button>
+        </div>
+        
+        <div class="control-group">
+            <button id="audioToggle" class="active">Audio On</button>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Mandala Maker
+         * 
+         * Core Logic:
+         * 1. Mouse/Touch input maps to canvas coordinates.
+         * 2. Coordinates are rotated around the center 'N' times (Symmetry).
+         * 3. Lines are drawn connecting previous point to current point for each rotation.
+         * 4. "Sand Mode" works by drawing a semi-transparent rectangle over the whole canvas every frame, creating a trail/fade effect.
+         * 5. Audio: Web Audio API oscillators triggered on drawing distance.
+         */
+
+        const canvas = document.getElementById('zenCanvas');
+        const ctx = canvas.getContext('2d');
+        const symmetryRange = document.getElementById('symmetryRange');
+        const symmetryVal = document.getElementById('symmetryVal');
+        const sandModeBtn = document.getElementById('sandModeBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const saveBtn = document.getElementById('saveBtn'); 
+        const audioToggle = document.getElementById('audioToggle');
+        const colorPicker = document.getElementById('colorPicker');
+        const startTip = document.getElementById('startTip');
+
+        // State
+        let drawing = false;
+        let lastX = 0;
+        let lastY = 0;
+        let centerX = window.innerWidth / 2;
+        let centerY = window.innerHeight / 2;
+        let symmetry = 6;
+        let hue = 0;
+        let isSandMode = false;
+        let audioEnabled = true;
+
+        // Configuration
+        const PALETTES = [
+            { color: 'hsl(220, 100%, 80%)', name: 'Ice' }, 
+            { color: 'hsl(280, 100%, 80%)', name: 'Void' },
+            { color: 'hsl(30, 100%, 70%)', name: 'Sand' },
+            { color: 'hsl(150, 100%, 70%)', name: 'Zen' },
+            { color: 'rainbow', name: 'Flow' } 
+        ];
+        let currentColor = PALETTES[4]; // Default to Rainbow
+
+        // Audio Context
+        let audioCtx;
+        let masterGain;
+
+        // --- Initialization ---
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            centerX = canvas.width / 2;
+            centerY = canvas.height / 2;
+            // Fill black on resize to prevent clearing content (optional, but good for consistent background)
+            // But usually we want to keep drawing. For now we clear on resize or just let it be.
+            // Let's just fill with background color to ensure no transparency issues.
+            ctx.fillStyle = '#050510';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- Color Picker Generator ---
+        PALETTES.forEach((p, index) => {
+            const el = document.createElement('div');
+            el.className = 'color-option';
+            if (p.color === 'rainbow') {
+                el.style.background = 'linear-gradient(135deg, #ff0000, #00ff00, #0000ff)';
+            } else {
+                el.style.background = p.color;
+            }
+            if (index === 4) el.classList.add('selected'); // Select rainbow by default
+            
+            el.addEventListener('click', () => {
+                document.querySelectorAll('.color-option').forEach(e => e.classList.remove('selected'));
+                el.classList.add('selected');
+                currentColor = p;
+            });
+            colorPicker.appendChild(el);
+        });
+
+
+        // --- Drawing Logic ---
+
+        function draw(e) {
+            if (!drawing) return;
+
+            // Get Position
+            const x = (e.touches ? e.touches[0].clientX : e.clientX);
+            const y = (e.touches ? e.touches[0].clientY : e.clientY);
+
+            // Determine Color
+            let strokeColor;
+            if (currentColor.color === 'rainbow') {
+                strokeColor = `hsl(${hue}, 100%, 50%)`;
+                hue = (hue + 1) % 360;
+            } else {
+                strokeColor = currentColor.color;
+            }
+
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = strokeColor;
+            ctx.lineCap = 'round';
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = strokeColor;
+
+            // Calculate Angle Step
+            const angleStep = (Math.PI * 2) / symmetry;
+
+            // Save Context
+            ctx.save();
+            ctx.translate(centerX, centerY);
+
+            // Draw for each symmetry sector
+            for (let i = 0; i < symmetry; i++) {
+                ctx.rotate(angleStep);
+                
+                // Draw normal line
+                ctx.beginPath();
+                ctx.moveTo(lastX - centerX, lastY - centerY);
+                ctx.lineTo(x - centerX, y - centerY);
+                ctx.stroke();
+
+                // Draw mirrored line (optional, for kaleidoscope effect)
+                // To do true mirror, we'd scale(1, -1) but that gets complex with rotation.
+                // For simple rotational symmetry, just rotating is enough.
+                // Let's add a "Mirror" mode implies adjusting 'x' relative to center? 
+                // For now, simple rotation is "Mandala" style.
+            }
+
+            ctx.restore();
+
+            // Trigger Audio based on movement
+            const dist = Math.hypot(x - lastX, y - lastY);
+            if (dist > 10) { // Only play if moved enough
+                playGenerativeSound(x, y, dist);
+            }
+
+            lastX = x;
+            lastY = y;
+        }
+
+        // Input Listeners
+        canvas.addEventListener('mousedown', (e) => {
+            drawing = true;
+            lastX = e.clientX;
+            lastY = e.clientY;
+            startTip.classList.add('hidden');
+            initAudio(); // Initialize audio on first interaction
+        });
+
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', () => drawing = false);
+        canvas.addEventListener('mouseout', () => drawing = false);
+
+        // Touch support
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            drawing = true;
+            lastX = e.touches[0].clientX;
+            lastY = e.touches[0].clientY;
+            startTip.classList.add('hidden');
+            initAudio();
+        }, { passive: false });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault(); 
+            draw(e);
+        }, { passive: false });
+        
+        canvas.addEventListener('touchend', () => drawing = false);
+
+
+        // --- Game Loop (For Sand Mode) ---
+        function animate() {
+            if (isSandMode) {
+                // Fade out effect
+                ctx.save();
+                ctx.fillStyle = 'rgba(5, 5, 16, 0.05)'; // Deep background with very low opacity
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.restore();
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+
+        // --- UI Controls ---
+
+        symmetryRange.addEventListener('input', (e) => {
+            symmetry = parseInt(e.target.value);
+            symmetryVal.textContent = symmetry;
+        });
+
+        sandModeBtn.addEventListener('click', () => {
+            isSandMode = !isSandMode;
+            sandModeBtn.classList.toggle('active', isSandMode);
+        });
+
+        clearBtn.addEventListener('click', () => {
+             // Create a flash effect
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            setTimeout(() => {
+                 resize(); // Resets to dark background
+            }, 50);
+        });
+
+        saveBtn.addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = `mandala-${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+
+        audioToggle.addEventListener('click', () => {
+            audioEnabled = !audioEnabled;
+            audioToggle.classList.toggle('active', audioEnabled);
+            audioToggle.textContent = audioEnabled ? "Audio On" : "Audio Muted";
+        });
+
+
+        // --- Audio Engine (Web Audio API) ---
+        // Pentatonic Scale (C Major Pentatonic: C, D, E, G, A) or variations.
+        // Frequencies for C4, D4, E4, G4, A4, C5...
+        const SCALE = [
+            261.63, 293.66, 329.63, 392.00, 440.00, // 4
+            523.25, 587.33, 659.25, 783.99, 880.00, // 5
+            1046.50, 1174.66 // 6
+        ];
+
+        function initAudio() {
+            if (audioCtx) return;
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            masterGain = audioCtx.createGain();
+            masterGain.connect(audioCtx.destination);
+            masterGain.gain.value = 0.3; // Specific volume
+        }
+
+        // Simple throttle to prevent audio chaos
+        let lastSoundTime = 0;
+        
+        function playGenerativeSound(x, y, speed) {
+            if (!audioEnabled || !audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            
+            // Limit triggering rate
+            if (now - lastSoundTime < 0.08) return; 
+            lastSoundTime = now;
+
+            // Map Y position to Pitch (Higher Y = Lower Pitch, usually, but let's invert for 'sky' feeling)
+            // Actually, let's map Distance from Center to Pitch.
+            // Center = High frequency (intense), Edge = Low frequency (grounded).
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const distFromCenter = Math.hypot(x - centerX, y - centerY);
+            const maxDist = Math.max(canvas.width, canvas.height) / 2;
+            
+            // Map 0 -> maxDist to Scale Index (high -> low)
+            const normalizedDist = Math.min(distFromCenter / maxDist, 1);
+            const noteIndex = Math.floor((1 - normalizedDist) * (SCALE.length - 1));
+            const freq = SCALE[noteIndex] || SCALE[0];
+
+            // Oscillator
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.type = 'sine'; // Pure tone
+            osc.frequency.setValueAtTime(freq, now);
+            
+            // Random slight detune for organic feel
+            osc.detune.value = (Math.random() - 0.5) * 10; 
+
+            // Envelope (Bell-like)
+            // Volume based on speed? Faster = Louder
+            const volume = Math.min(Math.max(speed / 50, 0.1), 0.5);
+            
+            gain.gain.setValueAtTime(0, now);
+            gain.gain.linearRampToValueAtTime(volume, now + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5); // Long tail
+
+            osc.connect(gain);
+            gain.connect(masterGain);
+
+            osc.start(now);
+            osc.stop(now + 1.6);
+        }
+
+    </script>
+</body>
+</html>
