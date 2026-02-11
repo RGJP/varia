@@ -241,6 +241,21 @@
             opacity: 0;
             pointer-events: none;
         }
+
+        .session-time {
+            position: absolute;
+            bottom: 7.5rem;
+            font-size: 0.85rem;
+            color: var(--primary);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            font-family: monospace;
+            letter-spacing: 0.1em;
+        }
+
+        .session-time.active {
+            opacity: 0.6;
+        }
     </style>
 </head>
 
@@ -260,6 +275,7 @@
             <div class="instruction-text" id="instruction">Ready</div>
         </div>
         <div class="timer-text" id="timer">Cardiac Coherence (5s / 5s)</div>
+        <div class="session-time" id="sessionTime">0:00 / 5:00</div>
         <div class="progress-container" id="progressContainer">
             <div class="progress-bar" id="progressBar"></div>
         </div>
@@ -267,7 +283,6 @@
 
     <div class="controls">
         <button class="btn" id="startBtn">Start</button>
-        <button class="btn" id="soundBtn">🔇 Sound</button>
     </div>
 
     <script>
@@ -288,18 +303,18 @@
 
         // DOM Elements
         const startBtn = document.getElementById('startBtn');
-        const soundBtn = document.getElementById('soundBtn');
         const instruction = document.getElementById('instruction');
         const timerText = document.getElementById('timer');
         const rings = document.querySelectorAll('.Hridayam-ring');
         const progressContainer = document.getElementById('progressContainer');
         const progressBar = document.getElementById('progressBar');
+        const sessionTime = document.getElementById('sessionTime');
 
         // Update UI
         timerText.textContent = "Cardiac Coherence (5s / 5s)";
 
         let isRunning = false;
-        let isSoundOn = false;
+        let isSoundOn = true;
         let cycleTimeout;
         let sessionStartTime;
         let progressInterval;
@@ -371,20 +386,7 @@
             setTimeout(() => { if (!isRunning && isSoundOn) playBell(1320, 6); }, 1200);
         }
 
-        function toggleSound() {
-            isSoundOn = !isSoundOn;
-            if (isSoundOn) {
-                // Initialize audio context on first user interaction
-                initAudio();
-                soundBtn.textContent = "🔔 Sound";
-                soundBtn.classList.add('active');
-                // Play a test bell
-                playBell(880);
-            } else {
-                soundBtn.textContent = "🔇 Sound";
-                soundBtn.classList.remove('active');
-            }
-        }
+
 
         // --- Breathing Logic ---
 
@@ -407,7 +409,7 @@
             } else if (phase.type === 'exhale') {
                 instruction.textContent = "Exhale";
                 // Play bell (Lower pitch for exhale)
-                playBell(432.00);
+                playBell(396.00);
 
                 rings.forEach(ring => {
                     ring.style.transform = 'scale(0.5)';
@@ -452,6 +454,12 @@
             const progress = Math.min((elapsed / CONFIG.sessionDuration) * 100, 100);
             progressBar.style.width = `${progress}%`;
 
+            // Update Time Text
+            const totalSeconds = Math.floor(elapsed / 1000);
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            sessionTime.textContent = `${mins}:${secs.toString().padStart(2, '0')} / 5:00`;
+
             if (elapsed < CONFIG.sessionDuration) {
                 progressInterval = requestAnimationFrame(updateProgress);
             }
@@ -468,6 +476,7 @@
             startBtn.textContent = "Start";
             startBtn.classList.remove('active');
             progressContainer.classList.remove('active');
+            sessionTime.classList.remove('active');
             clearTimeout(cycleTimeout);
             cancelAnimationFrame(progressInterval);
 
@@ -489,6 +498,7 @@
                 startBtn.textContent = "Stop";
                 startBtn.classList.add('active');
                 progressContainer.classList.add('active');
+                sessionTime.classList.add('active');
                 sessionStartTime = Date.now();
 
                 // If sound is on, make sure audio context is ready
@@ -501,7 +511,7 @@
 
         // --- Event Listeners ---
         startBtn.addEventListener('click', toggleSession);
-        soundBtn.addEventListener('click', toggleSound);
+
 
 
         // --- Starfield Background (Canvas) ---
