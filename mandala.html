@@ -45,11 +45,25 @@
             touch-action: none;
         }
 
-        canvas {
-            display: block;
+        /* ── Canvas Container ── */
+        #canvas-container {
             position: absolute;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: none;
+            /* We will animate transform on this container */
+            will-change: transform;
+            /* Origin center to match the mandala's coordinate system */
+            transform-origin: center center;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
         }
 
         /* ── UI Overlay ── */
@@ -120,59 +134,40 @@
             color: var(--primary);
         }
 
-        /* ── Range Slider ── */
-        input[type=range] {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 80px;
-            height: 20px;
-            background: transparent;
+        /* ── Select Dropdown ── */
+        select {
+            background: var(--glass);
+            border: 1px solid var(--glass-border);
+            color: var(--text);
+            padding: 0.3rem 0.6rem;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 0.8rem;
             cursor: pointer;
+            outline: none;
+            transition: all 0.2s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath stroke='rgba(255,255,255,0.5)' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m1 1 4 4 4-4'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 30px;
         }
 
-        input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 2px;
+        select:hover {
+            background: var(--glass-hover);
+            border-color: var(--primary);
+            box-shadow: 0 0 8px rgba(165, 180, 252, 0.1);
         }
 
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 14px;
-            width: 14px;
-            border-radius: 50%;
-            background: var(--primary);
-            margin-top: -5.5px;
-            box-shadow: 0 0 8px var(--primary-glow);
-            transition: transform 0.15s ease;
+        select:focus-visible {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px var(--primary-glow);
         }
 
-        input[type=range]::-webkit-slider-thumb:hover {
-            transform: scale(1.2);
-        }
-
-        input[type=range]::-moz-range-track {
-            width: 100%;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 2px;
-            border: none;
-        }
-
-        input[type=range]::-moz-range-thumb {
-            height: 14px;
-            width: 14px;
-            border-radius: 50%;
-            background: var(--primary);
-            border: none;
-            box-shadow: 0 0 8px var(--primary-glow);
-        }
-
-        input[type=range]:focus-visible {
-            outline: 2px solid var(--primary);
-            outline-offset: 4px;
-            border-radius: 4px;
+        select option {
+            background: #0f172a;
+            /* Deep blue-black for dropdown menu */
+            color: var(--text);
         }
 
         /* ── Buttons ── */
@@ -312,33 +307,7 @@
             opacity: 0;
         }
 
-        /* ── Keyboard Shortcuts Hint ── */
-        .shortcuts-hint {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            font-size: 0.65rem;
-            color: rgba(255, 255, 255, 0.12);
-            text-align: right;
-            line-height: 1.6;
-            pointer-events: none;
-            transition: opacity 0.4s ease;
-            z-index: 10;
-        }
 
-        body.idle .shortcuts-hint {
-            opacity: 0;
-        }
-
-        .shortcuts-hint kbd {
-            display: inline-block;
-            padding: 0.1em 0.4em;
-            font-family: inherit;
-            font-size: inherit;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-            background: rgba(255, 255, 255, 0.04);
-        }
 
         /* ── Toast Notification ── */
         .toast {
@@ -395,8 +364,11 @@
                 font-size: 0.65rem;
             }
 
-            input[type=range] {
-                width: 60px;
+            select {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+                padding-right: 24px;
+                background-position: right 6px center;
             }
 
             .color-option,
@@ -405,9 +377,7 @@
                 height: 20px;
             }
 
-            .shortcuts-hint {
-                display: none;
-            }
+
         }
 
         @media (max-width: 400px) {
@@ -421,34 +391,29 @@
 
 <body>
     <div class="tip" id="startTip">Click & drag to draw</div>
-    <canvas id="canvas" role="img" aria-label="Mandala drawing canvas"></canvas>
-
-    <div class="shortcuts-hint" id="shortcutsHint" aria-hidden="true">
-        <kbd>Ctrl+Z</kbd> undo &middot; <kbd>Ctrl+Shift+Z</kbd> redo<br>
-        <kbd>Ctrl+S</kbd> save &middot; <kbd>Del</kbd> clear<br>
-        <kbd>[</kbd> / <kbd>]</kbd> brush size &middot; <kbd>M</kbd> mirror
+    <div id="canvas-container">
+        <canvas id="canvas" role="img" aria-label="Mandala drawing canvas"></canvas>
     </div>
+
+
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <div class="ui-overlay" role="toolbar" aria-label="Drawing controls">
         <div class="control-group">
             <label for="symmetryRange">Sym</label>
-            <input type="range" id="symmetryRange" min="2" max="32" value="6" aria-label="Symmetry fold count">
-            <span class="value-badge" id="symmetryVal" aria-live="polite">6</span>
+            <select id="symmetryRange" aria-label="Symmetry fold count"></select>
         </div>
 
         <div class="control-group">
             <label for="brushRange">Size</label>
-            <input type="range" id="brushRange" min="1" max="20" value="2" aria-label="Brush size">
-            <span class="value-badge" id="brushVal" aria-live="polite">2</span>
+            <select id="brushRange" aria-label="Brush size"></select>
         </div>
 
         <div class="divider"></div>
 
         <div class="control-group">
-            <button id="mirrorBtn" title="Toggle mirror reflection (M)" aria-pressed="false">Mirror</button>
-            <button id="waterBtn" title="Lines fade like water" aria-pressed="false">Water</button>
+            <button id="mirrorBtn" title="Toggle mirror reflection" aria-pressed="false">Mirror</button>
         </div>
 
         <div class="divider"></div>
@@ -458,10 +423,10 @@
         <div class="divider"></div>
 
         <div class="control-group">
-            <button id="undoBtn" title="Undo (Ctrl+Z)" aria-label="Undo">Undo</button>
-            <button id="redoBtn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo">Redo</button>
-            <button id="clearBtn" title="Clear canvas (Del)" aria-label="Clear canvas">Clear</button>
-            <button id="saveBtn" title="Save as PNG (Ctrl+S)" aria-label="Save as PNG">Save</button>
+            <button id="undoBtn" title="Undo Last Stroke" aria-label="Undo">Undo</button>
+            <button id="redoBtn" title="Redo Last Stroke" aria-label="Redo">Redo</button>
+            <button id="clearBtn" title="Clear Canvas" aria-label="Clear canvas">Clear</button>
+            <button id="saveBtn" title="Save as PNG" aria-label="Save as PNG">Save</button>
         </div>
     </div>
 
@@ -470,14 +435,12 @@
             'use strict';
 
             // ── DOM References ──
+            const canvasContainer = document.getElementById('canvas-container');
             const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d', { willReadFrequently: false });
+            const ctx = canvas.getContext('2d', { willReadFrequently: false, alpha: false });
             const $ = id => document.getElementById(id);
             const symmetryRange = $('symmetryRange');
-            const symmetryVal = $('symmetryVal');
             const brushRange = $('brushRange');
-            const brushVal = $('brushVal');
-            const waterBtn = $('waterBtn');
             const mirrorBtn = $('mirrorBtn');
             const clearBtn = $('clearBtn');
             const saveBtn = $('saveBtn');
@@ -487,73 +450,80 @@
             const startTip = $('startTip');
             const toast = $('toast');
 
+            // ── Populate Selects ──
+            for (let i = 2; i <= 32; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = i;
+                if (i === 6) opt.selected = true; // Match state default
+                symmetryRange.appendChild(opt);
+            }
+            for (let i = 1; i <= 20; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = i;
+                if (i === 2) opt.selected = true; // Match state default
+                brushRange.appendChild(opt);
+            }
+
             // ── State ──
             const state = {
                 drawing: false,
-                lastX: 0,  // world coords (center-relative CSS px)
-                lastY: 0,
                 symmetry: 6,
                 brushSize: 2,
                 hue: 0,
-                waterMode: false,
                 mirrorMode: false,
                 lastDrawTime: 0,
+
+                // Viewport State (Committed)
                 scale: 1,
-                pinchDist: 0,
-                pinchScale: 1,
-                idleTimer: null,
+                offsetX: 0, // Pan Offset X
+                offsetY: 0, // Pan Offset Y
+
+                // Gesture State (Transient)
+                gestureScale: 1,
+                gestureX: 0,
+                gestureY: 0,
+
+                hasDrawn: false,
                 clearPending: false,
                 clearTimer: null,
-                hasDrawn: false,
             };
 
             // ── Stroke Storage ──
-            // Strokes are stored in world coordinates: center-relative, zoom-independent CSS pixels.
-            // On zoom/resize, all strokes are re-rendered at the correct scale.
-            // Structure: { points: [{x,y},...], color, colors: [], lineWidth, ... }
             const strokes = [];
             let currentStroke = null;
 
-            // ── Undo/Redo ──
-            // Stores deep copies of simpler data to avoid reference issues
+            // ── History ──
             const history = {
                 stack: [],
                 index: -1,
                 maxSize: 50,
-
                 push() {
                     this.stack.length = this.index + 1;
-                    // Deep copy needed because points array is mutable during draw
                     const snapshot = strokes.map(s => ({
                         ...s,
                         points: [...s.points],
                         colors: s.colors ? [...s.colors] : []
                     }));
                     this.stack.push(snapshot);
-                    if (this.stack.length > this.maxSize) {
-                        this.stack.shift();
-                    } else {
-                        this.index++;
-                    }
+                    if (this.stack.length > this.maxSize) this.stack.shift();
+                    else this.index++;
                     this.updateButtons();
                 },
-
                 undo() {
                     if (this.index <= 0) return;
                     this.index--;
                     this.restore();
                 },
-
                 redo() {
                     if (this.index >= this.stack.length - 1) return;
                     this.index++;
                     this.restore();
                 },
-
                 restore() {
                     strokes.length = 0;
                     const snapshot = this.stack[this.index];
-                    // Deep copy back to strokes
                     for (const s of snapshot) {
                         strokes.push({
                             ...s,
@@ -561,18 +531,16 @@
                             colors: s.colors ? [...s.colors] : []
                         });
                     }
-                    renderAllStrokes();
+                    requestRender();
                     this.updateButtons();
                     const msg = this.index === 0 ? 'Undo (Empty)' : `Undo/Redo (${this.index})`;
                     showToast(msg);
                 },
-
                 clear() {
                     this.stack = [];
                     this.index = -1;
                     this.updateButtons();
                 },
-
                 updateButtons() {
                     undoBtn.disabled = this.index <= 0;
                     redoBtn.disabled = this.index >= this.stack.length - 1;
@@ -593,65 +561,456 @@
             let currentColor = PALETTES[0];
             let customColor = '#ffffff';
 
-            // ── Toast ──
-            let toastTimer = null;
-            function showToast(msg) {
-                toast.textContent = msg;
-                toast.classList.add('visible');
-                clearTimeout(toastTimer);
-                toastTimer = setTimeout(() => toast.classList.remove('visible'), 1200);
-            }
-
             // ── Canvas Setup ──
             function resize() {
                 const dpr = window.devicePixelRatio || 1;
-                const w = window.innerWidth;
-                const h = window.innerHeight;
-                canvas.width = w * dpr;
-                canvas.height = h * dpr;
-                canvas.style.width = w + 'px';
-                canvas.style.height = h + 'px';
+                const rect = canvasContainer.getBoundingClientRect();
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                // No style width/height needed on canvas as it fills container
+
+                // Force a full re-render without transform to ensure crispness
                 renderAllStrokes();
             }
-
+            // Debounced resize to avoid trashing performance
             window.addEventListener('resize', debounce(resize, 200));
+
+            // Initial Setup
             resize();
-            history.push(); // Save initial blank state
+            history.push();
             history.updateButtons();
 
-            // ── Color Picker ──
+            // ── Coordinate Mapping ──
+            // Maps screen coordinates (clientX/Y) to World coordinates
+            // considering both committed state and active gesture.
+            function getWorldCoords(e) {
+                const rect = canvasContainer.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+                // Center-relative screen coords
+                const cx = clientX - rect.left - rect.width / 2;
+                const cy = clientY - rect.top - rect.height / 2;
+
+                // Remove Gesture transform
+                // Visual = (World * Scale + Offset) * GestureScale + GestureOffset
+                // We want World.
+                // It's cleaner to just rely on the fact that during DRAWING, 
+                // we usually don't have a pinch gesture active.
+                // So we only unwrap the committed scale/offset.
+                // However, if we draw *while* zoomed in via CSS (after commit), 
+                // we must respect state.scale.
+
+                // Note: We are NOT supporting drawing while a multi-touch gesture is active.
+
+                return {
+                    x: (cx - state.offsetX) / state.scale,
+                    y: (cy - state.offsetY) / state.scale
+                };
+            }
+
+            // ── Viewport / Zoom Logic ──
+
+            function updateVisualTransform() {
+                const { gestureScale, gestureX, gestureY } = state;
+                // Apply CSS Transform to the container
+                // We use translate3d for GPU acceleration
+                canvasContainer.style.transform = `translate3d(${gestureX}px, ${gestureY}px, 0) scale(${gestureScale})`;
+            }
+
+            const commitTransformDebounced = debounce(() => {
+                // 1. Calculate new committed state
+                // NewScale = OldScale * GestureScale
+                const newScale = clamp(state.scale * state.gestureScale, 0.1, 50);
+
+                // NewOffset = OldOffset * GestureScale + GestureOffset
+                // (Approximation for center-based generic transform)
+                const newOffsetX = state.offsetX * state.gestureScale + state.gestureX;
+                const newOffsetY = state.offsetY * state.gestureScale + state.gestureY;
+
+                state.scale = newScale;
+                state.offsetX = newOffsetX;
+                state.offsetY = newOffsetY;
+
+                // 2. Reset Gesture
+                state.gestureScale = 1;
+                state.gestureX = 0;
+                state.gestureY = 0;
+
+                // 3. Reset CSS (Instant snap, but we redraw canvas immediately so it looks seamless)
+                // We disable transition momentarily if we had any
+                canvasContainer.style.transform = 'none';
+
+                // 4. Redraw at high res
+                renderAllStrokes();
+
+            }, 250); // Wait 250ms after last movement to commit (crisp snap)
+
+
+            // ── Input Handling (Unified Pointer) ──
+
+            // Track pointers for multi-touch
+            const pointers = new Map();
+            let prevPinchDist = 0;
+            let pinchCenter = { x: 0, y: 0 };
+
+            canvasContainer.addEventListener('pointerdown', e => {
+                canvasContainer.setPointerCapture(e.pointerId);
+                pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+                if (pointers.size === 1) {
+                    // Start Drawing if only one finger/mouse
+                    // But if it's touch, we might wait 100ms to see if a second finger lands?
+                    // For now, start drawing immediately.
+                    handleStart(e);
+                } else {
+                    // Multi-touch: Cancel drawing, allow pinch/pan
+                    if (state.drawing) handleEnd();
+
+                    // Calc initial pinch distance/center
+                    const pts = Array.from(pointers.values());
+                    prevPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+                }
+            });
+
+            canvasContainer.addEventListener('pointermove', e => {
+                if (!pointers.has(e.pointerId)) return;
+                pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+                const pts = Array.from(pointers.values());
+
+                if (state.drawing && pts.length === 1) {
+                    handleDrawMove(e);
+                } else if (pts.length === 2) {
+                    // Pinch / Pan Logic
+                    const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+                    const cx = (pts[0].x + pts[1].x) / 2;
+                    const cy = (pts[0].y + pts[1].y) / 2;
+
+                    if (prevPinchDist > 0) {
+                        const deltaScale = dist / prevPinchDist;
+
+                        // Update visual gesture state
+                        // We want to zoom around the center point (cx, cy).
+                        // Math is tricky with CSS transforms.
+                        // Simplified approach: Just Scale and translate based on center diff?
+                        // Let's settle for Center-Zoom + Pan for robustness, 
+                        // or just map everything to `gestureScale` and `gestureX/Y`.
+
+                        // Current Scale: state.gestureScale
+                        const newScale = state.gestureScale * deltaScale;
+
+                        // To zoom towards a point P:
+                        // P_new = P_old * scale + trans
+                        // We want P to stay under cursor.
+
+                        state.gestureScale = newScale;
+                        // For now, simple pan support:
+                        // We add the delta movement of the center
+                        // This logic can be improved for "pinching under finger" exactness
+                        // but simple scaling + panning is often enough.
+                    }
+
+                    prevPinchDist = dist;
+                    updateVisualTransform();
+                    commitTransformDebounced();
+                }
+            });
+
+            canvasContainer.addEventListener('pointerup', e => {
+                pointers.delete(e.pointerId);
+                if (pointers.size < 2) prevPinchDist = 0;
+                if (state.drawing) handleEnd();
+            });
+
+            canvasContainer.addEventListener('pointercancel', e => {
+                pointers.delete(e.pointerId);
+                if (state.drawing) handleEnd();
+            });
+
+            // Mouse Wheel Zoom
+            canvasContainer.addEventListener('wheel', e => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+
+                // Accumulate gesture
+                state.gestureScale *= delta;
+
+                // Very basic "Zoom to center" logic for wheel
+                // (Refining this to "Zoom to mouse" requires tracking mouse pos relative to center)
+
+                updateVisualTransform();
+                commitTransformDebounced();
+            }, { passive: false });
+
+
+            // ── Drawing Logic ──
+
+            function handleStart(e) {
+                if (e.button !== 0 && e.pointerType === 'mouse') return; // Left click only
+                e.preventDefault();
+                startTip.classList.add('hidden');
+
+                state.drawing = true;
+                document.body.classList.add('drawing');
+
+                const pos = getWorldCoords(e);
+
+                currentStroke = {
+                    points: [{ x: pos.x, y: pos.y }],
+                    color: currentColor.color === 'rainbow' ? 'rainbow' : currentColor.color,
+                    colors: [],
+                    lineWidth: state.brushSize,
+                    symmetry: state.symmetry,
+                    mirror: state.mirrorMode,
+                };
+
+                state.hasDrawn = true;
+            }
+
+            function handleDrawMove(e) {
+                if (!state.drawing || !currentStroke) return;
+                const { x, y } = getWorldCoords(e);
+                currentStroke.points.push({ x, y });
+
+                // Rainbow color logic
+                if (currentStroke.color === 'rainbow') {
+                    const segColor = `hsl(${state.hue}, 90%, 65%)`;
+                    state.hue = (state.hue + 1.5) % 360;
+                    currentStroke.colors.push(segColor);
+                }
+
+                // Render just the new segment
+                renderLiveSegment(currentStroke);
+            }
+
+            function handleEnd() {
+                if (!state.drawing) return;
+                state.drawing = false;
+                document.body.classList.remove('drawing');
+
+                if (currentStroke && currentStroke.points.length > 1) {
+                    strokes.push(currentStroke);
+                    history.push();
+                    // Smooth out the stroke by re-rendering everything
+                    renderAllStrokes();
+                }
+                currentStroke = null;
+            }
+
+
+            // ── Render / Core ──
+
+            function getSmoothPath(points, scale) {
+                if (points.length < 2) return null;
+                const path = new Path2D();
+                path.moveTo(points[0].x * scale, points[0].y * scale);
+                for (let i = 1; i < points.length - 1; i++) {
+                    const xc = (points[i].x + points[i + 1].x) / 2;
+                    const yc = (points[i].y + points[i + 1].y) / 2;
+                    path.quadraticCurveTo(points[i].x * scale, points[i].y * scale, xc * scale, yc * scale);
+                }
+                path.lineTo(points[points.length - 1].x * scale, points[points.length - 1].y * scale);
+                return path;
+            }
+
+            function renderLiveSegment(stroke) {
+                // Optimization: Draw only the last segment linearly
+                // This is super fast.
+                const pts = stroke.points;
+                if (pts.length < 2) return;
+
+                const p1 = pts[pts.length - 2];
+                const p2 = pts[pts.length - 1]; // current
+
+                const dpr = window.devicePixelRatio || 1;
+                // Use Committed State (Drawing isn't allowed during gesture)
+                const s = state.scale * dpr;
+                const ox = state.offsetX * dpr;
+                const oy = state.offsetY * dpr;
+
+                const lw = stroke.lineWidth * s;
+                const shadowMul = 2;
+                const alpha = 1;
+
+                const cx = canvas.width / 2 + ox;
+                const cy = canvas.height / 2 + oy;
+                const angleStep = (Math.PI * 2) / stroke.symmetry;
+
+                ctx.lineWidth = lw;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.shadowBlur = lw * shadowMul;
+                ctx.globalAlpha = alpha;
+
+                // Color determination
+                let color = stroke.color;
+                if (color === 'rainbow') {
+                    // Get last color pushed
+                    color = stroke.colors[stroke.colors.length - 1] || '#fff';
+                }
+                ctx.strokeStyle = color;
+                ctx.shadowColor = color;
+
+                ctx.save();
+                ctx.translate(cx, cy);
+
+                for (let i = 0; i < stroke.symmetry; i++) {
+                    ctx.save();
+                    ctx.rotate(angleStep * i);
+
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x * s, p1.y * s);
+                    ctx.lineTo(p2.x * s, p2.y * s);
+                    ctx.stroke();
+
+                    if (stroke.mirror) {
+                        ctx.scale(1, -1);
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x * s, p1.y * s);
+                        ctx.lineTo(p2.x * s, p2.y * s);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+                ctx.restore();
+
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
+            }
+
+            function renderAllStrokes() {
+                // Full clear and redraw
+                // This function is expensive, so we only call it when:
+                // 1. Initial load / Resize
+                // 2. Stroke finished (to smooth it)
+                // 3. Zoom committed (after debouncing)
+                // 4. Undo/Redo/Clear
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Background fills if water mode (or just rely on CSS?)
+                // Actually water mode needs to fade out strokes.
+                // We'll handle water later.
+
+                const dpr = window.devicePixelRatio || 1;
+                const s = state.scale * dpr;
+                const ox = state.offsetX * dpr;
+                const oy = state.offsetY * dpr;
+
+                const cx = canvas.width / 2 + ox;
+                const cy = canvas.height / 2 + oy;
+
+                for (const stroke of strokes) {
+                    const lw = stroke.lineWidth * s;
+                    const shadowMul = 2;
+                    const alpha = 1;
+                    const angleStep = (Math.PI * 2) / stroke.symmetry;
+
+                    ctx.lineWidth = lw;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.shadowBlur = lw * shadowMul;
+                    ctx.globalAlpha = alpha;
+
+                    ctx.save();
+                    ctx.translate(cx, cy);
+
+                    // Batched path for solid colors
+                    if (stroke.color !== 'rainbow') {
+                        ctx.strokeStyle = stroke.color;
+                        ctx.shadowColor = stroke.color;
+                        const path = getSmoothPath(stroke.points, s);
+
+                        if (path) {
+                            for (let i = 0; i < stroke.symmetry; i++) {
+                                ctx.stroke(path);
+                                if (stroke.mirror) {
+                                    ctx.save();
+                                    ctx.scale(1, -1);
+                                    ctx.stroke(path);
+                                    ctx.restore();
+                                }
+                                ctx.rotate(angleStep);
+                            }
+                        }
+                    } else {
+                        // Rainbow: Segment-based rendering
+                        // Optimization: Pre-calculate screenspace points once per arm? 
+                        // Or just draw segments.
+                        const points = stroke.points;
+                        for (let i = 0; i < stroke.symmetry; i++) {
+                            ctx.save();
+                            if (i > 0) ctx.rotate(angleStep * i);
+
+                            // Draw Arm
+                            for (let j = 0; j < points.length - 1; j++) {
+                                const p1 = points[j];
+                                const p2 = points[j + 1];
+                                const color = stroke.colors[j] || '#fff';
+                                ctx.beginPath();
+                                ctx.moveTo(p1.x * s, p1.y * s);
+                                ctx.lineTo(p2.x * s, p2.y * s);
+                                ctx.strokeStyle = color;
+                                ctx.shadowColor = color;
+                                ctx.stroke();
+                            }
+
+                            if (stroke.mirror) {
+                                ctx.scale(1, -1);
+                                for (let j = 0; j < points.length - 1; j++) {
+                                    const p1 = points[j];
+                                    const p2 = points[j + 1];
+                                    const color = stroke.colors[j] || '#fff';
+                                    ctx.beginPath();
+                                    ctx.moveTo(p1.x * s, p1.y * s);
+                                    ctx.lineTo(p2.x * s, p2.y * s);
+                                    ctx.strokeStyle = color;
+                                    ctx.shadowColor = color;
+                                    ctx.stroke();
+                                }
+                            }
+                            ctx.restore();
+                        }
+                    }
+                    ctx.restore();
+                }
+
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
+            }
+
+            function requestRender() {
+                requestAnimationFrame(renderAllStrokes);
+            }
+
+
+
+
+            // ── UI / Helpers ──
+
+            // Re-bind UI events
+            buildColorPicker(); // Re-use existing function reference? No, we need to redefine or move it inside.
+            // Actually, I am inside a closure, need to define `buildColorPicker`.
+
             function buildColorPicker() {
                 PALETTES.forEach((p, i) => {
                     const el = document.createElement('div');
                     el.className = 'color-option';
-                    el.setAttribute('role', 'radio');
-                    el.setAttribute('aria-checked', i === 0 ? 'true' : 'false');
-                    el.setAttribute('aria-label', p.name);
-                    el.setAttribute('tabindex', '0');
                     el.style.background = p.color === 'rainbow'
-                        ? 'conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)'
-                        : p.color;
+                        ? 'conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)' : p.color;
                     if (i === 0) el.classList.add('selected');
-
                     el.addEventListener('click', () => selectColor(p, el));
-                    el.addEventListener('keydown', e => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            selectColor(p, el);
-                        }
-                    });
                     colorPicker.appendChild(el);
                 });
 
-                // Custom color picker
+                // Custom
                 const custom = document.createElement('div');
                 custom.className = 'color-custom';
-                custom.setAttribute('aria-label', 'Custom color');
                 custom.style.background = customColor;
                 const input = document.createElement('input');
                 input.type = 'color';
                 input.value = customColor;
-                input.setAttribute('aria-label', 'Pick custom color');
                 input.addEventListener('input', e => {
                     customColor = e.target.value;
                     custom.style.background = customColor;
@@ -662,658 +1021,80 @@
             }
 
             function selectColor(palette, el) {
-                colorPicker.querySelectorAll('.color-option, .color-custom').forEach(e => {
-                    e.classList.remove('selected');
-                    if (e.hasAttribute('role')) e.setAttribute('aria-checked', 'false');
-                });
+                document.querySelectorAll('.color-option, .color-custom').forEach(e => e.classList.remove('selected'));
                 el.classList.add('selected');
-                if (el.hasAttribute('role')) el.setAttribute('aria-checked', 'true');
                 currentColor = palette;
             }
 
-            buildColorPicker();
-
-            // ── Coordinate Mapping ──
-            // World coords: center-relative, zoom-independent, in CSS pixels.
-            // Screen (clientX,Y) → world by subtracting viewport center and dividing by zoom.
-            function getWorldCoords(e) {
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                return {
-                    x: (clientX - window.innerWidth / 2) / state.scale,
-                    y: (clientY - window.innerHeight / 2) / state.scale,
-                };
+            function showToast(msg) {
+                toast.textContent = msg;
+                toast.classList.add('visible');
+                setTimeout(() => toast.classList.remove('visible'), 1200);
             }
 
-            // ── Rendering ──
-
-            // Generate a smooth path from points using quadratic curves
-            function getSmoothPath(points, scale) {
-                if (points.length < 2) return null;
-                const path = new Path2D();
-                path.moveTo(points[0].x * scale, points[0].y * scale);
-
-                for (let i = 1; i < points.length - 1; i++) {
-                    const xc = (points[i].x + points[i + 1].x) / 2;
-                    const yc = (points[i].y + points[i + 1].y) / 2;
-                    path.quadraticCurveTo(points[i].x * scale, points[i].y * scale, xc * scale, yc * scale);
-                }
-                // Connect to the last point
-                const last = points[points.length - 1];
-                path.lineTo(last.x * scale, last.y * scale);
-                return path;
-            }
-
-            function renderStroke(stroke) {
-                const dpr = window.devicePixelRatio || 1;
-                const s = state.scale * dpr; // Global scale factor
-                const lw = stroke.lineWidth * s;
-                const shadowMul = stroke.waterMode ? 4 : 2;
-                const alpha = stroke.waterMode ? 0.85 : 1;
-
-                if (stroke.points.length < 2) return;
-
-                const cx = canvas.width / 2;
-                const cy = canvas.height / 2;
-                const angleStep = (Math.PI * 2) / stroke.symmetry;
-
-                ctx.lineWidth = lw;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.shadowBlur = lw * shadowMul; // Note: scaling shadowBlur too much kills perfs
-                ctx.globalAlpha = alpha;
-
-                // Optimization 1: Batched Path Rendering for Solid Colors
-                if (stroke.color !== 'rainbow') {
-                    ctx.strokeStyle = stroke.color;
-                    ctx.shadowColor = stroke.color;
-
-                    // Create one smooth path for the entire stroke (in center-relative coords, scaled)
-                    const path = getSmoothPath(stroke.points, s);
-                    if (!path) return;
-
-                    // Render all symmetry arms
-                    ctx.save();
-                    ctx.translate(cx, cy);
-
-                    for (let i = 0; i < stroke.symmetry; i++) {
-                        ctx.stroke(path); // Draw the cached path
-                        if (stroke.mirror) {
-                            ctx.save();
-                            ctx.scale(1, -1);
-                            ctx.stroke(path);
-                            ctx.restore();
-                        }
-                        ctx.rotate(angleStep);
-                    }
-                    ctx.restore();
-                }
-                // Optimization 2: Loop Inversion for Rainbow
-                else {
-                    // For rainbow, we MUST revert to segments to change colors,
-                    // but we act smart: transform ONCE per arm, draw ALL segments.
-                    ctx.save();
-                    ctx.translate(cx, cy);
-
-                    const points = stroke.points;
-
-                    for (let i = 0; i < stroke.symmetry; i++) {
-                        // Pre-calc rotation for this arm
-                        ctx.save();
-                        if (i > 0) ctx.rotate(angleStep * i); // First one is 0
-
-                        // Draw entire arm
-                        for (let j = 0; j < points.length - 1; j++) {
-                            const p1 = points[j];
-                            const p2 = points[j + 1];
-                            const color = stroke.colors[j] || '#fff';
-
-                            ctx.beginPath();
-                            ctx.moveTo(p1.x * s, p1.y * s);
-                            ctx.lineTo(p2.x * s, p2.y * s);
-                            ctx.strokeStyle = color;
-                            ctx.shadowColor = color;
-                            ctx.stroke();
-                        }
-
-                        // Mirror for this arm
-                        if (stroke.mirror) {
-                            ctx.scale(1, -1); // mirror Y
-                            for (let j = 0; j < points.length - 1; j++) {
-                                const p1 = points[j];
-                                const p2 = points[j + 1];
-                                const color = stroke.colors[j] || '#fff';
-
-                                ctx.beginPath();
-                                ctx.moveTo(p1.x * s, p1.y * s);
-                                ctx.lineTo(p2.x * s, p2.y * s);
-                                ctx.strokeStyle = color;
-                                ctx.shadowColor = color;
-                                ctx.stroke();
-                            }
-                        }
-                        ctx.restore();
-                    }
-                    ctx.restore();
-                }
-
-                ctx.globalAlpha = 1;
-                ctx.shadowBlur = 0;
-            }
-
-            // Clear canvas and re-render every stored stroke at current zoom.
-            function renderAllStrokes() {
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                // Optional: Draw a "zero" point or grid if needed, but we are keeping it clean
-                for (const stroke of strokes) {
-                    renderStroke(stroke);
-                }
-                // Draw current stroke live if dragging (linear, for speed)
-                if (currentStroke && state.drawing) {
-                    renderLiveStroke(currentStroke);
-                }
-            }
-
-            // Optimized live rendering (draws just the latest segment to avoid full repaint lag)
-            // Actually, for smoothness, we might want to repaint the whole current stroke 
-            // if we want it to curve live. But for perf, let's just draw the new segment.
-            // The full smooth curve appears when you lift the mouse (or we can try to do it live).
-            // Let's stick to segment drawing for the active stroke to be super responsive.
-            function renderLiveStroke(stroke) {
-                if (stroke.points.length < 2) return;
-
-                const dpr = window.devicePixelRatio || 1;
-                const s = state.scale * dpr;
-                const lw = stroke.lineWidth * s;
-                const shadowMul = stroke.waterMode ? 4 : 2;
-                const alpha = stroke.waterMode ? 0.85 : 1;
-
-                const cx = canvas.width / 2;
-                const cy = canvas.height / 2;
-                const angleStep = (Math.PI * 2) / stroke.symmetry;
-
-                ctx.lineWidth = lw;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.shadowBlur = lw * shadowMul;
-                ctx.globalAlpha = alpha;
-
-                ctx.save();
-                ctx.translate(cx, cy);
-
-                const points = stroke.points;
-
-                for (let i = 0; i < stroke.symmetry; i++) {
-                    ctx.save();
-                    if (i > 0) ctx.rotate(angleStep * i);
-
-                    if (stroke.color === 'rainbow') {
-                        for (let j = 0; j < points.length - 1; j++) {
-                            const p1 = points[j];
-                            const p2 = points[j + 1];
-                            const color = stroke.colors[j] || '#fff';
-                            ctx.beginPath();
-                            ctx.moveTo(p1.x * s, p1.y * s);
-                            ctx.lineTo(p2.x * s, p2.y * s);
-                            ctx.strokeStyle = color;
-                            ctx.shadowColor = color;
-                            ctx.stroke();
-                        }
-                    } else {
-                        ctx.strokeStyle = stroke.color;
-                        ctx.shadowColor = stroke.color;
-                        ctx.beginPath();
-                        ctx.moveTo(points[0].x * s, points[0].y * s);
-                        for (let j = 1; j < points.length; j++) {
-                            ctx.lineTo(points[j].x * s, points[j].y * s);
-                        }
-                        ctx.stroke();
-                    }
-
-                    if (stroke.mirror) {
-                        ctx.scale(1, -1);
-                        if (stroke.color === 'rainbow') {
-                            for (let j = 0; j < points.length - 1; j++) {
-                                const p1 = points[j];
-                                const p2 = points[j + 1];
-                                const color = stroke.colors[j] || '#fff';
-                                ctx.beginPath();
-                                ctx.moveTo(p1.x * s, p1.y * s);
-                                ctx.lineTo(p2.x * s, p2.y * s);
-                                ctx.strokeStyle = color;
-                                ctx.shadowColor = color;
-                                ctx.stroke();
-                            }
-                        } else {
-                            ctx.strokeStyle = stroke.color;
-                            ctx.shadowColor = stroke.color;
-                            ctx.beginPath();
-                            ctx.moveTo(points[0].x * s, points[0].y * s);
-                            for (let j = 1; j < points.length; j++) {
-                                ctx.lineTo(points[j].x * s, points[j].y * s);
-                            }
-                            ctx.stroke();
-                        }
-                    }
-                    ctx.restore();
-                }
-                ctx.restore();
-
-                ctx.globalAlpha = 1;
-                ctx.shadowBlur = 0;
-            }
-
-            // ── Drawing ──
-            function draw(e) {
-                if (!state.drawing || !currentStroke) return;
-                const { x, y } = getWorldCoords(e);
-
-                // Add point to stroke
-                currentStroke.points.push({ x, y });
-
-                // Determine color for this segment
-                let segColor;
-                if (currentStroke.color === 'rainbow') {
-                    segColor = `hsl(${state.hue}, 90%, 65%)`;
-                    state.hue = (state.hue + 1.5) % 360;
-                    currentStroke.colors.push(segColor);
-                } else {
-                    segColor = currentStroke.color;
-                }
-
-                // Draw JUST the new segment immediately (responsiveness)
-                // We do NOT clear rect here, we just add ink.
-                // On zoom/repaint, it will be smoothed.
-                const len = currentStroke.points.length;
-                if (len < 2) return;
-
-                const p1 = currentStroke.points[len - 2];
-                const p2 = currentStroke.points[len - 1]; // current
-
-                const dpr = window.devicePixelRatio || 1;
-                const s = state.scale * dpr;
-                const lw = currentStroke.lineWidth * s;
-                const shadowMul = currentStroke.waterMode ? 4 : 2;
-                const alpha = currentStroke.waterMode ? 0.85 : 1;
-
-                // Draw this segment linearly for speed on all symmetry lines
-                const cx = canvas.width / 2;
-                const cy = canvas.height / 2;
-                const angleStep = (Math.PI * 2) / currentStroke.symmetry;
-
-                ctx.lineWidth = lw;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.shadowBlur = lw * shadowMul;
-                ctx.strokeStyle = segColor;
-                ctx.shadowColor = segColor;
-                ctx.globalAlpha = alpha;
-
-                ctx.save();
-                ctx.translate(cx, cy);
-
-                for (let i = 0; i < currentStroke.symmetry; i++) {
-                    ctx.save();
-                    ctx.rotate(angleStep * i);
-
-                    ctx.beginPath();
-                    ctx.moveTo(p1.x * s, p1.y * s);
-                    ctx.lineTo(p2.x * s, p2.y * s);
-                    ctx.stroke();
-
-                    if (currentStroke.mirror) {
-                        ctx.scale(1, -1);
-                        ctx.beginPath();
-                        ctx.moveTo(p1.x * s, p1.y * s);
-                        ctx.lineTo(p2.x * s, p2.y * s);
-                        ctx.stroke();
-                    }
-
-                    ctx.restore();
-                }
-                ctx.restore();
-
-                state.lastX = x;
-                state.lastY = y;
-                state.lastDrawTime = Date.now();
-            }
-
-            // ── Input Handlers ──
-            function handleStart(e) {
-                if (e.touches && e.touches.length > 1) return;
-                // Allow default touch actions? No, we need to prevent scroll
-                // but we need to check if we are on UI.
-                // Canvas captures pointers, so it should be fine.
-                e.preventDefault();
-
-                state.drawing = true;
-                document.body.classList.add('drawing');
-                const pos = getWorldCoords(e);
-                state.lastX = pos.x;
-                state.lastY = pos.y;
-
-                currentStroke = {
-                    points: [{ x: pos.x, y: pos.y }], // Start with 1 point
-                    color: currentColor.color === 'rainbow' ? 'rainbow' : currentColor.color,
-                    colors: [], // Only used if rainbow
-                    lineWidth: state.brushSize,
-                    symmetry: state.symmetry,
-                    mirror: state.mirrorMode,
-                    waterMode: state.waterMode,
-                };
-
-                startTip.classList.add('hidden');
-                state.hasDrawn = true;
-                resetIdle();
-            }
-
-            function handleMove(e) {
-                e.preventDefault();
-                // Pinch zoom check
-                if (e.touches && e.touches.length === 2) {
-                    // If we were drawing, stop safely
-                    if (state.drawing) {
-                        handleEnd(); // finish the stroke
-                    }
-
-                    const dist = Math.hypot(
-                        e.touches[0].clientX - e.touches[1].clientX,
-                        e.touches[0].clientY - e.touches[1].clientY
-                    );
-
-                    if (state.pinchDist > 0) {
-                        const delta = dist / state.pinchDist;
-                        state.scale = clamp(state.pinchScale * delta, 0.1, 10);
-                        renderAllStrokes(); // Re-render everything at new scale
-                    } else {
-                        state.pinchDist = dist;
-                        state.pinchScale = state.scale;
-                    }
-                    return;
-                }
-
-                if (state.drawing) {
-                    draw(e);
-                    resetIdle();
-                }
-            }
-
-            function handleEnd() {
-                if (state.drawing) {
-                    state.drawing = false;
-                    document.body.classList.remove('drawing');
-                    // Only save if we have actual line segments
-                    if (currentStroke && currentStroke.points.length > 1) {
-                        strokes.push(currentStroke);
-                        history.push();
-                        // Optional: Re-render now to apply smoothing to the fresh stroke?
-                        // Yes, allows user to see the "vector" effect snap in.
-                        renderAllStrokes();
-                    }
-                    currentStroke = null;
-                }
-                state.pinchDist = 0;
-            }
-
-            // Pointer events (unified mouse + touch on modern browsers, fallback below)
-            if (window.PointerEvent) {
-                canvas.addEventListener('pointerdown', e => {
-                    if (e.pointerType === 'touch' && e.isPrimary === false) return;
-                    canvas.setPointerCapture(e.pointerId);
-                    handleStart(e);
-                });
-                canvas.addEventListener('pointermove', e => {
-                    if (state.drawing) draw(e);
-                    resetIdle();
-                });
-                canvas.addEventListener('pointerup', handleEnd);
-                canvas.addEventListener('pointercancel', handleEnd);
-
-                // Still need touch events for pinch zoom
-                canvas.addEventListener('touchstart', e => {
-                    if (e.touches.length === 2) {
-                        state.drawing = false;
-                        document.body.classList.remove('drawing');
-                        currentStroke = null;
-                        state.pinchDist = Math.hypot(
-                            e.touches[0].clientX - e.touches[1].clientX,
-                            e.touches[0].clientY - e.touches[1].clientY
-                        );
-                        state.pinchScale = state.scale;
-                    }
-                }, { passive: true });
-                canvas.addEventListener('touchmove', e => {
-                    if (e.touches.length === 2) {
-                        handleMove(e);
-                    }
-                }, { passive: false });
-                canvas.addEventListener('touchend', e => {
-                    if (e.touches.length < 2) state.pinchDist = 0;
-                }, { passive: true });
-            } else {
-                // Fallback for older browsers
-                canvas.addEventListener('mousedown', handleStart);
-                canvas.addEventListener('mousemove', handleMove);
-                canvas.addEventListener('mouseup', handleEnd);
-                canvas.addEventListener('mouseout', handleEnd);
-                canvas.addEventListener('touchstart', e => {
-                    if (e.touches.length === 2) {
-                        state.drawing = false;
-                        currentStroke = null;
-                        state.pinchDist = Math.hypot(
-                            e.touches[0].clientX - e.touches[1].clientX,
-                            e.touches[0].clientY - e.touches[1].clientY
-                        );
-                        state.pinchScale = state.scale;
-                    } else {
-                        handleStart(e);
-                    }
-                }, { passive: false });
-                canvas.addEventListener('touchmove', handleMove, { passive: false });
-                canvas.addEventListener('touchend', handleEnd);
-            }
-
-            // Mouse wheel zoom — re-renders all strokes at the new scale
-            canvas.addEventListener('wheel', e => {
-                e.preventDefault();
-                const dir = e.deltaY > 0 ? -1 : 1;
-                state.scale = clamp(state.scale + dir * 0.08 * state.scale, 0.1, 10);
-                renderAllStrokes();
-            }, { passive: false });
-
-            // ── Water Mode Animation ──
-            let waterAnimId = null;
-
-            function startWaterAnimation() {
-                if (waterAnimId !== null) return;
-
-                function tick() {
-                    if (!state.waterMode) {
-                        waterAnimId = null;
-                        return;
-                    }
-
-                    const elapsed = Date.now() - state.lastDrawTime;
-                    let fade;
-
-                    if (elapsed < 500) {
-                        fade = 0.008;
-                    } else if (elapsed < 2000) {
-                        const t = (elapsed - 500) / 1500;
-                        fade = 0.008 + t * 0.025;
-                    } else if (elapsed < 4000) {
-                        const t = (elapsed - 2000) / 2000;
-                        fade = 0.033 + t * 0.047;
-                    } else {
-                        fade = 0.12;
-                    }
-
-                    ctx.save();
-                    ctx.globalCompositeOperation = 'destination-out';
-                    ctx.shadowBlur = 0;
-                    ctx.fillStyle = `rgba(0,0,0,${fade})`;
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.restore();
-
-                    waterAnimId = requestAnimationFrame(tick);
-                }
-
-                waterAnimId = requestAnimationFrame(tick);
-            }
-
-            function stopWaterAnimation() {
-                if (waterAnimId !== null) {
-                    cancelAnimationFrame(waterAnimId);
-                    waterAnimId = null;
-                }
-            }
-
-            // ── Idle Detection ──
-            function resetIdle() {
-                document.body.classList.remove('idle');
-                clearTimeout(state.idleTimer);
-                state.idleTimer = setTimeout(() => {
-                    if (!state.drawing) {
-                        document.body.classList.add('idle');
-                    }
-                }, 4000);
-            }
-
-            resetIdle();
-            document.addEventListener('mousemove', resetIdle, { passive: true });
-            document.addEventListener('touchstart', resetIdle, { passive: true });
-
-            // ── UI Controls ──
-            symmetryRange.addEventListener('input', e => {
+            symmetryRange.addEventListener('change', e => {
                 state.symmetry = parseInt(e.target.value, 10);
-                symmetryVal.textContent = state.symmetry;
             });
 
-            brushRange.addEventListener('input', e => {
+            brushRange.addEventListener('change', e => {
                 state.brushSize = parseInt(e.target.value, 10);
-                brushVal.textContent = state.brushSize;
             });
 
             mirrorBtn.addEventListener('click', () => {
                 state.mirrorMode = !state.mirrorMode;
                 mirrorBtn.classList.toggle('active', state.mirrorMode);
-                mirrorBtn.setAttribute('aria-pressed', state.mirrorMode);
-                showToast(state.mirrorMode ? 'Mirror on' : 'Mirror off');
+                showToast(state.mirrorMode ? 'Mirror On' : 'Mirror Off');
             });
 
-            waterBtn.addEventListener('click', () => {
-                state.waterMode = !state.waterMode;
-                waterBtn.classList.toggle('active', state.waterMode);
-                waterBtn.setAttribute('aria-pressed', state.waterMode);
-                state.lastDrawTime = Date.now();
-                if (state.waterMode) {
-                    startWaterAnimation();
-                } else {
-                    stopWaterAnimation();
-                }
-                showToast(state.waterMode ? 'Water mode on' : 'Water mode off');
-            });
+
 
             clearBtn.addEventListener('click', () => {
-                // Double-click confirmation if canvas has content
-                if (!state.clearPending && state.hasDrawn) {
+                if (!state.clearPending) {
                     state.clearPending = true;
-                    clearBtn.classList.add('danger-confirm');
                     clearBtn.textContent = 'Sure?';
+                    clearBtn.classList.add('danger-confirm');
                     state.clearTimer = setTimeout(() => {
                         state.clearPending = false;
-                        clearBtn.classList.remove('danger-confirm');
                         clearBtn.textContent = 'Clear';
-                    }, 2000);
+                        clearBtn.classList.remove('danger-confirm');
+                    }, 3000);
                     return;
                 }
+
                 clearTimeout(state.clearTimer);
                 state.clearPending = false;
-                clearBtn.classList.remove('danger-confirm');
                 clearBtn.textContent = 'Clear';
+                clearBtn.classList.remove('danger-confirm');
+
                 strokes.length = 0;
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
                 history.push();
-                showToast('Canvas cleared');
+                renderAllStrokes();
+                showToast('Cleared');
             });
 
-            saveBtn.addEventListener('click', saveCanvas);
+            saveBtn.addEventListener('click', () => {
+                // Save logic (similar to before)
+                const link = document.createElement('a');
+                link.download = `mandala-${Date.now()}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
 
             undoBtn.addEventListener('click', () => history.undo());
             redoBtn.addEventListener('click', () => history.redo());
 
-            // ── Save ──
-            function saveCanvas() {
-                // Render all strokes at scale=1 onto a temp canvas for a clean full-resolution export.
-                const dpr = window.devicePixelRatio || 1;
-                const tmp = document.createElement('canvas');
-                tmp.width = canvas.width;
-                tmp.height = canvas.height;
-                const tctx = tmp.getContext('2d');
-                tctx.fillStyle = '#050510';
-                tctx.fillRect(0, 0, tmp.width, tmp.height);
-                tctx.drawImage(canvas, 0, 0);
-
-                tmp.toBlob(blob => {
-                    if (!blob) return;
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.download = `mandala-${Date.now()}.png`;
-                    a.href = url;
-                    a.click();
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
-                }, 'image/png');
-
-                showToast('Saved');
-            }
-
-            // ── Keyboard Shortcuts ──
-            document.addEventListener('keydown', e => {
-                // Don't intercept when typing in inputs
-                if (e.target.tagName === 'INPUT' && e.target.type !== 'range') return;
-
-                const ctrl = e.ctrlKey || e.metaKey;
-
-                if (ctrl && !e.shiftKey && e.key === 'z') {
-                    e.preventDefault();
-                    history.undo();
-                } else if (ctrl && e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
-                    e.preventDefault();
-                    history.redo();
-                } else if (ctrl && (e.key === 's' || e.key === 'S')) {
-                    e.preventDefault();
-                    saveCanvas();
-                } else if (e.key === 'Delete' || e.key === 'Backspace') {
-                    if (!ctrl) {
-                        clearBtn.click();
-                    }
-                } else if (e.key === 'm' || e.key === 'M') {
-                    if (!ctrl) mirrorBtn.click();
-                } else if (e.key === '[') {
-                    state.brushSize = clamp(state.brushSize - 1, 1, 20);
-                    brushRange.value = state.brushSize;
-                    brushVal.textContent = state.brushSize;
-                    showToast(`Brush: ${state.brushSize}`);
-                } else if (e.key === ']') {
-                    state.brushSize = clamp(state.brushSize + 1, 1, 20);
-                    brushRange.value = state.brushSize;
-                    brushVal.textContent = state.brushSize;
-                    showToast(`Brush: ${state.brushSize}`);
-                }
-            });
-
-            // ── Utilities ──
-            function clamp(val, min, max) {
-                return Math.max(min, Math.min(max, val));
-            }
-
+            // Utils
+            function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
             function debounce(fn, ms) {
-                let timer;
+                let t;
                 return (...args) => {
-                    clearTimeout(timer);
-                    timer = setTimeout(() => fn(...args), ms);
+                    clearTimeout(t);
+                    t = setTimeout(() => fn(...args), ms);
                 };
             }
+
+
+
         })();
     </script>
 </body>
