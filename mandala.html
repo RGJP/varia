@@ -401,6 +401,9 @@
 
     <div class="ui-overlay" role="toolbar" aria-label="Drawing controls">
         <div class="control-group">
+            <button id="fullscreenBtn" title="Enter Fullscreen" aria-label="Toggle Fullscreen"
+                style="padding: 0.35rem 0.5rem; min-width: 2.4rem; font-weight: 500; letter-spacing: -1px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">[
+                + ]</button>
             <label for="symmetryRange">Sym</label>
             <select id="symmetryRange" aria-label="Symmetry fold count"></select>
         </div>
@@ -449,6 +452,7 @@
             const colorPicker = $('colorPicker');
             const startTip = $('startTip');
             const toast = $('toast');
+            const fullscreenBtn = $('fullscreenBtn');
 
             // ── Populate Selects ──
             for (let i = 2; i <= 32; i++) {
@@ -488,6 +492,8 @@
                 hasDrawn: false,
                 clearPending: false,
                 clearTimer: null,
+                touchDelayTimer: null,
+                bufferedEvents: [],
             };
 
             // ── Stroke Storage ──
@@ -659,15 +665,29 @@
                 pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
                 if (pointers.size === 1) {
-                    // Start Drawing if only one finger/mouse
-                    // But if it's touch, we might wait 100ms to see if a second finger lands?
-                    // For now, start drawing immediately.
-                    handleStart(e);
+                    if (e.pointerType === 'touch') {
+                        // Delay draw start to see if a second finger lands for pinch-zoom
+                        state.touchDelayTimer = setTimeout(() => {
+                            if (pointers.size === 1 && !state.drawing) {
+                                handleStart(e);
+                                state.bufferedEvents.forEach(ev => handleDrawMove(ev));
+                            }
+                            state.bufferedEvents = [];
+                            state.touchDelayTimer = null;
+                        }, 80);
+                    } else {
+                        handleStart(e);
+                    }
                 } else {
-                    // Multi-touch: Cancel drawing, allow pinch/pan
-                    if (state.drawing) handleEnd();
+                    // Multi-touch: Cancel pending or active drawing
+                    if (state.touchDelayTimer) {
+                        clearTimeout(state.touchDelayTimer);
+                        state.touchDelayTimer = null;
+                        state.bufferedEvents = [];
+                    }
+                    if (state.drawing) handleEnd(true); // true = isCancelled
 
-                    // Calc initial pinch distance/center
+                    // Calc initial pinch distance
                     const pts = Array.from(pointers.values());
                     prevPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
                 }
@@ -679,8 +699,12 @@
 
                 const pts = Array.from(pointers.values());
 
-                if (state.drawing && pts.length === 1) {
-                    handleDrawMove(e);
+                if (pts.length === 1) {
+                    if (state.drawing) {
+                        handleDrawMove(e);
+                    } else if (state.touchDelayTimer) {
+                        state.bufferedEvents.push(e);
+                    }
                 } else if (pts.length === 2) {
                     // Pinch / Pan Logic
                     const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
@@ -720,12 +744,23 @@
             canvasContainer.addEventListener('pointerup', e => {
                 pointers.delete(e.pointerId);
                 if (pointers.size < 2) prevPinchDist = 0;
+
+                if (state.touchDelayTimer) {
+                    clearTimeout(state.touchDelayTimer);
+                    state.touchDelayTimer = null;
+                    state.bufferedEvents = [];
+                }
                 if (state.drawing) handleEnd();
             });
 
             canvasContainer.addEventListener('pointercancel', e => {
                 pointers.delete(e.pointerId);
-                if (state.drawing) handleEnd();
+                if (state.touchDelayTimer) {
+                    clearTimeout(state.touchDelayTimer);
+                    state.touchDelayTimer = null;
+                    state.bufferedEvents = [];
+                }
+                if (state.drawing) handleEnd(true);
             });
 
             // Mouse Wheel Zoom
@@ -784,15 +819,19 @@
                 renderLiveSegment(currentStroke);
             }
 
-            function handleEnd() {
+            function handleEnd(isCancelled = false) {
                 if (!state.drawing) return;
                 state.drawing = false;
                 document.body.classList.remove('drawing');
 
-                if (currentStroke && currentStroke.points.length > 1) {
+                // Only store the stroke if it wasn't cancelled (e.g. by a pinch)
+                // and if it actually has more than one point (a line segment).
+                if (!isCancelled && currentStroke && currentStroke.points.length > 1) {
                     strokes.push(currentStroke);
                     history.push();
-                    // Smooth out the stroke by re-rendering everything
+                    renderAllStrokes();
+                } else {
+                    // This clears out any "live" segment that was drawn before the cancellation
                     renderAllStrokes();
                 }
                 currentStroke = null;
@@ -1082,6 +1121,28 @@
 
             undoBtn.addEventListener('click', () => history.undo());
             redoBtn.addEventListener('click', () => history.redo());
+
+            fullscreenBtn.addEventListener('click', () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        showToast(`Fullscreen error: ${err.message}`);
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            });
+
+            document.addEventListener('fullscreenchange', () => {
+                if (document.fullscreenElement) {
+                    fullscreenBtn.textContent = '[ - ]';
+                    fullscreenBtn.title = 'Exit Fullscreen';
+                    fullscreenBtn.classList.add('active');
+                } else {
+                    fullscreenBtn.textContent = '[ + ]';
+                    fullscreenBtn.title = 'Enter Fullscreen';
+                    fullscreenBtn.classList.remove('active');
+                }
+            });
 
             // Utils
             function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
