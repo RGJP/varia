@@ -61,9 +61,17 @@
         }
 
         canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
             display: block;
             width: 100%;
             height: 100%;
+        }
+
+        #canvas-active {
+            pointer-events: none;
+            /* Let touches pass through to container */
         }
 
         /* ── UI Overlay ── */
@@ -392,7 +400,8 @@
 <body>
     <div class="tip" id="startTip">Click & drag to draw</div>
     <div id="canvas-container">
-        <canvas id="canvas" role="img" aria-label="Mandala drawing canvas"></canvas>
+        <canvas id="canvas-static"></canvas>
+        <canvas id="canvas-active"></canvas>
     </div>
 
 
@@ -439,8 +448,10 @@
 
             // ── DOM References ──
             const canvasContainer = document.getElementById('canvas-container');
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d', { willReadFrequently: false, alpha: false });
+            const canvasStatic = document.getElementById('canvas-static');
+            const canvasActive = document.getElementById('canvas-active');
+            const ctxStatic = canvasStatic.getContext('2d', { willReadFrequently: false, alpha: false });
+            const ctxActive = canvasActive.getContext('2d', { willReadFrequently: false, alpha: true });
             const $ = id => document.getElementById(id);
             const symmetryRange = $('symmetryRange');
             const brushRange = $('brushRange');
@@ -571,12 +582,15 @@
             function resize() {
                 const dpr = window.devicePixelRatio || 1;
                 const rect = canvasContainer.getBoundingClientRect();
-                canvas.width = rect.width * dpr;
-                canvas.height = rect.height * dpr;
-                // No style width/height needed on canvas as it fills container
+
+                canvasStatic.width = rect.width * dpr;
+                canvasStatic.height = rect.height * dpr;
+
+                canvasActive.width = rect.width * dpr;
+                canvasActive.height = rect.height * dpr;
 
                 // Force a full re-render without transform to ensure crispness
-                renderAllStrokes();
+                renderStaticLayer();
             }
             // Debounced resize to avoid trashing performance
             window.addEventListener('resize', debounce(resize, 200));
@@ -648,7 +662,7 @@
                 canvasContainer.style.transform = 'none';
 
                 // 4. Redraw at high res
-                renderAllStrokes();
+                renderStaticLayer();
 
             }, 250); // Wait 250ms after last movement to commit (crisp snap)
 
@@ -806,6 +820,17 @@
             function handleDrawMove(e) {
                 if (!state.drawing || !currentStroke) return;
                 const { x, y } = getWorldCoords(e);
+
+                // Throttling: Ignore points too close to the last one
+                const lastPt = currentStroke.points[currentStroke.points.length - 1];
+                if (lastPt) {
+                    const dist = Math.hypot(x - lastPt.x, y - lastPt.y);
+                    // Threshold: 2 screen pixels (accounting for scale roughly or just raw units)
+                    // If we are zoomed in, 2 units might be very small. 
+                    // Let's use a small constant.
+                    if (dist < 1.0) return;
+                }
+
                 currentStroke.points.push({ x, y });
 
                 // Rainbow color logic
@@ -824,15 +849,18 @@
                 state.drawing = false;
                 document.body.classList.remove('drawing');
 
+                // Clear the active layer (it was just a scratchpad)
+                // Use a quick clear
+                ctxActive.clearRect(0, 0, canvasActive.width, canvasActive.height);
+
                 // Only store the stroke if it wasn't cancelled (e.g. by a pinch)
                 // and if it actually has more than one point (a line segment).
                 if (!isCancelled && currentStroke && currentStroke.points.length > 1) {
                     strokes.push(currentStroke);
                     history.push();
-                    renderAllStrokes();
-                } else {
-                    // This clears out any "live" segment that was drawn before the cancellation
-                    renderAllStrokes();
+                    // Permanently draw to static layer
+                    // We render JUST this new stroke to the static layer to avoid full redraw
+                    renderStaticStroke(currentStroke);
                 }
                 currentStroke = null;
             }
@@ -854,8 +882,7 @@
             }
 
             function renderLiveSegment(stroke) {
-                // Optimization: Draw only the last segment linearly
-                // This is super fast.
+                // Draws to Active Layer
                 const pts = stroke.points;
                 if (pts.length < 2) return;
 
@@ -863,24 +890,23 @@
                 const p2 = pts[pts.length - 1]; // current
 
                 const dpr = window.devicePixelRatio || 1;
-                // Use Committed State (Drawing isn't allowed during gesture)
                 const s = state.scale * dpr;
-                const ox = state.offsetX * dpr;
+                const ox = state.offsetX * dpr; // Use committed offset
                 const oy = state.offsetY * dpr;
 
                 const lw = stroke.lineWidth * s;
                 const shadowMul = 2;
                 const alpha = 1;
 
-                const cx = canvas.width / 2 + ox;
-                const cy = canvas.height / 2 + oy;
+                const cx = canvasActive.width / 2 + ox;
+                const cy = canvasActive.height / 2 + oy;
                 const angleStep = (Math.PI * 2) / stroke.symmetry;
 
-                ctx.lineWidth = lw;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.shadowBlur = lw * shadowMul;
-                ctx.globalAlpha = alpha;
+                ctxActive.lineWidth = lw;
+                ctxActive.lineCap = 'round';
+                ctxActive.lineJoin = 'round';
+                ctxActive.shadowBlur = lw * shadowMul;
+                ctxActive.globalAlpha = alpha;
 
                 // Color determination
                 let color = stroke.color;
@@ -888,139 +914,134 @@
                     // Get last color pushed
                     color = stroke.colors[stroke.colors.length - 1] || '#fff';
                 }
-                ctx.strokeStyle = color;
-                ctx.shadowColor = color;
+                ctxActive.strokeStyle = color;
+                ctxActive.shadowColor = color;
 
-                ctx.save();
-                ctx.translate(cx, cy);
+                ctxActive.save();
+                ctxActive.translate(cx, cy);
 
                 for (let i = 0; i < stroke.symmetry; i++) {
-                    ctx.save();
-                    ctx.rotate(angleStep * i);
+                    ctxActive.save();
+                    ctxActive.rotate(angleStep * i);
 
-                    ctx.beginPath();
-                    ctx.moveTo(p1.x * s, p1.y * s);
-                    ctx.lineTo(p2.x * s, p2.y * s);
-                    ctx.stroke();
+                    ctxActive.beginPath();
+                    ctxActive.moveTo(p1.x * s, p1.y * s);
+                    ctxActive.lineTo(p2.x * s, p2.y * s);
+                    ctxActive.stroke();
 
                     if (stroke.mirror) {
-                        ctx.scale(1, -1);
-                        ctx.beginPath();
-                        ctx.moveTo(p1.x * s, p1.y * s);
-                        ctx.lineTo(p2.x * s, p2.y * s);
-                        ctx.stroke();
+                        ctxActive.scale(1, -1);
+                        ctxActive.beginPath();
+                        ctxActive.moveTo(p1.x * s, p1.y * s);
+                        ctxActive.lineTo(p2.x * s, p2.y * s);
+                        ctxActive.stroke();
                     }
-                    ctx.restore();
+                    ctxActive.restore();
                 }
-                ctx.restore();
+                ctxActive.restore();
 
-                ctx.shadowBlur = 0;
-                ctx.globalAlpha = 1;
+                ctxActive.shadowBlur = 0;
+                ctxActive.globalAlpha = 1;
             }
 
-            function renderAllStrokes() {
-                // Full clear and redraw
-                // This function is expensive, so we only call it when:
-                // 1. Initial load / Resize
-                // 2. Stroke finished (to smooth it)
-                // 3. Zoom committed (after debouncing)
-                // 4. Undo/Redo/Clear
+            function renderStaticLayer() {
+                // Full clear and redraw of Static Layer
+                ctxStatic.clearRect(0, 0, canvasStatic.width, canvasStatic.height);
+                // Also clear active just in case
+                ctxActive.clearRect(0, 0, canvasActive.width, canvasActive.height);
 
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (const stroke of strokes) {
+                    renderStaticStroke(stroke);
+                }
+            }
 
-                // Background fills if water mode (or just rely on CSS?)
-                // Actually water mode needs to fade out strokes.
-                // We'll handle water later.
-
+            function renderStaticStroke(stroke) {
+                // Draws a single full stroke to the Static Layer
                 const dpr = window.devicePixelRatio || 1;
                 const s = state.scale * dpr;
                 const ox = state.offsetX * dpr;
                 const oy = state.offsetY * dpr;
 
-                const cx = canvas.width / 2 + ox;
-                const cy = canvas.height / 2 + oy;
+                const cx = canvasStatic.width / 2 + ox;
+                const cy = canvasStatic.height / 2 + oy;
 
-                for (const stroke of strokes) {
-                    const lw = stroke.lineWidth * s;
-                    const shadowMul = 2;
-                    const alpha = 1;
-                    const angleStep = (Math.PI * 2) / stroke.symmetry;
+                const lw = stroke.lineWidth * s;
+                const shadowMul = 2;
+                const alpha = 1;
+                const angleStep = (Math.PI * 2) / stroke.symmetry;
 
-                    ctx.lineWidth = lw;
-                    ctx.lineCap = 'round';
-                    ctx.lineJoin = 'round';
-                    ctx.shadowBlur = lw * shadowMul;
-                    ctx.globalAlpha = alpha;
+                ctxStatic.lineWidth = lw;
+                ctxStatic.lineCap = 'round';
+                ctxStatic.lineJoin = 'round';
+                ctxStatic.shadowBlur = lw * shadowMul;
+                ctxStatic.globalAlpha = alpha;
 
-                    ctx.save();
-                    ctx.translate(cx, cy);
+                ctxStatic.save();
+                ctxStatic.translate(cx, cy);
 
-                    // Batched path for solid colors
-                    if (stroke.color !== 'rainbow') {
-                        ctx.strokeStyle = stroke.color;
-                        ctx.shadowColor = stroke.color;
-                        const path = getSmoothPath(stroke.points, s);
+                // Batched path for solid colors
+                if (stroke.color !== 'rainbow') {
+                    ctxStatic.strokeStyle = stroke.color;
+                    ctxStatic.shadowColor = stroke.color;
+                    const path = getSmoothPath(stroke.points, s);
 
-                        if (path) {
-                            for (let i = 0; i < stroke.symmetry; i++) {
-                                ctx.stroke(path);
-                                if (stroke.mirror) {
-                                    ctx.save();
-                                    ctx.scale(1, -1);
-                                    ctx.stroke(path);
-                                    ctx.restore();
-                                }
-                                ctx.rotate(angleStep);
-                            }
-                        }
-                    } else {
-                        // Rainbow: Segment-based rendering
-                        // Optimization: Pre-calculate screenspace points once per arm? 
-                        // Or just draw segments.
-                        const points = stroke.points;
+                    if (path) {
                         for (let i = 0; i < stroke.symmetry; i++) {
-                            ctx.save();
-                            if (i > 0) ctx.rotate(angleStep * i);
+                            ctxStatic.stroke(path);
+                            if (stroke.mirror) {
+                                ctxStatic.save();
+                                ctxStatic.scale(1, -1);
+                                ctxStatic.stroke(path);
+                                ctxStatic.restore();
+                            }
+                            ctxStatic.rotate(angleStep);
+                        }
+                    }
+                } else {
+                    // Rainbow: Segment-based rendering
+                    const points = stroke.points;
+                    for (let i = 0; i < stroke.symmetry; i++) {
+                        ctxStatic.save();
+                        if (i > 0) ctxStatic.rotate(angleStep * i);
 
-                            // Draw Arm
+                        // Draw Arm
+                        for (let j = 0; j < points.length - 1; j++) {
+                            const p1 = points[j];
+                            const p2 = points[j + 1];
+                            const color = stroke.colors[j] || '#fff';
+                            ctxStatic.beginPath();
+                            ctxStatic.moveTo(p1.x * s, p1.y * s);
+                            ctxStatic.lineTo(p2.x * s, p2.y * s);
+                            ctxStatic.strokeStyle = color;
+                            ctxStatic.shadowColor = color;
+                            ctxStatic.stroke();
+                        }
+
+                        if (stroke.mirror) {
+                            ctxStatic.scale(1, -1);
                             for (let j = 0; j < points.length - 1; j++) {
                                 const p1 = points[j];
                                 const p2 = points[j + 1];
                                 const color = stroke.colors[j] || '#fff';
-                                ctx.beginPath();
-                                ctx.moveTo(p1.x * s, p1.y * s);
-                                ctx.lineTo(p2.x * s, p2.y * s);
-                                ctx.strokeStyle = color;
-                                ctx.shadowColor = color;
-                                ctx.stroke();
+                                ctxStatic.beginPath();
+                                ctxStatic.moveTo(p1.x * s, p1.y * s);
+                                ctxStatic.lineTo(p2.x * s, p2.y * s);
+                                ctxStatic.strokeStyle = color;
+                                ctxStatic.shadowColor = color;
+                                ctxStatic.stroke();
                             }
-
-                            if (stroke.mirror) {
-                                ctx.scale(1, -1);
-                                for (let j = 0; j < points.length - 1; j++) {
-                                    const p1 = points[j];
-                                    const p2 = points[j + 1];
-                                    const color = stroke.colors[j] || '#fff';
-                                    ctx.beginPath();
-                                    ctx.moveTo(p1.x * s, p1.y * s);
-                                    ctx.lineTo(p2.x * s, p2.y * s);
-                                    ctx.strokeStyle = color;
-                                    ctx.shadowColor = color;
-                                    ctx.stroke();
-                                }
-                            }
-                            ctx.restore();
                         }
+                        ctxStatic.restore();
                     }
-                    ctx.restore();
                 }
+                ctxStatic.restore();
 
-                ctx.shadowBlur = 0;
-                ctx.globalAlpha = 1;
+                ctxStatic.shadowBlur = 0;
+                ctxStatic.globalAlpha = 1;
             }
 
             function requestRender() {
-                requestAnimationFrame(renderAllStrokes);
+                requestAnimationFrame(renderStaticLayer);
             }
 
 
@@ -1107,7 +1128,7 @@
 
                 strokes.length = 0;
                 history.push();
-                renderAllStrokes();
+                renderStaticLayer();
                 showToast('Cleared');
             });
 
@@ -1115,7 +1136,10 @@
                 // Save logic (similar to before)
                 const link = document.createElement('a');
                 link.download = `mandala-${Date.now()}.png`;
-                link.href = canvas.toDataURL();
+                // Composite Active onto Static for saving if needed (usually active is empty when saving)
+                // But just in case, we can draw active on static temp? 
+                // No, when saving, we are usually idle. Static is enough.
+                link.href = canvasStatic.toDataURL();
                 link.click();
             });
 
