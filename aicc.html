@@ -235,53 +235,7 @@
       flex-shrink: 0;
     }
 
-    .action-row {
-      display: flex;
-      justify-content: center;
-      margin-top: 12px;
-    }
 
-    .action-btn {
-      background: var(--accent-soft);
-      border: 1px solid var(--accent);
-      border-radius: var(--radius-md);
-      padding: 14px 28px;
-      color: #a5b4fc;
-      font-family: inherit;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .action-btn:hover {
-      background: var(--accent);
-      color: #fff;
-      transform: scale(1.02);
-    }
-
-    .panel-btn {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 6px;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      color: var(--text-soft);
-      font-size: 16px;
-      transition: all 0.15s;
-    }
-
-    .panel-btn:hover {
-      background: rgba(255, 255, 255, 0.12);
-      color: #fff;
-    }
 
     /* Footer */
     .footer-row {
@@ -344,6 +298,18 @@
       .grid {
         grid-template-columns: repeat(2, 1fr);
       }
+    }
+
+    .version-tag {
+      position: absolute;
+      bottom: 12px;
+      right: 20px;
+      font-size: 10px;
+      color: var(--text-soft);
+      opacity: 0.3;
+      font-family: monospace;
+      letter-spacing: 0.05em;
+      pointer-events: none;
     }
   </style>
 </head>
@@ -433,11 +399,6 @@
 
           </div>
 
-          <div class="action-row">
-            <button class="action-btn" id="openAllBtn" title="Open all models">
-              <span>⊞</span> Open All in New Tabs
-            </button>
-          </div>
         </div>
 
         <div class="footer-row">
@@ -446,6 +407,7 @@
           </div>
         </div>
       </div>
+      <div class="version-tag">v1.2</div>
     </div>
   </div>
 
@@ -459,7 +421,6 @@
     const cards = document.querySelectorAll(".provider-card");
     const toast = document.getElementById("copyToast");
     const toastText = document.getElementById("copyToastText");
-    const openAllBtn = document.getElementById("openAllBtn");
     let toastTimeout = null;
 
     function showToast(message) {
@@ -486,7 +447,7 @@
 
     async function openModel(url) {
       await copyPrompt();
-      window.open(url, "_blank", "noopener");
+      window.open(url, "_blank", "width=1200,height=900,noopener,noreferrer");
     }
 
     cards.forEach(card => {
@@ -496,13 +457,6 @@
       });
     });
 
-    openAllBtn.addEventListener("click", () => {
-      copyPrompt();
-      cards.forEach(card => {
-        const url = card.getAttribute("data-url");
-        window.open(url, "_blank");
-      });
-    });
 
   </script>
 </body>
