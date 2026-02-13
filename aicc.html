@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Command Center</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #050816;
+      --bg-alt: #0b1020;
+      --accent: #6366f1;
+      --accent-soft: rgba(99, 102, 241, 0.12);
+      --accent-strong: rgba(99, 102, 241, 0.25);
+      --text: #f3f4f6;
+      --text-soft: #94a3b8;
+      --border: rgba(148, 163, 184, 0.15);
+      --danger: #ff4d4d;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --shadow-soft: 0 24px 60px rgba(0, 0, 0, 0.8);
+      --shadow-chip: 0 8px 20px rgba(0, 0, 0, 0.4);
+      --blur: 24px;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: #020617;
+      background-image:
+        radial-gradient(circle at 50% 0%, #1e1b4b 0%, transparent 50%),
+        radial-gradient(circle at 0% 100%, #0f172a 0%, transparent 50%);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+      line-height: 1.5;
+    }
+
+    .shell {
+      width: 100%;
+      max-width: 1000px;
+      background: rgba(15, 23, 42, 0.6);
+      border-radius: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: var(--shadow-soft);
+      padding: 12px;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(var(--blur));
+      align-self: flex-start;
+    }
+
+    .shell::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+    }
+
+    .shell-inner {
+      background: rgba(2, 6, 23, 0.4);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      padding: 24px;
+    }
+
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      gap: 16px;
+    }
+
+    .title-block {
+      text-align: center;
+      flex: 1;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: linear-gradient(to bottom, #fff, #94a3b8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-soft);
+      margin-top: 4px;
+    }
+
+    .subtitle a {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+      transition: all 0.2s;
+    }
+
+    .subtitle a:hover {
+      color: #fff;
+      border-bottom-color: var(--accent);
+    }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .prompt-card {
+      background: rgba(30, 41, 59, 0.3);
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 20px;
+      transition: border-color 0.2s;
+    }
+
+    .prompt-card:focus-within {
+      border-color: var(--accent-strong);
+    }
+
+    .prompt-header {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .prompt-title {
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .prompt-input-wrap {
+      position: relative;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(2, 6, 23, 0.5);
+      color: #fff;
+      padding: 16px;
+      font-size: 15px;
+      line-height: 1.6;
+      outline: none;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      background: rgba(2, 6, 23, 0.8);
+      box-shadow: 0 0 0 4px var(--accent-soft);
+    }
+
+    .controls-row {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .provider-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-md);
+      padding: 12px 16px;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      color: inherit;
+      font-family: inherit;
+      min-height: 54px;
+    }
+
+    .provider-card:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--accent-strong);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .provider-card:active {
+      transform: translateY(0);
+    }
+
+    .provider-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #fff;
+    }
+
+    .provider-logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .action-row {
+      display: flex;
+      justify-content: center;
+      margin-top: 12px;
+    }
+
+    .action-btn {
+      background: var(--accent-soft);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-md);
+      padding: 14px 28px;
+      color: #a5b4fc;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .action-btn:hover {
+      background: var(--accent);
+      color: #fff;
+      transform: scale(1.02);
+    }
+
+    .panel-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-soft);
+      font-size: 16px;
+      transition: all 0.15s;
+    }
+
+    .panel-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    /* Footer */
+    .footer-row {
+      display: flex;
+      justify-content: center;
+      padding: 12px;
+      margin-top: 24px;
+    }
+
+    .tip-badge {
+      font-size: 13px;
+      font-weight: 600;
+      color: #a5b4fc;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-align: center;
+      opacity: 0.8;
+    }
+
+    /* Toast */
+    .copy-toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: #fff;
+      color: #000;
+      padding: 10px 20px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .copy-toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast-icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #10b981;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    @media (max-width: 600px) {
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="shell">
+    <div class="shell-inner">
+      <div class="top-bar">
+        <div class="title-block">
+          <div class="title">AI COMMAND CENTER</div>
+          <div class="subtitle">Unified access to the <a href="https://arena.ai/en/leaderboard" target="_blank"
+              rel="noopener">best AI chats</a></div>
+        </div>
+      </div>
+
+      <div class="main">
+        <div class="prompt-card">
+          <div class="prompt-input-wrap">
+            <textarea id="promptInput" placeholder="Type your prompt here..."></textarea>
+          </div>
+        </div>
+
+        <div class="controls-row">
+          <div class="grid" id="providerGrid">
+            <!-- Gemini -->
+            <button class="provider-card" data-url="https://gemini.google.com/app">
+              <div class="provider-content">
+                <span class="provider-logo" style="background: linear-gradient(135deg, #1e3a8a, #3b82f6);">G</span>
+                <span>Gemini</span>
+              </div>
+            </button>
+
+            <!-- ChatGPT -->
+            <button class="provider-card" data-url="https://chat.openai.com">
+              <div class="provider-content">
+                <span class="provider-logo" style="background: linear-gradient(135deg, #059669, #10b981);">O</span>
+                <span>ChatGPT</span>
+              </div>
+            </button>
+
+            <!-- Claude -->
+            <button class="provider-card" data-url="https://claude.ai">
+              <div class="provider-content">
+                <span class="provider-logo" style="background: linear-gradient(135deg, #d97706, #f59e0b);">A</span>
+                <span>Claude</span>
+              </div>
+            </button>
+            <!-- Copilot -->
+            <button class="provider-card" data-url="https://copilot.microsoft.com">
+              <div class="provider-content">
+                <span class="provider-logo" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">M</span>
+                <span>Copilot</span>
+              </div>
+            </button>
+
+            <!-- Grok -->
+            <button class="provider-card" data-url="https://x.ai">
+              <div class="provider-content">
+                <span class="provider-logo" style="background: #000; border: 1px solid #333;">X</span>
+                <span>Grok</span>
+              </div>
+            </button>
+
+            <!-- Perplexity -->
+            <button class="provider-card" data-url="https://www.perplexity.ai">
+              <div class="provider-content">
+                <span class="provider-logo" style="background: linear-gradient(135deg, #0891b2, #06b6d4);">P</span>
+                <span>Perplexity</span>
+              </div>
+            </button>
+            <!-- Z.ai -->
+            <button class="provider-card" data-url="https://chat.z.ai/">
+              <div class="provider-content">
+                <span class="provider-logo" style="background: linear-gradient(135deg, #8b5cf6, #d946ef);">Z</span>
+                <span>Z.ai</span>
+              </div>
+            </button>
+
+            <!-- Kimi -->
+            <button class="provider-card" data-url="https://www.kimi.com/en">
+              <div class="provider-content">
+                <span class="provider-logo" style="background: linear-gradient(135deg, #0f172a, #334155);">K</span>
+                <span>Kimi</span>
+              </div>
+            </button>
+
+
+          </div>
+
+          <div class="action-row">
+            <button class="action-btn" id="openAllBtn" title="Open all models">
+              <span>⊞</span> Open All in New Tabs
+            </button>
+          </div>
+        </div>
+
+        <div class="footer-row">
+          <div class="tip-badge">
+            <span style="font-size: 16px;">💡</span> Your prompt is auto-copied to clipboard when you click a model.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="copyToast" class="copy-toast">
+    <div class="toast-icon">✓</div>
+    <span id="copyToastText">Prompt copied!</span>
+  </div>
+
+  <script>
+    const promptInput = document.getElementById("promptInput");
+    const cards = document.querySelectorAll(".provider-card");
+    const toast = document.getElementById("copyToast");
+    const toastText = document.getElementById("copyToastText");
+    const openAllBtn = document.getElementById("openAllBtn");
+    let toastTimeout = null;
+
+    function showToast(message) {
+      toastText.textContent = message;
+      toast.classList.add("visible");
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove("visible");
+      }, 2000);
+    }
+
+    async function copyPrompt() {
+      const text = promptInput.value.trim();
+      if (!text) return false;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("Prompt copied to clipboard");
+        return true;
+      } catch (err) {
+        console.error("Clipboard failed", err);
+        return false;
+      }
+    }
+
+    async function openModel(url) {
+      await copyPrompt();
+      window.open(url, "_blank", "noopener");
+    }
+
+    cards.forEach(card => {
+      card.addEventListener("click", () => {
+        const url = card.getAttribute("data-url");
+        openModel(url);
+      });
+    });
+
+    openAllBtn.addEventListener("click", () => {
+      copyPrompt();
+      cards.forEach(card => {
+        const url = card.getAttribute("data-url");
+        window.open(url, "_blank");
+      });
+    });
+
+  </script>
+</body>
+
+</html>
