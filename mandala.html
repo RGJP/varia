@@ -54,10 +54,6 @@
             height: 100%;
             overflow: hidden;
             touch-action: none;
-            /* We will animate transform on this container */
-            will-change: transform;
-            /* Origin center to match the mandala's coordinate system */
-            transform-origin: center center;
         }
 
         canvas {
@@ -67,11 +63,6 @@
             display: block;
             width: 100%;
             height: 100%;
-        }
-
-        #canvas-active {
-            pointer-events: none;
-            /* Let touches pass through to container */
         }
 
         /* ── UI Overlay ── */
@@ -400,8 +391,7 @@
 <body>
     <div class="tip" id="startTip">Click & drag to draw</div>
     <div id="canvas-container">
-        <canvas id="canvas-static"></canvas>
-        <canvas id="canvas-active"></canvas>
+        <canvas id="glCanvas"></canvas>
     </div>
 
 
@@ -448,10 +438,7 @@
 
             // ── DOM References ──
             const canvasContainer = document.getElementById('canvas-container');
-            const canvasStatic = document.getElementById('canvas-static');
-            const canvasActive = document.getElementById('canvas-active');
-            const ctxStatic = canvasStatic.getContext('2d', { willReadFrequently: false, alpha: false });
-            const ctxActive = canvasActive.getContext('2d', { willReadFrequently: false, alpha: true });
+            const glCanvas = document.getElementById('glCanvas');
             const $ = id => document.getElementById(id);
             const symmetryRange = $('symmetryRange');
             const brushRange = $('brushRange');
@@ -470,16 +457,127 @@
                 const opt = document.createElement('option');
                 opt.value = i;
                 opt.textContent = i;
-                if (i === 6) opt.selected = true; // Match state default
+                if (i === 6) opt.selected = true;
                 symmetryRange.appendChild(opt);
             }
             for (let i = 1; i <= 20; i++) {
                 const opt = document.createElement('option');
                 opt.value = i;
                 opt.textContent = i;
-                if (i === 2) opt.selected = true; // Match state default
+                if (i === 2) opt.selected = true;
                 brushRange.appendChild(opt);
             }
+
+            // ── WebGL 2 Initialization ──
+            const gl = glCanvas.getContext('webgl2', {
+                antialias: true,
+                alpha: false,
+                preserveDrawingBuffer: true,
+                premultipliedAlpha: false,
+            });
+            if (!gl) {
+                alert('WebGL 2 is not supported in this browser.');
+                return;
+            }
+
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+            // Background color matching --bg-deep (#050510)
+            gl.clearColor(5 / 255, 5 / 255, 16 / 255, 1.0);
+
+            // ── Shaders ──
+            const VERT_SRC = `#version 300 es
+            precision highp float;
+            uniform vec2 u_resolution;
+            uniform mat3 u_viewMatrix;
+            uniform float u_angle;
+            uniform float u_mirror;
+
+            in vec2 a_position;
+            in vec4 a_color;
+
+            out vec4 v_color;
+
+            void main() {
+                vec2 p = a_position;
+                p.y *= u_mirror;
+                float c = cos(u_angle), s = sin(u_angle);
+                p = vec2(c * p.x - s * p.y, s * p.x + c * p.y);
+                vec3 world = u_viewMatrix * vec3(p, 1.0);
+                // Map to clip space; negate Y so screen-space Y-down becomes GL Y-up
+                vec2 clip = vec2(world.x / u_resolution.x, -world.y / u_resolution.y);
+                gl_Position = vec4(clip, 0.0, 1.0);
+                v_color = a_color;
+            }`;
+
+            const FRAG_SRC = `#version 300 es
+            precision highp float;
+            in vec4 v_color;
+            out vec4 fragColor;
+            void main() {
+                fragColor = v_color;
+            }`;
+
+            function createShader(type, src) {
+                const s = gl.createShader(type);
+                gl.shaderSource(s, src);
+                gl.compileShader(s);
+                if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+                    console.error('Shader compile error:', gl.getShaderInfoLog(s));
+                    gl.deleteShader(s);
+                    return null;
+                }
+                return s;
+            }
+
+            function createProgram(vs, fs) {
+                const p = gl.createProgram();
+                gl.attachShader(p, vs);
+                gl.attachShader(p, fs);
+                gl.linkProgram(p);
+                if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+                    console.error('Program link error:', gl.getProgramInfoLog(p));
+                    return null;
+                }
+                return p;
+            }
+
+            const vertShader = createShader(gl.VERTEX_SHADER, VERT_SRC);
+            const fragShader = createShader(gl.FRAGMENT_SHADER, FRAG_SRC);
+            const program = createProgram(vertShader, fragShader);
+            gl.useProgram(program);
+
+            // Uniform locations
+            const u_resolution = gl.getUniformLocation(program, 'u_resolution');
+            const u_viewMatrix = gl.getUniformLocation(program, 'u_viewMatrix');
+            const u_angle = gl.getUniformLocation(program, 'u_angle');
+            const u_mirror = gl.getUniformLocation(program, 'u_mirror');
+
+            // Attribute locations
+            const a_position = gl.getAttribLocation(program, 'a_position');
+            const a_color = gl.getAttribLocation(program, 'a_color');
+
+            // VAO + VBO
+            const vao = gl.createVertexArray();
+            gl.bindVertexArray(vao);
+
+            const vbo = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+
+            // Vertex layout: [x, y, r, g, b, a] = 6 floats per vertex
+            const FLOATS_PER_VERTEX = 6;
+            const BYTES_PER_VERTEX = FLOATS_PER_VERTEX * 4;
+
+            gl.enableVertexAttribArray(a_position);
+            gl.vertexAttribPointer(a_position, 2, gl.FLOAT, false, BYTES_PER_VERTEX, 0);
+
+            gl.enableVertexAttribArray(a_color);
+            gl.vertexAttribPointer(a_color, 4, gl.FLOAT, false, BYTES_PER_VERTEX, 8);
+
+            // Initial buffer allocation (will grow dynamically)
+            let gpuBufferCapacity = 65536 * FLOATS_PER_VERTEX;
+            gl.bufferData(gl.ARRAY_BUFFER, gpuBufferCapacity * 4, gl.DYNAMIC_DRAW);
 
             // ── State ──
             const state = {
@@ -488,28 +586,35 @@
                 brushSize: 2,
                 hue: 0,
                 mirrorMode: false,
-                lastDrawTime: 0,
 
-                // Viewport State (Committed)
-                scale: 1,
-                offsetX: 0, // Pan Offset X
-                offsetY: 0, // Pan Offset Y
+                // View (infinite canvas)
+                viewScale: 1,
+                viewX: 0,
+                viewY: 0,
 
-                // Gesture State (Transient)
+                // Gesture state
                 gestureScale: 1,
                 gestureX: 0,
                 gestureY: 0,
+                gestureActive: false,
 
                 hasDrawn: false,
                 clearPending: false,
                 clearTimer: null,
                 touchDelayTimer: null,
                 bufferedEvents: [],
+                needsRender: true,
             };
 
             // ── Stroke Storage ──
             const strokes = [];
             let currentStroke = null;
+
+            // ── GPU Geometry Cache ──
+            // Each stroke gets a precomputed array of vertex floats
+            // We rebuild the full VBO on undo/redo/clear, and append on new strokes
+            let strokeGeometries = []; // parallel to strokes[], each is Float32Array
+            let totalVertexFloats = 0;
 
             // ── History ──
             const history = {
@@ -548,7 +653,8 @@
                             colors: s.colors ? [...s.colors] : []
                         });
                     }
-                    requestRender();
+                    rebuildAllGeometry();
+                    markGpuDirty();
                     this.updateButtons();
                     const msg = this.index === 0 ? 'Undo (Empty)' : `Undo/Redo (${this.index})`;
                     showToast(msg);
@@ -578,101 +684,210 @@
             let currentColor = PALETTES[0];
             let customColor = '#ffffff';
 
+            // ── Color Parsing ──
+            // Convert any CSS color string to [r, g, b, a] in 0..1
+            const _colorCanvas = document.createElement('canvas');
+            _colorCanvas.width = _colorCanvas.height = 1;
+            const _colorCtx = _colorCanvas.getContext('2d', { willReadFrequently: true });
+
+            function parseColor(str) {
+                _colorCtx.clearRect(0, 0, 1, 1);
+                _colorCtx.fillStyle = str;
+                _colorCtx.fillRect(0, 0, 1, 1);
+                const d = _colorCtx.getImageData(0, 0, 1, 1).data;
+                return [d[0] / 255, d[1] / 255, d[2] / 255, d[3] / 255];
+            }
+
+            // Pre-parse palette colors
+            const parsedPaletteColors = {};
+            for (const p of PALETTES) {
+                if (p.color !== 'rainbow') {
+                    parsedPaletteColors[p.color] = parseColor(p.color);
+                }
+            }
+
+            function getColorRGBA(colorStr) {
+                if (parsedPaletteColors[colorStr]) return parsedPaletteColors[colorStr];
+                return parseColor(colorStr);
+            }
+
+            // ── Thick-Line Geometry Builder ──
+            // Each line segment (p0→p1) becomes a quad (2 triangles = 6 vertices)
+            // with width = lineWidth in world units
+            // Plus round caps at each endpoint (triangle fan)
+
+            const CAP_SEGMENTS = 8; // segments per half-circle cap
+
+            function buildStrokeGeometry(stroke) {
+                const pts = stroke.points;
+                if (pts.length < 2) return new Float32Array(0);
+
+                const hw = stroke.lineWidth * 0.5; // half-width in world units
+                const isRainbow = stroke.color === 'rainbow';
+                const solidColor = isRainbow ? null : getColorRGBA(stroke.color);
+
+                // Pre-calculate total vertices needed
+                const segmentCount = pts.length - 1;
+                const quadsVerts = segmentCount * 6; // 2 triangles per segment
+                const capsVerts = pts.length * CAP_SEGMENTS * 3; // triangle fan per point
+                const totalVerts = quadsVerts + capsVerts;
+                const arr = new Float32Array(totalVerts * FLOATS_PER_VERTEX);
+                let offset = 0;
+
+                function pushVertex(x, y, r, g, b, a) {
+                    arr[offset++] = x;
+                    arr[offset++] = y;
+                    arr[offset++] = r;
+                    arr[offset++] = g;
+                    arr[offset++] = b;
+                    arr[offset++] = a;
+                }
+
+                for (let i = 0; i < segmentCount; i++) {
+                    const p0 = pts[i], p1 = pts[i + 1];
+                    const dx = p1.x - p0.x, dy = p1.y - p0.y;
+                    const len = Math.sqrt(dx * dx + dy * dy) || 1e-6;
+                    const nx = -dy / len * hw, ny = dx / len * hw;
+
+                    // Color for this segment
+                    let r, g, b, a;
+                    if (isRainbow) {
+                        const c = stroke.colors[i];
+                        if (c) {
+                            const rgba = parseColor(c);
+                            r = rgba[0]; g = rgba[1]; b = rgba[2]; a = rgba[3];
+                        } else {
+                            r = g = b = a = 1;
+                        }
+                    } else {
+                        r = solidColor[0]; g = solidColor[1]; b = solidColor[2]; a = solidColor[3];
+                    }
+
+                    // Quad: p0+n, p0-n, p1+n, p1+n, p0-n, p1-n
+                    pushVertex(p0.x + nx, p0.y + ny, r, g, b, a);
+                    pushVertex(p0.x - nx, p0.y - ny, r, g, b, a);
+                    pushVertex(p1.x + nx, p1.y + ny, r, g, b, a);
+                    pushVertex(p1.x + nx, p1.y + ny, r, g, b, a);
+                    pushVertex(p0.x - nx, p0.y - ny, r, g, b, a);
+                    pushVertex(p1.x - nx, p1.y - ny, r, g, b, a);
+                }
+
+                // Round caps at every point
+                for (let i = 0; i < pts.length; i++) {
+                    const p = pts[i];
+                    let r, g, b, a;
+                    if (isRainbow) {
+                        const ci = Math.min(i, stroke.colors.length - 1);
+                        const c = stroke.colors[ci];
+                        if (c) {
+                            const rgba = parseColor(c);
+                            r = rgba[0]; g = rgba[1]; b = rgba[2]; a = rgba[3];
+                        } else {
+                            r = g = b = a = 1;
+                        }
+                    } else {
+                        r = solidColor[0]; g = solidColor[1]; b = solidColor[2]; a = solidColor[3];
+                    }
+
+                    for (let j = 0; j < CAP_SEGMENTS; j++) {
+                        const a0 = (j / CAP_SEGMENTS) * Math.PI * 2;
+                        const a1 = ((j + 1) / CAP_SEGMENTS) * Math.PI * 2;
+                        pushVertex(p.x, p.y, r, g, b, a);
+                        pushVertex(p.x + Math.cos(a0) * hw, p.y + Math.sin(a0) * hw, r, g, b, a);
+                        pushVertex(p.x + Math.cos(a1) * hw, p.y + Math.sin(a1) * hw, r, g, b, a);
+                    }
+                }
+
+                return arr.subarray(0, offset);
+            }
+
+            function rebuildAllGeometry() {
+                strokeGeometries = [];
+                totalVertexFloats = 0;
+                for (const stroke of strokes) {
+                    const geo = buildStrokeGeometry(stroke);
+                    strokeGeometries.push(geo);
+                    totalVertexFloats += geo.length;
+                }
+                uploadAllGeometry();
+            }
+
+            function uploadAllGeometry() {
+                const totalFloats = totalVertexFloats + (currentStroke ? (currentStrokeGeo ? currentStrokeGeo.length : 0) : 0);
+                if (totalFloats === 0) return;
+
+                // Grow buffer if needed
+                if (totalFloats > gpuBufferCapacity) {
+                    gpuBufferCapacity = totalFloats * 2;
+                    gl.bufferData(gl.ARRAY_BUFFER, gpuBufferCapacity * 4, gl.DYNAMIC_DRAW);
+                }
+
+                // Upload all stroke geometries
+                let byteOffset = 0;
+                for (const geo of strokeGeometries) {
+                    if (geo.length > 0) {
+                        gl.bufferSubData(gl.ARRAY_BUFFER, byteOffset, geo);
+                        byteOffset += geo.byteLength;
+                    }
+                }
+            }
+
+            let currentStrokeGeo = null;
+
             // ── Canvas Setup ──
             function resize() {
                 const dpr = window.devicePixelRatio || 1;
                 const rect = canvasContainer.getBoundingClientRect();
-
-                canvasStatic.width = rect.width * dpr;
-                canvasStatic.height = rect.height * dpr;
-
-                canvasActive.width = rect.width * dpr;
-                canvasActive.height = rect.height * dpr;
-
-                // Force a full re-render without transform to ensure crispness
-                renderStaticLayer();
+                glCanvas.width = rect.width * dpr;
+                glCanvas.height = rect.height * dpr;
+                gl.viewport(0, 0, glCanvas.width, glCanvas.height);
+                state.needsRender = true;
             }
-            // Debounced resize to avoid trashing performance
-            window.addEventListener('resize', debounce(resize, 200));
 
-            // Initial Setup
+            window.addEventListener('resize', debounce(resize, 100));
             resize();
             history.push();
             history.updateButtons();
 
+            // ── View Matrix ──
+            // Uses screen-space Y (down = positive). The vertex shader negates Y
+            // when mapping to clip space so GL renders correctly.
+            function getViewMatrix() {
+                const s = state.viewScale * state.gestureScale;
+                const tx = state.viewX * state.gestureScale + state.gestureX;
+                const ty = state.viewY * state.gestureScale + state.gestureY;
+                // Column-major 3x3
+                return new Float32Array([
+                    s, 0, 0,
+                    0, s, 0,
+                    tx, ty, 1
+                ]);
+            }
+
             // ── Coordinate Mapping ──
-            // Maps screen coordinates (clientX/Y) to World coordinates
-            // considering both committed state and active gesture.
+            // All coordinates use screen-space convention (Y down),
+            // the vertex shader maps to clip space via u_resolution.
             function getWorldCoords(e) {
                 const rect = canvasContainer.getBoundingClientRect();
                 const clientX = e.touches ? e.touches[0].clientX : e.clientX;
                 const clientY = e.touches ? e.touches[0].clientY : e.clientY;
 
-                // Center-relative screen coords
+                // Center-relative screen coords (Y down)
                 const cx = clientX - rect.left - rect.width / 2;
                 const cy = clientY - rect.top - rect.height / 2;
 
-                // Remove Gesture transform
-                // Visual = (World * Scale + Offset) * GestureScale + GestureOffset
-                // We want World.
-                // It's cleaner to just rely on the fact that during DRAWING, 
-                // we usually don't have a pinch gesture active.
-                // So we only unwrap the committed scale/offset.
-                // However, if we draw *while* zoomed in via CSS (after commit), 
-                // we must respect state.scale.
-
-                // Note: We are NOT supporting drawing while a multi-touch gesture is active.
-
+                // Remove view transform: world = (screen - translate) / scale
+                const s = state.viewScale;
                 return {
-                    x: (cx - state.offsetX) / state.scale,
-                    y: (cy - state.offsetY) / state.scale
+                    x: (cx - state.viewX) / s,
+                    y: (cy - state.viewY) / s
                 };
             }
 
-            // ── Viewport / Zoom Logic ──
-
-            function updateVisualTransform() {
-                const { gestureScale, gestureX, gestureY } = state;
-                // Apply CSS Transform to the container
-                // We use translate3d for GPU acceleration
-                canvasContainer.style.transform = `translate3d(${gestureX}px, ${gestureY}px, 0) scale(${gestureScale})`;
-            }
-
-            const commitTransformDebounced = debounce(() => {
-                // 1. Calculate new committed state
-                // NewScale = OldScale * GestureScale
-                const newScale = clamp(state.scale * state.gestureScale, 0.1, 50);
-
-                // NewOffset = OldOffset * GestureScale + GestureOffset
-                // (Approximation for center-based generic transform)
-                const newOffsetX = state.offsetX * state.gestureScale + state.gestureX;
-                const newOffsetY = state.offsetY * state.gestureScale + state.gestureY;
-
-                state.scale = newScale;
-                state.offsetX = newOffsetX;
-                state.offsetY = newOffsetY;
-
-                // 2. Reset Gesture
-                state.gestureScale = 1;
-                state.gestureX = 0;
-                state.gestureY = 0;
-
-                // 3. Reset CSS (Instant snap, but we redraw canvas immediately so it looks seamless)
-                // We disable transition momentarily if we had any
-                canvasContainer.style.transform = 'none';
-
-                // 4. Redraw at high res
-                renderStaticLayer();
-
-            }, 250); // Wait 250ms after last movement to commit (crisp snap)
-
-
-            // ── Input Handling (Unified Pointer) ──
-
-            // Track pointers for multi-touch
+            // ── Input Handling ──
             const pointers = new Map();
             let prevPinchDist = 0;
-            let pinchCenter = { x: 0, y: 0 };
+            let prevPinchCx = 0, prevPinchCy = 0;
 
             canvasContainer.addEventListener('pointerdown', e => {
                 canvasContainer.setPointerCapture(e.pointerId);
@@ -680,7 +895,6 @@
 
                 if (pointers.size === 1) {
                     if (e.pointerType === 'touch') {
-                        // Delay draw start to see if a second finger lands for pinch-zoom
                         state.touchDelayTimer = setTimeout(() => {
                             if (pointers.size === 1 && !state.drawing) {
                                 handleStart(e);
@@ -693,17 +907,18 @@
                         handleStart(e);
                     }
                 } else {
-                    // Multi-touch: Cancel pending or active drawing
                     if (state.touchDelayTimer) {
                         clearTimeout(state.touchDelayTimer);
                         state.touchDelayTimer = null;
                         state.bufferedEvents = [];
                     }
-                    if (state.drawing) handleEnd(true); // true = isCancelled
+                    if (state.drawing) handleEnd(true);
 
-                    // Calc initial pinch distance
                     const pts = Array.from(pointers.values());
                     prevPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+                    prevPinchCx = (pts[0].x + pts[1].x) / 2;
+                    prevPinchCy = (pts[0].y + pts[1].y) / 2;
+                    state.gestureActive = true;
                 }
             });
 
@@ -720,37 +935,24 @@
                         state.bufferedEvents.push(e);
                     }
                 } else if (pts.length === 2) {
-                    // Pinch / Pan Logic
                     const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
                     const cx = (pts[0].x + pts[1].x) / 2;
                     const cy = (pts[0].y + pts[1].y) / 2;
 
                     if (prevPinchDist > 0) {
                         const deltaScale = dist / prevPinchDist;
+                        const dx = cx - prevPinchCx;
+                        const dy = cy - prevPinchCy;
 
-                        // Update visual gesture state
-                        // We want to zoom around the center point (cx, cy).
-                        // Math is tricky with CSS transforms.
-                        // Simplified approach: Just Scale and translate based on center diff?
-                        // Let's settle for Center-Zoom + Pan for robustness, 
-                        // or just map everything to `gestureScale` and `gestureX/Y`.
-
-                        // Current Scale: state.gestureScale
-                        const newScale = state.gestureScale * deltaScale;
-
-                        // To zoom towards a point P:
-                        // P_new = P_old * scale + trans
-                        // We want P to stay under cursor.
-
-                        state.gestureScale = newScale;
-                        // For now, simple pan support:
-                        // We add the delta movement of the center
-                        // This logic can be improved for "pinching under finger" exactness
-                        // but simple scaling + panning is often enough.
+                        state.gestureScale *= deltaScale;
+                        state.gestureX += dx;
+                        state.gestureY += dy;
                     }
 
                     prevPinchDist = dist;
-                    updateVisualTransform();
+                    prevPinchCx = cx;
+                    prevPinchCy = cy;
+                    state.needsRender = true;
                     commitTransformDebounced();
                 }
             });
@@ -765,6 +967,11 @@
                     state.bufferedEvents = [];
                 }
                 if (state.drawing) handleEnd();
+
+                if (pointers.size === 0 && state.gestureActive) {
+                    commitTransformNow();
+                    state.gestureActive = false;
+                }
             });
 
             canvasContainer.addEventListener('pointercancel', e => {
@@ -780,23 +987,42 @@
             // Mouse Wheel Zoom
             canvasContainer.addEventListener('wheel', e => {
                 e.preventDefault();
+                const rect = canvasContainer.getBoundingClientRect();
+                const mx = e.clientX - rect.left - rect.width / 2;
+                const my = e.clientY - rect.top - rect.height / 2;
+
                 const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                const oldScale = state.viewScale;
+                const newScale = clamp(oldScale * delta, 0.01, 200);
+                const factor = newScale / oldScale;
 
-                // Accumulate gesture
-                state.gestureScale *= delta;
+                // Zoom towards mouse position
+                state.viewX = mx - factor * (mx - state.viewX);
+                state.viewY = my - factor * (my - state.viewY);
+                state.viewScale = newScale;
 
-                // Very basic "Zoom to center" logic for wheel
-                // (Refining this to "Zoom to mouse" requires tracking mouse pos relative to center)
-
-                updateVisualTransform();
-                commitTransformDebounced();
+                state.needsRender = true;
             }, { passive: false });
 
+            function commitTransformNow() {
+                const newScale = clamp(state.viewScale * state.gestureScale, 0.01, 200);
+                const newX = state.viewX * state.gestureScale + state.gestureX;
+                const newY = state.viewY * state.gestureScale + state.gestureY;
+
+                state.viewScale = newScale;
+                state.viewX = newX;
+                state.viewY = newY;
+                state.gestureScale = 1;
+                state.gestureX = 0;
+                state.gestureY = 0;
+                state.needsRender = true;
+            }
+
+            const commitTransformDebounced = debounce(commitTransformNow, 250);
 
             // ── Drawing Logic ──
-
             function handleStart(e) {
-                if (e.button !== 0 && e.pointerType === 'mouse') return; // Left click only
+                if (e.button !== 0 && e.pointerType === 'mouse') return;
                 e.preventDefault();
                 startTip.classList.add('hidden');
 
@@ -813,6 +1039,7 @@
                     symmetry: state.symmetry,
                     mirror: state.mirrorMode,
                 };
+                currentStrokeGeo = null;
 
                 state.hasDrawn = true;
             }
@@ -821,27 +1048,23 @@
                 if (!state.drawing || !currentStroke) return;
                 const { x, y } = getWorldCoords(e);
 
-                // Throttling: Ignore points too close to the last one
                 const lastPt = currentStroke.points[currentStroke.points.length - 1];
                 if (lastPt) {
                     const dist = Math.hypot(x - lastPt.x, y - lastPt.y);
-                    // Threshold: 2 screen pixels (accounting for scale roughly or just raw units)
-                    // If we are zoomed in, 2 units might be very small. 
-                    // Let's use a small constant.
                     if (dist < 1.0) return;
                 }
 
                 currentStroke.points.push({ x, y });
 
-                // Rainbow color logic
                 if (currentStroke.color === 'rainbow') {
                     const segColor = `hsl(${state.hue}, 90%, 65%)`;
                     state.hue = (state.hue + 1.5) % 360;
                     currentStroke.colors.push(segColor);
                 }
 
-                // Render just the new segment
-                renderLiveSegment(currentStroke);
+                // Rebuild current stroke geometry
+                currentStrokeGeo = buildStrokeGeometry(currentStroke);
+                state.needsRender = true;
             }
 
             function handleEnd(isCancelled = false) {
@@ -849,209 +1072,113 @@
                 state.drawing = false;
                 document.body.classList.remove('drawing');
 
-                // Clear the active layer (it was just a scratchpad)
-                // Use a quick clear
-                ctxActive.clearRect(0, 0, canvasActive.width, canvasActive.height);
-
-                // Only store the stroke if it wasn't cancelled (e.g. by a pinch)
-                // and if it actually has more than one point (a line segment).
                 if (!isCancelled && currentStroke && currentStroke.points.length > 1) {
                     strokes.push(currentStroke);
+                    const geo = buildStrokeGeometry(currentStroke);
+                    strokeGeometries.push(geo);
+                    totalVertexFloats += geo.length;
+                    markGpuDirty();
                     history.push();
-                    // Permanently draw to static layer
-                    // We render JUST this new stroke to the static layer to avoid full redraw
-                    renderStaticStroke(currentStroke);
                 }
                 currentStroke = null;
+                currentStrokeGeo = null;
+                state.needsRender = true;
             }
 
+            // ── Render ──
+            let gpuDirty = true; // True when committed geometry needs re-upload
 
-            // ── Render / Core ──
-
-            function getSmoothPath(points, scale) {
-                if (points.length < 2) return null;
-                const path = new Path2D();
-                path.moveTo(points[0].x * scale, points[0].y * scale);
-                for (let i = 1; i < points.length - 1; i++) {
-                    const xc = (points[i].x + points[i + 1].x) / 2;
-                    const yc = (points[i].y + points[i + 1].y) / 2;
-                    path.quadraticCurveTo(points[i].x * scale, points[i].y * scale, xc * scale, yc * scale);
-                }
-                path.lineTo(points[points.length - 1].x * scale, points[points.length - 1].y * scale);
-                return path;
+            function markGpuDirty() {
+                gpuDirty = true;
+                state.needsRender = true;
             }
 
-            function renderLiveSegment(stroke) {
-                // Draws to Active Layer
-                const pts = stroke.points;
-                if (pts.length < 2) return;
+            function ensureGpuData() {
+                if (!gpuDirty) return;
+                gpuDirty = false;
+                uploadAllGeometry();
+            }
 
-                const p1 = pts[pts.length - 2];
-                const p2 = pts[pts.length - 1]; // current
+            function render() {
+                requestAnimationFrame(render);
+                if (!state.needsRender) return;
+                state.needsRender = false;
 
-                const dpr = window.devicePixelRatio || 1;
-                const s = state.scale * dpr;
-                const ox = state.offsetX * dpr; // Use committed offset
-                const oy = state.offsetY * dpr;
+                const w = glCanvas.width;
+                const h = glCanvas.height;
 
-                const lw = stroke.lineWidth * s;
-                const shadowMul = 2;
-                const alpha = 1;
+                gl.viewport(0, 0, w, h);
+                gl.clear(gl.COLOR_BUFFER_BIT);
 
-                const cx = canvasActive.width / 2 + ox;
-                const cy = canvasActive.height / 2 + oy;
-                const angleStep = (Math.PI * 2) / stroke.symmetry;
+                gl.useProgram(program);
+                gl.bindVertexArray(vao);
+                gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
 
-                ctxActive.lineWidth = lw;
-                ctxActive.lineCap = 'round';
-                ctxActive.lineJoin = 'round';
-                ctxActive.shadowBlur = lw * shadowMul;
-                ctxActive.globalAlpha = alpha;
+                // Ensure committed geometry is on the GPU
+                ensureGpuData();
 
-                // Color determination
-                let color = stroke.color;
-                if (color === 'rainbow') {
-                    // Get last color pushed
-                    color = stroke.colors[stroke.colors.length - 1] || '#fff';
-                }
-                ctxActive.strokeStyle = color;
-                ctxActive.shadowColor = color;
-
-                ctxActive.save();
-                ctxActive.translate(cx, cy);
-
-                for (let i = 0; i < stroke.symmetry; i++) {
-                    ctxActive.save();
-                    ctxActive.rotate(angleStep * i);
-
-                    ctxActive.beginPath();
-                    ctxActive.moveTo(p1.x * s, p1.y * s);
-                    ctxActive.lineTo(p2.x * s, p2.y * s);
-                    ctxActive.stroke();
-
-                    if (stroke.mirror) {
-                        ctxActive.scale(1, -1);
-                        ctxActive.beginPath();
-                        ctxActive.moveTo(p1.x * s, p1.y * s);
-                        ctxActive.lineTo(p2.x * s, p2.y * s);
-                        ctxActive.stroke();
+                // Upload live stroke geometry (always changes, appended after committed data)
+                let liveVertexCount = 0;
+                if (currentStroke && currentStrokeGeo && currentStrokeGeo.length > 0) {
+                    liveVertexCount = currentStrokeGeo.length / FLOATS_PER_VERTEX;
+                    const totalNeeded = totalVertexFloats + currentStrokeGeo.length;
+                    if (totalNeeded > gpuBufferCapacity) {
+                        gpuBufferCapacity = totalNeeded * 2;
+                        gl.bufferData(gl.ARRAY_BUFFER, gpuBufferCapacity * 4, gl.DYNAMIC_DRAW);
+                        gpuDirty = true;
+                        ensureGpuData();
                     }
-                    ctxActive.restore();
+                    gl.bufferSubData(gl.ARRAY_BUFFER, totalVertexFloats * 4, currentStrokeGeo);
                 }
-                ctxActive.restore();
 
-                ctxActive.shadowBlur = 0;
-                ctxActive.globalAlpha = 1;
-            }
+                // Resolution (half-dimensions for clip-space mapping)
+                gl.uniform2f(u_resolution, w / 2, h / 2);
 
-            function renderStaticLayer() {
-                // Full clear and redraw of Static Layer
-                ctxStatic.clearRect(0, 0, canvasStatic.width, canvasStatic.height);
-                // Also clear active just in case
-                ctxActive.clearRect(0, 0, canvasActive.width, canvasActive.height);
+                // View matrix
+                const vm = getViewMatrix();
+                gl.uniformMatrix3fv(u_viewMatrix, false, vm);
 
-                for (const stroke of strokes) {
-                    renderStaticStroke(stroke);
-                }
-            }
+                // Draw all committed strokes
+                let vertexOffset = 0;
+                for (let si = 0; si < strokes.length; si++) {
+                    const stroke = strokes[si];
+                    const geo = strokeGeometries[si];
+                    if (!geo || geo.length === 0) continue;
 
-            function renderStaticStroke(stroke) {
-                // Draws a single full stroke to the Static Layer
-                const dpr = window.devicePixelRatio || 1;
-                const s = state.scale * dpr;
-                const ox = state.offsetX * dpr;
-                const oy = state.offsetY * dpr;
+                    const vertexCount = geo.length / FLOATS_PER_VERTEX;
+                    const angleStep = (Math.PI * 2) / stroke.symmetry;
+                    const arms = stroke.mirror ? stroke.symmetry * 2 : stroke.symmetry;
 
-                const cx = canvasStatic.width / 2 + ox;
-                const cy = canvasStatic.height / 2 + oy;
-
-                const lw = stroke.lineWidth * s;
-                const shadowMul = 2;
-                const alpha = 1;
-                const angleStep = (Math.PI * 2) / stroke.symmetry;
-
-                ctxStatic.lineWidth = lw;
-                ctxStatic.lineCap = 'round';
-                ctxStatic.lineJoin = 'round';
-                ctxStatic.shadowBlur = lw * shadowMul;
-                ctxStatic.globalAlpha = alpha;
-
-                ctxStatic.save();
-                ctxStatic.translate(cx, cy);
-
-                // Batched path for solid colors
-                if (stroke.color !== 'rainbow') {
-                    ctxStatic.strokeStyle = stroke.color;
-                    ctxStatic.shadowColor = stroke.color;
-                    const path = getSmoothPath(stroke.points, s);
-
-                    if (path) {
-                        for (let i = 0; i < stroke.symmetry; i++) {
-                            ctxStatic.stroke(path);
-                            if (stroke.mirror) {
-                                ctxStatic.save();
-                                ctxStatic.scale(1, -1);
-                                ctxStatic.stroke(path);
-                                ctxStatic.restore();
-                            }
-                            ctxStatic.rotate(angleStep);
-                        }
+                    for (let arm = 0; arm < arms; arm++) {
+                        const isMirror = stroke.mirror && arm >= stroke.symmetry;
+                        const idx = isMirror ? arm - stroke.symmetry : arm;
+                        gl.uniform1f(u_angle, angleStep * idx);
+                        gl.uniform1f(u_mirror, isMirror ? -1.0 : 1.0);
+                        gl.drawArrays(gl.TRIANGLES, vertexOffset, vertexCount);
                     }
-                } else {
-                    // Rainbow: Segment-based rendering
-                    const points = stroke.points;
-                    for (let i = 0; i < stroke.symmetry; i++) {
-                        ctxStatic.save();
-                        if (i > 0) ctxStatic.rotate(angleStep * i);
 
-                        // Draw Arm
-                        for (let j = 0; j < points.length - 1; j++) {
-                            const p1 = points[j];
-                            const p2 = points[j + 1];
-                            const color = stroke.colors[j] || '#fff';
-                            ctxStatic.beginPath();
-                            ctxStatic.moveTo(p1.x * s, p1.y * s);
-                            ctxStatic.lineTo(p2.x * s, p2.y * s);
-                            ctxStatic.strokeStyle = color;
-                            ctxStatic.shadowColor = color;
-                            ctxStatic.stroke();
-                        }
+                    vertexOffset += vertexCount;
+                }
 
-                        if (stroke.mirror) {
-                            ctxStatic.scale(1, -1);
-                            for (let j = 0; j < points.length - 1; j++) {
-                                const p1 = points[j];
-                                const p2 = points[j + 1];
-                                const color = stroke.colors[j] || '#fff';
-                                ctxStatic.beginPath();
-                                ctxStatic.moveTo(p1.x * s, p1.y * s);
-                                ctxStatic.lineTo(p2.x * s, p2.y * s);
-                                ctxStatic.strokeStyle = color;
-                                ctxStatic.shadowColor = color;
-                                ctxStatic.stroke();
-                            }
-                        }
-                        ctxStatic.restore();
+                // Draw current (live) stroke
+                if (currentStroke && liveVertexCount > 0) {
+                    const angleStep = (Math.PI * 2) / currentStroke.symmetry;
+                    const arms = currentStroke.mirror ? currentStroke.symmetry * 2 : currentStroke.symmetry;
+
+                    for (let arm = 0; arm < arms; arm++) {
+                        const isMirror = currentStroke.mirror && arm >= currentStroke.symmetry;
+                        const idx = isMirror ? arm - currentStroke.symmetry : arm;
+                        gl.uniform1f(u_angle, angleStep * idx);
+                        gl.uniform1f(u_mirror, isMirror ? -1.0 : 1.0);
+                        gl.drawArrays(gl.TRIANGLES, vertexOffset, liveVertexCount);
                     }
                 }
-                ctxStatic.restore();
-
-                ctxStatic.shadowBlur = 0;
-                ctxStatic.globalAlpha = 1;
             }
 
-            function requestRender() {
-                requestAnimationFrame(renderStaticLayer);
-            }
-
-
-
+            requestAnimationFrame(render);
 
             // ── UI / Helpers ──
-
-            // Re-bind UI events
-            buildColorPicker(); // Re-use existing function reference? No, we need to redefine or move it inside.
-            // Actually, I am inside a closure, need to define `buildColorPicker`.
+            buildColorPicker();
 
             function buildColorPicker() {
                 PALETTES.forEach((p, i) => {
@@ -1064,7 +1191,6 @@
                     colorPicker.appendChild(el);
                 });
 
-                // Custom
                 const custom = document.createElement('div');
                 custom.className = 'color-custom';
                 custom.style.background = customColor;
@@ -1084,6 +1210,10 @@
                 document.querySelectorAll('.color-option, .color-custom').forEach(e => e.classList.remove('selected'));
                 el.classList.add('selected');
                 currentColor = palette;
+                // Cache parsed color
+                if (palette.color !== 'rainbow' && !parsedPaletteColors[palette.color]) {
+                    parsedPaletteColors[palette.color] = parseColor(palette.color);
+                }
             }
 
             function showToast(msg) {
@@ -1106,8 +1236,6 @@
                 showToast(state.mirrorMode ? 'Mirror On' : 'Mirror Off');
             });
 
-
-
             clearBtn.addEventListener('click', () => {
                 if (!state.clearPending) {
                     state.clearPending = true;
@@ -1127,19 +1255,47 @@
                 clearBtn.classList.remove('danger-confirm');
 
                 strokes.length = 0;
+                strokeGeometries = [];
+                totalVertexFloats = 0;
                 history.push();
-                renderStaticLayer();
+                markGpuDirty();
                 showToast('Cleared');
             });
 
             saveBtn.addEventListener('click', () => {
-                // Save logic (similar to before)
+                // Force a synchronous render so toDataURL captures updated content
+                state.needsRender = true;
+                // Directly call the render body (not via rAF)
+                const w = glCanvas.width, h = glCanvas.height;
+                gl.viewport(0, 0, w, h);
+                gl.clear(gl.COLOR_BUFFER_BIT);
+                gl.useProgram(program);
+                gl.bindVertexArray(vao);
+                gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+                ensureGpuData();
+                gl.uniform2f(u_resolution, w / 2, h / 2);
+                gl.uniformMatrix3fv(u_viewMatrix, false, getViewMatrix());
+                let vo = 0;
+                for (let si = 0; si < strokes.length; si++) {
+                    const stroke = strokes[si], geo = strokeGeometries[si];
+                    if (!geo || geo.length === 0) continue;
+                    const vc = geo.length / FLOATS_PER_VERTEX;
+                    const as = (Math.PI * 2) / stroke.symmetry;
+                    const ar = stroke.mirror ? stroke.symmetry * 2 : stroke.symmetry;
+                    for (let a = 0; a < ar; a++) {
+                        const m = stroke.mirror && a >= stroke.symmetry;
+                        gl.uniform1f(u_angle, as * (m ? a - stroke.symmetry : a));
+                        gl.uniform1f(u_mirror, m ? -1.0 : 1.0);
+                        gl.drawArrays(gl.TRIANGLES, vo, vc);
+                    }
+                    vo += vc;
+                }
+                gl.finish();
+                state.needsRender = false;
+
                 const link = document.createElement('a');
                 link.download = `mandala-${Date.now()}.png`;
-                // Composite Active onto Static for saving if needed (usually active is empty when saving)
-                // But just in case, we can draw active on static temp? 
-                // No, when saving, we are usually idle. Static is enough.
-                link.href = canvasStatic.toDataURL();
+                link.href = glCanvas.toDataURL();
                 link.click();
             });
 
@@ -1177,8 +1333,6 @@
                     t = setTimeout(() => fn(...args), ms);
                 };
             }
-
-
 
         })();
     </script>
