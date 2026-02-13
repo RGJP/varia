@@ -1131,8 +1131,10 @@
                     gl.bufferSubData(gl.ARRAY_BUFFER, totalVertexFloats * 4, currentStrokeGeo);
                 }
 
-                // Resolution (half-dimensions for clip-space mapping)
-                gl.uniform2f(u_resolution, w / 2, h / 2);
+                // Resolution: use CSS pixel dimensions (not canvas px) so
+                // world coordinates from getWorldCoords map correctly.
+                const dpr = window.devicePixelRatio || 1;
+                gl.uniform2f(u_resolution, w / (2 * dpr), h / (2 * dpr));
 
                 // View matrix
                 const vm = getViewMatrix();
@@ -1273,7 +1275,8 @@
                 gl.bindVertexArray(vao);
                 gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
                 ensureGpuData();
-                gl.uniform2f(u_resolution, w / 2, h / 2);
+                const saveDpr = window.devicePixelRatio || 1;
+                gl.uniform2f(u_resolution, w / (2 * saveDpr), h / (2 * saveDpr));
                 gl.uniformMatrix3fv(u_viewMatrix, false, getViewMatrix());
                 let vo = 0;
                 for (let si = 0; si < strokes.length; si++) {
