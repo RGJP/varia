@@ -43,6 +43,45 @@
             justify-content: center;
             align-items: center;
             touch-action: none;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body.light-mode {
+            --bg-deep: #ffffff;
+            --text: #1a1a1a;
+            --text-dim: rgba(0, 0, 0, 0.5);
+            --glass: rgba(0, 0, 0, 0.05);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --glass-hover: rgba(0, 0, 0, 0.1);
+            --primary: #4f46e5;
+            --primary-glow: rgba(79, 70, 229, 0.4);
+        }
+
+        body.light-mode button {
+            border-color: rgba(0, 0, 0, 0.15);
+        }
+
+        body.light-mode select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath stroke='rgba(0,0,0,0.5)' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m1 1 4 4 4-4'/%3E%3C/svg%3E");
+        }
+
+        body.light-mode .color-custom {
+            border-color: rgba(0, 0, 0, 0.2);
+            background: #f1f5f9;
+        }
+
+        body.light-mode .color-custom::after {
+            color: #000;
+        }
+
+        body.light-mode .color-custom.selected::after {
+            color: #fff;
+        }
+
+        body.light-mode .color-option.selected,
+        body.light-mode .color-custom.selected {
+            border-color: #000;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
         }
 
         /* ── Canvas Container ── */
@@ -240,7 +279,7 @@
             height: 22px;
             border-radius: 50%;
             cursor: pointer;
-            border: 2px solid transparent;
+            border: 2px solid var(--glass-border);
             transition: transform 0.2s ease, border-color 0.2s ease;
             flex-shrink: 0;
         }
@@ -256,26 +295,46 @@
         }
 
         .color-custom {
-            width: 22px;
-            height: 22px;
-            border-radius: 50%;
-            border: 2px dashed rgba(255, 255, 255, 0.3);
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            border: 1.5px solid rgba(255, 255, 255, 0.4);
             cursor: pointer;
             position: relative;
             overflow: hidden;
             flex-shrink: 0;
-            transition: transform 0.2s ease, border-color 0.2s ease;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1e293b;
+            /* Dark slate background */
+        }
+
+        .color-custom::after {
+            content: 'P';
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #fff;
+            pointer-events: none;
         }
 
         .color-custom:hover {
-            border-color: rgba(255, 255, 255, 0.6);
-            transform: scale(1.15);
+            border-color: #fff;
+            transform: scale(1.1);
+            background: #334155;
         }
 
         .color-custom.selected {
-            border-style: solid;
             border-color: #fff;
-            transform: scale(1.15);
+            border-width: 2px;
+            transform: scale(1.1);
+            box-shadow: 0 0 15px var(--primary-glow);
+            background: var(--primary);
+        }
+
+        .color-custom.selected::after {
+            color: #050510;
         }
 
         .color-custom input[type=color] {
@@ -416,6 +475,7 @@
 
         <div class="control-group">
             <button id="mirrorBtn" title="Toggle mirror reflection" aria-pressed="false">Mirror</button>
+            <button id="bgBtn" title="Toggle Background Color" aria-pressed="false">BG</button>
         </div>
 
         <div class="divider"></div>
@@ -443,6 +503,7 @@
             const symmetryRange = $('symmetryRange');
             const brushRange = $('brushRange');
             const mirrorBtn = $('mirrorBtn');
+            const bgBtn = $('bgBtn');
             const clearBtn = $('clearBtn');
             const saveBtn = $('saveBtn');
             const undoBtn = $('undoBtn');
@@ -680,6 +741,7 @@
                 { color: 'hsl(30, 100%, 70%)', name: 'Amber' },
                 { color: 'hsl(150, 100%, 70%)', name: 'Mint' },
                 { color: 'hsl(350, 100%, 75%)', name: 'Rose' },
+                { color: '#000000', name: 'Black' },
             ];
             let currentColor = PALETTES[0];
             let customColor = '#ffffff';
@@ -1195,13 +1257,13 @@
 
                 const custom = document.createElement('div');
                 custom.className = 'color-custom';
-                custom.style.background = customColor;
+                // Use CSS gradient for picker look; removed inline background override
                 const input = document.createElement('input');
                 input.type = 'color';
                 input.value = customColor;
                 input.addEventListener('input', e => {
                     customColor = e.target.value;
-                    custom.style.background = customColor;
+                    // Keep the picker look consistent, don't change background to solid color
                     selectColor({ color: customColor, name: 'Custom' }, custom);
                 });
                 custom.appendChild(input);
@@ -1238,6 +1300,19 @@
                 showToast(state.mirrorMode ? 'Mirror On' : 'Mirror Off');
             });
 
+            let isLightMode = false;
+            bgBtn.addEventListener('click', () => {
+                isLightMode = !isLightMode;
+                if (isLightMode) {
+                    document.body.classList.add('light-mode');
+                    gl.clearColor(1, 1, 1, 1); // Pure White
+                } else {
+                    document.body.classList.remove('light-mode');
+                    gl.clearColor(0, 0, 0, 1); // Pure Black
+                }
+                state.needsRender = true;
+            });
+
             clearBtn.addEventListener('click', () => {
                 if (!state.clearPending) {
                     state.clearPending = true;
@@ -1264,20 +1339,47 @@
                 showToast('Cleared');
             });
 
-            saveBtn.addEventListener('click', () => {
-                // Force a synchronous render so toDataURL captures updated content
-                state.needsRender = true;
-                // Directly call the render body (not via rAF)
-                const w = glCanvas.width, h = glCanvas.height;
-                gl.viewport(0, 0, w, h);
+            saveBtn.addEventListener('click', async () => {
+                showToast('Generating High-Res...');
+
+                // Allow UI to update before freezing for render
+                await new Promise(r => setTimeout(r, 50));
+
+                const originalWidth = glCanvas.width;
+                const originalHeight = glCanvas.height;
+                const dpr = window.devicePixelRatio || 1;
+                const rect = canvasContainer.getBoundingClientRect();
+
+                // 4x resolution or max 8192px
+                const scaleFactor = 4;
+                const maxDim = 8192;
+                let targetW = rect.width * dpr * scaleFactor;
+                let targetH = rect.height * dpr * scaleFactor;
+
+                // Cap at maxDim to prevent crashes on huge screens
+                if (targetW > maxDim || targetH > maxDim) {
+                    const ratio = Math.min(maxDim / targetW, maxDim / targetH);
+                    targetW *= ratio;
+                    targetH *= ratio;
+                }
+
+                // Resize canvas
+                glCanvas.width = targetW;
+                glCanvas.height = targetH;
+
+                // Render High Res
+                gl.viewport(0, 0, targetW, targetH);
                 gl.clear(gl.COLOR_BUFFER_BIT);
                 gl.useProgram(program);
                 gl.bindVertexArray(vao);
                 gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
                 ensureGpuData();
-                const saveDpr = window.devicePixelRatio || 1;
-                gl.uniform2f(u_resolution, w / (2 * saveDpr), h / (2 * saveDpr));
+
+                // Use ORIGINAL coordinate system (rect.width/2) so the same world-space drawing
+                // fills the larger viewport, resulting in high-res vector scaling.
+                gl.uniform2f(u_resolution, rect.width / 2, rect.height / 2);
                 gl.uniformMatrix3fv(u_viewMatrix, false, getViewMatrix());
+
                 let vo = 0;
                 for (let si = 0; si < strokes.length; si++) {
                     const stroke = strokes[si], geo = strokeGeometries[si];
@@ -1293,13 +1395,23 @@
                     }
                     vo += vc;
                 }
-                gl.finish();
-                state.needsRender = false;
 
-                const link = document.createElement('a');
-                link.download = `mandala-${Date.now()}.png`;
-                link.href = glCanvas.toDataURL();
-                link.click();
+                gl.finish();
+
+                try {
+                    const link = document.createElement('a');
+                    link.download = `mandala-${Date.now()}.png`;
+                    link.href = glCanvas.toDataURL('image/png');
+                    link.click();
+                } catch (err) {
+                    console.error('Save error:', err);
+                    showToast('Error saving image');
+                }
+
+                // Restore
+                glCanvas.width = originalWidth;
+                glCanvas.height = originalHeight;
+                state.needsRender = true;
             });
 
             undoBtn.addEventListener('click', () => history.undo());
