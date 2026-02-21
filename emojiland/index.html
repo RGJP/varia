@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emojiland</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⭐%3C/text%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div id="mobile-ui">
+        <div class="dpad">
+            <div class="dpad-row">
+                <button id="btn-up" class="ui-btn">↑</button>
+            </div>
+            <div class="dpad-row">
+                <button id="btn-left" class="ui-btn">←</button>
+                <div class="dpad-center"></div>
+                <button id="btn-right" class="ui-btn">→</button>
+            </div>
+            <div class="dpad-row">
+                <button id="btn-down" class="ui-btn">↓</button>
+            </div>
+        </div>
+        <div class="action-buttons">
+            <button id="btn-jump" class="ui-btn ui-btn-large">🦘</button>
+            <button id="btn-attack" class="ui-btn ui-btn-large">⚔️</button>
+        </div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <script type="module" src="js/main.js"></script>
+</body>
+
+</html>

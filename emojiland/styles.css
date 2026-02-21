@@ -1,0 +1,111 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #000;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#mobile-ui {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 100;
+    box-sizing: border-box;
+}
+
+@media (pointer: coarse) {
+    #mobile-ui {
+        display: none;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding: 15px;
+        padding-bottom: 25px;
+    }
+
+    #mobile-ui.active {
+        display: flex;
+    }
+}
+
+.ui-btn {
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 22px;
+    font-weight: bold;
+    user-select: none;
+    -webkit-user-select: none;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+    width: 48px;
+    height: 48px;
+    margin: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+}
+
+.ui-btn:active {
+    background: rgba(255, 255, 255, 0.4);
+    transform: scale(0.95);
+}
+
+.dpad {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.dpad-row {
+    display: flex;
+    justify-content: center;
+}
+
+.dpad-center {
+    width: 48px;
+    height: 48px;
+    margin: 4px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+    margin-bottom: 20px;
+}
+
+.ui-btn-large {
+    width: 60px;
+    height: 60px;
+    font-size: 32px;
+}
+
+/* Positioning specific buttons matching drawing */
+#btn-jump {
+    margin-bottom: 0px;
+}
+
+#btn-attack {
+    margin-bottom: 30px;
+    /* Slight offset for better thumb reach */
+}
