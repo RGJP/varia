@@ -11,6 +11,7 @@ export class AudioEngine {
 
         this.totalSongs = 17;
         this.musicPool = [];
+        this.unlocked = false;
     }
 
     getNextSongNumber() {
@@ -30,6 +31,23 @@ export class AudioEngine {
         }
         this.lastSongNumber = this.musicPool.pop();
         return this.lastSongNumber;
+    }
+
+    unlock() {
+        if (this.unlocked) return;
+        if (this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+        // Force unlock HTML5 Audio inside user interaction event
+        const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+        let p = silentAudio.play();
+        if (p !== undefined) {
+            p.then(() => {
+                this.unlocked = true;
+            }).catch(e => {
+                // ignore
+            });
+        }
     }
 
     playOscillator(type, freq, duration, slideFreq = null) {

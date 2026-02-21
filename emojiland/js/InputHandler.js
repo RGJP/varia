@@ -39,14 +39,13 @@ export class InputHandler {
     }
 
     setupVirtualControls() {
-        const attach = (id, code) => {
-            // We use setTimeout to ensure elements are parsed since InputHandler might be instantiated early
+        const attachButton = (id, code) => {
             setTimeout(() => {
                 const el = document.getElementById(id);
                 if (!el) return;
 
                 const press = (e) => {
-                    e.preventDefault(); // Prevent scrolling/zooming
+                    e.preventDefault();
                     if (!this.keys.has(code)) {
                         this.justPressed.add(code);
                     }
@@ -65,12 +64,96 @@ export class InputHandler {
             }, 0);
         };
 
-        attach('btn-left', 'ArrowLeft');
-        attach('btn-right', 'ArrowRight');
-        attach('btn-up', 'ArrowUp');
-        attach('btn-down', 'ArrowDown');
-        attach('btn-jump', 'KeyA');
-        attach('btn-attack', 'KeyD');
+        attachButton('btn-jump', 'KeyA');
+        attachButton('btn-attack', 'KeyD');
+
+        setTimeout(() => {
+            const joyZone = document.getElementById('joystick-zone');
+            const joyKnob = document.getElementById('joystick-knob');
+            if (!joyZone || !joyKnob) return;
+
+            let activeTouchId = null;
+            const maxDistance = 40;
+
+            const resetJoystick = () => {
+                activeTouchId = null;
+                joyKnob.style.transform = `translate(-50%, -50%)`;
+                this.keys.delete('ArrowLeft');
+                this.keys.delete('ArrowRight');
+                this.keys.delete('ArrowUp');
+                this.keys.delete('ArrowDown');
+            };
+
+            const handleDrag = (touch) => {
+                const rect = joyZone.getBoundingClientRect();
+                const joyCenterX = rect.left + rect.width / 2;
+                const joyCenterY = rect.top + rect.height / 2;
+
+                let dx = touch.clientX - joyCenterX;
+                let dy = touch.clientY - joyCenterY;
+
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const clampedDistance = Math.min(distance, maxDistance);
+                const angle = Math.atan2(dy, dx);
+
+                const knobX = Math.cos(angle) * clampedDistance;
+                const knobY = Math.sin(angle) * clampedDistance;
+
+                joyKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
+
+                this.keys.delete('ArrowLeft');
+                this.keys.delete('ArrowRight');
+                this.keys.delete('ArrowUp');
+                this.keys.delete('ArrowDown');
+
+                const thresholdX = 15;
+                const thresholdY = 20;
+
+                if (distance > 10) {
+                    if (dx < -thresholdX) this.keys.add('ArrowLeft');
+                    else if (dx > thresholdX) this.keys.add('ArrowRight');
+
+                    if (dy < -thresholdY) this.keys.add('ArrowUp');
+                    else if (dy > thresholdY) this.keys.add('ArrowDown');
+                }
+            };
+
+            joyZone.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (activeTouchId === null) {
+                        activeTouchId = e.changedTouches[i].identifier;
+                        handleDrag(e.changedTouches[i]);
+                        break;
+                    }
+                }
+            }, { passive: false });
+
+            joyZone.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                if (activeTouchId === null) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === activeTouchId) {
+                        handleDrag(e.changedTouches[i]);
+                        break;
+                    }
+                }
+            }, { passive: false });
+
+            const endDrag = (e) => {
+                e.preventDefault();
+                if (activeTouchId === null) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === activeTouchId) {
+                        resetJoystick();
+                        break;
+                    }
+                }
+            };
+
+            joyZone.addEventListener('touchend', endDrag, { passive: false });
+            joyZone.addEventListener('touchcancel', endDrag, { passive: false });
+        }, 0);
     }
 
     isDown(code) {

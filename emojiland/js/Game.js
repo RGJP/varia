@@ -52,6 +52,28 @@ export class Game {
         this._coinCache = getEmojiCanvas('🪙', 24);
         this._skullCache = getEmojiCanvas('☠️', 24);
         this._checkCache = getEmojiCanvas('✅', 24);
+
+        const startGameHandler = (e) => {
+            if (this.state === GameState.START_MENU || this.state === GameState.GAME_OVER || this.state === GameState.VICTORY) {
+                // Ensure audio context is unlocked by a valid user gesture
+                if (this.audio && typeof this.audio.unlock === 'function') {
+                    this.audio.unlock();
+                }
+
+                this.initLevel();
+                this.state = GameState.PLAYING;
+                this.input.update(); // Flush initial inputs to prevent immediate jumps
+
+                // Prevent duplicate starts from firing
+                if (e && e.preventDefault && e.cancelable) e.preventDefault();
+            }
+        };
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Enter') startGameHandler(e);
+        });
+        window.addEventListener('touchend', startGameHandler);
+        window.addEventListener('click', startGameHandler);
     }
 
     initLevel() {
@@ -125,13 +147,7 @@ export class Game {
             return;
         }
 
-        if (this.state === GameState.START_MENU) {
-            if (this.input.isJustPressed('Enter') || this.input.isJustPressed('TouchScreen')) {
-                this.initLevel();
-                this.state = GameState.PLAYING;
-            }
-        }
-        else if (this.state === GameState.PLAYING) {
+        if (this.state === GameState.PLAYING) {
             this.player.update(dt, this.input, this.platforms, this);
 
             if (this.player.health <= 0 || this.player.y > this.lowestY) {
@@ -151,12 +167,6 @@ export class Game {
 
             this.camera.update(this.player, dt);
             this.particles.update(dt);
-        }
-        else if (this.state === GameState.GAME_OVER || this.state === GameState.VICTORY) {
-            if (this.input.isJustPressed('Enter') || this.input.isJustPressed('TouchScreen')) {
-                this.initLevel();
-                this.state = GameState.PLAYING;
-            }
         }
     }
 

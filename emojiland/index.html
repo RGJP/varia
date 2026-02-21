@@ -16,22 +16,12 @@
 
 <body>
     <div id="mobile-ui">
-        <div class="dpad">
-            <div class="dpad-row">
-                <button id="btn-up" class="ui-btn">↑</button>
-            </div>
-            <div class="dpad-row">
-                <button id="btn-left" class="ui-btn">←</button>
-                <div class="dpad-center"></div>
-                <button id="btn-right" class="ui-btn">→</button>
-            </div>
-            <div class="dpad-row">
-                <button id="btn-down" class="ui-btn">↓</button>
-            </div>
+        <div id="joystick-zone" class="joystick-zone">
+            <div id="joystick-knob" class="joystick-knob"></div>
         </div>
         <div class="action-buttons">
-            <button id="btn-jump" class="ui-btn ui-btn-large">🦘</button>
             <button id="btn-attack" class="ui-btn ui-btn-large">⚔️</button>
+            <button id="btn-jump" class="ui-btn ui-btn-large">🦘</button>
         </div>
     </div>
     <canvas id="gameCanvas"></canvas>
