@@ -126,7 +126,7 @@ export class Game {
         }
 
         if (this.state === GameState.START_MENU) {
-            if (this.input.isJustPressed('Enter')) {
+            if (this.input.isJustPressed('Enter') || this.input.isJustPressed('TouchScreen')) {
                 this.initLevel();
                 this.state = GameState.PLAYING;
             }
@@ -153,7 +153,7 @@ export class Game {
             this.particles.update(dt);
         }
         else if (this.state === GameState.GAME_OVER || this.state === GameState.VICTORY) {
-            if (this.input.isJustPressed('Enter')) {
+            if (this.input.isJustPressed('Enter') || this.input.isJustPressed('TouchScreen')) {
                 this.initLevel();
                 this.state = GameState.PLAYING;
             }
@@ -306,7 +306,8 @@ export class Game {
 
             this.ctx.font = 'bold 28px "Outfit", sans-serif';
             this.ctx.fillStyle = 'white';
-            this.ctx.fillText('Press ENTER to Start', this.canvas.width / 2, this.canvas.height / 2 + 40);
+            const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            this.ctx.fillText(isMobile ? 'Touch to Start' : 'Press ENTER to Start', this.canvas.width / 2, this.canvas.height / 2 + 40);
 
             this.ctx.font = '20px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
@@ -321,7 +322,8 @@ export class Game {
 
             this.ctx.font = 'bold 28px "Outfit", sans-serif';
             this.ctx.fillStyle = 'white';
-            this.ctx.fillText('Press ENTER to Continue', this.canvas.width / 2, this.canvas.height / 2 + 40);
+            const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            this.ctx.fillText(isMobile ? 'Touch to Continue' : 'Press ENTER to Continue', this.canvas.width / 2, this.canvas.height / 2 + 40);
         } else if (this.state === GameState.VICTORY) {
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
@@ -335,7 +337,8 @@ export class Game {
 
             this.ctx.font = 'bold 28px "Outfit", sans-serif';
             this.ctx.fillStyle = 'white';
-            this.ctx.fillText('Press ENTER to Continue', this.canvas.width / 2, this.canvas.height / 2 + 40);
+            const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            this.ctx.fillText(isMobile ? 'Touch to Continue' : 'Press ENTER to Continue', this.canvas.width / 2, this.canvas.height / 2 + 40);
         }
         this.ctx.restore();
     }

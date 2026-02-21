@@ -15,6 +15,26 @@ export class InputHandler {
             this.justPressed.delete(e.code);
         });
 
+        // Add generic touch for basic interactions
+        window.addEventListener('touchstart', (e) => {
+            if (!e.target.closest('.ui-btn')) {
+                if (!this.keys.has('TouchScreen')) {
+                    this.justPressed.add('TouchScreen');
+                }
+                this.keys.add('TouchScreen');
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            this.keys.delete('TouchScreen');
+            this.justPressed.delete('TouchScreen');
+        });
+
+        window.addEventListener('touchcancel', () => {
+            this.keys.delete('TouchScreen');
+            this.justPressed.delete('TouchScreen');
+        });
+
         this.setupVirtualControls();
     }
 
