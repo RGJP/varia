@@ -268,11 +268,11 @@ export class Player extends Entity {
             this.y += this.vy * dt;
 
             // Clamp vertical movement so they can't leave the vine without jumping
-            if (this.y < this.currentVine.y - this.height / 2) {
-                this.y = this.currentVine.y - this.height / 2;
+            if (this.y < this.currentVine.y - this.height * 0.5) {
+                this.y = this.currentVine.y - this.height * 0.5;
             }
-            if (this.y > this.currentVine.y + this.currentVine.height - this.height / 2) {
-                this.y = this.currentVine.y + this.currentVine.height - this.height / 2;
+            if (this.y > this.currentVine.y + this.currentVine.height - this.height) {
+                this.y = this.currentVine.y + this.currentVine.height - this.height;
             }
 
             // Jump off the vine

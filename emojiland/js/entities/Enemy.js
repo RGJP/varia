@@ -464,7 +464,8 @@ export class Enemy extends Entity {
             this.speed = this.baseSpeed;
             this.vx = this.facingRight ? this.speed : -this.speed;
 
-            if (player && dist < 600 && Math.random() < 0.02) {
+            // Reduce frequency from 0.02 to 0.005 to make it less OP
+            if (player && dist < 600 && Math.random() < 0.005) {
                 this.state = 'STOMP_JUMP';
                 this.vy = -600;
                 this.vx = this.facingRight ? this.speed * 2 : -this.speed * 2;
@@ -500,7 +501,8 @@ export class Enemy extends Entity {
 
             if (this.stateTimer <= 0) {
                 const rand = Math.random();
-                if (rand < 0.4) {
+                // Increase shrimp throw frequency from 0.4 to 0.7
+                if (rand < 0.7) {
                     this.state = 'SHOOT';
                     this.stateTimer = 1.5;
                     this.vx = 0;
@@ -509,7 +511,7 @@ export class Enemy extends Entity {
                     this.facingRight = distX > 0;
                 } else {
                     this.facingRight = !this.facingRight;
-                    this.stateTimer = 0.5 + Math.random();
+                    this.stateTimer = 0.3 + Math.random() * 0.7; // Faster decision making
                 }
             }
 
@@ -531,7 +533,7 @@ export class Enemy extends Entity {
 
             if (this.stateTimer <= 0 || (this.chargeCount <= 0 && this.shootTimer <= 0)) {
                 this.state = 'SCUTTLE';
-                this.stateTimer = 0.5 + Math.random();
+                this.stateTimer = 0.3 + Math.random() * 0.7; // Faster decision making
             }
         }
     }
@@ -549,7 +551,7 @@ export class Enemy extends Entity {
                     this.state = 'SHOOT';
                     this.stateTimer = 2.0;
                     this.vx = 0;
-                    this.chargeCount = 4; // Firing 4 peanuts in a sequence
+                    this.chargeCount = 2; // Firing 2 peanuts in a sequence
                     this.shootTimer = 0;
                     this.facingRight = distX > 0;
                 } else {

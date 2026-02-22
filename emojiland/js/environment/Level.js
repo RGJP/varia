@@ -266,9 +266,8 @@ export function loadLevel() {
         platforms.forEach(platform => {
             // Check horizontal overlap
             if (vine.x + vine.width > platform.x && vine.x < platform.x + platform.width) {
-                // If vine starts above or at platform but extends into it
                 if (vine.y <= platform.y && vine.y + vine.height > platform.y) {
-                    vine.height = platform.y - vine.y;
+                    vine.height = platform.y - vine.y - 2;
                 }
             }
         });

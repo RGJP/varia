@@ -66,23 +66,27 @@ export class Game {
 
         // Pre-cache UI emojis
         this._heartCache = getEmojiCanvas('❤️', 24);
-        this._musicCache = getEmojiCanvas('◀️🎵▶️', 24);
+        this._musicCache = getEmojiCanvas('▶️', 24);
         this._muteCache = getEmojiCanvas('🔇', 24);
         this._unmuteCache = getEmojiCanvas('🔊', 24);
         this._bombUICache = getEmojiCanvas('💣', 24);
 
         const startGameHandler = (e) => {
             if (this.state === GameState.START_MENU || this.state === GameState.GAME_OVER || this.state === GameState.VICTORY) {
-                // Force fullscreen on start
-                if (document.documentElement.requestFullscreen) {
-                    if (!document.fullscreenElement) {
-                        document.documentElement.requestFullscreen().catch(() => { });
-                    }
-                }
-
-                // Ensure audio context is unlocked by a valid user gesture
+                // IMPORTANT: Unlock audio FIRST, synchronously during the user gesture.
+                // This must happen before fullscreen or anything else to satisfy
+                // mobile browser autoplay policies.
                 if (this.audio && typeof this.audio.unlock === 'function') {
                     this.audio.unlock();
+                }
+
+                // Request fullscreen (non-blocking, won't consume gesture on most browsers)
+                try {
+                    if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(() => { });
+                    }
+                } catch (err) {
+                    // Fullscreen not supported or failed — continue anyway
                 }
 
                 this.initLevel();
@@ -99,34 +103,49 @@ export class Game {
         });
 
         const handleMusicClick = (clientX, clientY) => {
-            if (this.state !== GameState.PLAYING && this.state !== GameState.PAUSED) return;
+            if (this.state !== GameState.PLAYING && this.state !== GameState.PAUSED) return false;
             const rect = this.canvas.getBoundingClientRect();
             const scaleX = this.canvas.width / rect.width;
             const scaleY = this.canvas.height / rect.height;
             const x = (clientX - rect.left) * scaleX;
             const y = (clientY - rect.top) * scaleY;
 
-            // Music icon changer (◀️🎵▶️) roughly at x=48, y=72
-            // Hitbox: y from 48 to 96, x from 10 to 96
-            if (x >= 10 && x <= 96 && y >= 48 && y <= 96) {
+            // Health is at y=36
+            // Bombs is at y=72
+            // Next Song Button (▶️) is now at y=108
+            // Hitbox: y from 84 to 132, x from 10 to 96
+            if (x >= 10 && x <= 96 && y >= 84 && y <= 132) {
                 this.audio.playBackgroundMusic();
+                return true;
             }
-            // Mute button (🔇/🔊) roughly at x=36, y=108
-            // Hitbox: y from 84 to 132, x from 10 to 62
-            else if (x >= 10 && x <= 62 && y >= 84 && y <= 132) {
+            // Mute button (🔇/🔊) is now at y=144
+            // Hitbox: y from 120 to 168, x from 10 to 62
+            else if (x >= 10 && x <= 62 && y >= 120 && y <= 168) {
                 this.audio.toggleMusicMute();
+                return true;
             }
+            return false;
         };
 
-        window.addEventListener('touchend', (e) => {
-            if (e.changedTouches && e.changedTouches.length > 0) {
-                handleMusicClick(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+        const handleInteraction = (e) => {
+            const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0));
+            const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0));
+
+            const hit = handleMusicClick(clientX, clientY);
+            if (hit) {
+                if (e.cancelable) e.preventDefault();
+                return;
             }
             startGameHandler(e);
-        });
-        window.addEventListener('click', (e) => {
-            handleMusicClick(e.clientX, e.clientY);
-            startGameHandler(e);
+        };
+
+        window.addEventListener('touchstart', handleInteraction, { passive: false });
+        window.addEventListener('mousedown', (e) => {
+            // Only handle if it's NOT a touch event (to avoid double triggering on mobile)
+            if (e.detail === 0) return; // detail=0 can sometimes mean non-mouse
+            // But simpler is to check if it's a mouse event
+            if (window.TouchEvent && e instanceof TouchEvent) return;
+            handleInteraction(e);
         });
 
         window.addEventListener('blur', () => {
@@ -168,7 +187,7 @@ export class Game {
 
         // Re-cache UI emojis
         this._heartCache = getEmojiCanvas('❤️', 24);
-        this._musicCache = getEmojiCanvas('◀️🎵▶️', 24);
+        this._musicCache = getEmojiCanvas('▶️', 24);
         this._muteCache = getEmojiCanvas('🔇', 24);
         this._unmuteCache = getEmojiCanvas('🔊', 24);
         this._bombUICache = getEmojiCanvas('💣', 24);
@@ -246,7 +265,7 @@ export class Game {
                 if (!this.gameOverTriggered) {
                     this.gameOverTriggered = true;
                     this.gameOverTimer = 2.0;
-                    this.audio.fadeOutMusic(3000);
+                    this.audio.fadeOutMusic(1000);
                 }
             }
 
@@ -296,7 +315,7 @@ export class Game {
     triggerVictory() {
         this.state = GameState.VICTORY;
         this.audio.playWin();
-        this.audio.fadeOutMusic(3000);
+        this.audio.fadeOutMusic(1000);
     }
 
     // Check if an entity is within the visible viewport (with margin)
@@ -433,20 +452,7 @@ export class Game {
 
             currentY += lineSpacing;
 
-            // 2. Draw music song changer
-            const musicCached = this._musicCache;
-            // Shift x slightly right to account for 3 emojis width
-            ctx_drawCachedEmoji(this.ctx, musicCached, startX + 24, currentY);
-
-            currentY += lineSpacing;
-
-            // 3. Draw Mute button
-            const muteCached = this.audio.isMusicMuted ? this._muteCache : this._unmuteCache;
-            ctx_drawCachedEmoji(this.ctx, muteCached, startX, currentY);
-
-            currentY += lineSpacing;
-
-            // 4. Draw Bombs indicator
+            // 2. Draw Bombs indicator
             const bombCached = this._bombUICache;
             ctx_drawCachedEmoji(this.ctx, bombCached, startX, currentY);
 
@@ -458,6 +464,17 @@ export class Game {
 
             this.ctx.fillText(`${this.player.bombs}`, startX + 32, currentY + 2);
 
+            currentY += lineSpacing;
+
+            // 3. Draw music song changer
+            const musicCached = this._musicCache;
+            ctx_drawCachedEmoji(this.ctx, musicCached, startX, currentY);
+
+            currentY += lineSpacing;
+
+            // 4. Draw Mute button
+            const muteCached = this.audio.isMusicMuted ? this._muteCache : this._unmuteCache;
+            ctx_drawCachedEmoji(this.ctx, muteCached, startX, currentY);
 
 
             this.ctx.restore();
@@ -543,7 +560,7 @@ export class Game {
 
             let ly = cardY + 80;
             const yStep = 32;
-            this.ctx.fillText('Arrows : Move Character', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('Arrows/Joystick : Move Character', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('A : Jump (Mobile 🦘)', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('D : Throw Rock (Mobile ⚔️)', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('S : Drop Bomb (Mobile 💣)', cardX + 40, ly);
@@ -575,6 +592,12 @@ export class Game {
             this.ctx.shadowColor = `rgba(255, 255, 255, ${alpha * 0.5})`;
             this.ctx.shadowBlur = 10;
             this.ctx.fillText(isMobile ? ' TOUCH TO START ' : '► PRESS ENTER TO START ◄', 0, cardY + cardHeight + 50);
+
+            // Subtle Music Attribution
+            this.ctx.shadowBlur = 0;
+            this.ctx.font = '14px "Outfit", sans-serif';
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            this.ctx.fillText('All opyright free music from Pixabay', 0, cardY + cardHeight + 100);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';

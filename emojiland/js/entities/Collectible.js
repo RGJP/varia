@@ -29,11 +29,11 @@ export class Collectible extends Entity {
         ctx.drawImage(cached.canvas, this.x - (cached.width - this.width) / 2, this.y - (cached.height - this.height) / 2);
 
         if (this.isReplenish || this.isPowerUp) {
-            const hoverMultiplier = this.isPowerUp ? 0.8 : 0.5;
+            const hoverMultiplier = this.isPowerUp ? 1.0 : 0.8;
             const pOffsetY = -(this.height * hoverMultiplier) + Math.sin(this.time * 2) * 3;
 
             ctx.save();
-            ctx.font = 'bold 16px Arial';
+            ctx.font = this.isPowerUp ? 'bold 20px Arial' : 'bold 36px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
@@ -41,8 +41,12 @@ export class Collectible extends Entity {
             const textY = this.y + pOffsetY;
 
             ctx.lineJoin = 'round';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 4;
             ctx.strokeStyle = '#000000';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+            ctx.shadowBlur = 4;
+            ctx.shadowOffsetX = 2;
+            ctx.shadowOffsetY = 2;
 
             const text = this.isPowerUp ? 'POWER UP' : '+';
             ctx.strokeText(text, textX, textY);

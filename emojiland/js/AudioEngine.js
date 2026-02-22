@@ -1,18 +1,26 @@
 export class AudioEngine {
     constructor() {
-        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        this.masterGain = this.ctx.createGain();
-        this.masterGain.gain.value = 0.3;
-        this.masterGain.connect(this.ctx.destination);
+        // Defer AudioContext creation until a user gesture (unlock())
+        this.ctx = null;
+        this.masterGain = null;
 
         this.currentMusicAudio = null;
         this.lastSongNumber = -1;
         this.fadeInterval = null;
 
-        this.totalSongs = 20;
+        this.totalSongs = 31;
         this.musicPool = [];
         this.unlocked = false;
         this.isMusicMuted = false;
+    }
+
+    _ensureContext() {
+        if (!this.ctx) {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            this.masterGain = this.ctx.createGain();
+            this.masterGain.gain.value = 0.3;
+            this.masterGain.connect(this.ctx.destination);
+        }
     }
 
     getNextSongNumber() {
@@ -36,8 +44,10 @@ export class AudioEngine {
 
     unlock() {
         if (this.unlocked) return;
+        // Create AudioContext now, during user gesture
+        this._ensureContext();
         if (this.ctx.state === 'suspended') {
-            this.ctx.resume();
+            this.ctx.resume().catch(() => { });
         }
         // Force unlock HTML5 Audio inside user interaction event
         const silentAudio = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
@@ -45,14 +55,18 @@ export class AudioEngine {
         if (p !== undefined) {
             p.then(() => {
                 this.unlocked = true;
-            }).catch(e => {
-                // ignore
+            }).catch(() => {
+                // Still mark as unlocked — the context resume is what matters
+                this.unlocked = true;
             });
+        } else {
+            this.unlocked = true;
         }
     }
 
     playOscillator(type, freq, duration, slideFreq = null) {
-        if (this.ctx.state === 'suspended') this.ctx.resume();
+        this._ensureContext();
+        if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => { });
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
@@ -74,7 +88,8 @@ export class AudioEngine {
 
     playBackgroundMusic(isAutoNext = false) {
         const startMusic = () => {
-            if (this.ctx.state === 'suspended') this.ctx.resume();
+            this._ensureContext();
+            if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => { });
 
             const songNumber = this.getNextSongNumber();
             console.log(`Playing music track: ${songNumber}`);
@@ -121,7 +136,7 @@ export class AudioEngine {
         }
     }
 
-    fadeOutMusic(duration = 3000) {
+    fadeOutMusic(duration = 1000) {
         if (!this.currentMusicAudio) return;
         this.fadeMusic(this.currentMusicAudio.volume, 0, duration, () => {
             if (this.currentMusicAudio) {
@@ -138,7 +153,7 @@ export class AudioEngine {
     }
 
     resumeBackgroundMusic() {
-        if (this.currentMusicAudio && this.currentMusicAudio.paused && this.ctx.state !== 'suspended') {
+        if (this.currentMusicAudio && this.currentMusicAudio.paused && this.ctx && this.ctx.state !== 'suspended') {
             this.currentMusicAudio.play().catch(e => console.error("Audio resume failed:", e));
         }
     }
