@@ -73,6 +73,13 @@ export class Game {
 
         const startGameHandler = (e) => {
             if (this.state === GameState.START_MENU || this.state === GameState.GAME_OVER || this.state === GameState.VICTORY) {
+                // Force fullscreen on start
+                if (document.documentElement.requestFullscreen) {
+                    if (!document.fullscreenElement) {
+                        document.documentElement.requestFullscreen().catch(() => { });
+                    }
+                }
+
                 // Ensure audio context is unlocked by a valid user gesture
                 if (this.audio && typeof this.audio.unlock === 'function') {
                     this.audio.unlock();
@@ -464,6 +471,21 @@ export class Game {
 
     drawMenuOverlays() {
         this.ctx.save();
+
+        // 1. Universal background overlay (non-scaled)
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // 2. Calculate Responsive Scale
+        // Reference size 800x600, but we allow it to be smaller
+        const baseWidth = 850;
+        const baseHeight = 650;
+        const scale = Math.min(this.canvas.width / baseWidth, this.canvas.height / baseHeight, 1.0);
+
+        // 3. Move context to center and apply scale for all menu elements
+        this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+        this.ctx.scale(scale, scale);
+
         this.ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
         this.ctx.shadowBlur = 10;
 
@@ -471,28 +493,24 @@ export class Game {
             const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
             const time = Date.now() / 1000;
 
-            // Semi-transparent overlay to make text pop against gradient
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
             // Title with Premium Gradient
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             this.ctx.font = 'bold 96px "Outfit", sans-serif';
-            const gradient = this.ctx.createLinearGradient(0, this.canvas.height / 2 - 200, 0, this.canvas.height / 2 - 110);
+            const gradient = this.ctx.createLinearGradient(0, -200, 0, -110);
             gradient.addColorStop(0, '#ffffff'); // White
             gradient.addColorStop(1, '#ffea00'); // Gold
 
             this.ctx.fillStyle = gradient;
             this.ctx.shadowColor = 'rgba(255, 234, 0, 0.4)';
             this.ctx.shadowBlur = 25;
-            this.ctx.fillText('EMOJILAND', this.canvas.width / 2, this.canvas.height / 2 - 150);
+            this.ctx.fillText('EMOJILAND', 0, -150);
 
             // Controls & Info Card
             const cardWidth = 760;
             const cardHeight = 220;
-            const cardX = this.canvas.width / 2 - cardWidth / 2;
-            const cardY = this.canvas.height / 2 - 90;
+            const cardX = -cardWidth / 2;
+            const cardY = -90;
 
             // Glassmorphism effect for card
             this.ctx.fillStyle = 'rgba(20, 60, 20, 0.7)';
@@ -523,10 +541,8 @@ export class Game {
             this.ctx.font = '20px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
 
-            // Layout controls rows
             let ly = cardY + 80;
             const yStep = 32;
-
             this.ctx.fillText('Arrows : Move Character', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('A : Jump (Mobile 🦘)', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('D : Throw Rock (Mobile ⚔️)', cardX + 40, ly); ly += yStep;
@@ -534,22 +550,22 @@ export class Game {
 
             // Vertical Divider
             this.ctx.beginPath();
-            this.ctx.moveTo(cardX + cardWidth / 2, cardY + 30);
-            this.ctx.lineTo(cardX + cardWidth / 2, cardY + cardHeight - 30);
+            this.ctx.moveTo(0, cardY + 30);
+            this.ctx.lineTo(0, cardY + cardHeight - 30);
             this.ctx.stroke();
 
             // Right Column: Objectives
             this.ctx.font = 'bold 24px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffd54f';
-            this.ctx.fillText('🎯 OBJECTIVES', cardX + cardWidth / 2 + 40, cardY + 40);
+            this.ctx.fillText('🎯 OBJECTIVES', 40, cardY + 40);
 
             this.ctx.font = '20px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
             let ry = cardY + 80;
-            this.ctx.fillText('🪙 Collect All Coins and Power-ups', cardX + cardWidth / 2 + 40, ry); ry += yStep;
-            this.ctx.fillText('☠️ Defeat All Enemies', cardX + cardWidth / 2 + 40, ry); ry += yStep;
-            this.ctx.fillText('🏁 Reach the End!', cardX + cardWidth / 2 + 40, ry); ry += yStep;
-            this.ctx.fillText('🎲 Levels are always unique!', cardX + cardWidth / 2 + 40, ry);
+            this.ctx.fillText('🪙 Collect All Coins and Power-ups', 40, ry); ry += yStep;
+            this.ctx.fillText('☠️ Defeat All Enemies', 40, ry); ry += yStep;
+            this.ctx.fillText('🏁 Reach the End!', 40, ry); ry += yStep;
+            this.ctx.fillText('🎲 Levels are always unique!', 40, ry);
 
             // Pulsing 'Start' Text
             const alpha = 0.6 + 0.4 * Math.sin(time * 3);
@@ -558,32 +574,28 @@ export class Game {
             this.ctx.textAlign = 'center';
             this.ctx.shadowColor = `rgba(255, 255, 255, ${alpha * 0.5})`;
             this.ctx.shadowBlur = 10;
-            this.ctx.fillText(isMobile ? ' TOUCH TO START ' : '► PRESS ENTER TO START ◄', this.canvas.width / 2, cardY + cardHeight + 50);
+            this.ctx.fillText(isMobile ? ' TOUCH TO START ' : '► PRESS ENTER TO START ◄', 0, cardY + cardHeight + 50);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             this.ctx.font = 'bold 72px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ff5252';
-            this.ctx.fillText('Game Over', this.canvas.width / 2, this.canvas.height / 2 - 40);
+            this.ctx.fillText('Game Over', 0, -40);
 
             this.ctx.font = 'bold 28px "Outfit", sans-serif';
             this.ctx.fillStyle = 'white';
             const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            this.ctx.fillText(isMobile ? 'Touch to Play Again' : 'Press ENTER to Play Again', this.canvas.width / 2, this.canvas.height / 2 + 40);
+            this.ctx.fillText(isMobile ? 'Touch to Play Again' : 'Press ENTER to Play Again', 0, 40);
         } else if (this.state === GameState.VICTORY) {
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
 
-            // Semi-transparent overlay
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
             // Victory Card
             const cardWidth = 600;
             const cardHeight = 320;
-            const cardX = this.canvas.width / 2 - cardWidth / 2;
-            const cardY = this.canvas.height / 2 - cardHeight / 2;
+            const cardX = -cardWidth / 2;
+            const cardY = -cardHeight / 2;
 
             // Glassmorphism effect for card
             this.ctx.fillStyle = 'rgba(30, 60, 30, 0.85)';
@@ -606,7 +618,7 @@ export class Game {
 
             // Level Complete Title
             this.ctx.font = 'bold 64px "Outfit", sans-serif';
-            const gradient = this.ctx.createLinearGradient(0, cardY + 40, 0, cardY + 110);
+            const gradient = this.ctx.createLinearGradient(0, -cardHeight / 2 + 40, 0, -cardHeight / 2 + 110);
             gradient.addColorStop(0, '#ffffff');
             gradient.addColorStop(0.5, '#ffeb3b');
             gradient.addColorStop(1, '#fbc02d');
@@ -614,35 +626,29 @@ export class Game {
             this.ctx.fillStyle = gradient;
             this.ctx.shadowColor = 'rgba(255, 235, 59, 0.4)';
             this.ctx.shadowBlur = 15;
-            this.ctx.fillText('Level Complete!', this.canvas.width / 2, cardY + 80);
-
-
+            this.ctx.fillText('Level Complete!', 0, -cardHeight / 2 + 80);
 
             // Score Section
             const totalScore = this.player ? this.player.score : 0;
-
-            // Score Label
             this.ctx.shadowBlur = 0;
             this.ctx.font = 'bold 24px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffd54f';
-            this.ctx.fillText('TOTAL SCORE', this.canvas.width / 2, cardY + 160);
+            this.ctx.fillText('TOTAL SCORE', 0, -cardHeight / 2 + 160);
 
-            // Score Value
             this.ctx.font = 'bold 56px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText(`${totalScore}`, this.canvas.width / 2, cardY + 210);
+            this.ctx.fillText(`${totalScore}`, 0, -cardHeight / 2 + 210);
 
-            // Stats Row Decoration
             this.ctx.font = '32px "Outfit", sans-serif';
-            this.ctx.fillText('⭐', this.canvas.width / 2 - 120, cardY + 210);
-            this.ctx.fillText('⭐', this.canvas.width / 2 + 120, cardY + 210);
+            this.ctx.fillText('⭐', -120, -cardHeight / 2 + 210);
+            this.ctx.fillText('⭐', 120, -cardHeight / 2 + 210);
 
             // Separation Line
             this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
             this.ctx.lineWidth = 1;
             this.ctx.beginPath();
-            this.ctx.moveTo(cardX + 100, cardY + 250);
-            this.ctx.lineTo(cardX + cardWidth - 100, cardY + 250);
+            this.ctx.moveTo(-cardWidth / 2 + 100, -cardHeight / 2 + 250);
+            this.ctx.lineTo(cardWidth / 2 - 100, -cardHeight / 2 + 250);
             this.ctx.stroke();
 
             // Next Level Instruction
@@ -651,16 +657,13 @@ export class Game {
             this.ctx.font = 'bold 24px "Outfit", sans-serif';
             this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
             const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            this.ctx.fillText(isMobile ? 'Touch to Play Next Level' : 'Press ENTER to Play Next Level', this.canvas.width / 2, cardY + 285);
+            this.ctx.fillText(isMobile ? 'Touch to Play Next Level' : 'Press ENTER to Play Next Level', 0, -cardHeight / 2 + 285);
         } else if (this.state === GameState.PAUSED) {
-            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             this.ctx.font = 'bold 72px "Outfit", sans-serif';
             this.ctx.fillStyle = 'white';
-            this.ctx.fillText('Paused', this.canvas.width / 2, this.canvas.height / 2);
+            this.ctx.fillText('Paused', 0, 0);
         }
         this.ctx.restore();
     }

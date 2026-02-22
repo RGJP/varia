@@ -29,10 +29,5 @@ window.addEventListener('load', () => {
 
     game.start();
 
-    // Enforce full screen on first user interaction for mobile
-    window.addEventListener('touchstart', () => {
-        if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(() => { });
-        }
-    }, { once: true, passive: true });
+
 });
