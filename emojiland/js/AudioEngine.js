@@ -9,15 +9,16 @@ export class AudioEngine {
         this.lastSongNumber = -1;
         this.fadeInterval = null;
 
-        this.totalSongs = 17;
+        this.totalSongs = 20;
         this.musicPool = [];
         this.unlocked = false;
+        this.isMusicMuted = false;
     }
 
     getNextSongNumber() {
         if (this.musicPool.length === 0) {
             // Refill and shuffle pool
-            this.musicPool = Array.from({ length: this.totalSongs }, (_, i) => i + 1);
+            this.musicPool = Array.from({ length: this.totalSongs }, (_, i) => i);
             for (let i = this.musicPool.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [this.musicPool[i], this.musicPool[j]] = [this.musicPool[j], this.musicPool[i]];
@@ -78,9 +79,14 @@ export class AudioEngine {
             const songNumber = this.getNextSongNumber();
             console.log(`Playing music track: ${songNumber}`);
 
-            this.currentMusicAudio = new Audio(`js/music/music (${songNumber}).mp3`);
+            if (!this.currentMusicAudio) {
+                this.currentMusicAudio = new Audio();
+            }
+
+            this.currentMusicAudio.src = `js/music/${String(songNumber).padStart(2, '0')}.mp3`;
             this.currentMusicAudio.loop = false; // Never loop
             this.currentMusicAudio.volume = 0;
+            this.currentMusicAudio.muted = this.isMusicMuted;
 
             this.currentMusicAudio.onended = () => {
                 console.log("Music track ended, playing next...");
@@ -95,18 +101,22 @@ export class AudioEngine {
             }
         };
 
-        if (this.currentMusicAudio) {
-            // If it's an auto-played next track, we can transition faster
-            const fadeTime = isAutoNext ? 100 : 1000;
+        if (this.currentMusicAudio && !isAutoNext) {
+            // If changing manually mid-track, fade out the current one
+            const fadeTime = 1000;
             this.fadeMusic(this.currentMusicAudio.volume, 0, fadeTime, () => {
                 if (this.currentMusicAudio) {
                     this.currentMusicAudio.pause();
                     this.currentMusicAudio.onended = null;
-                    this.currentMusicAudio = null;
                 }
                 startMusic();
             });
         } else {
+            // Auto transitioning after song ends, or first song. Start immediately.
+            if (this.currentMusicAudio) {
+                this.currentMusicAudio.pause();
+                this.currentMusicAudio.onended = null;
+            }
             startMusic();
         }
     }
@@ -119,6 +129,25 @@ export class AudioEngine {
                 this.currentMusicAudio = null;
             }
         });
+    }
+
+    pauseBackgroundMusic() {
+        if (this.currentMusicAudio && !this.currentMusicAudio.paused) {
+            this.currentMusicAudio.pause();
+        }
+    }
+
+    resumeBackgroundMusic() {
+        if (this.currentMusicAudio && this.currentMusicAudio.paused && this.ctx.state !== 'suspended') {
+            this.currentMusicAudio.play().catch(e => console.error("Audio resume failed:", e));
+        }
+    }
+
+    toggleMusicMute() {
+        this.isMusicMuted = !this.isMusicMuted;
+        if (this.currentMusicAudio) {
+            this.currentMusicAudio.muted = this.isMusicMuted;
+        }
     }
 
     fadeMusic(startVol, endVol, duration, callback) {
@@ -193,6 +222,6 @@ export class AudioEngine {
     }
 
     playThrow() {
-        this.playOscillator('sine', 800, 0.1, 400); // Quick descending sweeping sound 
+        this.playOscillator('sine', 500, 0.1, 200); // Quick descending sweeping sound 
     }
 }

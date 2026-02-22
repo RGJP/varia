@@ -5,7 +5,7 @@ import { getEmojiCanvas } from '../EmojiCache.js';
 export class Bone extends Entity {
     constructor(x, y, facingRight) {
         // slightly larger or irregular shape for visual
-        super(x, y, 15, 15);
+        super(x, y, 30, 30);
         this.speed = 400;
         this.vx = facingRight ? this.speed : -this.speed;
         this.vy = -200; // tiny bit of arc
@@ -13,7 +13,7 @@ export class Bone extends Entity {
         this.rotation = 0;
         this.emojiOverride = null;
         // Default cache with bone; will be lazily updated if emojiOverride is set
-        this._cachedEmoji = getEmojiCanvas('🦴', 20);
+        this._cachedEmoji = getEmojiCanvas('🦴', 40, true);
         this._cachedEmojiKey = '🦴';
     }
 
@@ -39,7 +39,9 @@ export class Bone extends Entity {
 
         // Check if Bone hits platforms
         if (!this.markedForDeletion) {
-            for (let platform of game.platforms) {
+            const platforms = game._visiblePlatforms;
+            for (let i = 0; i < platforms.length; i++) {
+                const platform = platforms[i];
                 if (Physics.checkAABB(this, platform)) {
                     this.markedForDeletion = true;
                     game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
@@ -58,7 +60,7 @@ export class Bone extends Entity {
         // Update cache if emoji override changed
         const currentEmoji = this.emojiOverride || '🦴';
         if (currentEmoji !== this._cachedEmojiKey) {
-            this._cachedEmoji = getEmojiCanvas(currentEmoji, 20);
+            this._cachedEmoji = getEmojiCanvas(currentEmoji, 40, true);
             this._cachedEmojiKey = currentEmoji;
         }
 

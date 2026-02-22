@@ -66,6 +66,8 @@ export class InputHandler {
 
         attachButton('btn-jump', 'KeyA');
         attachButton('btn-attack', 'KeyD');
+        attachButton('btn-bomb', 'KeyS');
+        attachButton('btn-pause', 'KeyP');
 
         setTimeout(() => {
             const joyZone = document.getElementById('joystick-zone');

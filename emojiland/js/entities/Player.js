@@ -1,6 +1,7 @@
 import { Entity } from './Entity.js';
 import { Physics } from '../Physics.js';
 import { Rock } from './Rock.js';
+import { Bomb } from './Bomb.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
 export class Player extends Entity {
@@ -13,8 +14,10 @@ export class Player extends Entity {
 
         this.maxHealth = 5;
         this.health = this.maxHealth;
+        this.bombs = 3;
         this.invulnerableTimer = 0;
         this.knockbackTimer = 0;
+        this.stunTimer = 0;
 
         this.attackTimer = 0;
         this.isAttacking = false;
@@ -33,6 +36,17 @@ export class Player extends Entity {
         this.airJumps = 1;
 
         this.score = 0;
+        this.rotation = 0;
+        this.isSpinning = false;
+        this.spinDirection = 1;
+        this.spinBaseRotation = 0;
+
+        this.diamondPowerUpTimer = 0;
+        this.diamondShootTimer = 0;
+
+        this.firePowerUpTimer = 0;
+        this.firePowerUpRotation = 0;
+        this.pulseTimer = 0;
 
         const icons = [
             "🚶‍➡️",
@@ -48,6 +62,13 @@ export class Player extends Entity {
         this.emoji = icons[Math.floor(Math.random() * icons.length)];
         // Pre-cache the emoji
         this._cachedEmoji = getEmojiCanvas(this.emoji, 64);
+
+        this._hitbox = { x: 0, y: 0, width: 0, height: 0 };
+        this._updateHitbox();
+        this._fireboxes = [];
+        for (let i = 0; i < 3; i++) {
+            this._fireboxes.push({ x: 0, y: 0, width: 30, height: 30 });
+        }
     }
 
     update(dt, input, platforms, game) {
@@ -55,8 +76,12 @@ export class Player extends Entity {
         if (this.invulnerableTimer > 0) {
             this.invulnerableTimer -= dt;
         }
+        this._updateHitbox();
         if (this.knockbackTimer > 0) {
             this.knockbackTimer -= dt;
+        }
+        if (this.stunTimer > 0) {
+            this.stunTimer -= dt;
         }
         if (this.ignoreVineTimer > 0) {
             this.ignoreVineTimer -= dt;
@@ -82,9 +107,40 @@ export class Player extends Entity {
             }
         }
 
+        if (this.diamondPowerUpTimer > 0) {
+            this.diamondPowerUpTimer -= dt;
+            this.diamondShootTimer -= dt;
+            if (this.diamondShootTimer <= 0) {
+                this.diamondShootTimer = 0.08; // Fast auto fire
+                const throwX = this.facingRight ? this.x + this.width : this.x - 20;
+                const rock = new Rock(throwX, this.y + this.height / 2 - 10, this.facingRight);
+                game.rocks.push(rock);
+                if (game.audio) game.audio.playThrow();
+            }
+        }
+
+        if (this.firePowerUpTimer > 0) {
+            this.firePowerUpTimer -= dt;
+            this.firePowerUpRotation += (Math.PI * 4) * dt; // Fast spin
+        }
+
+        this.pulseTimer += dt;
+
         // Input
+        // Drop Bomb
+        if (!game.gameOverTriggered && this.stunTimer <= 0 && input.isJustPressed('KeyS')) {
+            if (this.bombs > 0) {
+                this.bombs--;
+                const bombX = this.x + this.width / 2 - 12; // Center bomb
+                const bombY = this.y + this.height - 12;
+                const bomb = new Bomb(bombX, bombY);
+                game.rocks.push(bomb);
+                if (game.audio) game.audio.playThrow();
+            }
+        }
+
         // Attack
-        if (input.isJustPressed('KeyD') && !this.isAttacking) {
+        if (!game.gameOverTriggered && this.stunTimer <= 0 && input.isJustPressed('KeyD') && !this.isAttacking) {
             this.isAttacking = true;
             this.attackTimer = this.attackDuration;
             const throwX = this.facingRight ? this.x + this.width : this.x - 20;
@@ -123,7 +179,11 @@ export class Player extends Entity {
                 this.vx += Physics.FRICTION * dt;
                 if (this.vx > 0) this.vx = 0;
             }
-        } else if (!this.isClimbing) {
+        } else if (this.stunTimer > 0) {
+            if (this.grounded) {
+                this.vx = 0;
+            }
+        } else if (!this.isClimbing && !game.gameOverTriggered) {
             if (input.isDown('ArrowLeft')) {
                 this.vx = -this.speed;
                 this.facingRight = false;
@@ -137,11 +197,14 @@ export class Player extends Entity {
         }
 
         // Jump
-        if (this.jumpBufferTimer > 0 && !this.isClimbing) {
+        if (!game.gameOverTriggered && this.stunTimer <= 0 && this.jumpBufferTimer > 0 && !this.isClimbing) {
             if (this.coyoteTimer > 0) {
                 this.vy = this.jumpForce;
                 this.grounded = false;
                 this.isJumping = true;
+                this.isSpinning = true;
+                this.spinDirection = this.facingRight ? 1 : -1;
+                this.spinBaseRotation = this.rotation;
                 this.jumpBufferTimer = 0;
                 this.coyoteTimer = 0;
                 game.audio.playJump();
@@ -150,6 +213,9 @@ export class Player extends Entity {
                 this.vy = this.jumpForce;
                 this.grounded = false;
                 this.isJumping = true;
+                this.isSpinning = true;
+                this.spinDirection = this.facingRight ? 1 : -1;
+                this.spinBaseRotation = this.rotation;
                 this.jumpBufferTimer = 0;
                 this.airJumps--;
                 game.audio.playJump();
@@ -163,6 +229,24 @@ export class Player extends Entity {
             this.isJumping = false;
         }
 
+        if (!this.grounded && !this.isClimbing && this.isSpinning) {
+            const spinSpeed = this.isJumping ? Math.PI * 4 : Math.PI * 2.4; // slower rotation for cut-short jumps
+            let increment = spinSpeed * dt;
+            let currentDir = this.facingRight ? 1 : -1;
+
+            this.rotation += currentDir * increment;
+
+            let maxRelativeRotation = Math.PI * 2;
+            if (!this.isJumping && Math.abs(this.rotation - this.spinBaseRotation) > maxRelativeRotation) {
+                this.rotation = this.spinBaseRotation + maxRelativeRotation * Math.sign(this.rotation - this.spinBaseRotation);
+            }
+        } else {
+            this.rotation = 0;
+            if (this.grounded || this.isClimbing) {
+                this.isSpinning = false;
+            }
+        }
+
         if (this.isClimbing) {
             this.grounded = false;
             this.vy = 0;
@@ -172,6 +256,13 @@ export class Player extends Entity {
                 this.vy = -200;
             } else if (input.isDown('ArrowDown')) {
                 this.vy = 200;
+            }
+
+            // Allow changing facing direction while on vine
+            if (input.isDown('ArrowLeft')) {
+                this.facingRight = false;
+            } else if (input.isDown('ArrowRight')) {
+                this.facingRight = true;
             }
 
             this.y += this.vy * dt;
@@ -191,6 +282,9 @@ export class Player extends Entity {
                 this.vy = this.jumpForce;
                 this.ignoreVineTimer = 0.3; // Prevent re-sticking
                 this.isJumping = true;
+                this.isSpinning = true;
+                this.spinDirection = this.facingRight ? 1 : -1;
+                this.spinBaseRotation = this.rotation;
                 this.jumpBufferTimer = 0;
                 game.audio.playJump();
                 game.particles.emitJump(this.x + this.width / 2, this.y + this.height, game.currentTheme.particleColor);
@@ -221,10 +315,61 @@ export class Player extends Entity {
 
         // Enemy Collision logic
         if (this.invulnerableTimer <= 0) {
-            const hitbox = this.getHitbox();
+            const hitbox = this._hitbox;
+
+            const fireboxes = this._fireboxes;
+            let numFireballsActive = 0;
+            if (this.firePowerUpTimer > 0) {
+                if (this.firePowerUpTimer > 2.0) {
+                    numFireballsActive = 3;
+                } else if (this.firePowerUpTimer > 1.0) {
+                    numFireballsActive = 2;
+                } else {
+                    numFireballsActive = 1;
+                }
+                const radius = 50;
+                for (let i = 0; i < numFireballsActive; i++) {
+                    const angle = this.firePowerUpRotation + (i * Math.PI * 2 / numFireballsActive);
+                    const fx = this.x + this.width / 2 + Math.cos(angle) * radius;
+                    const fy = this.y + this.height / 2 + Math.sin(angle) * radius + 5;
+                    fireboxes[i].x = fx - 15;
+                    fireboxes[i].y = fy - 15;
+                }
+            }
+
             game.enemies.forEach(enemy => {
-                if (!enemy.markedForDeletion && Physics.checkAABB(hitbox, enemy)) {
-                    this.takeDamage(game);
+                if (enemy.markedForDeletion) return;
+
+                let hitByFireball = false;
+                for (let i = 0; i < numFireballsActive; i++) {
+                    if (Physics.checkAABB(fireboxes[i], enemy)) {
+                        hitByFireball = true;
+                        break;
+                    }
+                }
+
+                if (hitByFireball || (Physics.checkAABB(hitbox, enemy) && this.firePowerUpTimer > 0)) {
+                    // Fire power up insta-kills or damages enemies
+                    if (enemy.takeDamage) {
+                        enemy.takeDamage(enemy.health, game);
+                    } else {
+                        enemy.markedForDeletion = true;
+                        if (game.audio) game.audio.playHit();
+                        if (game.particles) game.particles.emitHit(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, '#FF4500');
+                    }
+                } else if (Physics.checkAABB(hitbox, enemy)) {
+                    if ((enemy.emoji === '🐢' || enemy.emoji === '🐸') && this.vy > 0 && hitbox.y + hitbox.height - (this.vy * dt) <= enemy.y + enemy.height * 0.5) {
+                        enemy.takeDamage(enemy.health, game);
+                        this.vy = this.jumpForce;
+                        this.grounded = false;
+                        this.isJumping = true;
+                        this.isSpinning = true;
+                        this.spinDirection = this.facingRight ? 1 : -1;
+                        this.spinBaseRotation = this.rotation;
+                        if (game.audio) game.audio.playJump();
+                    } else {
+                        this.takeDamage(game);
+                    }
                 }
             });
         }
@@ -233,10 +378,34 @@ export class Player extends Entity {
         game.collectibles.forEach(collectible => {
             if (!collectible.markedForDeletion && Physics.checkAABB(this, collectible)) {
                 collectible.markedForDeletion = true;
-                this.score += 10;
-                game.coinsCollected++;
-                game.audio.playCollect();
-                game.particles.emit(collectible.x + 15, collectible.y + 15, 10, '#FFFF00', [50, 150], [0.2, 0.5], [2, 4]);
+                const centerX = collectible.x + collectible.width / 2;
+                const centerY = collectible.y + collectible.height / 2;
+                if (collectible.type === 'health') {
+                    this.health = Math.min(this.health + 1, this.maxHealth);
+                    game.audio.playCollect();
+                    game.particles.emit(centerX, centerY, 15, '#FF0000', [50, 150], [0.2, 0.5], [2, 4]);
+                } else if (collectible.type === 'bomb') {
+                    this.bombs += 1;
+                    if (game.audio) game.audio.playCollect();
+                    game.particles.emit(centerX, centerY, 15, '#444444', [50, 150], [0.2, 0.5], [2, 4]);
+                } else if (collectible.type === 'diamond_powerup') {
+                    this.diamondPowerUpTimer = 5.0;
+                    if (game.audio) game.audio.playCollect();
+                    game.particles.emit(centerX, centerY, 20, '#888888', [50, 200], [0.2, 0.5], [3, 5]);
+                } else if (collectible.type === 'full_health') {
+                    this.health = this.maxHealth;
+                    if (game.audio) game.audio.playCollect();
+                    game.particles.emit(centerX, centerY, 30, '#FF69B4', [50, 250], [0.2, 0.6], [3, 6]);
+                } else if (collectible.type === 'fire_powerup') {
+                    this.firePowerUpTimer = 8.0;
+                    if (game.audio) game.audio.playCollect();
+                    game.particles.emit(centerX, centerY, 20, '#FF4500', [50, 200], [0.2, 0.5], [3, 5]);
+                } else {
+                    this.score += 10;
+                    game.coinsCollected++;
+                    game.audio.playCollect();
+                    game.particles.emit(centerX, centerY, 10, '#FFFF00', [50, 150], [0.2, 0.5], [2, 4]);
+                }
             }
         });
 
@@ -274,16 +443,19 @@ export class Player extends Entity {
         }
     }
 
+    _updateHitbox() {
+        this._hitbox.x = this.x + 8;
+        this._hitbox.y = this.y + 8;
+        this._hitbox.width = this.width - 16;
+        this._hitbox.height = this.height - 8;
+    }
+
     getHitbox() {
-        return {
-            x: this.x + 8,
-            y: this.y + 8,
-            width: this.width - 16,
-            height: this.height - 8
-        };
+        return this._hitbox;
     }
 
     takeDamage(game) {
+        if (this.firePowerUpTimer > 0) return;
         this.health -= 1;
         this.invulnerableTimer = 1.0;
         this.knockbackTimer = 0.2; // brief loss of control for noticeable knockback
@@ -294,25 +466,91 @@ export class Player extends Entity {
         if (game) {
             game.audio.playHurt();
             game.particles.emitExplosion(this.x + this.width / 2, this.y + this.height / 2, 'red');
-            game.camera.shake(0.2, 10);
             game.hitStopTimer = 0.2;
         }
     }
 
-    draw(ctx) {
-        if (this.invulnerableTimer > 0 && Math.floor(this.invulnerableTimer * 20) % 2 === 0) {
+    draw(ctx, game) {
+        if (!game?.gameOverTriggered && this.invulnerableTimer > 0 && Math.floor(this.invulnerableTimer * 20) % 2 === 0) {
             ctx.globalAlpha = 0.5;
         }
 
         ctx.save();
+
+        if (this.health === 1 && (!game || !game.gameOverTriggered)) {
+            const pulse = (Math.sin(this.pulseTimer * 12) + 1) / 2;
+            ctx.shadowBlur = 25 * pulse;
+            ctx.shadowColor = `rgba(255, 0, 0, ${pulse})`;
+        }
+
         ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
-        if (!this.facingRight) {
+
+        if (this.rotation !== 0 && (!game || !game.gameOverTriggered)) {
+            ctx.rotate(this.rotation);
+        }
+
+        if (!this.facingRight && (!game || !game.gameOverTriggered)) {
             ctx.scale(-1, 1);
         }
 
-        const cached = this._cachedEmoji;
-        ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2 + 5);
+        let cached = this._cachedEmoji;
+        let yOffset = 5;
+
+        if (game && game.gameOverTriggered) {
+            if (!this._deathTombstoneCache) {
+                this._deathTombstoneCache = getEmojiCanvas('🪦', 64);
+            }
+            cached = this._deathTombstoneCache;
+            yOffset = 0;
+
+            // Visual feedback for "turning" into a tombstone
+            const progress = Math.max(0, Math.min(1, (1.0 - game.gameOverTimer) / 1.0));
+            ctx.scale(1 + progress * 0.1, 1 + progress * 0.1);
+        }
+
+        ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2 + yOffset);
+
+        if (this.stunTimer > 0 && (!game || !game.gameOverTriggered)) {
+            if (!this._stunEmoji) {
+                this._stunEmoji = getEmojiCanvas('😵‍💫', 40);
+            }
+            ctx.save();
+            if (!this.facingRight) ctx.scale(-1, 1);
+            if (this.rotation !== 0) ctx.rotate(-this.rotation);
+            const shakeX = (Math.random() - 0.5) * 8;
+            const shakeY = (Math.random() - 0.5) * 8;
+            ctx.drawImage(this._stunEmoji.canvas, -this._stunEmoji.width / 2 + shakeX, -this.height / 2 - 65 + shakeY);
+            ctx.restore();
+        }
+
+        if (this.firePowerUpTimer > 0) {
+            if (!this._fireEmoji) {
+                this._fireEmoji = getEmojiCanvas('🔥', 30);
+            }
+            let numFireballs = 3;
+            if (this.firePowerUpTimer <= 1.0) {
+                numFireballs = 1;
+            } else if (this.firePowerUpTimer <= 2.0) {
+                numFireballs = 2;
+            }
+            const radius = 50;
+            // Un-flip if we flipped for player facing direction so fireballs spin normally
+            if (!this.facingRight) {
+                ctx.scale(-1, 1);
+            }
+            if (this.rotation !== 0) {
+                ctx.rotate(-this.rotation); // un-rotate player rotation
+            }
+            for (let i = 0; i < numFireballs; i++) {
+                const angle = this.firePowerUpRotation + (i * Math.PI * 2 / numFireballs);
+                const ox = Math.cos(angle) * radius - this._fireEmoji.width / 2;
+                const oy = Math.sin(angle) * radius - this._fireEmoji.height / 2 + 5;
+                ctx.drawImage(this._fireEmoji.canvas, ox, oy);
+            }
+        }
+
         ctx.restore();
+
         ctx.globalAlpha = 1.0;
     }
 }

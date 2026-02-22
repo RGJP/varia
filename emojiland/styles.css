@@ -129,3 +129,17 @@ canvas {
     margin-bottom: 30px;
     /* Slight offset for better thumb reach */
 }
+
+#btn-bomb {
+    margin-bottom: 15px;
+}
+
+#btn-pause {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 24px;
+    width: 48px;
+    height: 48px;
+    margin: 0;
+}

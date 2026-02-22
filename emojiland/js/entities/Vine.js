@@ -19,6 +19,9 @@ export class Vine extends Entity {
         const count = Math.ceil(this.height / 30);
 
         ctx.save();
+        ctx.beginPath();
+        ctx.rect(this.x - 20, this.y, this.width + 40, this.height);
+        ctx.clip();
         for (let i = 0; i < count; i++) {
             // Draw stacked vertically
             ctx.drawImage(cached.canvas, this.x + this.width / 2 - cached.width / 2, this.y + i * 30);

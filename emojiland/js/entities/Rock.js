@@ -22,6 +22,9 @@ export class Rock extends Entity {
         game.enemies.forEach(enemy => {
             if (!enemy.markedForDeletion && !this.markedForDeletion && Physics.checkAABB(this, enemy)) {
                 this.markedForDeletion = true;
+                if (game.particles) game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
+                if (game.audio) game.audio.playHit();
+
                 if (enemy.takeDamage) {
                     enemy.takeDamage(1, game);
                 } else {
@@ -29,15 +32,15 @@ export class Rock extends Entity {
                     game.player.score += 50;
                     game.audio.playHit();
                     game.particles.emitHit(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
-                    game.camera.shake(0.1, 5);
-                    game.hitStopTimer = 0.1;
                 }
             }
         });
 
         // Check if Rock hits platforms (mostly walls or ground)
         if (!this.markedForDeletion) {
-            for (let platform of game.platforms) {
+            const platforms = game._visiblePlatforms;
+            for (let i = 0; i < platforms.length; i++) {
+                const platform = platforms[i];
                 if (Physics.checkAABB(this, platform)) {
                     this.markedForDeletion = true;
                     // Optional: hit effect on wall

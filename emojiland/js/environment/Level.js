@@ -21,7 +21,7 @@ export function loadLevel() {
     // Potential coins on the starting platform
     const numStartPoints = Math.floor(startWidth / 150);
     for (let i = 0; i < numStartPoints; i++) {
-        potentialCoinLocations.push({ x: 100 + i * 150, y: startY - 80 });
+        potentialCoinLocations.push({ x: 100 + i * 150, y: startY - (40 + Math.random() * 80) });
     }
 
     let currentX = startWidth;
@@ -123,8 +123,8 @@ export function loadLevel() {
             platforms.push(platform);
 
             // Enemies on main platform depending on width
-            if (platWidth > 100 && Math.random() < 0.85) {
-                const numEnemies = Math.floor(Math.random() * Math.max(2, Math.floor(platWidth / 150))) + 1;
+            if (platWidth > 100 && Math.random() < 0.65) {
+                const numEnemies = Math.floor(Math.random() * Math.max(2, Math.floor(platWidth / 200))) + 1;
                 for (let i = 0; i < numEnemies; i++) {
                     const enemyX = currentX + (platWidth / (numEnemies + 1)) * (i + 1);
                     enemies.push(new Enemy(enemyX, platY - 40, platform));
@@ -135,10 +135,7 @@ export function loadLevel() {
             const numCoinPoints = Math.floor(platWidth / 100) + 1;
             for (let i = 0; i < numCoinPoints; i++) {
                 const coinX = currentX + (platWidth / (numCoinPoints + 1)) * (i + 1);
-                potentialCoinLocations.push({ x: coinX, y: platY - 80 });
-                if (Math.random() < 0.4) {
-                    potentialCoinLocations.push({ x: coinX, y: platY - 140 }); // occasional higher arc
-                }
+                potentialCoinLocations.push({ x: coinX, y: platY - (40 + Math.random() * 80) });
             }
 
             // Generate floating platforms above if any
@@ -154,17 +151,17 @@ export function loadLevel() {
                     vines.push(new Vine(vineX, topY, vineHeight));
                 }
 
-                if (fp.width > 100 && Math.random() < 0.75) {
+                if (fp.width > 100 && Math.random() < 0.5) {
                     const numEnemies = Math.floor(Math.random() * 2) + 1;
                     for (let j = 0; j < numEnemies; j++) {
                         enemies.push(new Enemy(fp.x + (fp.width / (numEnemies + 1)) * (j + 1), fp.y - 40, floatPlatform));
                     }
                 }
 
-                potentialCoinLocations.push({ x: fp.x + fp.width / 2, y: fp.y - 80 });
+                potentialCoinLocations.push({ x: fp.x + fp.width / 2, y: fp.y - (40 + Math.random() * 80) });
                 if (fp.width > 200) {
-                    potentialCoinLocations.push({ x: fp.x + fp.width * 0.25, y: fp.y - 80 });
-                    potentialCoinLocations.push({ x: fp.x + fp.width * 0.75, y: fp.y - 80 });
+                    potentialCoinLocations.push({ x: fp.x + fp.width * 0.25, y: fp.y - (40 + Math.random() * 80) });
+                    potentialCoinLocations.push({ x: fp.x + fp.width * 0.75, y: fp.y - (40 + Math.random() * 80) });
                 }
             }
 
@@ -176,11 +173,11 @@ export function loadLevel() {
     const victoryPlatform = new Platform(currentX + 200, 500, 300, 100, true, theme);
     platforms.push(victoryPlatform);
 
-    // Potential victory trail of coins leading up to the final platform
-    for (let i = 0; i < 8; i++) {
+    // Coins hovering over the victory platform to replace the gap trail
+    for (let i = 0; i < 4; i++) {
         potentialCoinLocations.push({
-            x: currentX + 30 + (i * 20),
-            y: 420 - (Math.sin(i / 1.5) * 60)
+            x: victoryPlatform.x + 50 + (i * 60),
+            y: victoryPlatform.y - (40 + Math.random() * 80)
         });
     }
 
@@ -190,26 +187,95 @@ export function loadLevel() {
 
     // Filter out any coin locations that are past the victory platform
     // to ensure they are always reachable before finishing the level.
-    const safeCoinLocations = potentialCoinLocations.filter(loc => loc.x <= victoryPlatform.x);
+    const safeCoinLocations = potentialCoinLocations.filter(loc => loc.x <= victoryPlatform.x + victoryPlatform.width - 50);
 
     if (safeCoinLocations.length > 0) {
         // Sort by X to ensure we can spread them out across the level progress
         safeCoinLocations.sort((a, b) => a.x - b.x);
 
+        const occupiedIndices = new Set();
+
+        const spawnSpecial = (type, count) => {
+            if (safeCoinLocations.length > occupiedIndices.size + count) {
+                const step = safeCoinLocations.length / count;
+                for (let i = 0; i < count; i++) {
+                    const minIdx = Math.floor(i * step);
+                    const maxIdx = Math.floor((i + 1) * step) - 1;
+                    let idx = Math.floor(Math.random() * (maxIdx - minIdx + 1)) + minIdx;
+                    let attempts = 0;
+                    while (occupiedIndices.has(idx) && attempts < 10) {
+                        idx = Math.floor(Math.random() * (maxIdx - minIdx + 1)) + minIdx;
+                        attempts++;
+                    }
+                    if (!occupiedIndices.has(idx)) {
+                        const loc = safeCoinLocations[idx];
+                        collectibles.push(new Collectible(loc.x, loc.y, type));
+                        occupiedIndices.add(idx);
+                    }
+                }
+            }
+        };
+
+        const numHealthPickups = Math.floor(Math.random() * 3) + 3; // 3 to 5
+        spawnSpecial('health', numHealthPickups);
+
+        // Spawn 1-2 powerups of each type
+        spawnSpecial('diamond_powerup', Math.floor(Math.random() * 2) + 1);
+        spawnSpecial('fire_powerup', Math.floor(Math.random() * 2) + 1);
+
+        const numBombPickups = Math.floor(Math.random() * 3) + 2; // 2 to 4
+        spawnSpecial('bomb', numBombPickups);
+
+        // Spawn fairy full_health powerup between 60% and 90% of the level
+        const fairyCandidates = safeCoinLocations.map((loc, index) => ({ loc, index }))
+            .filter(item => item.loc.x > victoryPlatform.x * 0.6 && item.loc.x < victoryPlatform.x * 0.9);
+
+        if (fairyCandidates.length > 0) {
+            const randomPick = fairyCandidates[Math.floor(Math.random() * fairyCandidates.length)];
+            let fairyIdx = randomPick.index;
+            let attempts = 0;
+            while (occupiedIndices.has(fairyIdx) && attempts < 10) {
+                const anotherPick = fairyCandidates[Math.floor(Math.random() * fairyCandidates.length)];
+                fairyIdx = anotherPick.index;
+                attempts++;
+            }
+            if (!occupiedIndices.has(fairyIdx)) {
+                const loc = safeCoinLocations[fairyIdx];
+                collectibles.push(new Collectible(loc.x, loc.y, 'full_health'));
+                occupiedIndices.add(fairyIdx);
+            }
+        }
+
         const count = Math.min(targetCoinCount, safeCoinLocations.length);
         const step = safeCoinLocations.length / count;
 
         for (let i = 0; i < count; i++) {
-            // Pick a point within each "segment" of the available locations
-            // to ensure they are spread out but still have some local randomness
             const minIdx = Math.floor(i * step);
             const maxIdx = Math.floor((i + 1) * step) - 1;
             const idx = Math.floor(Math.random() * (maxIdx - minIdx + 1)) + minIdx;
 
-            const loc = safeCoinLocations[idx];
-            collectibles.push(new Collectible(loc.x, loc.y));
+            if (!occupiedIndices.has(idx)) {
+                const loc = safeCoinLocations[idx];
+                collectibles.push(new Collectible(loc.x, loc.y, 'coin'));
+            }
         }
     }
 
-    return { platforms, enemies, collectibles, vines, theme };
+    // Make sure vines do not intersect platforms
+    vines.forEach(vine => {
+        platforms.forEach(platform => {
+            // Check horizontal overlap
+            if (vine.x + vine.width > platform.x && vine.x < platform.x + platform.width) {
+                // If vine starts above or at platform but extends into it
+                if (vine.y <= platform.y && vine.y + vine.height > platform.y) {
+                    vine.height = platform.y - vine.y;
+                }
+            }
+        });
+    });
+
+    // Remove any vines that ended up with zero or negative height
+    const validVines = vines.filter(v => v.height > 10);
+
+    return { platforms, enemies, collectibles, vines: validVines, theme };
 }

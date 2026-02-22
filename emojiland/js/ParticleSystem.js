@@ -1,5 +1,16 @@
 export class Particle {
-    constructor(x, y, vx, vy, color, life, size) {
+    constructor() {
+        this.x = 0;
+        this.y = 0;
+        this.vx = 0;
+        this.vy = 0;
+        this.color = '';
+        this.life = 0;
+        this.maxLife = 0;
+        this.size = 0;
+    }
+
+    init(x, y, vx, vy, color, life, size) {
         this.x = x;
         this.y = y;
         this.vx = vx;
@@ -20,20 +31,36 @@ export class Particle {
 export class ParticleSystem {
     constructor() {
         this.particles = [];
-        // Cap max active particles to prevent excessive draw calls
         this.maxParticles = 200;
+        this.pool = [];
+        for (let i = 0; i < this.maxParticles; i++) {
+            this.pool.push(new Particle());
+        }
+        this._byColor = new Map();
+    }
+
+    _getParticle() {
+        if (this.pool.length > 0) {
+            return this.pool.pop();
+        }
+        return null; // Pool exhausted, do not emit
     }
 
     emit(x, y, count, color, speedRange, lifeRange, sizeRange) {
-        for (let i = 0; i < count; i++) {
+        if (count <= 0) return;
+        const reducedCount = Math.max(1, Math.floor(count / 4));
+        for (let i = 0; i < reducedCount; i++) {
             if (this.particles.length >= this.maxParticles) break;
+            const p = this._getParticle();
+            if (!p) break;
             const angle = Math.random() * Math.PI * 2;
             const speed = speedRange[0] + Math.random() * (speedRange[1] - speedRange[0]);
             const vx = Math.cos(angle) * speed;
             const vy = Math.sin(angle) * speed;
             const life = lifeRange[0] + Math.random() * (lifeRange[1] - lifeRange[0]);
             const size = sizeRange[0] + Math.random() * (sizeRange[1] - sizeRange[0]);
-            this.particles.push(new Particle(x, y, vx, vy, color, life, size));
+            p.init(x, y, vx, vy, color, life, size);
+            this.particles.push(p);
         }
     }
 
@@ -47,15 +74,47 @@ export class ParticleSystem {
     }
 
     emitHit(x, y) {
-        this.emit(x, y, 8, 'white', [100, 300], [0.1, 0.3], [2, 5]);
+        this.emit(x, y, 15, 'white', [150, 400], [0.2, 0.4], [3, 6]);
+    }
+
+    emitStomp(x, y) {
+        // Big horizontal smoke cloud — large particles fanning left and right
+        const smokeColors = [
+            'rgba(180,180,180,0.9)',
+            'rgba(210,200,190,0.85)',
+            'rgba(220,210,200,0.8)',
+            'rgba(160,160,160,0.7)',
+            'rgba(200,195,185,0.75)',
+        ];
+        const count = 18;
+        for (let i = 0; i < count; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const p = this._getParticle();
+            if (!p) break;
+            // Spread angle: mostly horizontal cone (−45° to +45° either side)
+            const side = Math.random() < 0.5 ? -1 : 1;
+            const angle = (Math.PI + side * (Math.PI * 0.15 + Math.random() * Math.PI * 0.3));
+            const speed = 80 + Math.random() * 220;
+            const vx = Math.cos(angle) * speed;
+            // Upward bias so the cloud rises slightly then fades
+            const vy = -(20 + Math.random() * 80);
+            const life = 0.55 + Math.random() * 0.45;
+            const size = 12 + Math.random() * 22;
+            const color = smokeColors[Math.floor(Math.random() * smokeColors.length)];
+            p.init(x, y, vx, vy, color, life, size);
+            this.particles.push(p);
+        }
     }
 
     emitJump(x, y, color = 'rgba(200, 200, 200, 0.8)') {
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 2; i++) {
             if (this.particles.length >= this.maxParticles) break;
+            const p = this._getParticle();
+            if (!p) break;
             const vx = (Math.random() - 0.5) * 50;
             const vy = -Math.random() * 50;
-            this.particles.push(new Particle(x, y, vx, vy, color, 0.3, 3 + Math.random() * 2));
+            p.init(x, y, vx, vy, color, 0.3, 3 + Math.random() * 2);
+            this.particles.push(p);
         }
     }
 
@@ -69,15 +128,19 @@ export class ParticleSystem {
             p.life -= dt;
             if (p.life > 0) {
                 this.particles[writeIdx++] = p;
+            } else {
+                this.pool.push(p); // return to pool
             }
         }
         this.particles.length = writeIdx;
     }
 
     draw(ctx) {
-        // Batch particles by color for fewer state changes
-        // For most cases we have a small number of distinct colors
-        const byColor = new Map();
+        const byColor = this._byColor;
+        for (const arr of byColor.values()) {
+            arr.length = 0; // Clear without deallocating
+        }
+
         for (let i = 0; i < this.particles.length; i++) {
             const p = this.particles[i];
             let arr = byColor.get(p.color);
@@ -90,6 +153,7 @@ export class ParticleSystem {
 
         const savedAlpha = ctx.globalAlpha;
         for (const [color, particles] of byColor) {
+            if (particles.length === 0) continue;
             ctx.fillStyle = color;
             for (let i = 0; i < particles.length; i++) {
                 const p = particles[i];
