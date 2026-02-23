@@ -1019,8 +1019,8 @@ export class Boss extends Entity {
         this.platform = platform;
         this.facingRight = true;
 
-        this.health = 30;
-        this.maxHealth = 30;
+        this.maxHealth = 15 + Math.floor(Math.random() * 16); // 15-30 inclusive
+        this.health = this.maxHealth;
         this.damageFlashTimer = 0;
         this.attackCooldown = 2.0;
         this.timeAlive = 0;
@@ -1028,6 +1028,12 @@ export class Boss extends Entity {
         this.burstTimer = 0;
         this.distToPlayer = Infinity;
         this.activated = false;
+        this.spawnFadeTimer = 0;
+        this.spawnFadeDuration = 0.65;
+        this.swoopTimer = 1.6 + Math.random() * 1.2;
+        this.swoopDuration = 0;
+        this.swoopDurationTotal = 0;
+        this.swoopDepth = 0;
 
         // Dynamic movement properties
         this.movementState = 'WAVE';
@@ -1109,6 +1115,7 @@ export class Boss extends Entity {
 
     update(dt, game) {
         if (this.damageFlashTimer > 0) this.damageFlashTimer -= dt;
+        this.spawnFadeTimer += dt;
         if (game && game.player && !this.activated) {
             const dx = game.player.x - this.x;
             if (Math.abs(dx) < 600) {
@@ -1121,6 +1128,8 @@ export class Boss extends Entity {
 
         if (this.attackCooldown > 0) this.attackCooldown -= dt;
         if (this.movementTimer > 0) this.movementTimer -= dt;
+        if (this.swoopTimer > 0) this.swoopTimer -= dt;
+        if (this.swoopDuration > 0) this.swoopDuration -= dt;
 
         // Switch movement patterns
         if (this.movementTimer <= 0) {
@@ -1134,18 +1143,31 @@ export class Boss extends Entity {
         if (this.movementState === 'WAVE') {
             // Complex wave: mix of multiple sines/cosines for unpredictable horizontal and vertical motion
             this.targetX = this.anchorX + Math.sin(this.timeAlive * 0.8) * (this.platform.width * 0.4);
-            this.targetY = this.anchorY + Math.sin(this.timeAlive * 1.5) * 80 + Math.cos(this.timeAlive * 0.7) * 50;
+            this.targetY = this.anchorY + Math.sin(this.timeAlive * 1.5) * 85 + Math.cos(this.timeAlive * 0.7) * 55;
         } else if (this.movementState === 'CIRCLE') {
             // Circular/Elliptical path
             const radiusX = 300;
-            const radiusY = 150;
+            const radiusY = 170;
             const speed = 1.2;
             this.targetX = this.anchorX + Math.cos(this.timeAlive * speed) * radiusX;
             this.targetY = this.anchorY + Math.sin(this.timeAlive * speed) * radiusY;
         }
 
+        // Short, periodic downward swoops so the boss is hittable more often.
+        if (this.swoopTimer <= 0 && this.swoopDuration <= 0) {
+            this.swoopDuration = 1.1 + Math.random() * 0.5;
+            this.swoopDurationTotal = this.swoopDuration;
+            this.swoopDepth = 40 + Math.random() * 35;
+            this.swoopTimer = 1.9 + Math.random() * 1.4;
+        }
+        if (this.swoopDuration > 0) {
+            const phase = 1 - (this.swoopDuration / (this.swoopDurationTotal || 1));
+            const clampedPhase = Math.max(0, Math.min(1, phase));
+            this.targetY += Math.sin(clampedPhase * Math.PI) * this.swoopDepth;
+        }
+
         // Add a small additional bob for extra "weightless" feel
-        this.targetY += Math.sin(this.timeAlive * 2.5) * 10;
+        this.targetY += Math.sin(this.timeAlive * 2.5) * 10 + 18;
 
         // Follow the target smoothly with capped speed to avoid snap-teleporting between path changes.
         const toTargetX = this.targetX - this.x;
@@ -1173,10 +1195,10 @@ export class Boss extends Entity {
                 if (this.burstCount <= 0) {
                     this.burstCount = 2;
                     this.burstTimer = 0;
-                    this.attackCooldown = 2.0;
+                    this.attackCooldown = 2.25;
                 }
             } else {
-                const cooldowns = { boss_chick: 1.6, boss_moai: 2.2 };
+                const cooldowns = { boss_chick: 1.8, boss_moai: 2.45 };
                 this._fire(game, player);
                 this.attackCooldown = cooldowns[this.bossType] || 2.0;
             }
@@ -1188,7 +1210,7 @@ export class Boss extends Entity {
             if (this.burstTimer <= 0) {
                 this._fire(game, player);
                 this.burstCount--;
-                this.burstTimer = 0.35;
+                this.burstTimer = 0.4;
             }
         }
 
@@ -1201,9 +1223,11 @@ export class Boss extends Entity {
     }
 
     draw(ctx) {
-        const alpha = this.damageFlashTimer > 0
+        const damageAlpha = this.damageFlashTimer > 0
             ? (0.5 + Math.sin(this.damageFlashTimer * 40) * 0.5)
             : 1.0;
+        const spawnAlpha = Math.min(1, this.spawnFadeTimer / this.spawnFadeDuration);
+        const alpha = damageAlpha * spawnAlpha;
 
         ctx.save();
         ctx.globalAlpha = alpha;

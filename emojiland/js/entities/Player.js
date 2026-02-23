@@ -149,7 +149,7 @@ export class Player extends Entity {
         }
 
         // Attack charge and release
-        const canChargeAttack = !game.gameOverTriggered && this.stunTimer <= 0 && !this.isClimbing;
+        const canChargeAttack = !game.gameOverTriggered && this.stunTimer <= 0;
         if (!canChargeAttack) {
             this.attackChargeTimer = 0;
             this.isChargingAttack = false;
@@ -703,20 +703,28 @@ export class Player extends Entity {
 
         if (!game?.gameOverTriggered && this.isChargingAttack && this.attackChargeTimer > this.chargeIndicatorDelay) {
             const chargeRatio = Math.max(0, Math.min(1, this.attackChargeTimer / this.maxAttackChargeTime));
-            const centerX = this.x + this.width / 2;
-            const centerY = this.y + this.height / 2;
+            const dir = this.facingRight ? 1 : -1;
+            const handX = this.x + this.width / 2 + dir * (this.width * 0.42 + 12 + chargeRatio * 8);
+            const handY = this.y + this.height * 0.58;
+            const scale = 1 + chargeRatio * 2; // matches throw sizeMultiplier: 1 -> 3
 
             ctx.save();
-            ctx.strokeStyle = chargeRatio >= 1 ? '#ffd700' : '#ff9800';
-            ctx.lineWidth = 3;
-            ctx.globalAlpha = 0.45 + chargeRatio * 0.4;
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, 38 + chargeRatio * 16, 0, Math.PI * 2);
-            ctx.stroke();
+            if (!this._chargeRockEmoji) {
+                this._chargeRockEmoji = getEmojiCanvas('\u{1FAA8}', 24);
+            }
+            const preview = this._chargeRockEmoji;
+
+            // Small rock that grows to the exact full-charge projectile size.
+            ctx.translate(handX, handY);
+            ctx.rotate((this.pulseTimer * (1.8 + chargeRatio * 1.6)) * dir);
+            ctx.scale(scale, scale);
+            ctx.globalAlpha = 0.8 + chargeRatio * 0.2;
+            ctx.drawImage(preview.canvas, -preview.width / 2, -preview.height / 2);
+            ctx.restore();
 
             const barW = 70;
             const barH = 8;
-            const barX = centerX - barW / 2;
+            const barX = this.x + this.width / 2 - barW / 2;
             const barY = this.y - 16;
             ctx.globalAlpha = 0.9;
             ctx.fillStyle = 'rgba(0,0,0,0.45)';
