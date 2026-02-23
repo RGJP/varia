@@ -75,7 +75,7 @@ export class InputHandler {
             if (!joyZone || !joyKnob) return;
 
             let activeTouchId = null;
-            const maxDistance = 40;
+            const maxDistance = 60;
 
             const resetJoystick = () => {
                 activeTouchId = null;
@@ -108,8 +108,8 @@ export class InputHandler {
                 this.keys.delete('ArrowUp');
                 this.keys.delete('ArrowDown');
 
-                const thresholdX = 15;
-                const thresholdY = 20;
+                const thresholdX = 20;
+                const thresholdY = 25;
 
                 if (distance > 10) {
                     if (dx < -thresholdX) this.keys.add('ArrowLeft');
