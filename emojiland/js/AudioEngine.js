@@ -8,7 +8,7 @@ export class AudioEngine {
         this.lastSongNumber = -1;
         this.fadeInterval = null;
 
-        this.totalSongs = 31;
+        this.totalSongs = 29;
         this.musicPool = [];
         this.unlocked = false;
         this.isMusicMuted = false;

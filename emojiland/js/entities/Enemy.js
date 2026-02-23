@@ -6,7 +6,7 @@ import { Laser } from './Laser.js';
 import { Worm } from './Worm.js';
 import { Shrimp } from './Shrimp.js';
 import { Peanut } from './Peanut.js';
-import { GreenLaser } from './GreenLaser.js';
+import { UfoProjectile } from './UfoProjectile.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
 const TYPE_PATROL = 'patrol';
@@ -26,7 +26,7 @@ const TYPE_EAGLE = 'eagle'; // 🦅
 const TYPE_OWL = 'owl'; // 🦉
 const TYPE_CROW = 'crow'; // 🐦‍⬛
 const TYPE_LIZARD = 'lizard'; // 🦗
-const TYPE_ALIEN = 'alien'; // 👽
+const TYPE_ALIEN = 'alien'; // 🛸
 const TYPE_TROLL = 'troll'; // 🧌
 
 export class Enemy extends Entity {
@@ -52,7 +52,7 @@ export class Enemy extends Entity {
             { type: TYPE_CRAB, width: 35, height: 35, emoji: '🦀', baseSpeed: 220, health: 2 },
             { type: TYPE_SQUIRREL, width: 38, height: 38, emoji: '🐿️', baseSpeed: 160, health: 2 },
             { type: TYPE_TROLL, width: 60, height: 60, emoji: '🧌', baseSpeed: 40, health: 6 },
-            { type: TYPE_ALIEN, width: 45, height: 45, emoji: '👽', baseSpeed: 80, health: 4 },
+            { type: TYPE_ALIEN, width: 45, height: 45, emoji: '🛸', baseSpeed: 80, health: 4 },
         ];
 
         const pick = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
@@ -253,7 +253,6 @@ export class Enemy extends Entity {
                     this.vx = this.facingRight ? this.baseSpeed : -this.baseSpeed;
                     this.vy = 0;
                     if (game && game.camera) {
-                        if (game.audio) game.audio.playHit();
                         // Big cloud-of-smoke effect at the dino's feet
                         if (game.particles) {
                             const stompX = this.x + this.width / 2;
@@ -469,7 +468,6 @@ export class Enemy extends Entity {
                 this.state = 'STOMP_JUMP';
                 this.vy = -600;
                 this.vx = this.facingRight ? this.speed * 2 : -this.speed * 2;
-                if (game && game.audio) game.audio.playJump();
             }
         }
     }
@@ -612,7 +610,6 @@ export class Enemy extends Entity {
                 this.vx = 0;
                 this.tongueState = 'EXTENDING';
                 this.tongueLength = 0;
-                if (game.audio) game.audio.playThrow();
             }
         } else if (this.tongueState === 'EXTENDING') {
             this.vx = 0;
@@ -667,8 +664,8 @@ export class Enemy extends Entity {
             const centerY = this.y + this.height - 10; // little lower inside emoji
 
             const spread = (Math.random() - 0.5) * 0.3; // Spread angle
-            const laser = new GreenLaser(centerX, centerY, spread);
-            game.enemyProjectiles.push(laser);
+            const projectile = new UfoProjectile(centerX, centerY, spread);
+            game.enemyProjectiles.push(projectile);
 
             this.attackCooldown = 0.15; // Constant shower
         }
