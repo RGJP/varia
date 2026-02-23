@@ -44,6 +44,7 @@ export class Game {
         this.rocks = [];
         this.enemyProjectiles = [];
         this.vines = [];
+        this.movingPlatforms = [];
 
         this.audio = new AudioEngine();
         this.particles = new ParticleSystem();
@@ -170,6 +171,7 @@ export class Game {
         this.enemies = levelData.enemies;
         this.collectibles = levelData.collectibles;
         this.vines = levelData.vines || [];
+        this.movingPlatforms = levelData.movingPlatforms || [];
         this.currentTheme = levelData.theme;
         this.rocks = [];
         this.enemyProjectiles = [];
@@ -273,6 +275,15 @@ export class Game {
         for (let i = 0; i < this.vines.length; i++) {
             if (this._isVisible(this.vines[i], 800)) {
                 this._visibleVines.push(this.vines[i]);
+            }
+        }
+
+        // Update moving platforms and include in visible platforms for collision
+        for (let i = 0; i < this.movingPlatforms.length; i++) {
+            const mp = this.movingPlatforms[i];
+            mp.update(dt);
+            if (this._isVisible(mp, 800)) {
+                this._visiblePlatforms.push(mp);
             }
         }
 
@@ -416,6 +427,11 @@ export class Game {
             const platforms = this.platforms;
             for (let i = 0; i < platforms.length; i++) {
                 if (this._isVisible(platforms[i], 300)) platforms[i].draw(this.ctx);
+            }
+
+            const mps = this.movingPlatforms;
+            for (let i = 0; i < mps.length; i++) {
+                if (this._isVisible(mps[i], 300)) mps[i].draw(this.ctx);
             }
 
             const collectibles = this.collectibles;

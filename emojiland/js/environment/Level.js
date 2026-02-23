@@ -1,4 +1,5 @@
 import { Platform } from './Platform.js';
+import { MovingPlatform } from './MovingPlatform.js';
 import { Enemy } from '../entities/Enemy.js';
 import { Collectible } from '../entities/Collectible.js';
 import { Vine } from '../entities/Vine.js';
@@ -7,6 +8,35 @@ import { getRandomTheme } from './ThemeManager.js';
 export function loadLevel() {
     const theme = getRandomTheme();
     const platforms = [];
+    const movingPlatforms = [];
+
+    // Minimum distance between moving platform centers to prevent stacking
+    const MIN_MP_DISTANCE = 250;
+    const MIN_STATIC_DISTANCE = 200; // Keep moving platforms well above static ones
+    const tooCloseToExisting = (x, y, w, h) => {
+        const cx = x + w / 2;
+        const cy = y + h / 2;
+        for (let i = 0; i < movingPlatforms.length; i++) {
+            const mp = movingPlatforms[i];
+            const mx = mp.x + mp.width / 2;
+            const my = mp.y + mp.height / 2;
+            const dx = cx - mx;
+            const dy = cy - my;
+            if (Math.sqrt(dx * dx + dy * dy) < MIN_MP_DISTANCE) return true;
+        }
+        // Also check distance from static platforms so movers aren't redundant
+        for (let i = 0; i < platforms.length; i++) {
+            const p = platforms[i];
+            // Check if the moving platform overlaps or is very close vertically
+            const horizOverlap = x + w > p.x - 20 && x < p.x + p.width + 20;
+            const vertClose = Math.abs(y - p.y) < MIN_STATIC_DISTANCE && horizOverlap;
+            // Check if it's sitting right on top of a platform
+            const onTop = y + h > p.y - 10 && y + h < p.y + MIN_STATIC_DISTANCE && horizOverlap;
+            if (vertClose || onTop) return true;
+        }
+        return false;
+    };
+
     const enemies = [];
     const collectibles = [];
     const vines = [];
@@ -117,6 +147,18 @@ export function loadLevel() {
                 vines.push(new Vine(vineX, topY, vineHeight));
             }
 
+            // Chance to add a horizontal moving platform bridging the gap
+            if (gap > 100 && Math.random() < 0.5) {
+                const mpWidth = 100 + Math.random() * 60;
+                const mpY = platY - 150 - Math.random() * 100;
+                const mpX = currentX + 20;
+                const mpRange = gap - mpWidth - 10;
+                if (mpRange > 40 && !tooCloseToExisting(mpX, mpY, mpWidth, 30)) {
+                    const mpSpeed = 60 + Math.random() * 60;
+                    movingPlatforms.push(new MovingPlatform(mpX, mpY, mpWidth, 30, 'x', mpRange, mpSpeed, theme));
+                }
+            }
+
             currentX += gap;
 
             const platform = new Platform(currentX, platY, platWidth, height, false, theme);
@@ -131,6 +173,19 @@ export function loadLevel() {
                 }
             }
 
+            // Extra moving platforms above main platforms (~35% chance)
+            if (platWidth > 150 && Math.random() < 0.35) {
+                const mpWidth = 100 + Math.random() * 80;
+                const mpX = currentX + Math.random() * (platWidth - mpWidth);
+                const mpY = platY - 200 - Math.random() * 150;
+                if (!tooCloseToExisting(mpX, mpY, mpWidth, 30)) {
+                    const axis = Math.random() < 0.6 ? 'x' : 'y';
+                    const range = axis === 'x' ? (60 + Math.random() * 140) : (50 + Math.random() * 100);
+                    const speed = 50 + Math.random() * 80;
+                    movingPlatforms.push(new MovingPlatform(mpX, mpY, mpWidth, 30, axis, range, speed, theme));
+                }
+            }
+
             // Coin locations for main platform
             const numCoinPoints = Math.floor(platWidth / 100) + 1;
             for (let i = 0; i < numCoinPoints; i++) {
@@ -140,6 +195,17 @@ export function loadLevel() {
 
             // Generate floating platforms above if any
             for (let fp of floatingPlatforms) {
+                // ~50% chance to turn a floating platform into a moving one
+                if (Math.random() < 0.5 && !tooCloseToExisting(fp.x, fp.y, fp.width, fp.height)) {
+                    // Decide horizontal or vertical
+                    const axis = Math.random() < 0.5 ? 'x' : 'y';
+                    const range = axis === 'x' ? (80 + Math.random() * 120) : (60 + Math.random() * 100);
+                    const speed = 50 + Math.random() * 70;
+                    movingPlatforms.push(new MovingPlatform(fp.x, fp.y, fp.width, fp.height, axis, range, speed, theme));
+                    potentialCoinLocations.push({ x: fp.x + fp.width / 2, y: fp.y - (40 + Math.random() * 80) });
+                    continue; // Skip normal floating platform creation (no enemies on moving ones)
+                }
+
                 const floatPlatform = new Platform(fp.x, fp.y, fp.width, fp.height, false, theme);
                 platforms.push(floatPlatform);
 
@@ -276,5 +342,5 @@ export function loadLevel() {
     // Remove any vines that ended up with zero or negative height
     const validVines = vines.filter(v => v.height > 10);
 
-    return { platforms, enemies, collectibles, vines: validVines, theme };
+    return { platforms, movingPlatforms, enemies, collectibles, vines: validVines, theme };
 }

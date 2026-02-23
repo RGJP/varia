@@ -290,6 +290,19 @@ export class Player extends Entity {
                 game.particles.emitJump(this.x + this.width / 2, this.y + this.height, game.currentTheme.particleColor);
             }
         } else {
+            // Carry player on moving platforms BEFORE collision resolution
+            // This prevents vertical movers from causing X-axis collision artifacts
+            if (this.grounded) {
+                for (let platform of platforms) {
+                    if (platform.isMovingPlatform && this.y + this.height >= platform.y && this.y + this.height <= platform.y + 10 &&
+                        this.x + this.width > platform.x && this.x < platform.x + platform.width) {
+                        this.x += platform.dx;
+                        this.y += platform.dy;
+                        break;
+                    }
+                }
+            }
+
             // Gravity
             this.vy += Physics.GRAVITY * dt;
             if (this.vy > Physics.TERMINAL_VELOCITY) {

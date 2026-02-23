@@ -7,6 +7,7 @@ import { Worm } from './Worm.js';
 import { Shrimp } from './Shrimp.js';
 import { Peanut } from './Peanut.js';
 import { UfoProjectile } from './UfoProjectile.js';
+import { Barrel } from './Barrel.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
 const TYPE_PATROL = 'patrol';
@@ -28,6 +29,7 @@ const TYPE_CROW = 'crow'; // 🐦‍⬛
 const TYPE_LIZARD = 'lizard'; // 🦗
 const TYPE_ALIEN = 'alien'; // 🛸
 const TYPE_TROLL = 'troll'; // 🧌
+const TYPE_APE = 'ape'; // 🦍
 
 export class Enemy extends Entity {
     constructor(x, y, platform) {
@@ -53,6 +55,7 @@ export class Enemy extends Entity {
             { type: TYPE_SQUIRREL, width: 38, height: 38, emoji: '🐿️', baseSpeed: 160, health: 2 },
             { type: TYPE_TROLL, width: 60, height: 60, emoji: '🧌', baseSpeed: 40, health: 6 },
             { type: TYPE_ALIEN, width: 45, height: 45, emoji: '🛸', baseSpeed: 80, health: 4 },
+            { type: TYPE_APE, width: 60, height: 60, emoji: '🦍', baseSpeed: 0, health: 5 },
         ];
 
         const pick = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
@@ -132,6 +135,9 @@ export class Enemy extends Entity {
         if (this.type === TYPE_TROLL) {
             this.state = 'PATROL';
         }
+        if (this.type === TYPE_APE) {
+            this.state = 'IDLE';
+        }
 
         // Pre-cache emoji
         this._cachedEmoji = getEmojiCanvas(this.emoji, this.height);
@@ -202,6 +208,7 @@ export class Enemy extends Entity {
             case TYPE_LIZARD: this.updateLizard(dt, game, player, distToPlayer, distToPlayerX); break;
             case TYPE_ALIEN: this.updateAlien(dt, game, player, distToPlayer, distToPlayerX); break;
             case TYPE_TROLL: this.updatePatrol(dt); break;
+            case TYPE_APE: this.updateApe(dt, game, player, distToPlayer, distToPlayerX); break;
         }
 
         if (this.type === TYPE_TROLL && player && player.invulnerableTimer <= 0) {
@@ -669,6 +676,37 @@ export class Enemy extends Entity {
 
             this.attackCooldown = 0.15; // Constant shower
         }
+    }
+
+    updateApe(dt, game, player, dist, distX) {
+        // Great Ape is stationary, just faces the player
+        if (player && dist < 800) {
+            this.facingRight = distX > 0;
+
+            if (this.attackCooldown <= 0) {
+                this.state = 'ATTACK';
+                this.attackCooldown = 2.5 + Math.random() * 2.0;
+
+                const centerX = this.x + this.width / 2;
+                const centerY = this.y + this.height / 2;
+
+                // Spawn barrel in front of ape
+                const throwX = this.facingRight ? this.x + this.width : this.x - 40;
+                const barrel = new Barrel(throwX, this.y + this.height - 40, this.facingRight);
+                game.enemyProjectiles.push(barrel);
+
+                this.stateTimer = 0.5;
+            } else if (this.stateTimer > 0) {
+                this.stateTimer -= dt;
+            } else {
+                this.state = 'IDLE';
+            }
+        } else {
+            this.state = 'IDLE';
+        }
+
+        this.vx = 0;
+        this.vy = 0;
     }
 
     draw(ctx) {

@@ -3,8 +3,8 @@ import { Physics } from '../Physics.js';
 
 export class UfoProjectile extends Entity {
     constructor(x, y, angle, shape) {
-        // Size: 70% of saucer width (45 * 0.7 = 31.5)
-        const size = 32;
+        // Size: Reduced from 32 to 24 (~53% of saucer width)
+        const size = 24;
         super(x - size / 2, y, size, size);
 
         this.speed = 250;
@@ -66,16 +66,8 @@ export class UfoProjectile extends Entity {
         ctx.translate(cx, cy);
         ctx.rotate(this.rotation);
 
-        // Core glow
-        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
-        grad.addColorStop(0, '#FFFFFF'); // Bright white center
-        grad.addColorStop(0.3, '#FFFF00'); // Vivid yellow
-        grad.addColorStop(0.7, '#FFD700'); // Golden yellow
-        grad.addColorStop(1, '#B8860B'); // Darker gold edge
-
-        ctx.fillStyle = grad;
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = '#FFFF00';
+        // Solid color
+        ctx.fillStyle = '#FFFF00';
 
         ctx.beginPath();
         if (this.shape === 'sphere') {
@@ -93,7 +85,6 @@ export class UfoProjectile extends Entity {
         ctx.fill();
 
         // Consistent highlight for unified "glossy" look
-        ctx.shadowBlur = 0;
         ctx.beginPath();
         ctx.arc(-radius * 0.4, -radius * 0.4, radius * 0.2, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
