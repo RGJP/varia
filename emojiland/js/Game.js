@@ -82,8 +82,13 @@ export class Game {
 
                 // Request fullscreen (non-blocking, won't consume gesture on most browsers)
                 try {
-                    if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
-                        document.documentElement.requestFullscreen().catch(() => { });
+                    const elem = document.documentElement;
+                    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                        if (elem.requestFullscreen) {
+                            elem.requestFullscreen().catch(() => { });
+                        } else if (elem.webkitRequestFullscreen) {
+                            elem.webkitRequestFullscreen();
+                        }
                     }
                 } catch (err) {
                     // Fullscreen not supported or failed — continue anyway
@@ -139,11 +144,11 @@ export class Game {
             startGameHandler(e);
         };
 
-        window.addEventListener('touchstart', handleInteraction, { passive: false });
-        window.addEventListener('mousedown', (e) => {
+        window.addEventListener('touchend', handleInteraction, { passive: false });
+        window.addEventListener('click', (e) => {
             // Only handle if it's NOT a touch event (to avoid double triggering on mobile)
+            if (e.pointerType === 'touch') return; // For pointer events
             if (e.detail === 0) return; // detail=0 can sometimes mean non-mouse
-            // But simpler is to check if it's a mouse event
             if (window.TouchEvent && e instanceof TouchEvent) return;
             handleInteraction(e);
         });
