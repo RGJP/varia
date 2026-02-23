@@ -7,7 +7,7 @@ export class Camera {
 
         // Adaptive zoom: Desktop (0.90) for detail, Mobile (0.50) for wider visibility
         const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 800;
-        this.zoom = isMobile ? 0.60 : 0.90;
+        this.zoom = isMobile ? 0.63 : 0.90;
 
         this.shakeTimer = 0;
         this.shakeIntensity = 0;
@@ -30,7 +30,7 @@ export class Camera {
 
         // Dynamic zoom adjustment on resize
         const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 800;
-        this.zoom = isMobile ? 0.50 : 0.90;
+        this.zoom = isMobile ? 0.63 : 0.90;
     }
 
     shake(duration, intensity) {
