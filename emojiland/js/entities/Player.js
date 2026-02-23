@@ -371,7 +371,8 @@ export class Player extends Entity {
                         if (game.particles) game.particles.emitHit(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, '#FF4500');
                     }
                 } else if (Physics.checkAABB(hitbox, enemy)) {
-                    if ((enemy.emoji === '🐢' || enemy.emoji === '🐸') && this.vy > 0 && hitbox.y + hitbox.height - (this.vy * dt) <= enemy.y + enemy.height * 0.5) {
+                    const stompableEmojis = ['🐢', '🐸', '🐦', '🦅', '🦉', '🐦‍⬛', '🦇'];
+                    if (stompableEmojis.includes(enemy.emoji) && this.vy > 0 && hitbox.y + hitbox.height - (this.vy * dt) <= enemy.y + enemy.height * 0.5) {
                         enemy.takeDamage(enemy.health, game);
                         this.vy = this.jumpForce;
                         this.grounded = false;
