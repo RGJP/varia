@@ -149,7 +149,14 @@ export class Enemy extends Entity {
         this.damageFlashTimer = 0.2;
 
         if (game && game.particles) {
-            game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
+            if (this.type === TYPE_TROLL) {
+                // Larger burst of green smoke when hit
+                for (let i = 0; i < 5; i++) {
+                    game.particles.emitGreenSmoke(this.x + this.width / 2, this.y + this.height / 2);
+                }
+            } else {
+                game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
+            }
         }
 
         if (this.health <= 0) {
@@ -211,14 +218,21 @@ export class Enemy extends Entity {
             case TYPE_APE: this.updateApe(dt, game, player, distToPlayer, distToPlayerX); break;
         }
 
-        if (this.type === TYPE_TROLL && player && player.invulnerableTimer <= 0) {
-            const cloudRadius = 180;
-            const cx = this.x + this.width / 2;
-            const cy = this.y + this.height / 2;
-            const pcx = player.x + player.width / 2;
-            const pcy = player.y + player.height / 2;
-            if (Math.hypot(pcx - cx, pcy - cy) < cloudRadius) {
-                player.takeDamage(game);
+        if (this.type === TYPE_TROLL && game && game.particles) {
+            // Constantly emanate a bit of smoke
+            if (this.timeAlive % 0.1 < dt) {
+                game.particles.emitGreenSmoke(this.x + this.width / 2, this.y + this.height / 2);
+            }
+
+            if (player && player.invulnerableTimer <= 0) {
+                const cloudRadius = 180;
+                const cx = this.x + this.width / 2;
+                const cy = this.y + this.height / 2;
+                const pcx = player.x + player.width / 2;
+                const pcy = player.y + player.height / 2;
+                if (Math.hypot(pcx - cx, pcy - cy) < cloudRadius) {
+                    player.takeDamage(game);
+                }
             }
         }
 
@@ -757,34 +771,7 @@ export class Enemy extends Entity {
         ctx.translate(drawX, drawY);
 
         if (this.type === TYPE_TROLL) {
-            ctx.save();
-            ctx.globalAlpha = 0.6 + Math.sin(this.timeAlive * 3) * 0.2; // Pulsing opacity
-            const cloudRadius = 180;
-            const grad = ctx.createRadialGradient(0, 0, 40, 0, 0, cloudRadius);
-            grad.addColorStop(0, 'rgba(255, 0, 0, 0.8)'); // Inner red
-            grad.addColorStop(0.5, 'rgba(139, 0, 0, 0.6)'); // Dark red middle
-            grad.addColorStop(1, 'rgba(255, 0, 0, 0)'); // Fades out completely
-
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(0, 0, cloudRadius, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Add a very clear boundary stroke - double layered for "warning" vibe
-            // 1. Solid deep red base
-            ctx.strokeStyle = 'rgba(139, 0, 0, 0.8)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([]);
-            ctx.stroke();
-
-            // 2. Bright dashed overlay for movement/clarity
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([15, 15]);
-            ctx.lineDashOffset = this.timeAlive * 20; // Scrolling dashes
-            ctx.stroke();
-
-            ctx.restore();
+            // Troll used to have a red aura here, now it just emanates smoke via update()
         }
 
         if (this.state === 'REVIVING' && this.type === TYPE_ZOMBIE) {

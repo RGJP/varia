@@ -8,9 +8,10 @@ export class Particle {
         this.life = 0;
         this.maxLife = 0;
         this.size = 0;
+        this.fadeInverse = false;
     }
 
-    init(x, y, vx, vy, color, life, size) {
+    init(x, y, vx, vy, color, life, size, fadeInverse = false) {
         this.x = x;
         this.y = y;
         this.vx = vx;
@@ -19,6 +20,7 @@ export class Particle {
         this.life = life;
         this.maxLife = life;
         this.size = size;
+        this.fadeInverse = fadeInverse;
     }
 
     update(dt) {
@@ -31,7 +33,7 @@ export class Particle {
 export class ParticleSystem {
     constructor() {
         this.particles = [];
-        this.maxParticles = 200;
+        this.maxParticles = 400;
         this.pool = [];
         for (let i = 0; i < this.maxParticles; i++) {
             this.pool.push(new Particle());
@@ -71,6 +73,32 @@ export class ParticleSystem {
     emitDeath(x, y, color = 'white') {
         this.emit(x, y, 20, color, [100, 300], [0.4, 1.0], [4, 10]);
         this.emit(x, y, 10, 'lightgray', [50, 150], [0.5, 1.2], [2, 6]);
+    }
+
+    emitGreenSmoke(x, y, radius = 180) {
+        const greenColors = [
+            'rgba(34, 139, 34, 0.4)', // Fainter base
+            'rgba(50, 205, 50, 0.35)',
+            'rgba(0, 128, 0, 0.3)',
+            'rgba(107, 142, 35, 0.25)',
+        ];
+        const count = 7; // Increased count to fill edges better
+        for (let i = 0; i < count; i++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const p = this._getParticle();
+            if (!p) break;
+            const angle = Math.random() * Math.PI * 2;
+
+            const life = 1.2 + Math.random() * 0.8;
+            const speed = (radius / life) * (0.9 + Math.random() * 0.1); // More consistent edge reach
+
+            const vx = Math.cos(angle) * speed;
+            const vy = Math.sin(angle) * speed;
+            const size = 20 + Math.random() * 30; // Even larger puffier clouds
+            const color = greenColors[Math.floor(Math.random() * greenColors.length)];
+            p.init(x, y, vx, vy, color, life, size, true); // fadeInverse = true
+            this.particles.push(p);
+        }
     }
 
     emitHit(x, y) {
@@ -159,9 +187,10 @@ export class ParticleSystem {
                 const p = particles[i];
                 const ratio = p.life / p.maxLife;
                 if (ratio <= 0) continue;
-                ctx.globalAlpha = ratio;
+                // If fadeInverse is true, it's faint at start and opaque at end of life
+                ctx.globalAlpha = p.fadeInverse ? (1 - ratio) : ratio;
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size * ratio, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, p.size * (p.fadeInverse ? 1 : ratio), 0, Math.PI * 2);
                 ctx.fill();
             }
         }

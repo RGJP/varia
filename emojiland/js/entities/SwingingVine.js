@@ -15,7 +15,7 @@ export class SwingingVine extends Entity {
         this.anchorHeight = 30;
 
         // Swing parameters
-        this.swingSpeed = 1.2 + Math.random() * 1.3; // 1.2–2.5 rad/s
+        this.swingSpeed = 1.3;
         this.maxAngle = (Math.PI / 180) * (35 + Math.random() * 55); // 35°–90°
         this.swingTime = Math.random() * Math.PI * 2; // random starting phase
         this.currentAngle = 0;
