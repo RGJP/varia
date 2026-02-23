@@ -90,8 +90,8 @@ canvas {
     position: relative;
     pointer-events: auto;
     touch-action: none;
-    margin-bottom: 5px;
-    margin-left: 5px;
+    margin-bottom: 30px;
+    margin-left: 40px;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
@@ -124,13 +124,11 @@ canvas {
 /* Remove CSS that cancels out touch actions on the general page? No, we need it. */
 
 .action-buttons {
-    display: grid;
-    grid-template-areas:
-        ". bomb"
-        "attack jump";
-    gap: 12px;
-    margin-bottom: 15px;
-    margin-right: 15px;
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin-bottom: 30px;
+    margin-right: 40px;
 }
 
 .ui-btn-large {
@@ -139,19 +137,25 @@ canvas {
     font-size: 32px;
 }
 
-/* Positioning specific buttons matching drawing */
+/* Positioning specific buttons in an ergonomic thumb arc */
 #btn-jump {
-    grid-area: jump;
+    position: absolute;
+    bottom: 0;
+    right: 0;
     margin: 0;
 }
 
 #btn-attack {
-    grid-area: attack;
+    position: absolute;
+    bottom: 20px;
+    left: 0;
     margin: 0;
 }
 
 #btn-bomb {
-    grid-area: bomb;
+    position: absolute;
+    top: 0;
+    right: 20px;
     margin: 0;
 }
 
