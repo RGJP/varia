@@ -99,6 +99,7 @@ export function loadLevel() {
     };
 
     const enemies = [];
+    const bossSpawns = [];
     const collectibles = [];
     const vines = [];
     const swingingVines = [];
@@ -319,8 +320,25 @@ export function loadLevel() {
         }
     }
 
+    // ── Boss encounter ──
+    // A dedicated, larger arena platform inserted before the victory flag
+    // We increase the gap and the arena size to make it feel more focused.
+    const arenaW = 1200;
+    const arenaY = 550; // Sit slightly lower for more headroom
+    const arenaX = currentX + 400; // Large gap from the last regular platform
+    const arenaPlatform = new Platform(arenaX, arenaY, arenaW, 100, false, theme);
+    platforms.push(arenaPlatform);
+
+    // Queue boss spawn centered on the arena.
+    // Boss is instantiated later when the player gets near the arena.
+    const bossX = arenaX + arenaW / 2 - 80; // 80 = half boss size
+    bossSpawns.push({ x: bossX, y: arenaY, platform: arenaPlatform });
+
+    // Update currentX to the end of the arena so victory platform follows correctly
+    currentX = arenaX + arenaW;
+
     // Victory platform at the end
-    const victoryPlatform = new Platform(currentX + 200, 500, 300, 100, true, theme);
+    const victoryPlatform = new Platform(currentX + 300, 500, 300, 100, true, theme);
     platforms.push(victoryPlatform);
 
     // Coins hovering over the victory platform to replace the gap trail
@@ -426,5 +444,5 @@ export function loadLevel() {
     // Remove any vines that ended up with zero or negative height
     const validVines = vines.filter(v => v.height > 10);
 
-    return { platforms, movingPlatforms, enemies, collectibles, vines: validVines, swingingVines, theme };
+    return { platforms, movingPlatforms, enemies, bossSpawns, collectibles, vines: validVines, swingingVines, theme };
 }

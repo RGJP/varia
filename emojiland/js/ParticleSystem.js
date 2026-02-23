@@ -134,6 +134,28 @@ export class ParticleSystem {
         }
     }
 
+    emitFireworks(x, y) {
+        const colors = ['#FFD700', '#FF4D6D', '#00C2FF', '#7CFC00', '#FF8C00'];
+        const bursts = 4;
+        for (let b = 0; b < bursts; b++) {
+            const burstColor = colors[Math.floor(Math.random() * colors.length)];
+            const count = 24;
+            for (let i = 0; i < count; i++) {
+                if (this.particles.length >= this.maxParticles) return;
+                const p = this._getParticle();
+                if (!p) return;
+                const angle = (Math.PI * 2 * i) / count + Math.random() * 0.12;
+                const speed = 180 + Math.random() * 220 + b * 20;
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed - (30 + Math.random() * 60);
+                const life = 0.6 + Math.random() * 0.5;
+                const size = 3 + Math.random() * 5;
+                p.init(x, y, vx, vy, burstColor, life, size);
+                this.particles.push(p);
+            }
+        }
+    }
+
     emitJump(x, y, color = 'rgba(200, 200, 200, 0.8)') {
         for (let i = 0; i < 2; i++) {
             if (this.particles.length >= this.maxParticles) break;

@@ -2,6 +2,7 @@ export class InputHandler {
     constructor() {
         this.keys = new Set();
         this.justPressed = new Set();
+        this.justReleased = new Set();
 
         window.addEventListener('keydown', (e) => {
             if (!this.keys.has(e.code)) {
@@ -11,6 +12,7 @@ export class InputHandler {
         });
 
         window.addEventListener('keyup', (e) => {
+            this.justReleased.add(e.code);
             this.keys.delete(e.code);
             this.justPressed.delete(e.code);
         });
@@ -26,11 +28,13 @@ export class InputHandler {
         }, { passive: false });
 
         window.addEventListener('touchend', () => {
+            this.justReleased.add('TouchScreen');
             this.keys.delete('TouchScreen');
             this.justPressed.delete('TouchScreen');
         });
 
         window.addEventListener('touchcancel', () => {
+            this.justReleased.add('TouchScreen');
             this.keys.delete('TouchScreen');
             this.justPressed.delete('TouchScreen');
         });
@@ -54,6 +58,7 @@ export class InputHandler {
 
                 const release = (e) => {
                     e.preventDefault();
+                    this.justReleased.add(code);
                     this.keys.delete(code);
                     this.justPressed.delete(code);
                 };
@@ -170,7 +175,16 @@ export class InputHandler {
         return false;
     }
 
+    isJustReleased(code) {
+        if (this.justReleased.has(code)) {
+            this.justReleased.delete(code);
+            return true;
+        }
+        return false;
+    }
+
     update() {
         this.justPressed.clear();
+        this.justReleased.clear();
     }
 }

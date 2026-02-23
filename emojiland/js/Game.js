@@ -1,6 +1,7 @@
 import { InputHandler } from './InputHandler.js';
 import { Camera } from './Camera.js';
 import { Player } from './entities/Player.js';
+import { Boss } from './entities/Enemy.js';
 import { loadLevel } from './environment/Level.js';
 import { AudioEngine } from './AudioEngine.js';
 import { ParticleSystem } from './ParticleSystem.js';
@@ -53,6 +54,7 @@ export class Game {
         this.player = null;
         this.platforms = [];
         this.enemies = [];
+        this.pendingBossSpawns = [];
         this.collectibles = [];
         this.rocks = [];
         this.enemyProjectiles = [];
@@ -184,6 +186,7 @@ export class Game {
         const levelData = loadLevel();
         this.platforms = levelData.platforms;
         this.enemies = levelData.enemies;
+        this.pendingBossSpawns = levelData.bossSpawns || [];
         this.collectibles = levelData.collectibles;
         this.vines = levelData.vines || [];
         this.swingingVines = levelData.swingingVines || [];
@@ -194,7 +197,7 @@ export class Game {
 
         this.totalCoins = this.collectibles.length;
         this.coinsCollected = 0;
-        this.totalEnemies = this.enemies.length;
+        this.totalEnemies = this.enemies.length + this.pendingBossSpawns.length;
         this.enemiesDefeated = 0;
 
         this.gameOverTriggered = false;
@@ -328,6 +331,7 @@ export class Game {
                 return; // Stop update of everything else
             }
 
+            this._spawnNearbyBosses();
             this.player.update(dt, this.input, this._visiblePlatforms, this);
 
             // Update swinging vines
@@ -371,11 +375,40 @@ export class Game {
     }
 
     triggerVictory() {
+        if (!this.canTriggerVictory()) return;
         this.state = GameState.VICTORY;
         this.canRestart = false;
         setTimeout(() => { this.canRestart = true; }, 1000);
         this.audio.playWin();
         this.audio.fadeOutMusic(1000);
+    }
+
+    hasAliveBoss() {
+        for (let i = 0; i < this.enemies.length; i++) {
+            const enemy = this.enemies[i];
+            if (enemy instanceof Boss && !enemy.markedForDeletion) return true;
+        }
+        return false;
+    }
+
+    canTriggerVictory() {
+        return this.pendingBossSpawns.length === 0 && !this.hasAliveBoss();
+    }
+
+    _spawnNearbyBosses() {
+        if (!this.player || this.pendingBossSpawns.length === 0) return;
+        const SPAWN_DISTANCE_X = 450;
+        let writeIdx = 0;
+        for (let i = 0; i < this.pendingBossSpawns.length; i++) {
+            const spawn = this.pendingBossSpawns[i];
+            const shouldSpawn = Math.abs(this.player.x - spawn.x) <= SPAWN_DISTANCE_X;
+            if (shouldSpawn) {
+                this.enemies.push(new Boss(spawn.x, spawn.y, spawn.platform, spawn.bossType));
+            } else {
+                this.pendingBossSpawns[writeIdx++] = spawn;
+            }
+        }
+        this.pendingBossSpawns.length = writeIdx;
     }
 
     // Check if an entity is within the visible viewport (with margin)
@@ -553,6 +586,14 @@ export class Game {
             this.ctx.restore();
         }
 
+        if (this.state === GameState.PLAYING || this.state === GameState.PAUSED) {
+            // Find active boss (if any)
+            const activeBoss = this.enemies.find(e => e instanceof Boss && !e.markedForDeletion && e.activated);
+            if (activeBoss) {
+                this._drawBossHealthBar(activeBoss);
+            }
+        }
+
         if (this.state !== GameState.PLAYING) {
             // Standard overlays for non-playing states
             this.drawMenuOverlays();
@@ -635,7 +676,7 @@ export class Game {
             const yStep = 32;
             this.ctx.fillText('Arrows/Joystick : Move Character', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('A : Jump (Mobile 🦘)', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('D : Throw Rock (Mobile ⚔️)', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('D / HOLD: Throw Rock (Mobile ⚔️)', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('S : Drop Bomb (Mobile 💣)', cardX + 40, ly);
 
             // Vertical Divider
@@ -762,6 +803,62 @@ export class Game {
             this.ctx.fillText('Paused', 0, 0);
         }
         this.ctx.restore();
+    }
+
+    _drawBossHealthBar(boss) {
+        const ctx = this.ctx;
+        ctx.save();
+
+        const barW = 320;
+        const barH = 20;
+        const barX = (this.canvas.width - barW) / 2;
+        const barY = 14;
+        const fillRatio = Math.max(0, boss.health / boss.maxHealth);
+
+        // Background panel
+        ctx.fillStyle = 'rgba(0,0,0,0.55)';
+        const panelPad = 10;
+        if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(barX - panelPad - 50, barY - panelPad, barW + panelPad * 2 + 50, barH + panelPad * 2 + 26, 10);
+            ctx.fill();
+        } else {
+            ctx.fillRect(barX - panelPad - 50, barY - panelPad, barW + panelPad * 2 + 50, barH + panelPad * 2 + 26);
+        }
+
+        // "⚠️ BOSS!" label
+        ctx.font = 'bold 13px "Outfit", sans-serif';
+        ctx.fillStyle = '#ffca28';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(`${boss.emoji}  BOSS!`, this.canvas.width / 2, barY);
+
+        // Bar background
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillRect(barX, barY + 18, barW, barH);
+
+        // Fill colour: green → yellow → red
+        let barColor;
+        if (fillRatio > 0.6) barColor = '#4caf50';
+        else if (fillRatio > 0.3) barColor = '#ffc107';
+        else barColor = '#f44336';
+
+        ctx.fillStyle = barColor;
+        ctx.fillRect(barX, barY + 18, barW * fillRatio, barH);
+
+        // Border
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(barX, barY + 18, barW, barH);
+
+        // HP text
+        ctx.font = 'bold 11px "Outfit", sans-serif';
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${boss.health} / ${boss.maxHealth}`, barX + barW / 2, barY + 18 + barH / 2);
+
+        ctx.restore();
     }
 }
 

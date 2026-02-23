@@ -9,6 +9,9 @@ import { Peanut } from './Peanut.js';
 import { UfoProjectile } from './UfoProjectile.js';
 import { Barrel } from './Barrel.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
+import { BossProjectile } from './BossProjectile.js';
+
+const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_hedgehog'];
 
 const TYPE_PATROL = 'patrol';
 const TYPE_CHASER = 'chaser'; // 👹
@@ -1001,5 +1004,250 @@ export class Enemy extends Entity {
         const cached = this._cachedEmoji;
         ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2 + yOffset);
         ctx.restore();
+    }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Boss  (large end-of-level encounter, ~4× player size)
+// ─────────────────────────────────────────────────────────────
+export class Boss extends Entity {
+    constructor(x, y, platform, bossType) {
+        const size = 160;
+        super(x, y - size, size, size); // sit on platform
+
+        this.bossType = bossType || BOSS_TYPES[Math.floor(Math.random() * BOSS_TYPES.length)];
+        this.platform = platform;
+        this.facingRight = true;
+
+        this.health = 30;
+        this.maxHealth = 30;
+        this.damageFlashTimer = 0;
+        this.attackCooldown = 2.0;
+        this.timeAlive = 0;
+        this.burstCount = 0;
+        this.burstTimer = 0;
+        this.distToPlayer = Infinity;
+        this.activated = false;
+
+        // Dynamic movement properties
+        this.movementState = 'WAVE';
+        this.movementTimer = 4.0 + Math.random() * 4.0;
+        this.anchorX = platform.x + platform.width / 2 - this.width / 2;
+        this.anchorY = platform.y - this.height - 250;
+        this.targetX = this.x;
+        this.targetY = this.y;
+        this.maxMoveSpeed = 560;
+
+        switch (this.bossType) {
+            case 'boss_chick': this.emoji = '🐣'; break;
+            case 'boss_moai': this.emoji = '🗿'; break;
+            case 'boss_hedgehog': this.emoji = '🦔'; break;
+        }
+
+        this._cachedEmoji = getEmojiCanvas(this.emoji, size);
+    }
+
+    takeDamage(amount, game) {
+        this.health -= amount;
+        this.damageFlashTimer = 0.15;
+
+        if (game && game.particles) {
+            game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
+        }
+
+        if (this.health <= 0) {
+            this.markedForDeletion = true;
+            const cx = this.x + this.width / 2;
+            const cy = this.y + this.height / 2;
+            if (game && game.particles) {
+                game.particles.emitFireworks(cx, cy);
+                game.particles.emitDeath(cx, cy);
+                // Extra large burst for boss death
+                for (let i = 0; i < 6; i++) {
+                    game.particles.emitDeath(
+                        cx + (Math.random() - 0.5) * 80,
+                        cy + (Math.random() - 0.5) * 80
+                    );
+                }
+            }
+            if (game && game.player) {
+                game.player.score += 500;
+            }
+            if (game) game.enemiesDefeated++;
+        }
+    }
+
+    _fire(game, player) {
+        if (!game || !game.enemyProjectiles || !player) return;
+
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
+        const dx = (player.x + player.width / 2) - cx;
+        const dy = (player.y + player.height / 2) - cy;
+        const len = Math.hypot(dx, dy) || 1;
+        this.facingRight = dx >= 0;
+
+        if (this.bossType === 'boss_chick') {
+            // 🍗 drumstick: moderate speed arc toward player
+            const speed = 380;
+            const proj = new BossProjectile(cx, cy, (dx / len) * speed, (dy / len) * speed - 80, 'drumstick');
+            game.enemyProjectiles.push(proj);
+
+        } else if (this.bossType === 'boss_moai') {
+            // 🥌 stone: very fast straight at player
+            const speed = 620;
+            const proj = new BossProjectile(cx, cy, (dx / len) * speed, (dy / len) * speed, 'stone');
+            game.enemyProjectiles.push(proj);
+
+        } else if (this.bossType === 'boss_hedgehog') {
+            // 🍢 skewer: burst of 2, brief delay handled via burstCount
+            const speed = 400;
+            const proj = new BossProjectile(cx, cy, (dx / len) * speed, (dy / len) * speed, 'skewer');
+            game.enemyProjectiles.push(proj);
+        }
+    }
+
+    update(dt, game) {
+        if (this.damageFlashTimer > 0) this.damageFlashTimer -= dt;
+        if (game && game.player && !this.activated) {
+            const dx = game.player.x - this.x;
+            if (Math.abs(dx) < 600) {
+                this.activated = true;
+            }
+        }
+
+        if (!this.activated) return;
+        this.timeAlive += dt;
+
+        if (this.attackCooldown > 0) this.attackCooldown -= dt;
+        if (this.movementTimer > 0) this.movementTimer -= dt;
+
+        // Switch movement patterns
+        if (this.movementTimer <= 0) {
+            this.movementState = this.movementState === 'WAVE' ? 'CIRCLE' : 'WAVE';
+            this.movementTimer = 4.0 + Math.random() * 4.0;
+        }
+
+        const player = game ? game.player : null;
+
+        // Calculate dynamic target position based on state
+        if (this.movementState === 'WAVE') {
+            // Complex wave: mix of multiple sines/cosines for unpredictable horizontal and vertical motion
+            this.targetX = this.anchorX + Math.sin(this.timeAlive * 0.8) * (this.platform.width * 0.4);
+            this.targetY = this.anchorY + Math.sin(this.timeAlive * 1.5) * 80 + Math.cos(this.timeAlive * 0.7) * 50;
+        } else if (this.movementState === 'CIRCLE') {
+            // Circular/Elliptical path
+            const radiusX = 300;
+            const radiusY = 150;
+            const speed = 1.2;
+            this.targetX = this.anchorX + Math.cos(this.timeAlive * speed) * radiusX;
+            this.targetY = this.anchorY + Math.sin(this.timeAlive * speed) * radiusY;
+        }
+
+        // Add a small additional bob for extra "weightless" feel
+        this.targetY += Math.sin(this.timeAlive * 2.5) * 10;
+
+        // Follow the target smoothly with capped speed to avoid snap-teleporting between path changes.
+        const toTargetX = this.targetX - this.x;
+        const toTargetY = this.targetY - this.y;
+        const dist = Math.hypot(toTargetX, toTargetY);
+        if (dist > 0) {
+            const maxStep = this.maxMoveSpeed * dt;
+            const step = Math.min(dist, maxStep);
+            this.x += (toTargetX / dist) * step;
+            this.y += (toTargetY / dist) * step;
+        }
+
+        if (player) {
+            this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            const dx = player.x - this.x;
+            const dy = player.y - this.y;
+            this.distToPlayer = Math.hypot(dx, dy);
+        } else {
+            this.distToPlayer = Infinity;
+        }
+
+        if (this.attackCooldown <= 0 && player) {
+            if (this.bossType === 'boss_hedgehog') {
+                // burst of 2 skewers ~0.3s apart
+                if (this.burstCount <= 0) {
+                    this.burstCount = 2;
+                    this.burstTimer = 0;
+                    this.attackCooldown = 2.0;
+                }
+            } else {
+                const cooldowns = { boss_chick: 1.6, boss_moai: 2.2 };
+                this._fire(game, player);
+                this.attackCooldown = cooldowns[this.bossType] || 2.0;
+            }
+        }
+
+        // Hedgehog burst handling
+        if (this.burstCount > 0 && player) {
+            this.burstTimer -= dt;
+            if (this.burstTimer <= 0) {
+                this._fire(game, player);
+                this.burstCount--;
+                this.burstTimer = 0.35;
+            }
+        }
+
+        // Touch damage to player (for close-range melee)
+        if (game && player && player.invulnerableTimer <= 0) {
+            if (Physics.checkAABB(this, player.getHitbox())) {
+                player.takeDamage(game);
+            }
+        }
+    }
+
+    draw(ctx) {
+        const alpha = this.damageFlashTimer > 0
+            ? (0.5 + Math.sin(this.damageFlashTimer * 40) * 0.5)
+            : 1.0;
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+
+        // Glow aura
+        ctx.shadowColor = 'rgba(255, 80, 0, 0.6)';
+        ctx.shadowBlur = 20;
+
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
+        ctx.translate(cx, cy);
+        if (!this.facingRight) ctx.scale(-1, 1);
+
+        const cached = this._cachedEmoji;
+        ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2);
+
+        ctx.restore();
+
+        // ── Health bar (drawn in world space) ──
+        // Only show when boss is activated (player is close)
+        if (this.activated) {
+            const barW = this.width * 1.1;
+            const barH = 12;
+            const barX = this.x + (this.width - barW) / 2;
+            const barY = this.y - 22;
+            const fillRatio = Math.max(0, this.health / this.maxHealth);
+
+            // Background
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+
+            // Fill colour: green → yellow → red
+            let barColor;
+            if (fillRatio > 0.6) barColor = '#4caf50';
+            else if (fillRatio > 0.3) barColor = '#ffc107';
+            else barColor = '#f44336';
+
+            ctx.fillStyle = barColor;
+            ctx.fillRect(barX, barY, barW * fillRatio, barH);
+
+            // Border
+            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(barX, barY, barW, barH);
+        }
     }
 }

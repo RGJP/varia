@@ -18,6 +18,7 @@ export class Player extends Entity {
         this.invulnerableTimer = 0;
         this.knockbackTimer = 0;
         this.stunTimer = 0;
+        this.slowTimer = 0;
 
         this.attackTimer = 0;
         this.isAttacking = false;
@@ -48,6 +49,10 @@ export class Player extends Entity {
         this.firePowerUpTimer = 0;
         this.firePowerUpRotation = 0;
         this.pulseTimer = 0;
+        this.attackChargeTimer = 0;
+        this.maxAttackChargeTime = 1.5;
+        this.chargeIndicatorDelay = 0.14;
+        this.isChargingAttack = false;
 
         const icons = [
             "🚶‍➡️",
@@ -83,6 +88,9 @@ export class Player extends Entity {
         }
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
+        }
+        if (this.slowTimer > 0) {
+            this.slowTimer -= dt;
         }
         if (this.ignoreVineTimer > 0) {
             this.ignoreVineTimer -= dt;
@@ -140,14 +148,37 @@ export class Player extends Entity {
             }
         }
 
-        // Attack
-        if (!game.gameOverTriggered && this.stunTimer <= 0 && input.isJustPressed('KeyD') && !this.isAttacking) {
-            this.isAttacking = true;
-            this.attackTimer = this.attackDuration;
-            const throwX = this.facingRight ? this.x + this.width : this.x - 20;
-            const rock = new Rock(throwX, this.y + this.height / 2 - 10, this.facingRight);
-            game.rocks.push(rock);
-            game.audio.playThrow();
+        // Attack charge and release
+        const canChargeAttack = !game.gameOverTriggered && this.stunTimer <= 0 && !this.isClimbing;
+        if (!canChargeAttack) {
+            this.attackChargeTimer = 0;
+            this.isChargingAttack = false;
+        } else {
+            if (input.isDown('KeyD')) {
+                this.isChargingAttack = true;
+                this.attackChargeTimer = Math.min(this.maxAttackChargeTime, this.attackChargeTimer + dt);
+            }
+            if (input.isJustReleased('KeyD') && this.isChargingAttack) {
+                this.isAttacking = true;
+                this.attackTimer = this.attackDuration;
+
+                const fullyCharged = this.attackChargeTimer >= this.maxAttackChargeTime;
+                const sizeMultiplier = fullyCharged ? 3 : 1;
+                const rockSize = 20 * sizeMultiplier;
+                const throwX = this.facingRight ? this.x + this.width : this.x - rockSize;
+                const throwY = this.y + this.height / 2 - rockSize / 2;
+
+                const rock = new Rock(throwX, throwY, this.facingRight, {
+                    sizeMultiplier,
+                    damage: fullyCharged ? 5 : 1,
+                    phaseThroughSurfaces: fullyCharged
+                });
+                game.rocks.push(rock);
+                if (game.audio) game.audio.playThrow();
+
+                this.attackChargeTimer = 0;
+                this.isChargingAttack = false;
+            }
         }
 
         // Vine Collision Logic
@@ -210,11 +241,12 @@ export class Player extends Entity {
                 this.vx = 0;
             }
         } else if (!this.isClimbing && !game.gameOverTriggered) {
+            const effectiveSpeed = this.slowTimer > 0 ? this.speed * 0.4 : this.speed;
             if (input.isDown('ArrowLeft')) {
-                this.vx = -this.speed;
+                this.vx = -effectiveSpeed;
                 this.facingRight = false;
             } else if (input.isDown('ArrowRight')) {
-                this.vx = this.speed;
+                this.vx = effectiveSpeed;
                 this.facingRight = true;
             } else {
                 // Instant stop when no input is pressed, preventing sliding and feeling snappy
@@ -494,7 +526,9 @@ export class Player extends Entity {
             if (platform.isVictory) {
                 const flagBox = platform.getFlagBox();
                 if (Physics.checkAABB(this, platform) || (flagBox && Physics.checkAABB(this, flagBox))) {
-                    game.triggerVictory();
+                    if (game.canTriggerVictory()) {
+                        game.triggerVictory();
+                    }
                 }
             }
         });
@@ -666,6 +700,34 @@ export class Player extends Entity {
         }
 
         ctx.restore();
+
+        if (!game?.gameOverTriggered && this.isChargingAttack && this.attackChargeTimer > this.chargeIndicatorDelay) {
+            const chargeRatio = Math.max(0, Math.min(1, this.attackChargeTimer / this.maxAttackChargeTime));
+            const centerX = this.x + this.width / 2;
+            const centerY = this.y + this.height / 2;
+
+            ctx.save();
+            ctx.strokeStyle = chargeRatio >= 1 ? '#ffd700' : '#ff9800';
+            ctx.lineWidth = 3;
+            ctx.globalAlpha = 0.45 + chargeRatio * 0.4;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 38 + chargeRatio * 16, 0, Math.PI * 2);
+            ctx.stroke();
+
+            const barW = 70;
+            const barH = 8;
+            const barX = centerX - barW / 2;
+            const barY = this.y - 16;
+            ctx.globalAlpha = 0.9;
+            ctx.fillStyle = 'rgba(0,0,0,0.45)';
+            ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+            ctx.fillStyle = chargeRatio >= 1 ? '#ffd700' : '#ff9800';
+            ctx.fillRect(barX, barY, barW * chargeRatio, barH);
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(barX, barY, barW, barH);
+            ctx.restore();
+        }
 
         ctx.globalAlpha = 1.0;
     }

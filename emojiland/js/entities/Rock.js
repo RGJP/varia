@@ -3,15 +3,18 @@ import { Physics } from '../Physics.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
 export class Rock extends Entity {
-    constructor(x, y, facingRight) {
-        // Rock is small, maybe 20x20
-        super(x, y, 20, 20);
+    constructor(x, y, facingRight, options = {}) {
+        const sizeMultiplier = options.sizeMultiplier || 1;
+        const size = 20 * sizeMultiplier;
+        super(x, y, size, size);
         this.speed = 1500;
         this.vx = facingRight ? this.speed : -this.speed;
         this.vy = 0;
         this.facingRight = facingRight;
         this.rotation = 0;
-        this._cachedEmoji = getEmojiCanvas('🪨', 24);
+        this.damage = options.damage || 1;
+        this.phaseThroughSurfaces = !!options.phaseThroughSurfaces;
+        this._cachedEmoji = getEmojiCanvas('\u{1FAA8}', Math.round(24 * sizeMultiplier));
     }
 
     update(dt, game) {
@@ -26,7 +29,7 @@ export class Rock extends Entity {
                 if (game.audio) game.audio.playHit();
 
                 if (enemy.takeDamage) {
-                    enemy.takeDamage(1, game);
+                    enemy.takeDamage(this.damage, game);
                 } else {
                     enemy.markedForDeletion = true;
                     game.player.score += 50;
@@ -37,7 +40,7 @@ export class Rock extends Entity {
         });
 
         // Check if Rock hits platforms (mostly walls or ground)
-        if (!this.markedForDeletion) {
+        if (!this.markedForDeletion && !this.phaseThroughSurfaces) {
             const platforms = game._visiblePlatforms;
             for (let i = 0; i < platforms.length; i++) {
                 const platform = platforms[i];
