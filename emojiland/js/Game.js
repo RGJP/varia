@@ -72,7 +72,7 @@ export class Game {
         this._bombUICache = getEmojiCanvas('💣', 24);
 
         const startGameHandler = (e) => {
-            if (this.state === GameState.START_MENU || this.state === GameState.GAME_OVER || this.state === GameState.VICTORY) {
+            if (this.state === GameState.START_MENU || ((this.state === GameState.GAME_OVER || this.state === GameState.VICTORY) && this.canRestart !== false)) {
                 // IMPORTANT: Unlock audio FIRST, synchronously during the user gesture.
                 // This must happen before fullscreen or anything else to satisfy
                 // mobile browser autoplay policies.
@@ -237,6 +237,17 @@ export class Game {
             } else if (this.state === GameState.PAUSED) {
                 this.state = GameState.PLAYING;
                 this.audio.resumeBackgroundMusic && this.audio.resumeBackgroundMusic();
+
+                try {
+                    const elem = document.documentElement;
+                    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                        if (elem.requestFullscreen) {
+                            elem.requestFullscreen().catch(() => { });
+                        } else if (elem.webkitRequestFullscreen) {
+                            elem.webkitRequestFullscreen();
+                        }
+                    }
+                } catch (err) { }
             }
         }
 
@@ -278,6 +289,8 @@ export class Game {
                 this.gameOverTimer -= dt;
                 if (this.gameOverTimer <= 0) {
                     this.state = GameState.GAME_OVER;
+                    this.canRestart = false;
+                    setTimeout(() => { this.canRestart = true; }, 1000);
                 }
                 return; // Stop update of everything else
             }
@@ -319,6 +332,8 @@ export class Game {
 
     triggerVictory() {
         this.state = GameState.VICTORY;
+        this.canRestart = false;
+        setTimeout(() => { this.canRestart = true; }, 1000);
         this.audio.playWin();
         this.audio.fadeOutMusic(1000);
     }
