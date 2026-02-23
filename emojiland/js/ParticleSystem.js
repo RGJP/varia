@@ -153,7 +153,9 @@ export class ParticleSystem {
                 const dx = p.x - x;
                 const dy = p.y - y;
                 if (Math.hypot(dx, dy) < searchRadius) {
-                    p.life = 0;
+                    p.fadeInverse = false;
+                    p.maxLife = 0.4;
+                    p.life = 0.4;
                 }
             }
         }

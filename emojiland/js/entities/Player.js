@@ -437,7 +437,7 @@ export class Player extends Entity {
                         if (game.particles) game.particles.emitHit(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, '#FF4500');
                     }
                 } else if (Physics.checkAABB(hitbox, enemy)) {
-                    const stompableEmojis = ['🐢', '🐸', '🐦', '🦅', '🦉', '🐦‍⬛', '🦇'];
+                    const stompableEmojis = ['🐢', '🐸', '🐦', '🦅', '🦉', '🐦‍⬛', '🦇', '🧟‍♂️', '🦑', '🦗', '🐿️', '🕷️'];
                     if (stompableEmojis.includes(enemy.emoji) && this.vy > 0 && hitbox.y + hitbox.height - (this.vy * dt) <= enemy.y + enemy.height * 0.5) {
                         enemy.takeDamage(enemy.health, game);
                         this.vy = this.jumpForce;
@@ -521,15 +521,37 @@ export class Player extends Entity {
                         else if (platform.dx < 0) this.x = platform.x - this.width;
                     }
                 } else if (axis === 'y') {
-                    // Similar check for X overlap to prevent side snags
+                    // Similar check for X overlap to prevent side/corner snags
                     const overlapX = Math.min(this.x + this.width, platform.x + platform.width) - Math.max(this.x, platform.x);
-                    if (overlapX < 4) continue;
+                    if (overlapX < 8) continue;
+
+                    // Extra corner-snag protection when moving upward:
+                    // If the player barely clips the corner of a platform while jumping,
+                    // skip the Y resolution entirely to avoid being pushed below.
+                    if (this.vy < 0 && overlapX < this.width * 0.25) continue;
 
                     if (this.vy > 0) {
                         this.y = platform.y - this.height;
                         this.grounded = true;
                     } else if (this.vy < 0) {
-                        this.y = platform.y + platform.height;
+                        // If platform is a MovingPlatform, push player to top instead of bumping head
+                        if (platform.isMovingPlatform) {
+                            this.y = platform.y - this.height;
+                            this.grounded = true;
+                        } else {
+                            this.y = platform.y + platform.height;
+                        }
+                    } else if (platform.isMovingPlatform) {
+                        // vy is 0, but we collided. A moving platform hit us.
+                        // If it's hitting us while moving down, push us to the top.
+                        if (platform.dy > 0) {
+                            this.y = platform.y - this.height;
+                            this.grounded = true;
+                        } else if (platform.dy < 0) {
+                            // Hit from below while moving up? Push us UP to the top.
+                            this.y = platform.y - this.height;
+                            this.grounded = true;
+                        }
                     }
                     this.vy = 0;
                 }

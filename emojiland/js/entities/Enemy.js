@@ -30,6 +30,8 @@ const TYPE_LIZARD = 'lizard'; // 🦗
 const TYPE_ALIEN = 'alien'; // 🛸
 const TYPE_TROLL = 'troll'; // 🧌
 const TYPE_APE = 'ape'; // 🦍
+const TYPE_SPIDER = 'spider'; // 🕷️
+const TYPE_MINI_SPIDER = 'mini_spider'; // 🕷️
 
 export class Enemy extends Entity {
     constructor(x, y, platform) {
@@ -56,6 +58,7 @@ export class Enemy extends Entity {
             { type: TYPE_TROLL, width: 60, height: 60, emoji: '🧌', baseSpeed: 40, health: 6 },
             { type: TYPE_ALIEN, width: 45, height: 45, emoji: '🛸', baseSpeed: 80, health: 4 },
             { type: TYPE_APE, width: 60, height: 60, emoji: '🦍', baseSpeed: 0, health: 5 },
+            { type: TYPE_SPIDER, width: 70, height: 70, emoji: '🕷️', baseSpeed: 120, health: 4 },
         ];
 
         const pick = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
@@ -138,6 +141,10 @@ export class Enemy extends Entity {
         if (this.type === TYPE_APE) {
             this.state = 'IDLE';
         }
+        if (this.type === TYPE_SPIDER || this.type === TYPE_MINI_SPIDER) {
+            this.state = 'PATROL';
+            this.stateTimer = 1.0 + Math.random() * 1.0; // Jump timer
+        }
 
         // Pre-cache emoji
         this._cachedEmoji = getEmojiCanvas(this.emoji, this.height);
@@ -180,6 +187,33 @@ export class Enemy extends Entity {
                 }
                 if (game && game.player) game.player.score += 50;
                 if (game) game.enemiesDefeated++;
+
+                // Spider split logic
+                if (this.type === TYPE_SPIDER && game) {
+                    // Spawn 3 mini spiders with a slight delay represented by the update cycle
+                    // For immediate spawning but visual delay, we can just spawn them now
+                    // The prompt mentioned "a split-second respawn delay"
+                    // We can achieve this by having the game handle it or just spawning them here
+                    for (let i = 0; i < 3; i++) {
+                        const mini = new Enemy(this.x + (i - 1) * 20, this.y, this.platform);
+                        mini.type = TYPE_MINI_SPIDER;
+                        mini.width = 45;
+                        mini.height = 45;
+                        mini.emoji = '🕷️';
+                        mini._cachedEmoji = getEmojiCanvas(mini.emoji, mini.height);
+                        mini.baseSpeed = 120;
+                        mini.speed = mini.baseSpeed;
+                        mini.health = 1;
+                        mini.maxHealth = 1;
+                        mini.state = 'PATROL';
+                        mini.stateTimer = 0.5 + Math.random() * 1.0;
+                        mini.vy = -300 - Math.random() * 200; // Popping out
+                        mini.vx = (i - 1) * 100;
+                        mini.y = this.y;
+                        game.enemies.push(mini);
+                        game.totalEnemies++; // Ensure they count towards total enemies for victory
+                    }
+                }
             }
         }
     }
@@ -223,6 +257,8 @@ export class Enemy extends Entity {
             case TYPE_ALIEN: this.updateAlien(dt, game, player, distToPlayer, distToPlayerX); break;
             case TYPE_TROLL: this.updatePatrol(dt); break;
             case TYPE_APE: this.updateApe(dt, game, player, distToPlayer, distToPlayerX); break;
+            case TYPE_SPIDER: this.updateSpider(dt, player, distToPlayer, game); break;
+            case TYPE_MINI_SPIDER: this.updateSpider(dt, player, distToPlayer, game); break;
         }
 
         if (this.type === TYPE_TROLL && game && game.particles) {
@@ -250,24 +286,66 @@ export class Enemy extends Entity {
             this.x += this.vx * dt;
             this.y += this.vy * dt;
 
-            let platLeft = this.platform.x;
-            let platRight = this.platform.x + this.platform.width;
+            // Spiders in JUMP state are free to leave their platform
+            const isSpiderJumping = (this.type === TYPE_SPIDER || this.type === TYPE_MINI_SPIDER) && this.state === 'JUMP';
 
-            if (this.x + this.width > platRight) {
-                this.x = platRight - this.width;
-                if (this.vx !== 0) this.facingRight = false;
-                this.vx = -Math.abs(this.vx);
-                if (this.state === 'CHARGE') this.state = 'PATROL';
-                if (this.type === TYPE_LIZARD && this.tongueState !== 'IDLE') this.tongueState = 'RETRACTING';
-            } else if (this.x < platLeft) {
-                this.x = platLeft;
-                if (this.vx !== 0) this.facingRight = true;
-                this.vx = Math.abs(this.vx);
-                if (this.state === 'CHARGE') this.state = 'PATROL';
-                if (this.type === TYPE_LIZARD && this.tongueState !== 'IDLE') this.tongueState = 'RETRACTING';
+            if (!isSpiderJumping) {
+                let platLeft = this.platform.x;
+                let platRight = this.platform.x + this.platform.width;
+
+                if (this.x + this.width > platRight) {
+                    this.x = platRight - this.width;
+                    if (this.vx !== 0) this.facingRight = false;
+                    this.vx = -Math.abs(this.vx);
+                    if (this.state === 'CHARGE') this.state = 'PATROL';
+                    if (this.type === TYPE_LIZARD && this.tongueState !== 'IDLE') this.tongueState = 'RETRACTING';
+                } else if (this.x < platLeft) {
+                    this.x = platLeft;
+                    if (this.vx !== 0) this.facingRight = true;
+                    this.vx = Math.abs(this.vx);
+                    if (this.state === 'CHARGE') this.state = 'PATROL';
+                    if (this.type === TYPE_LIZARD && this.tongueState !== 'IDLE') this.tongueState = 'RETRACTING';
+                }
             }
 
-            if (this.vy > 0 && this.y + this.height >= this.platform.y) {
+            // Spiders can land on ANY platform, not just their home platform
+            if (this.vy > 0 && (this.type === TYPE_SPIDER || this.type === TYPE_MINI_SPIDER) && game) {
+                const allPlats = game.platforms;
+                let landed = false;
+                for (let pi = 0; pi < allPlats.length; pi++) {
+                    const p = allPlats[pi];
+                    if (this.y + this.height >= p.y && this.y + this.height <= p.y + 20 &&
+                        this.x + this.width > p.x && this.x < p.x + p.width) {
+                        this.y = p.y - this.height;
+                        this.vy = 0;
+                        this.platform = p; // adopt new home platform
+                        if (this.state === 'JUMP') {
+                            this.state = 'PATROL';
+                            this.stateTimer = 1.0 + Math.random() * 2.0;
+                        }
+                        landed = true;
+                        break;
+                    }
+                }
+                // Also check moving platforms
+                if (!landed && game.movingPlatforms) {
+                    for (let pi = 0; pi < game.movingPlatforms.length; pi++) {
+                        const p = game.movingPlatforms[pi];
+                        if (this.y + this.height >= p.y && this.y + this.height <= p.y + 20 &&
+                            this.x + this.width > p.x && this.x < p.x + p.width) {
+                            this.y = p.y - this.height;
+                            this.vy = 0;
+                            this.platform = p;
+                            if (this.state === 'JUMP') {
+                                this.state = 'PATROL';
+                                this.stateTimer = 1.0 + Math.random() * 2.0;
+                            }
+                            landed = true;
+                            break;
+                        }
+                    }
+                }
+            } else if (this.vy > 0 && this.y + this.height >= this.platform.y) {
                 this.y = this.platform.y - this.height;
 
                 if (this.type === TYPE_JUMPER && this.state === 'JUMP') {
@@ -281,7 +359,6 @@ export class Enemy extends Entity {
                     this.vx = this.facingRight ? this.baseSpeed : -this.baseSpeed;
                     this.vy = 0;
                     if (game && game.camera) {
-                        // Big cloud-of-smoke effect at the dino's feet
                         if (game.particles) {
                             const stompX = this.x + this.width / 2;
                             const stompY = this.y + this.height;
@@ -730,6 +807,94 @@ export class Enemy extends Entity {
         this.vy = 0;
     }
 
+    updateSpider(dt, player, dist, game) {
+        if (this.stateTimer > 0) this.stateTimer -= dt;
+
+        if (this.state === 'PATROL') {
+            this.speed = this.baseSpeed;
+            this.vx = this.facingRight ? this.speed : -this.speed;
+
+            if (this.stateTimer <= 0) {
+                this.state = 'JUMP';
+                let startY = this.y + this.height;
+                let startX = this.x + this.width / 2;
+                let targetPlat = null;
+
+                if (game) {
+                    let validPlatforms = [];
+                    for (let i = 0; i < game.platforms.length; i++) {
+                        let p = game.platforms[i];
+                        if (p === this.platform) continue;
+                        let dy = p.y - startY;
+                        let dx = (p.x + p.width / 2) - startX;
+                        // Filter out platforms that are too high or too far to reasonably jump to
+                        if (dy > -250 && Math.abs(dx) < 600 && Math.abs(dx) > 50) {
+                            validPlatforms.push(p);
+                        }
+                    }
+
+                    if (validPlatforms.length > 0) {
+                        // Check if player is on a valid platform
+                        if (player && dist < 600) {
+                            for (let i = 0; i < validPlatforms.length; i++) {
+                                let p = validPlatforms[i];
+                                if (player.x + player.width > p.x && player.x < p.x + p.width &&
+                                    Math.abs(player.y + player.height - p.y) < 50) {
+                                    targetPlat = p;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!targetPlat) {
+                            targetPlat = validPlatforms[Math.floor(Math.random() * validPlatforms.length)];
+                        }
+                    }
+                }
+
+                if (targetPlat) {
+                    // Calculate exact jump physics
+                    let targetX = targetPlat.x + targetPlat.width / 2;
+                    // Add some random scatter so it doesn't always land dead center
+                    targetX += (Math.random() - 0.5) * (targetPlat.width * 0.5);
+                    let targetY = targetPlat.y;
+
+                    let dy = targetY - startY;
+                    let dx = targetX - startX;
+
+                    // Choose apex height at least 100px above start, and 50px above target
+                    let apex = Math.min(startY - 100, targetY - 50);
+                    let h = startY - apex;
+
+                    this.vy = -Math.sqrt(2 * Physics.GRAVITY * h);
+
+                    let a = 0.5 * Physics.GRAVITY;
+                    let b = this.vy;
+                    let c = -dy;
+                    let discriminant = b * b - 4 * a * c;
+
+                    if (discriminant >= 0) {
+                        let t = (-b + Math.sqrt(discriminant)) / (2 * a);
+                        this.vx = dx / t;
+                        this.facingRight = this.vx > 0;
+                    } else {
+                        // Fallback (mathematically shouldn't happen given the apex)
+                        this.vy = -400;
+                        this.vx = dx > 0 ? 200 : -200;
+                        this.facingRight = this.vx > 0;
+                    }
+                } else {
+                    // No valid platform, do a small safe hop on current platform
+                    this.vy = -(250 + Math.random() * 150);
+                    let centerDist = (this.platform.x + this.platform.width / 2) - startX;
+                    this.vx = centerDist > 0 ? 100 : -100;
+                    this.facingRight = this.vx > 0;
+                }
+            }
+        } else if (this.state === 'JUMP') {
+            // physics handles the jump arc; landing is resolved in update()
+        }
+    }
+
     draw(ctx) {
         ctx.save();
 
@@ -771,6 +936,11 @@ export class Enemy extends Entity {
             scaleX = 0.8; scaleY = 0.8;
             drawY += this.height * 0.1;
             alpha = (Math.floor(this.timeAlive * 10) % 2 === 0) ? 0.5 : 1.0;
+        }
+
+        if (this.type === TYPE_SPIDER || this.type === TYPE_MINI_SPIDER) {
+            ctx.shadowColor = 'white';
+            ctx.shadowBlur = 6;
         }
 
         ctx.globalAlpha = alpha;

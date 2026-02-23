@@ -29,7 +29,7 @@ export class Collectible extends Entity {
         ctx.drawImage(cached.canvas, this.x - (cached.width - this.width) / 2, this.y - (cached.height - this.height) / 2);
 
         if (this.isReplenish || this.isPowerUp) {
-            const hoverMultiplier = this.isPowerUp ? 1.0 : 0.8;
+            const hoverMultiplier = this.isPowerUp ? 0.6 : 0.5;
             const pOffsetY = -(this.height * hoverMultiplier) + Math.sin(this.time * 2) * 3;
 
             ctx.save();
