@@ -146,6 +146,19 @@ export class ParticleSystem {
         }
     }
 
+    clearGreenSmoke(x, y, searchRadius = 300) {
+        for (let i = 0; i < this.particles.length; i++) {
+            const p = this.particles[i];
+            if (p.fadeInverse) {
+                const dx = p.x - x;
+                const dy = p.y - y;
+                if (Math.hypot(dx, dy) < searchRadius) {
+                    p.life = 0;
+                }
+            }
+        }
+    }
+
     update(dt) {
         // Update and filter dead in a single pass using a write index
         let writeIdx = 0;

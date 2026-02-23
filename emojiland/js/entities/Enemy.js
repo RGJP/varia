@@ -170,7 +170,14 @@ export class Enemy extends Entity {
                 if (game && game.audio) game.audio.playHit();
             } else {
                 this.markedForDeletion = true;
-                if (game && game.particles) game.particles.emitDeath(this.x + this.width / 2, this.y + this.height / 2);
+                if (game && game.particles) {
+                    const cx = this.x + this.width / 2;
+                    const cy = this.y + this.height / 2;
+                    game.particles.emitDeath(cx, cy);
+                    if (this.type === TYPE_TROLL) {
+                        game.particles.clearGreenSmoke(cx, cy);
+                    }
+                }
                 if (game && game.player) game.player.score += 50;
                 if (game) game.enemiesDefeated++;
             }
@@ -699,7 +706,7 @@ export class Enemy extends Entity {
 
             if (this.attackCooldown <= 0) {
                 this.state = 'ATTACK';
-                this.attackCooldown = 2.5 + Math.random() * 2.0;
+                this.attackCooldown = 2.0;
 
                 const centerX = this.x + this.width / 2;
                 const centerY = this.y + this.height / 2;

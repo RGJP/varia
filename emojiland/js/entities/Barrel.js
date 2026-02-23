@@ -44,19 +44,24 @@ export class Barrel extends Entity {
                     // Top or bottom collision
                     if (this.vy > 0 && this.y + this.height - (this.vy * dt) <= platform.y) {
                         this.y = platform.y - this.height;
-                        this.vy = 0;
+                        // Bounce!
+                        this.vy = -200 - Math.random() * 100;
                         onGround = true;
                     } else if (this.vy < 0 && this.y - (this.vy * dt) >= platform.y + platform.height) {
                         this.y = platform.y + platform.height;
                         this.vy = 0;
                     }
                 } else {
-                    // Side collision - Bounce!
-                    if (this.vx > 0) {
+                    // Side collision - Bounce horizontally!
+                    // Only trigger side bounce if we are clearly hitting the side, not just rolling off
+                    const centerBarrel = this.x + this.width / 2;
+                    const centerPlatform = platform.x + platform.width / 2;
+
+                    if (this.vx > 0 && centerBarrel < centerPlatform) {
                         this.x = platform.x - this.width;
                         this.vx = -this.speed;
                         this.facingRight = false;
-                    } else if (this.vx < 0) {
+                    } else if (this.vx < 0 && centerBarrel > centerPlatform) {
                         this.x = platform.x + platform.width;
                         this.vx = this.speed;
                         this.facingRight = true;

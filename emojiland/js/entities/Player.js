@@ -364,12 +364,6 @@ export class Player extends Entity {
                             this.x += platform.dx;
                             this.y = platform.y - this.height - 0.01; // tiny offset prevents X-collision float snag
                             break;
-                        } else if (this.vy < 0) {
-                            // Player just jumped frame 1. Prevent upward-moving platform from snagging them.
-                            if (this.y + this.height > platform.y) {
-                                this.y = platform.y - this.height - 0.01;
-                            }
-                            break;
                         }
                     }
                 }
@@ -510,13 +504,27 @@ export class Player extends Entity {
         for (let platform of platforms) {
             if (Physics.checkAABB(this, platform)) {
                 if (axis === 'x') {
+                    // Check if we are really "beside" the platform. 
+                    // If the Y overlap is tiny, it's likely a corner snag from a jump/fall, so skip X resolution.
+                    const overlapY = Math.min(this.y + this.height, platform.y + platform.height) - Math.max(this.y, platform.y);
+                    if (overlapY < 12) continue;
+
                     if (this.vx > 0) {
                         this.x = platform.x - this.width;
+                        this.vx = 0;
                     } else if (this.vx < 0) {
                         this.x = platform.x + platform.width;
+                        this.vx = 0;
+                    } else if (platform.isMovingPlatform && platform.dx !== 0) {
+                        // If platform moves into player while they are still
+                        if (platform.dx > 0) this.x = platform.x + platform.width;
+                        else if (platform.dx < 0) this.x = platform.x - this.width;
                     }
-                    this.vx = 0;
                 } else if (axis === 'y') {
+                    // Similar check for X overlap to prevent side snags
+                    const overlapX = Math.min(this.x + this.width, platform.x + platform.width) - Math.max(this.x, platform.x);
+                    if (overlapX < 4) continue;
+
                     if (this.vy > 0) {
                         this.y = platform.y - this.height;
                         this.grounded = true;
