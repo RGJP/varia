@@ -3,6 +3,7 @@ import { MovingPlatform } from './MovingPlatform.js';
 import { Enemy } from '../entities/Enemy.js';
 import { Collectible } from '../entities/Collectible.js';
 import { Vine } from '../entities/Vine.js';
+import { SwingingVine } from '../entities/SwingingVine.js';
 import { getRandomTheme } from './ThemeManager.js';
 
 export function loadLevel() {
@@ -40,6 +41,7 @@ export function loadLevel() {
     const enemies = [];
     const collectibles = [];
     const vines = [];
+    const swingingVines = [];
     const potentialCoinLocations = [];
 
     // Starting platform
@@ -145,6 +147,14 @@ export function loadLevel() {
                 const topY = platY - 150 - Math.random() * 200;
                 const vineHeight = 250 + Math.random() * 150;
                 vines.push(new Vine(vineX, topY, vineHeight));
+            }
+
+            // Chance to add a swinging vine in the sky
+            if (gap > 80 && Math.random() < 0.20) {
+                const svAnchorX = currentX + gap / 2 + (Math.random() * 60 - 30);
+                const svAnchorY = 50 + Math.random() * 150;
+                const svRopeLen = 150 + Math.random() * 100;
+                swingingVines.push(new SwingingVine(svAnchorX, svAnchorY, svRopeLen));
             }
 
             // Chance to add a horizontal moving platform bridging the gap
@@ -342,5 +352,5 @@ export function loadLevel() {
     // Remove any vines that ended up with zero or negative height
     const validVines = vines.filter(v => v.height > 10);
 
-    return { platforms, movingPlatforms, enemies, collectibles, vines: validVines, theme };
+    return { platforms, movingPlatforms, enemies, collectibles, vines: validVines, swingingVines, theme };
 }

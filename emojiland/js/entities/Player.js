@@ -32,6 +32,7 @@ export class Player extends Entity {
         this.isClimbing = false;
         this.currentVine = null;
         this.ignoreVineTimer = 0;
+        this.vineClimbDist = 0; // distance along swinging vine rope from pivot
 
         this.airJumps = 1;
 
@@ -150,21 +151,46 @@ export class Player extends Entity {
         }
 
         // Vine Collision Logic
-        if (!this.isClimbing && this.ignoreVineTimer <= 0 && game.vines) {
-            for (let vine of game.vines) {
-                // If the player overlaps a vine and we aren't heavily knocked back
-                if (Physics.checkAABB(this, vine) && this.knockbackTimer <= 0) {
-                    this.isClimbing = true;
-                    this.currentVine = vine;
-                    this.vx = 0;
-                    this.vy = 0;
-                    // Snap to vine horizontally
-                    this.x = vine.x + vine.width / 2 - this.width / 2;
-                    // Prevent immediate jump again
-                    this.jumpBufferTimer = 0;
-                    this.coyoteTimer = 0;
-                    this.airJumps = 1;
-                    break;
+        if (!this.isClimbing && this.ignoreVineTimer <= 0 && this.knockbackTimer <= 0) {
+            // Check static vines
+            if (game.vines) {
+                for (let vine of game.vines) {
+                    if (Physics.checkAABB(this, vine)) {
+                        this.isClimbing = true;
+                        this.currentVine = vine;
+                        this.vx = 0;
+                        this.vy = 0;
+                        this.x = vine.x + vine.width / 2 - this.width / 2;
+                        this.jumpBufferTimer = 0;
+                        this.coyoteTimer = 0;
+                        this.airJumps = 1;
+                        break;
+                    }
+                }
+            }
+            // Check swinging vines
+            if (!this.isClimbing && game.swingingVines) {
+                for (let sv of game.swingingVines) {
+                    if (sv.checkCollision(this)) {
+                        this.isClimbing = true;
+                        this.currentVine = sv;
+                        this.vx = 0;
+                        this.vy = 0;
+                        // Compute how far along the rope the player grabbed on
+                        const pivotY = sv.anchorY + sv.anchorHeight;
+                        const playerCenterY = this.y + this.height / 2;
+                        // Approximate distance along rope from the player's Y
+                        const cosA = Math.cos(sv.currentAngle);
+                        this.vineClimbDist = Math.max(0, Math.min(sv.ropeLength, (playerCenterY - pivotY) / (cosA || 1)));
+                        // Snap position immediately
+                        const pivotX = sv.anchorX;
+                        this.x = pivotX - Math.sin(sv.currentAngle) * this.vineClimbDist - this.width / 2;
+                        this.y = pivotY + Math.cos(sv.currentAngle) * this.vineClimbDist - this.height / 2;
+                        this.jumpBufferTimer = 0;
+                        this.coyoteTimer = 0;
+                        this.airJumps = 1;
+                        break;
+                    }
                 }
             }
         }
@@ -252,27 +278,62 @@ export class Player extends Entity {
             this.vy = 0;
             this.vx = 0;
 
-            if (input.isDown('ArrowUp')) {
-                this.vy = -200;
-            } else if (input.isDown('ArrowDown')) {
-                this.vy = 200;
-            }
+            const isSwinging = this.currentVine && typeof this.currentVine.getVineCenterXAtY === 'function';
 
-            // Allow changing facing direction while on vine
-            if (input.isDown('ArrowLeft')) {
-                this.facingRight = false;
-            } else if (input.isDown('ArrowRight')) {
-                this.facingRight = true;
-            }
+            // For swinging vines: position player directly from angle + distance
+            if (isSwinging) {
+                const sv = this.currentVine;
+                const pivotX = sv.anchorX;
+                const pivotY = sv.anchorY + sv.anchorHeight;
 
-            this.y += this.vy * dt;
+                // Climb up/down adjusts distance along the rope
+                if (input.isDown('ArrowUp')) {
+                    this.vineClimbDist -= 200 * dt;
+                } else if (input.isDown('ArrowDown')) {
+                    this.vineClimbDist += 200 * dt;
+                }
 
-            // Clamp vertical movement so they can't leave the vine without jumping
-            if (this.y < this.currentVine.y - this.height * 0.5) {
-                this.y = this.currentVine.y - this.height * 0.5;
-            }
-            if (this.y > this.currentVine.y + this.currentVine.height - this.height) {
-                this.y = this.currentVine.y + this.currentVine.height - this.height;
+                // Clamp to rope length
+                if (this.vineClimbDist < this.height * 0.3) {
+                    this.vineClimbDist = this.height * 0.3;
+                }
+                if (this.vineClimbDist > sv.ropeLength - this.height * 0.3) {
+                    this.vineClimbDist = sv.ropeLength - this.height * 0.3;
+                }
+
+                // Compute exact position from the vine's current angle
+                this.x = pivotX - Math.sin(sv.currentAngle) * this.vineClimbDist - this.width / 2;
+                this.y = pivotY + Math.cos(sv.currentAngle) * this.vineClimbDist - this.height / 2;
+
+                // Allow changing facing direction while on vine
+                if (input.isDown('ArrowLeft')) {
+                    this.facingRight = false;
+                } else if (input.isDown('ArrowRight')) {
+                    this.facingRight = true;
+                }
+            } else {
+                // Static vine: original logic
+                if (input.isDown('ArrowUp')) {
+                    this.vy = -200;
+                } else if (input.isDown('ArrowDown')) {
+                    this.vy = 200;
+                }
+
+                this.y += this.vy * dt;
+
+                // Allow changing facing direction while on vine
+                if (input.isDown('ArrowLeft')) {
+                    this.facingRight = false;
+                } else if (input.isDown('ArrowRight')) {
+                    this.facingRight = true;
+                }
+
+                if (this.y < this.currentVine.y - this.height * 0.5) {
+                    this.y = this.currentVine.y - this.height * 0.5;
+                }
+                if (this.y > this.currentVine.y + this.currentVine.height - this.height) {
+                    this.y = this.currentVine.y + this.currentVine.height - this.height;
+                }
             }
 
             // Jump off the vine

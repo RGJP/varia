@@ -44,6 +44,7 @@ export class Game {
         this.rocks = [];
         this.enemyProjectiles = [];
         this.vines = [];
+        this.swingingVines = [];
         this.movingPlatforms = [];
 
         this.audio = new AudioEngine();
@@ -52,6 +53,7 @@ export class Game {
 
         this._visiblePlatforms = [];
         this._visibleVines = [];
+        this._visibleSwingingVines = [];
 
         this.hitStopTimer = 0;
 
@@ -171,6 +173,7 @@ export class Game {
         this.enemies = levelData.enemies;
         this.collectibles = levelData.collectibles;
         this.vines = levelData.vines || [];
+        this.swingingVines = levelData.swingingVines || [];
         this.movingPlatforms = levelData.movingPlatforms || [];
         this.currentTheme = levelData.theme;
         this.rocks = [];
@@ -277,6 +280,12 @@ export class Game {
                 this._visibleVines.push(this.vines[i]);
             }
         }
+        this._visibleSwingingVines.length = 0;
+        for (let i = 0; i < this.swingingVines.length; i++) {
+            if (this._isVisible(this.swingingVines[i], 800)) {
+                this._visibleSwingingVines.push(this.swingingVines[i]);
+            }
+        }
 
         // Update moving platforms and include in visible platforms for collision
         for (let i = 0; i < this.movingPlatforms.length; i++) {
@@ -307,6 +316,13 @@ export class Game {
             }
 
             this.player.update(dt, this.input, this._visiblePlatforms, this);
+
+            // Update swinging vines
+            const svines = this._visibleSwingingVines;
+            for (let i = 0; i < svines.length; i++) {
+                svines[i].update(dt);
+            }
+
             const enemies = this.enemies;
             for (let i = 0; i < enemies.length; i++) {
                 if (this._isVisible(enemies[i], 1000)) {
@@ -384,6 +400,10 @@ export class Game {
             for (let i = 0; i < vines.length; i++) {
                 vines[i].draw(this.ctx);
             }
+            const svines = this._visibleSwingingVines;
+            for (let i = 0; i < svines.length; i++) {
+                svines[i].draw(this.ctx);
+            }
 
             const platforms = this._visiblePlatforms;
             for (let i = 0; i < platforms.length; i++) {
@@ -422,6 +442,10 @@ export class Game {
             const vines = this.vines;
             for (let i = 0; i < vines.length; i++) {
                 if (this._isVisible(vines[i], 300)) vines[i].draw(this.ctx);
+            }
+            const svines = this.swingingVines;
+            for (let i = 0; i < svines.length; i++) {
+                if (this._isVisible(svines[i], 300)) svines[i].draw(this.ctx);
             }
 
             const platforms = this.platforms;
