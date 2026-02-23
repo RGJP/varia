@@ -594,7 +594,7 @@ export class Game {
             this.ctx.fillStyle = gradient;
             this.ctx.shadowColor = 'rgba(255, 234, 0, 0.4)';
             this.ctx.shadowBlur = 25;
-            this.ctx.fillText('EMOJILAND', 0, -150);
+            this.ctx.fillText('⭐EMOJILAND⭐', 0, -150);
 
             // Controls & Info Card
             const cardWidth = 760;

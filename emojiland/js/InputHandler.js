@@ -75,7 +75,7 @@ export class InputHandler {
             if (!joyZone || !joyKnob) return;
 
             let activeTouchId = null;
-            const maxDistance = 60;
+            const maxDistance = 80;
 
             const resetJoystick = () => {
                 activeTouchId = null;

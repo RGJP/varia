@@ -81,8 +81,8 @@ canvas {
 }
 
 .joystick-zone {
-    width: 180px;
-    height: 180px;
+    width: 240px;
+    height: 240px;
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.3);
     /* Thinner border */
@@ -90,8 +90,8 @@ canvas {
     position: relative;
     pointer-events: auto;
     touch-action: none;
-    margin-bottom: 30px;
-    margin-left: 40px;
+    margin-bottom: 20px;
+    margin-left: 20px;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
@@ -106,8 +106,8 @@ canvas {
 }
 
 .joystick-knob {
-    width: 80px;
-    height: 80px;
+    width: 100px;
+    height: 100px;
     background: rgba(255, 255, 255, 0.6);
     border: 2px solid rgba(255, 255, 255, 0.8);
     border-radius: 50%;
