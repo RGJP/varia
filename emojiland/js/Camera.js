@@ -5,14 +5,33 @@ export class Camera {
         this.viewportWidth = viewportWidth;
         this.viewportHeight = viewportHeight;
 
-        // Adaptive zoom: Desktop (0.90) for detail, Mobile (0.50) for wider visibility
+        // Adaptive zoom: Desktop (0.90) for detail, Mobile (0.63) for wider visibility
         const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 800;
+        this.isMobile = isMobile;
         this.zoom = isMobile ? 0.63 : 0.90;
+
+        // Mobile zoom toggle: tight / default / wide
+        this.mobileZoomLevels = [
+            { zoom: 0.63, label: '🎦' },   // Default
+            { zoom: 0.70, label: '🎦' },   // Tight
+            { zoom: 0.50, label: '🎦' },   // Wide
+        ];
+        this.mobileZoomIndex = 0;
+        this.mobileZoomOverride = false;
 
         this.shakeTimer = 0;
         this.shakeIntensity = 0;
         this.shakeOffsetX = 0;
         this.shakeOffsetY = 0;
+    }
+
+    // Cycle through mobile zoom levels and return the new label
+    cycleZoom() {
+        this.mobileZoomIndex = (this.mobileZoomIndex + 1) % this.mobileZoomLevels.length;
+        const level = this.mobileZoomLevels[this.mobileZoomIndex];
+        this.zoom = level.zoom;
+        this.mobileZoomOverride = true;
+        return level.label;
     }
 
     // Effective viewport size in world coordinates (accounts for zoom)
@@ -28,9 +47,11 @@ export class Camera {
         this.viewportWidth = viewportWidth;
         this.viewportHeight = viewportHeight;
 
-        // Dynamic zoom adjustment on resize
-        const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 800;
-        this.zoom = isMobile ? 0.63 : 0.90;
+        // Dynamic zoom adjustment on resize (only if user hasn't chosen a custom zoom)
+        if (!this.mobileZoomOverride) {
+            const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 800;
+            this.zoom = isMobile ? 0.63 : 0.90;
+        }
     }
 
     shake(duration, intensity) {

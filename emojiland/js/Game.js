@@ -34,6 +34,19 @@ export class Game {
         this.input = new InputHandler();
         this.camera = new Camera(canvas.width, canvas.height);
 
+        // Wire up the camera zoom toggle button (mobile only)
+        setTimeout(() => {
+            const camBtn = document.getElementById('btn-camera');
+            if (camBtn) {
+                camBtn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const newLabel = this.camera.cycleZoom();
+                    camBtn.textContent = newLabel;
+                }, { passive: false });
+            }
+        }, 0);
+
         this.state = GameState.START_MENU;
         this.lastTime = 0;
 
