@@ -355,11 +355,15 @@ export class Player extends Entity {
             // This prevents vertical movers from causing X-axis collision artifacts
             if (this.grounded) {
                 for (let platform of platforms) {
-                    if (platform.isMovingPlatform && this.y + this.height >= platform.y && this.y + this.height <= platform.y + 10 &&
-                        this.x + this.width > platform.x && this.x < platform.x + platform.width) {
-                        this.x += platform.dx;
-                        this.y += platform.dy;
-                        break;
+                    if (platform.isMovingPlatform) {
+                        const oldPlatformY = platform.y - platform.dy;
+                        const tolerance = 2 + Math.abs(platform.dy);
+                        if (Math.abs((this.y + this.height) - oldPlatformY) <= tolerance &&
+                            this.x + this.width > platform.x && this.x < platform.x + platform.width) {
+                            this.x += platform.dx;
+                            this.y = platform.y - this.height; // Exact alignment to prevent float errors
+                            break;
+                        }
                     }
                 }
             }
