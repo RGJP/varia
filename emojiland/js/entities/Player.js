@@ -353,15 +353,22 @@ export class Player extends Entity {
         } else {
             // Carry player on moving platforms BEFORE collision resolution
             // This prevents vertical movers from causing X-axis collision artifacts
-            if (this.grounded) {
-                for (let platform of platforms) {
-                    if (platform.isMovingPlatform) {
-                        const oldPlatformY = platform.y - platform.dy;
-                        const tolerance = 2 + Math.abs(platform.dy);
-                        if (Math.abs((this.y + this.height) - oldPlatformY) <= tolerance &&
-                            this.x + this.width > platform.x && this.x < platform.x + platform.width) {
+            for (let platform of platforms) {
+                if (platform.isMovingPlatform) {
+                    const oldPlatformY = platform.y - platform.dy;
+                    const tolerance = 4 + Math.abs(platform.dy);
+                    if (Math.abs((this.y + this.height) - oldPlatformY) <= tolerance &&
+                        this.x + this.width > platform.x && this.x < platform.x + platform.width) {
+
+                        if (this.grounded) {
                             this.x += platform.dx;
-                            this.y = platform.y - this.height; // Exact alignment to prevent float errors
+                            this.y = platform.y - this.height - 0.01; // tiny offset prevents X-collision float snag
+                            break;
+                        } else if (this.vy < 0) {
+                            // Player just jumped frame 1. Prevent upward-moving platform from snagging them.
+                            if (this.y + this.height > platform.y) {
+                                this.y = platform.y - this.height - 0.01;
+                            }
                             break;
                         }
                     }

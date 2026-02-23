@@ -38,6 +38,66 @@ export function loadLevel() {
         return false;
     };
 
+    const isVineClipping = (anchorX, anchorY, ropeLen, otherRects = []) => {
+        // Use max possible swing angle (40 degrees) for safety check
+        const maxAngleRad = (40 * Math.PI) / 180;
+        const reach = Math.sin(maxAngleRad) * ropeLen;
+        const vineWidth = 24;
+        const padding = 20;
+
+        const vMinX = anchorX - reach - vineWidth / 2 - padding;
+        const vMaxX = anchorX + reach + vineWidth / 2 + padding;
+        const vPivotY = anchorY + 30; // pivot point where rope starts
+        const vMaxY = vPivotY + ropeLen + padding;
+
+        const checkOverlap = (rect) => {
+            const rMinX = rect.x;
+            const rMaxX = rect.x + rect.width;
+            const rMinY = rect.y;
+            const rMaxY = rect.y + (rect.height || 30);
+            return vMaxX > rMinX && vMinX < rMaxX && vMaxY > rMinY && vPivotY < rMaxY;
+        };
+
+        // Static platforms
+        for (const p of platforms) {
+            if (checkOverlap(p)) return true;
+        }
+        // Upcoming platforms in the current segment
+        for (const r of otherRects) {
+            if (checkOverlap(r)) return true;
+        }
+        // Moving platforms (check their entire range of motion)
+        for (const mp of movingPlatforms) {
+            const mRangeX = mp.axis === 'x' ? Math.abs(mp.range) : 0;
+            const mRangeY = mp.axis === 'y' ? Math.abs(mp.range) : 0;
+            const mRect = {
+                x: mp.x + (mp.range < 0 ? mp.range : 0),
+                y: mp.y + (mp.range < 0 ? mp.range : 0),
+                width: mp.width + mRangeX,
+                height: mp.height + mRangeY
+            };
+            if (checkOverlap(mRect)) return true;
+        }
+        // Other swinging vines (proximity + potential overlap)
+        for (const sv of swingingVines) {
+            // Anchor proximity check - keep them spread out
+            if (Math.abs(anchorX - sv.anchorX) < 350) return true;
+
+            const svReach = Math.sin(maxAngleRad) * sv.ropeLength;
+            const svMinX = sv.anchorX - svReach - vineWidth / 2 - padding;
+            const svMaxX = sv.anchorX + svReach + vineWidth / 2 + padding;
+            const svPivotY = sv.anchorY + 30;
+            const svMaxY = svPivotY + sv.ropeLength + padding;
+            if (vMaxX > svMinX && vMinX < svMaxX && vMaxY > svPivotY && vPivotY < svMaxY) return true;
+        }
+        // Static vines
+        for (const v of vines) {
+            if (checkOverlap(v)) return true;
+        }
+
+        return false;
+    };
+
     const enemies = [];
     const collectibles = [];
     const vines = [];
@@ -142,19 +202,33 @@ export function loadLevel() {
             }
 
             // Chance to add a vine in the gap before the platform
-            if (gap > 60 && Math.random() < 0.35) {
+            let gapVineSpawned = false;
+            // Higher gap requirement and reduced probability for peppered distribution
+            if (gap > 100 && Math.random() < 0.20) {
                 const vineX = currentX + gap / 2 - 12;
                 const topY = platY - 150 - Math.random() * 200;
                 const vineHeight = 250 + Math.random() * 150;
                 vines.push(new Vine(vineX, topY, vineHeight));
+                gapVineSpawned = true;
             }
 
             // Chance to add a swinging vine in the sky
-            if (gap > 80 && Math.random() < 0.20) {
+            // Higher priority if we haven't met the minimum requirement of 2
+            const svProb = (swingingVines.length < 2) ? 0.65 : 0.30;
+            if (gap > 120 && Math.random() < svProb) {
                 const svAnchorX = currentX + gap / 2 + (Math.random() * 60 - 30);
-                const svAnchorY = 50 + Math.random() * 150;
-                const svRopeLen = 150 + Math.random() * 100;
-                swingingVines.push(new SwingingVine(svAnchorX, svAnchorY, svRopeLen));
+                const svAnchorY = -40 + Math.random() * 60;
+                const svRopeLen = 350 + Math.random() * 100;
+
+                // Platforms to be added in this cycle
+                const upcoming = [
+                    { x: currentX + gap, y: platY, width: platWidth, height: height },
+                    ...floatingPlatforms
+                ];
+
+                if (!isVineClipping(svAnchorX, svAnchorY, svRopeLen, upcoming)) {
+                    swingingVines.push(new SwingingVine(svAnchorX, svAnchorY, svRopeLen));
+                }
             }
 
             // Chance to add a horizontal moving platform bridging the gap
@@ -219,7 +293,7 @@ export function loadLevel() {
                 const floatPlatform = new Platform(fp.x, fp.y, fp.width, fp.height, false, theme);
                 platforms.push(floatPlatform);
 
-                if (Math.random() < 0.3) {
+                if (Math.random() < 0.15) { // Reduced from 0.3 for better balance
                     // Hang a vine from this floating platform
                     const vineX = fp.x + fp.width / 2 - 12;
                     const topY = fp.y + fp.height;
