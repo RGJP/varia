@@ -11,13 +11,13 @@ import { Barrel } from './Barrel.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 import { BossProjectile } from './BossProjectile.js';
 
-const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_hedgehog'];
+const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_hedgehog', 'boss_spider'];
 
 const TYPE_PATROL = 'patrol';
 const TYPE_CHASER = 'chaser'; // 👹
 const TYPE_JUMPER = 'jumper'; // 🐸
-const TYPE_SHOOTER = 'shooter'; // 🧙‍♂️
-const TYPE_FLYER = 'flyer'; // 🦇
+const TYPE_SHOOTER = 'shooter'; // 🧞
+const TYPE_FLYER = 'flyer';
 
 const TYPE_GHOST = 'ghost'; // 👻
 const TYPE_ZOMBIE = 'zombie'; // 🧟‍♂️
@@ -35,6 +35,7 @@ const TYPE_TROLL = 'troll'; // 🧌
 const TYPE_APE = 'ape'; // 🦍
 const TYPE_SPIDER = 'spider'; // 🕷️
 const TYPE_MINI_SPIDER = 'mini_spider'; // 🕷️
+const SHOOTER_OPACITY_SPEED = 1.6;
 
 export class Enemy extends Entity {
     constructor(x, y, platform) {
@@ -45,8 +46,7 @@ export class Enemy extends Entity {
             { type: TYPE_PATROL, width: 40, height: 40, emoji: '🐢', baseSpeed: 50, health: 2 },
             { type: TYPE_CHASER, width: 55, height: 55, emoji: '👹', baseSpeed: 100, health: 4 },
             { type: TYPE_JUMPER, width: 35, height: 35, emoji: '🐸', baseSpeed: 80, health: 2 },
-            { type: TYPE_SHOOTER, width: 50, height: 60, emoji: '🧙‍♂️', baseSpeed: 75, health: 3 },
-            { type: TYPE_FLYER, width: 35, height: 35, emoji: '🦇', baseSpeed: 100, health: 1 },
+            { type: TYPE_SHOOTER, width: 50, height: 60, emoji: '🧞', baseSpeed: 75, health: 3 },
             { type: TYPE_BIRD, width: 30, height: 30, emoji: '🐦', baseSpeed: 140, health: 1 },
             { type: TYPE_EAGLE, width: 40, height: 40, emoji: '🦅', baseSpeed: 90, health: 2 },
             { type: TYPE_OWL, width: 40, height: 40, emoji: '🦉', baseSpeed: 90, health: 2 },
@@ -102,6 +102,7 @@ export class Enemy extends Entity {
         this.startX = x;
         this.timeAlive = Math.random() * 100;
         this.attackCooldown = 0;
+        this.shooterPeakLock = false;
 
         this.revivesRemaining = (this.type === TYPE_ZOMBIE) ? 1 : 0;
         this.damageFlashTimer = 0;
@@ -361,6 +362,9 @@ export class Enemy extends Entity {
                     this.state = 'PATROL';
                     this.vx = this.facingRight ? this.baseSpeed : -this.baseSpeed;
                     this.vy = 0;
+                    if (game && game.audio && typeof game.audio.playStomp === 'function') {
+                        game.audio.playStomp();
+                    }
                     if (game && game.camera) {
                         if (game.particles) {
                             const stompX = this.x + this.width / 2;
@@ -440,28 +444,36 @@ export class Enemy extends Entity {
     }
 
     updateShooter(dt, game, player, dist, distX) {
-        // Circular orbit — cos for X, sin for Y (90° apart = true ellipse)
-        const orbitSpeed = 2.5;
-        const orbitRadiusX = 160;
-        const orbitRadiusY = 120;
-        this.x = this.startX + Math.cos(this.timeAlive * orbitSpeed) * orbitRadiusX;
-        this.y = this.startY + Math.sin(this.timeAlive * orbitSpeed) * orbitRadiusY;
+        // Irregular genie movement: layered waves + phase modulation for a squiggly hover path.
+        const t = this.timeAlive;
+        const phase = this.startX * 0.01;
+        const prevX = this.x;
 
-        // Face the direction of horizontal travel (derivative of cos is -sin)
-        this.facingRight = Math.sin(this.timeAlive * orbitSpeed) < 0;
+        const baseWobbleX = Math.cos((t * 2.1) + (Math.sin(t * 0.8) * 0.9)) * 125;
+        const baseWobbleY = Math.sin((t * 2.8) + (Math.cos(t * 1.0) * 0.7)) * 68;
+        const squiggleX = Math.sin((t * 6.7) + phase) * 22 + Math.sin((t * 3.9) + phase * 1.7) * 12;
+        const squiggleY = Math.cos((t * 5.1) + phase * 1.3) * 13 + Math.sin((t * 7.4) + phase) * 8;
+
+        this.x = this.startX + baseWobbleX + squiggleX;
+        this.y = this.startY + baseWobbleY + squiggleY;
+
+        // Face where it is drifting on X so the genie feels less robotic.
+        this.facingRight = (this.x - prevX) >= 0;
 
         // Since we set x/y directly, zero out vx/vy so update()'s else branch doesn't interfere
         this.vx = 0;
         this.vy = 0;
+        const shooterOpacity = 0.5 + Math.sin(this.timeAlive * SHOOTER_OPACITY_SPEED) * 0.5;
+        const atFullOpacity = shooterOpacity >= 0.995;
+        if (!atFullOpacity) this.shooterPeakLock = false;
 
-        const shootRange = 500;
-        if (player && dist < shootRange && Math.abs(player.y - this.y) < 200) {
-            // Turn to face player when in range
+        if (player) {
+            // Turn to face player at any distance
             this.facingRight = distX > 0;
 
-            if (this.attackCooldown <= 0) {
+            if (atFullOpacity && !this.shooterPeakLock) {
                 this.state = 'ATTACK';
-                this.attackCooldown = 3.0 + Math.random() * 2.0;
+                this.shooterPeakLock = true;
 
                 const centerX = this.x + this.width / 2;
                 const centerY = this.y + this.height / 2;
@@ -519,7 +531,8 @@ export class Enemy extends Entity {
                 this.attackCooldown = 1.5 + Math.random() * 2.0;
                 const centerX = this.x + this.width / 2;
                 const centerY = this.y + this.height / 2;
-                const worm = new Worm(centerX, centerY, player.x > this.x);
+                const projectileEmoji = this.type === TYPE_OWL ? '\uD83D\uDC01' : undefined;
+                const worm = new Worm(centerX, centerY, player.x > this.x, projectileEmoji);
                 game.enemyProjectiles.push(worm);
             }
         }
@@ -930,7 +943,7 @@ export class Enemy extends Entity {
 
         if (this.type === TYPE_SHOOTER) {
             // Full fade in/out — 0% to 100% opacity
-            alpha = 0.5 + Math.sin(this.timeAlive * 1.6) * 0.5;
+            alpha = 0.5 + Math.sin(this.timeAlive * SHOOTER_OPACITY_SPEED) * 0.5;
         }
 
 
@@ -942,7 +955,7 @@ export class Enemy extends Entity {
         }
 
         if (this.type === TYPE_SPIDER || this.type === TYPE_MINI_SPIDER) {
-            ctx.shadowColor = 'white';
+            ctx.shadowColor = '#ff2a2a';
             ctx.shadowBlur = 6;
         }
 
@@ -1012,50 +1025,99 @@ export class Enemy extends Entity {
 // ─────────────────────────────────────────────────────────────
 export class Boss extends Entity {
     constructor(x, y, platform, bossType) {
-        const size = 160;
-        super(x, y - size, size, size); // sit on platform
+        const resolvedBossType = bossType || BOSS_TYPES[Math.floor(Math.random() * BOSS_TYPES.length)];
+        const size = resolvedBossType === 'boss_spider' ? 92 : 160;
+        super(x, y - size, size, size);
 
-        this.bossType = bossType || BOSS_TYPES[Math.floor(Math.random() * BOSS_TYPES.length)];
+        this.bossType = resolvedBossType;
         this.platform = platform;
         this.facingRight = true;
 
-        this.maxHealth = 15 + Math.floor(Math.random() * 16); // 15-30 inclusive
+        this.maxHealth = this.bossType === 'boss_spider'
+            ? 12 + Math.floor(Math.random() * 7)
+            : 16 + Math.floor(Math.random() * 15);
         this.health = this.maxHealth;
         this.damageFlashTimer = 0;
-        this.attackCooldown = 2.0;
+        this.attackCooldown = 1.8;
         this.timeAlive = 0;
-        this.burstCount = 0;
-        this.burstTimer = 0;
         this.distToPlayer = Infinity;
         this.activated = false;
         this.spawnFadeTimer = 0;
         this.spawnFadeDuration = 0.65;
-        this.swoopTimer = 1.6 + Math.random() * 1.2;
-        this.swoopDuration = 0;
-        this.swoopDurationTotal = 0;
-        this.swoopDepth = 0;
 
-        // Dynamic movement properties
+        // Boss flavor + UI identity
+        const nonsenseNames = [
+            'GRONKLE SNOOT',
+            'BEEPUS MAXIMUS',
+            'LORD WOBBLETOOTH',
+            'ZORP THE UNHELPFUL',
+            'CAPTAIN NIBBLEFOG',
+            'DR. BONKLETON',
+            'QUEEN FLOMPA',
+            'MECHA NOODLE V',
+            'THUDWICK PRIME',
+            'SIR CRUMBLEDOOM',
+            'BLORPATRON IX',
+            'ADMIRAL PUDDLEBITE',
+            'GRIZZLE VON ZAP',
+            'MUNCHLORD OMEGA',
+            'PROFESSOR SKEDADDLE',
+            'BUNKERSPROCKET',
+            'GIGGLEFANG',
+            'SPROINGULON',
+            'DREAD MUFFIN',
+            'WOBBLY TYRANT'
+        ];
+        this.displayName = nonsenseNames[Math.floor(Math.random() * nonsenseNames.length)];
+
+        this.phase = 1;
+        this.attackTelegraphTimer = 0;
+        this.attackTelegraphDuration = 0;
+        this.pendingAttack = null;
+
+        // Aerial movement defaults
         this.movementState = 'WAVE';
-        this.movementTimer = 4.0 + Math.random() * 4.0;
+        this.movementTimer = 3.5 + Math.random() * 3.0;
         this.anchorX = platform.x + platform.width / 2 - this.width / 2;
         this.anchorY = platform.y - this.height - 250;
         this.targetX = this.x;
         this.targetY = this.y;
         this.maxMoveSpeed = 560;
+        this.repositionCooldown = 2.0 + Math.random() * 1.5;
+        this.repositionBurstTimer = 0;
+
+        // Spider-specific state
+        this.spiderState = 'SCUTTLE';
+        this.spiderStateTimer = 1.0 + Math.random() * 0.8;
+        this.spiderDirection = Math.random() > 0.5 ? 1 : -1;
+        this.spiderTargetX = this.x;
+        this.webTelegraphDuration = 0.55;
+        this.webTelegraphTimer = 0;
+        this.spiderPounceCooldown = 2.2;
+        this.spiderPounceTelegraph = 0;
+        this.spiderPounceTimer = 0;
+        this.spiderPounceDir = 0;
 
         switch (this.bossType) {
-            case 'boss_chick': this.emoji = '🐣'; break;
-            case 'boss_moai': this.emoji = '🗿'; break;
-            case 'boss_hedgehog': this.emoji = '🦔'; break;
+            case 'boss_chick': this.emoji = String.fromCodePoint(0x1F423); break;
+            case 'boss_moai': this.emoji = String.fromCodePoint(0x1F5FF); break;
+            case 'boss_hedgehog': this.emoji = String.fromCodePoint(0x1F47A); break;
+            case 'boss_spider': this.emoji = String.fromCodePoint(0x1F577) + '\uFE0F'; break;
+            default: this.emoji = String.fromCodePoint(0x1F5FF); break;
         }
 
         this._cachedEmoji = getEmojiCanvas(this.emoji, size);
     }
 
+    _updatePhase() {
+        const ratio = this.health / this.maxHealth;
+        this.phase = ratio > 0.66 ? 1 : (ratio > 0.33 ? 2 : 3);
+    }
+
     takeDamage(amount, game) {
         this.health -= amount;
         this.damageFlashTimer = 0.15;
+        this._updatePhase();
 
         if (game && game.particles) {
             game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
@@ -1068,48 +1130,272 @@ export class Boss extends Entity {
             if (game && game.particles) {
                 game.particles.emitFireworks(cx, cy);
                 game.particles.emitDeath(cx, cy);
-                // Extra large burst for boss death
-                for (let i = 0; i < 6; i++) {
+                for (let i = 0; i < 8; i++) {
                     game.particles.emitDeath(
-                        cx + (Math.random() - 0.5) * 80,
-                        cy + (Math.random() - 0.5) * 80
+                        cx + (Math.random() - 0.5) * 90,
+                        cy + (Math.random() - 0.5) * 90
                     );
                 }
             }
             if (game && game.player) {
-                game.player.score += 500;
+                game.player.score += 700;
             }
             if (game) game.enemiesDefeated++;
         }
     }
 
-    _fire(game, player) {
-        if (!game || !game.enemyProjectiles || !player) return;
-
+    _spawnProjectile(game, player, projectileType, speed, spreadAngle = 0, arcBias = 0) {
         const cx = this.x + this.width / 2;
         const cy = this.y + this.height / 2;
         const dx = (player.x + player.width / 2) - cx;
         const dy = (player.y + player.height / 2) - cy;
-        const len = Math.hypot(dx, dy) || 1;
+        const baseAngle = Math.atan2(dy, dx);
+        const a = baseAngle + spreadAngle;
+
+        const vx = Math.cos(a) * speed;
+        const vy = Math.sin(a) * speed + arcBias;
+        const proj = new BossProjectile(cx, cy, vx, vy, projectileType);
+        game.enemyProjectiles.push(proj);
         this.facingRight = dx >= 0;
+    }
+
+    _queueAttack(player) {
+        if (!player) return;
+
+        const phaseScale = this.phase === 1 ? 1 : (this.phase === 2 ? 1.2 : 1.4);
+        this.attackTelegraphDuration = 0.42 / phaseScale;
+        this.attackTelegraphTimer = this.attackTelegraphDuration;
 
         if (this.bossType === 'boss_chick') {
-            // 🍗 drumstick: moderate speed arc toward player
-            const speed = 380;
-            const proj = new BossProjectile(cx, cy, (dx / len) * speed, (dy / len) * speed - 80, 'drumstick');
-            game.enemyProjectiles.push(proj);
-
+            this.pendingAttack = {
+                pattern: 'fan',
+                projectile: 'drumstick',
+                speed: 350 + this.phase * 18,
+                arcBias: -70,
+                spreads: this.phase >= 3 ? [-0.2, 0, 0.2] : (this.phase >= 2 ? [-0.12, 0.12] : [0])
+            };
+            this.attackCooldown = 1.8 - (this.phase - 1) * 0.2 + Math.random() * 0.5;
         } else if (this.bossType === 'boss_moai') {
-            // 🥌 stone: very fast straight at player
-            const speed = 620;
-            const proj = new BossProjectile(cx, cy, (dx / len) * speed, (dy / len) * speed, 'stone');
-            game.enemyProjectiles.push(proj);
-
+            this.pendingAttack = {
+                pattern: 'fan',
+                projectile: 'stone',
+                speed: 560 + this.phase * 35,
+                arcBias: 0,
+                spreads: this.phase >= 3 ? [-0.08, 0, 0.08] : [0]
+            };
+            this.attackCooldown = 2.2 - (this.phase - 1) * 0.15 + Math.random() * 0.55;
         } else if (this.bossType === 'boss_hedgehog') {
-            // 🍢 skewer: burst of 2, brief delay handled via burstCount
-            const speed = 400;
-            const proj = new BossProjectile(cx, cy, (dx / len) * speed, (dy / len) * speed, 'skewer');
-            game.enemyProjectiles.push(proj);
+            const shots = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 2);
+            this.pendingAttack = {
+                pattern: 'burst',
+                projectile: 'skewer',
+                speed: 390 + this.phase * 22,
+                arcBias: 0,
+                shots,
+                interval: Math.max(0.2, 0.34 - this.phase * 0.04),
+                burstTimer: 0
+            };
+            this.attackCooldown = 2.35 - (this.phase - 1) * 0.2 + Math.random() * 0.6;
+        }
+    }
+
+    _executeAttackStep(game, player, dt) {
+        if (!this.pendingAttack || !player) return;
+
+        if (this.pendingAttack.pattern === 'fan') {
+            const spreads = this.pendingAttack.spreads || [0];
+            for (let i = 0; i < spreads.length; i++) {
+                this._spawnProjectile(game, player, this.pendingAttack.projectile, this.pendingAttack.speed, spreads[i], this.pendingAttack.arcBias || 0);
+            }
+            this.pendingAttack = null;
+            return;
+        }
+
+        // Burst pattern
+        this.pendingAttack.burstTimer -= dt;
+        if (this.pendingAttack.burstTimer <= 0 && this.pendingAttack.shots > 0) {
+            const swing = this.pendingAttack.shots % 2 === 0 ? -0.07 : 0.07;
+            this._spawnProjectile(game, player, this.pendingAttack.projectile, this.pendingAttack.speed, swing, this.pendingAttack.arcBias || 0);
+            this.pendingAttack.shots--;
+            this.pendingAttack.burstTimer = this.pendingAttack.interval;
+        }
+
+        if (this.pendingAttack.shots <= 0) {
+            this.pendingAttack = null;
+        }
+    }
+
+    _updateAerialBoss(dt, game, player) {
+        if (this.movementTimer > 0) this.movementTimer -= dt;
+        if (this.repositionCooldown > 0) this.repositionCooldown -= dt;
+        if (this.repositionBurstTimer > 0) this.repositionBurstTimer -= dt;
+
+        // Switch between path styles.
+        if (this.movementTimer <= 0) {
+            this.movementState = this.movementState === 'WAVE' ? 'ORBIT' : 'WAVE';
+            this.movementTimer = 3.2 + Math.random() * 3.4;
+        }
+
+        // Occasional quick reposition keeps fights active but readable.
+        if (this.repositionCooldown <= 0 && player) {
+            const left = this.platform.x + 20;
+            const right = this.platform.x + this.platform.width - this.width - 20;
+            const desired = player.x + player.width / 2 + (Math.random() > 0.5 ? -260 : 260) - this.width / 2;
+            this.targetX = Math.max(left, Math.min(right, desired));
+            this.targetY = this.anchorY + 50 + Math.sin(this.timeAlive * 3.2) * 40;
+            this.repositionBurstTimer = 0.48;
+            this.repositionCooldown = 2.6 + Math.random() * 1.8;
+        }
+
+        if (this.movementState === 'WAVE') {
+            this.targetX = this.anchorX + Math.sin(this.timeAlive * (0.8 + this.phase * 0.12)) * (this.platform.width * (0.32 + this.phase * 0.04));
+            this.targetY = this.anchorY + Math.sin(this.timeAlive * 1.4) * (70 + this.phase * 10) + Math.cos(this.timeAlive * 0.75) * 45;
+        } else {
+            const radiusX = 210 + this.phase * 40;
+            const radiusY = 110 + this.phase * 22;
+            const speed = 1.0 + this.phase * 0.14;
+            this.targetX = this.anchorX + Math.cos(this.timeAlive * speed) * radiusX;
+            this.targetY = this.anchorY + Math.sin(this.timeAlive * speed) * radiusY;
+        }
+
+        const toTargetX = this.targetX - this.x;
+        const toTargetY = this.targetY - this.y;
+        const dist = Math.hypot(toTargetX, toTargetY);
+        if (dist > 0) {
+            const speedMult = this.repositionBurstTimer > 0 ? 1.9 : 1;
+            const maxStep = this.maxMoveSpeed * (1 + this.phase * 0.08) * speedMult * dt;
+            const step = Math.min(dist, maxStep);
+            this.x += (toTargetX / dist) * step;
+            this.y += (toTargetY / dist) * step;
+        }
+
+        if (this.attackTelegraphTimer > 0) {
+            this.attackTelegraphTimer -= dt;
+            if (this.attackTelegraphTimer <= 0) {
+                this._executeAttackStep(game, player, dt);
+            }
+            return;
+        }
+
+        if (this.pendingAttack) {
+            this._executeAttackStep(game, player, dt);
+            return;
+        }
+
+        if (this.attackCooldown <= 0 && player) {
+            this._queueAttack(player);
+        }
+    }
+
+    _updateSpiderBoss(dt, game, player) {
+        const left = this.platform.x + 8;
+        const right = this.platform.x + this.platform.width - this.width - 8;
+        this.y = this.platform.y - this.height;
+        if (this.x < left) this.x = left;
+        if (this.x > right) this.x = right;
+
+        if (this.spiderPounceCooldown > 0) this.spiderPounceCooldown -= dt;
+
+        if (player) {
+            const playerCenterX = player.x + player.width / 2;
+            const spiderCenterX = this.x + this.width / 2;
+            this.facingRight = playerCenterX > spiderCenterX;
+        }
+
+        if (this.spiderPounceTelegraph > 0) {
+            this.spiderPounceTelegraph -= dt;
+            this.vx = 0;
+            if (this.spiderPounceTelegraph <= 0) {
+                this.spiderPounceTimer = 0.25;
+            }
+            return;
+        }
+
+        if (this.spiderPounceTimer > 0) {
+            this.spiderPounceTimer -= dt;
+            this.vx = this.spiderPounceDir * (320 + this.phase * 30);
+            this.x += this.vx * dt;
+            this.x = Math.max(left, Math.min(right, this.x));
+            return;
+        }
+
+        if (this.webTelegraphTimer > 0) {
+            this.webTelegraphTimer -= dt;
+            this.vx = 0;
+            this.spiderState = 'TELEGRAPH';
+            if (this.webTelegraphTimer <= 0 && player) {
+                const webs = this.phase >= 3 ? 2 : 1;
+                for (let i = 0; i < webs; i++) {
+                    const spread = webs === 2 ? (i === 0 ? -0.08 : 0.08) : 0;
+                    this._spawnProjectile(game, player, 'web', 320 + this.phase * 20, spread, -120);
+                }
+                this.attackCooldown = 2.0 + Math.random() * 1.2;
+                this.spiderState = 'PAUSE';
+                this.spiderStateTimer = 0.35;
+            }
+            return;
+        }
+
+        if (this.attackCooldown <= 0 && player && Math.random() < (this.phase >= 3 ? 0.028 : 0.02)) {
+            this.webTelegraphTimer = this.webTelegraphDuration;
+            this.spiderState = 'TELEGRAPH';
+            this.vx = 0;
+            return;
+        }
+
+        // Fair pounce when player is in medium range with a clear tell.
+        if (this.spiderPounceCooldown <= 0 && player) {
+            const dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+            if (Math.abs(dx) > 90 && Math.abs(dx) < 280 && Math.random() < 0.015) {
+                this.spiderPounceDir = Math.sign(dx) || (this.facingRight ? 1 : -1);
+                this.spiderPounceTelegraph = 0.28;
+                this.spiderPounceCooldown = 2.2 + Math.random() * 1.0;
+                return;
+            }
+        }
+
+        this.spiderStateTimer -= dt;
+        if (this.spiderStateTimer <= 0) {
+            if (this.spiderState === 'SCUTTLE') {
+                this.spiderState = 'REPOSITION';
+                this.spiderStateTimer = 0.55 + Math.random() * 0.55;
+                if (player) {
+                    const desired = player.x + player.width / 2 + (Math.random() > 0.5 ? -135 : 135) - this.width / 2;
+                    this.spiderTargetX = Math.max(left, Math.min(right, desired));
+                } else {
+                    this.spiderTargetX = Math.max(left, Math.min(right, this.x + (Math.random() > 0.5 ? 120 : -120)));
+                }
+            } else if (this.spiderState === 'REPOSITION') {
+                this.spiderState = 'PAUSE';
+                this.spiderStateTimer = 0.28 + Math.random() * 0.32;
+                this.vx = 0;
+            } else {
+                this.spiderState = 'SCUTTLE';
+                this.spiderStateTimer = 0.7 + Math.random() * 0.9;
+                this.spiderDirection = Math.random() > 0.5 ? 1 : -1;
+            }
+        }
+
+        if (this.spiderState === 'SCUTTLE') {
+            const scuttleSpeed = 170 + Math.sin(this.timeAlive * 8) * 18 + this.phase * 12;
+            this.vx = this.spiderDirection * scuttleSpeed;
+            this.x += this.vx * dt;
+            if (this.x <= left || this.x >= right) {
+                this.spiderDirection *= -1;
+                this.x = Math.max(left, Math.min(right, this.x));
+            }
+        } else if (this.spiderState === 'REPOSITION') {
+            const delta = this.spiderTargetX - this.x;
+            const dir = Math.sign(delta);
+            this.vx = dir * (150 + this.phase * 8);
+            this.x += this.vx * dt;
+            if (Math.abs(delta) < 8) {
+                this.spiderState = 'PAUSE';
+                this.spiderStateTimer = 0.25 + Math.random() * 0.25;
+                this.vx = 0;
+            }
+        } else {
+            this.vx = 0;
         }
     }
 
@@ -1125,59 +1411,16 @@ export class Boss extends Entity {
 
         if (!this.activated) return;
         this.timeAlive += dt;
-
         if (this.attackCooldown > 0) this.attackCooldown -= dt;
-        if (this.movementTimer > 0) this.movementTimer -= dt;
-        if (this.swoopTimer > 0) this.swoopTimer -= dt;
-        if (this.swoopDuration > 0) this.swoopDuration -= dt;
 
-        // Switch movement patterns
-        if (this.movementTimer <= 0) {
-            this.movementState = this.movementState === 'WAVE' ? 'CIRCLE' : 'WAVE';
-            this.movementTimer = 4.0 + Math.random() * 4.0;
-        }
+        this._updatePhase();
 
         const player = game ? game.player : null;
 
-        // Calculate dynamic target position based on state
-        if (this.movementState === 'WAVE') {
-            // Complex wave: mix of multiple sines/cosines for unpredictable horizontal and vertical motion
-            this.targetX = this.anchorX + Math.sin(this.timeAlive * 0.8) * (this.platform.width * 0.4);
-            this.targetY = this.anchorY + Math.sin(this.timeAlive * 1.5) * 85 + Math.cos(this.timeAlive * 0.7) * 55;
-        } else if (this.movementState === 'CIRCLE') {
-            // Circular/Elliptical path
-            const radiusX = 300;
-            const radiusY = 170;
-            const speed = 1.2;
-            this.targetX = this.anchorX + Math.cos(this.timeAlive * speed) * radiusX;
-            this.targetY = this.anchorY + Math.sin(this.timeAlive * speed) * radiusY;
-        }
-
-        // Short, periodic downward swoops so the boss is hittable more often.
-        if (this.swoopTimer <= 0 && this.swoopDuration <= 0) {
-            this.swoopDuration = 1.1 + Math.random() * 0.5;
-            this.swoopDurationTotal = this.swoopDuration;
-            this.swoopDepth = 40 + Math.random() * 35;
-            this.swoopTimer = 1.9 + Math.random() * 1.4;
-        }
-        if (this.swoopDuration > 0) {
-            const phase = 1 - (this.swoopDuration / (this.swoopDurationTotal || 1));
-            const clampedPhase = Math.max(0, Math.min(1, phase));
-            this.targetY += Math.sin(clampedPhase * Math.PI) * this.swoopDepth;
-        }
-
-        // Add a small additional bob for extra "weightless" feel
-        this.targetY += Math.sin(this.timeAlive * 2.5) * 10 + 18;
-
-        // Follow the target smoothly with capped speed to avoid snap-teleporting between path changes.
-        const toTargetX = this.targetX - this.x;
-        const toTargetY = this.targetY - this.y;
-        const dist = Math.hypot(toTargetX, toTargetY);
-        if (dist > 0) {
-            const maxStep = this.maxMoveSpeed * dt;
-            const step = Math.min(dist, maxStep);
-            this.x += (toTargetX / dist) * step;
-            this.y += (toTargetY / dist) * step;
+        if (this.bossType === 'boss_spider') {
+            this._updateSpiderBoss(dt, game, player);
+        } else {
+            this._updateAerialBoss(dt, game, player);
         }
 
         if (player) {
@@ -1189,33 +1432,9 @@ export class Boss extends Entity {
             this.distToPlayer = Infinity;
         }
 
-        if (this.attackCooldown <= 0 && player) {
-            if (this.bossType === 'boss_hedgehog') {
-                // burst of 2 skewers ~0.3s apart
-                if (this.burstCount <= 0) {
-                    this.burstCount = 2;
-                    this.burstTimer = 0;
-                    this.attackCooldown = 2.25;
-                }
-            } else {
-                const cooldowns = { boss_chick: 1.8, boss_moai: 2.45 };
-                this._fire(game, player);
-                this.attackCooldown = cooldowns[this.bossType] || 2.0;
-            }
-        }
-
-        // Hedgehog burst handling
-        if (this.burstCount > 0 && player) {
-            this.burstTimer -= dt;
-            if (this.burstTimer <= 0) {
-                this._fire(game, player);
-                this.burstCount--;
-                this.burstTimer = 0.4;
-            }
-        }
-
-        // Touch damage to player (for close-range melee)
-        if (game && player && player.invulnerableTimer <= 0) {
+        // Contact damage is slightly forgiving while telegraphing/charging.
+        const inFairWindow = this.attackTelegraphTimer > 0 || this.webTelegraphTimer > 0 || this.spiderPounceTelegraph > 0;
+        if (game && player && player.invulnerableTimer <= 0 && !inFairWindow) {
             if (Physics.checkAABB(this, player.getHitbox())) {
                 player.takeDamage(game);
             }
@@ -1232,22 +1451,42 @@ export class Boss extends Entity {
         ctx.save();
         ctx.globalAlpha = alpha;
 
-        // Glow aura
-        ctx.shadowColor = 'rgba(255, 80, 0, 0.6)';
-        ctx.shadowBlur = 20;
+        if (this.bossType !== 'boss_spider') {
+            ctx.shadowColor = 'rgba(255, 80, 0, 0.6)';
+            ctx.shadowBlur = 20;
+        }
 
         const cx = this.x + this.width / 2;
         const cy = this.y + this.height / 2;
         ctx.translate(cx, cy);
         if (!this.facingRight) ctx.scale(-1, 1);
 
+        if (this.attackTelegraphTimer > 0) {
+            ctx.scale(1.06, 1.06);
+        }
+        if (this.spiderPounceTelegraph > 0) {
+            ctx.scale(1.1, 0.9);
+        }
+
         const cached = this._cachedEmoji;
         ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2);
 
+        const isTelegraphing = this.attackTelegraphTimer > 0 || this.webTelegraphTimer > 0 || this.spiderPounceTelegraph > 0;
+        if (isTelegraphing) {
+            const pulse = 0.55 + Math.sin(this.timeAlive * 24) * 0.45;
+            if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+            ctx.globalAlpha = 0.45 + pulse * 0.55;
+            ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2, -this.height / 2 - 30);
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_spider' && this.webTelegraphTimer > 0) {
+            if (!this._webTellCache) this._webTellCache = getEmojiCanvas(String.fromCodePoint(0x1F578) + '\uFE0F', 28);
+            ctx.drawImage(this._webTellCache.canvas, -this._webTellCache.width / 2, -this.height / 2 - 56);
+        }
+
         ctx.restore();
 
-        // ── Health bar (drawn in world space) ──
-        // Only show when boss is activated (player is close)
         if (this.activated) {
             const barW = this.width * 1.1;
             const barH = 12;
@@ -1255,11 +1494,9 @@ export class Boss extends Entity {
             const barY = this.y - 22;
             const fillRatio = Math.max(0, this.health / this.maxHealth);
 
-            // Background
             ctx.fillStyle = 'rgba(0,0,0,0.5)';
             ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
 
-            // Fill colour: green → yellow → red
             let barColor;
             if (fillRatio > 0.6) barColor = '#4caf50';
             else if (fillRatio > 0.3) barColor = '#ffc107';
@@ -1268,7 +1505,6 @@ export class Boss extends Entity {
             ctx.fillStyle = barColor;
             ctx.fillRect(barX, barY, barW * fillRatio, barH);
 
-            // Border
             ctx.strokeStyle = 'rgba(255,255,255,0.5)';
             ctx.lineWidth = 1;
             ctx.strokeRect(barX, barY, barW, barH);

@@ -7,6 +7,7 @@ import { AudioEngine } from './AudioEngine.js';
 import { ParticleSystem } from './ParticleSystem.js';
 import { Background } from './Background.js';
 import { Rock } from './entities/Rock.js';
+import { Collectible } from './entities/Collectible.js';
 import { clearEmojiCache } from './EmojiCache.js';
 import { getEmojiCanvas } from './EmojiCache.js';
 export function filterInPlace(array) {
@@ -347,6 +348,21 @@ export class Game {
                 }
             }
 
+            // Fairness: when dropping to 1 HP during an active boss fight, spawn up to 2 hearts per boss.
+            const activeBoss = this.enemies.find(e => e instanceof Boss && !e.markedForDeletion && e.activated);
+            if (activeBoss && this.player) {
+                if (typeof activeBoss._pityHeartSpawns !== 'number') activeBoss._pityHeartSpawns = 0;
+                if (typeof activeBoss._pityHeartLastHealth !== 'number') activeBoss._pityHeartLastHealth = this.player.health;
+
+                const droppedToOneHeart = this.player.health <= 1 && activeBoss._pityHeartLastHealth > 1;
+                if (droppedToOneHeart && activeBoss._pityHeartSpawns < 2) {
+                    this._spawnBossPityHeart(activeBoss);
+                    activeBoss._pityHeartSpawns += 1;
+                }
+
+                activeBoss._pityHeartLastHealth = this.player.health;
+            }
+
             const collectibles = this.collectibles;
             for (let i = 0; i < collectibles.length; i++) {
                 if (this._isVisible(collectibles[i], 1000)) {
@@ -409,6 +425,34 @@ export class Game {
             }
         }
         this.pendingBossSpawns.length = writeIdx;
+    }
+
+    _spawnBossPityHeart(boss) {
+        if (!boss || !boss.platform || !this.player) return;
+
+        const p = boss.platform;
+        const margin = 70;
+        const minX = p.x + margin;
+        const maxX = p.x + p.width - margin - 50; // 50 ~= health pickup size
+        if (maxX <= minX) return;
+
+        const playerCenterX = this.player.x + this.player.width / 2;
+        const playerOnLeftHalf = playerCenterX < (p.x + p.width / 2);
+
+        // Prefer spawning on the opposite half of the platform to keep it "away from player".
+        const halfMid = p.x + p.width / 2;
+        let spawnMin = playerOnLeftHalf ? halfMid + 20 : minX;
+        let spawnMax = playerOnLeftHalf ? maxX : halfMid - 20;
+
+        // Fallback if halves are too narrow.
+        if (spawnMax <= spawnMin) {
+            spawnMin = minX;
+            spawnMax = maxX;
+        }
+
+        const x = spawnMin + Math.random() * (spawnMax - spawnMin);
+        const y = p.y - 70;
+        this.collectibles.push(new Collectible(x, y, 'health'));
     }
 
     // Check if an entity is within the visible viewport (with margin)
@@ -831,7 +875,8 @@ export class Game {
         ctx.fillStyle = '#ffca28';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
-        ctx.fillText(`${boss.emoji}  BOSS!`, this.canvas.width / 2, barY);
+        const bossName = boss.displayName || 'BOSS';
+        ctx.fillText(`${boss.emoji}  ${bossName}`, this.canvas.width / 2, barY);
 
         // Bar background
         ctx.fillStyle = 'rgba(255,255,255,0.15)';
@@ -866,3 +911,5 @@ export class Game {
 function ctx_drawCachedEmoji(ctx, cached, x, y) {
     ctx.drawImage(cached.canvas, x - cached.width / 2 + 12, y - cached.height / 2);
 }
+
+

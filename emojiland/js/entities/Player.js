@@ -14,6 +14,8 @@ export class Player extends Entity {
 
         this.maxHealth = 5;
         this.health = this.maxHealth;
+        this.hasCatProtector = false;
+        this.catProtectorBob = 0;
         this.bombs = 3;
         this.invulnerableTimer = 0;
         this.knockbackTimer = 0;
@@ -29,6 +31,7 @@ export class Player extends Entity {
         this.jumpBufferTime = 0.1;
         this.jumpBufferTimer = 0;
         this.isJumping = false;
+        this.forceFullJump = false;
 
         this.isClimbing = false;
         this.currentVine = null;
@@ -134,6 +137,7 @@ export class Player extends Entity {
         }
 
         this.pulseTimer += dt;
+        this.catProtectorBob += dt;
 
         // Input
         // Drop Bomb
@@ -260,6 +264,7 @@ export class Player extends Entity {
                 this.vy = this.jumpForce;
                 this.grounded = false;
                 this.isJumping = true;
+                this.forceFullJump = false;
                 this.isSpinning = true;
                 this.spinDirection = this.facingRight ? 1 : -1;
                 this.spinBaseRotation = this.rotation;
@@ -271,6 +276,7 @@ export class Player extends Entity {
                 this.vy = this.jumpForce;
                 this.grounded = false;
                 this.isJumping = true;
+                this.forceFullJump = false;
                 this.isSpinning = true;
                 this.spinDirection = this.facingRight ? 1 : -1;
                 this.spinBaseRotation = this.rotation;
@@ -282,8 +288,12 @@ export class Player extends Entity {
         }
 
         // Variable Jump Height
-        if (!input.isDown('KeyA') && this.isJumping && this.vy < 0 && !this.isClimbing) {
+        if (!input.isDown('KeyA') && this.isJumping && this.vy < 0 && !this.isClimbing && !this.forceFullJump) {
             this.vy *= 0.5; // Cut jump short
+            this.isJumping = false;
+        }
+        if (this.forceFullJump && this.vy >= 0) {
+            this.forceFullJump = false;
             this.isJumping = false;
         }
 
@@ -469,12 +479,17 @@ export class Player extends Entity {
                         if (game.particles) game.particles.emitHit(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, '#FF4500');
                     }
                 } else if (Physics.checkAABB(hitbox, enemy)) {
-                    const stompableEmojis = ['🐢', '🐸', '🐦', '🦅', '🦉', '🐦‍⬛', '🦇', '🧟‍♂️', '🦑', '🦗', '🐿️', '🕷️'];
-                    if (stompableEmojis.includes(enemy.emoji) && this.vy > 0 && hitbox.y + hitbox.height - (this.vy * dt) <= enemy.y + enemy.height * 0.5) {
-                        enemy.takeDamage(enemy.health, game);
+                    const stompableEmojis = ['🐢', '🐸', '🐦', '🦅', '🦉', '🐦‍⬛', '🧟‍♂️', '🦑', '🦗', '🐿️', '🕷️'];
+                    if ((stompableEmojis.includes(enemy.emoji) || enemy.bossType === 'boss_spider') && this.vy > 0 && hitbox.y + hitbox.height - (this.vy * dt) <= enemy.y + enemy.height * 0.5) {
+                        if (enemy.bossType === 'boss_spider') {
+                            enemy.takeDamage(2, game);
+                        } else {
+                            enemy.takeDamage(enemy.health, game);
+                        }
                         this.vy = this.jumpForce;
                         this.grounded = false;
                         this.isJumping = true;
+                        this.forceFullJump = true;
                         this.isSpinning = true;
                         this.spinDirection = this.facingRight ? 1 : -1;
                         this.spinBaseRotation = this.rotation;
@@ -494,6 +509,7 @@ export class Player extends Entity {
                 const centerY = collectible.y + collectible.height / 2;
                 if (collectible.type === 'health') {
                     this.health = Math.min(this.health + 1, this.maxHealth);
+                    this.hasCatProtector = true;
                     game.audio.playCollect();
                     game.particles.emit(centerX, centerY, 15, '#FF0000', [50, 150], [0.2, 0.5], [2, 4]);
                 } else if (collectible.type === 'bomb') {
@@ -506,6 +522,7 @@ export class Player extends Entity {
                     game.particles.emit(centerX, centerY, 20, '#888888', [50, 200], [0.2, 0.5], [3, 5]);
                 } else if (collectible.type === 'full_health') {
                     this.health = this.maxHealth;
+                    this.hasCatProtector = true;
                     if (game.audio) game.audio.playCollect();
                     game.particles.emit(centerX, centerY, 30, '#FF69B4', [50, 250], [0.2, 0.6], [3, 6]);
                 } else if (collectible.type === 'fire_powerup') {
@@ -606,6 +623,15 @@ export class Player extends Entity {
 
     takeDamage(game) {
         if (this.firePowerUpTimer > 0) return;
+        if (this.hasCatProtector) {
+            this.hasCatProtector = false;
+            this.invulnerableTimer = 0.6;
+            if (game) {
+                game.audio.playHit();
+                game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2, '#FFD700');
+            }
+            return;
+        }
         this.health -= 1;
         this.invulnerableTimer = 1.0;
         this.knockbackTimer = 0.2; // brief loss of control for noticeable knockback
@@ -701,6 +727,17 @@ export class Player extends Entity {
 
         ctx.restore();
 
+        if (this.hasCatProtector && (!game || !game.gameOverTriggered)) {
+            if (!this._catProtectorEmoji) {
+                this._catProtectorEmoji = getEmojiCanvas('🐱', 34);
+            }
+            const offsetX = this.facingRight ? -44 : 44;
+            const bobY = Math.sin(this.catProtectorBob * 6) * 5;
+            const catX = this.x + this.width / 2 + offsetX - this._catProtectorEmoji.width / 2;
+            const catY = this.y + this.height / 2 - 8 + bobY - this._catProtectorEmoji.height / 2;
+            ctx.drawImage(this._catProtectorEmoji.canvas, catX, catY);
+        }
+
         if (!game?.gameOverTriggered && this.isChargingAttack && this.attackChargeTimer > this.chargeIndicatorDelay) {
             const chargeRatio = Math.max(0, Math.min(1, this.attackChargeTimer / this.maxAttackChargeTime));
             const dir = this.facingRight ? 1 : -1;
@@ -740,3 +777,5 @@ export class Player extends Entity {
         ctx.globalAlpha = 1.0;
     }
 }
+
+

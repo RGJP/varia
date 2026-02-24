@@ -63,7 +63,7 @@ export class Camera {
     update(player, dt) {
         // Center camera on player using effective (zoomed) viewport
         let targetX = player.x + player.width / 2 - this.effectiveWidth / 2;
-        let targetY = player.y + player.height / 2 - this.effectiveHeight / 2 - 100;
+        let targetY = player.y + player.height / 2 - this.effectiveHeight / 2;
 
         // Smooth follow
         this.x += (targetX - this.x) * 5 * dt;

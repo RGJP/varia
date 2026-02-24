@@ -239,4 +239,11 @@ export class AudioEngine {
     playThrow() {
         this.playOscillator('sine', 500, 0.1, 200); // Quick descending sweeping sound 
     }
+
+    playStomp() {
+        // Heavy layered thud for impactful ground slam.
+        this.playOscillator('square', 90, 0.2, 45);
+        this.playOscillator('sine', 65, 0.28, 35);
+        setTimeout(() => this.playOscillator('triangle', 140, 0.12, 90), 35);
+    }
 }

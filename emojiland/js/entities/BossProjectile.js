@@ -2,7 +2,7 @@ import { Entity } from './Entity.js';
 import { Physics } from '../Physics.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
-// projectileType: 'drumstick' | 'stone' | 'skewer'
+// projectileType: 'drumstick' | 'stone' | 'skewer' | 'web'
 export class BossProjectile extends Entity {
     constructor(x, y, vx, vy, projectileType) {
         super(x, y, 40, 40);
@@ -14,25 +14,34 @@ export class BossProjectile extends Entity {
 
         switch (projectileType) {
             case 'drumstick':
-                this.emoji = '🍗';
+                this.emoji = String.fromCodePoint(0x1F357);
                 this.maxBounces = 2;
                 break;
             case 'stone':
-                this.emoji = '🥌';
+                this.emoji = String.fromCodePoint(0x1F94C);
                 this.maxBounces = 0;
                 break;
             case 'skewer':
-                this.emoji = '🍢';
+                this.emoji = String.fromCodePoint(0x1F362);
+                this.maxBounces = 0;
+                break;
+            case 'web':
+                this.emoji = String.fromCodePoint(0x1F578) + '\uFE0F';
+                this.maxBounces = 0;
+                break;
+            default:
+                this.emoji = String.fromCodePoint(0x1FAA8);
                 this.maxBounces = 0;
                 break;
         }
 
-        this._cachedEmoji = getEmojiCanvas(this.emoji, 44);
+        this._cachedEmoji = getEmojiCanvas(this.emoji, this.projectileType === 'web' ? 50 : 44);
     }
 
     update(dt, game) {
-        // Apply gravity
-        this.vy += Physics.GRAVITY * dt;
+        // Apply gravity (webs float more than other projectiles)
+        const gravityScale = this.projectileType === 'web' ? 0.35 : 1;
+        this.vy += Physics.GRAVITY * gravityScale * dt;
         if (this.vy > Physics.TERMINAL_VELOCITY) this.vy = Physics.TERMINAL_VELOCITY;
 
         this.x += this.vx * dt;
@@ -48,10 +57,13 @@ export class BossProjectile extends Entity {
                 game.audio.playHit();
                 game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
 
-                // 🍢 skewer: slow + stun the player
+                // ?? skewer: slow + stun the player
                 if (this.projectileType === 'skewer') {
                     game.player.slowTimer = 1.2;
                     game.player.stunTimer = 0.3;
+                } else if (this.projectileType === 'web') {
+                    // Webs briefly lock movement and deal 1 damage.
+                    game.player.stunTimer = Math.max(game.player.stunTimer, 0.5);
                 }
 
                 this.markedForDeletion = true;
@@ -101,3 +113,4 @@ export class BossProjectile extends Entity {
         ctx.restore();
     }
 }
+

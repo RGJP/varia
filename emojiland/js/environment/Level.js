@@ -265,7 +265,7 @@ export function loadLevel() {
                 const mpY = platY - 200 - Math.random() * 150;
                 if (!tooCloseToExisting(mpX, mpY, mpWidth, 30)) {
                     const axis = Math.random() < 0.6 ? 'x' : 'y';
-                    const range = axis === 'x' ? (60 + Math.random() * 140) : (50 + Math.random() * 100);
+                    const range = axis === 'x' ? (220 + Math.random() * 320) : (150 + Math.random() * 220);
                     const speed = 50 + Math.random() * 80;
                     movingPlatforms.push(new MovingPlatform(mpX, mpY, mpWidth, 30, axis, range, speed, theme));
                 }
@@ -284,7 +284,7 @@ export function loadLevel() {
                 if (Math.random() < 0.5 && !tooCloseToExisting(fp.x, fp.y, fp.width, fp.height)) {
                     // Decide horizontal or vertical
                     const axis = Math.random() < 0.5 ? 'x' : 'y';
-                    const range = axis === 'x' ? (80 + Math.random() * 120) : (60 + Math.random() * 100);
+                    const range = axis === 'x' ? (240 + Math.random() * 320) : (170 + Math.random() * 230);
                     const speed = 50 + Math.random() * 70;
                     movingPlatforms.push(new MovingPlatform(fp.x, fp.y, fp.width, fp.height, axis, range, speed, theme));
                     potentialCoinLocations.push({ x: fp.x + fp.width / 2, y: fp.y - (40 + Math.random() * 80) });

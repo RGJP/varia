@@ -3,7 +3,7 @@ import { Physics } from '../Physics.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
 export class Worm extends Entity {
-    constructor(x, y, facingRight) {
+    constructor(x, y, facingRight, emoji = '\uD83D\uDC0D') {
         super(x, y, 35, 35);
         this.speed = 300;
         this.vx = facingRight ? this.speed : -this.speed;
@@ -11,7 +11,7 @@ export class Worm extends Entity {
         this.facingRight = facingRight;
         this.rotation = 0;
         this.rotationSpeed = (facingRight ? 1 : -1) * (10 + Math.random() * 5);
-        this._cachedEmoji = getEmojiCanvas('🐍', 30, true);
+        this._cachedEmoji = getEmojiCanvas(emoji, 30, true);
     }
 
     update(dt, game) {
@@ -65,3 +65,4 @@ export class Worm extends Entity {
         ctx.restore();
     }
 }
+

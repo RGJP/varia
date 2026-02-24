@@ -4,15 +4,15 @@ import { getEmojiCanvas } from '../EmojiCache.js';
 
 export class Laser extends Entity {
     constructor(x, y, angle) {
-        // Smaller hitbox for fairer dodging
-        super(x - 10, y - 10, 20, 20);
+        // Slightly larger bolt for readability while keeping dodging fair
+        super(x - 14, y - 14, 28, 28);
         this.speed = 250;
         this.vx = Math.cos(angle) * this.speed;
         this.vy = Math.sin(angle) * this.speed;
         // Point the emoji in the direction of travel
         this.rotation = angle + Math.PI / 2;
         this.emoji = '⚡';
-        this._cachedEmoji = getEmojiCanvas(this.emoji, 25, true);
+        this._cachedEmoji = getEmojiCanvas(this.emoji, 40, true);
     }
 
     update(dt, game) {
