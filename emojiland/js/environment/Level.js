@@ -11,29 +11,81 @@ export function loadLevel() {
     const platforms = [];
     const movingPlatforms = [];
 
-    // Minimum distance between moving platform centers to prevent stacking
-    const MIN_MP_DISTANCE = 250;
-    const MIN_STATIC_DISTANCE = 200; // Keep moving platforms well above static ones
-    const tooCloseToExisting = (x, y, w, h) => {
-        const cx = x + w / 2;
-        const cy = y + h / 2;
-        for (let i = 0; i < movingPlatforms.length; i++) {
-            const mp = movingPlatforms[i];
-            const mx = mp.x + mp.width / 2;
-            const my = mp.y + mp.height / 2;
-            const dx = cx - mx;
-            const dy = cy - my;
-            if (Math.sqrt(dx * dx + dy * dy) < MIN_MP_DISTANCE) return true;
+    const MOVING_HEIGHT = 30;
+    const STATIC_CLEARANCE_X = 36;
+    const STATIC_CLEARANCE_Y = 28;
+    const MP_TO_MP_CLEARANCE_X = 80;
+    const MP_TO_MP_CLEARANCE_Y = 70;
+    const MIN_MP_CENTER_DISTANCE = 220;
+
+    const axisOf = (obj) => obj.moveAxis || obj.axis;
+    const rangeOf = (obj) => obj.range || 0;
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    const rectCenter = (rect) => ({ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 });
+
+    const getSweptRect = (obj) => {
+        const axis = axisOf(obj);
+        const range = rangeOf(obj);
+        if (axis === 'x') {
+            const minX = Math.min(obj.x, obj.x + range);
+            return { x: minX, y: obj.y, width: obj.width + Math.abs(range), height: obj.height };
         }
-        // Also check distance from static platforms so movers aren't redundant
-        for (let i = 0; i < platforms.length; i++) {
-            const p = platforms[i];
-            // Check if the moving platform overlaps or is very close vertically
-            const horizOverlap = x + w > p.x - 20 && x < p.x + p.width + 20;
-            const vertClose = Math.abs(y - p.y) < MIN_STATIC_DISTANCE && horizOverlap;
-            // Check if it's sitting right on top of a platform
-            const onTop = y + h > p.y - 10 && y + h < p.y + MIN_STATIC_DISTANCE && horizOverlap;
-            if (vertClose || onTop) return true;
+        if (axis === 'y') {
+            const minY = Math.min(obj.y, obj.y + range);
+            return { x: obj.x, y: minY, width: obj.width, height: obj.height + Math.abs(range) };
+        }
+        return { x: obj.x, y: obj.y, width: obj.width, height: obj.height };
+    };
+
+    const overlapsRect = (a, b, padX = 0, padY = 0) => (
+        a.x < b.x + b.width + padX &&
+        a.x + a.width > b.x - padX &&
+        a.y < b.y + b.height + padY &&
+        a.y + a.height > b.y - padY
+    );
+
+    const overlapWidth = (a, b) => Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x));
+
+    const canPlaceMovingPlatform = (candidate, extraStatic = [], isUseful = null) => {
+        const swept = getSweptRect(candidate);
+        if (swept.y < 80 || swept.y + swept.height > 880) return false;
+
+        const staticRects = [...platforms, ...extraStatic];
+        for (let i = 0; i < staticRects.length; i++) {
+            if (overlapsRect(swept, staticRects[i], STATIC_CLEARANCE_X, STATIC_CLEARANCE_Y)) return false;
+        }
+
+        const c = rectCenter(swept);
+        for (let i = 0; i < movingPlatforms.length; i++) {
+            const existing = movingPlatforms[i];
+            const existingSwept = getSweptRect(existing);
+            if (overlapsRect(swept, existingSwept, MP_TO_MP_CLEARANCE_X, MP_TO_MP_CLEARANCE_Y)) return false;
+            const ec = rectCenter(existingSwept);
+            const dx = c.x - ec.x;
+            const dy = c.y - ec.y;
+            if (Math.sqrt(dx * dx + dy * dy) < MIN_MP_CENTER_DISTANCE) return false;
+        }
+
+        return isUseful ? isUseful(swept, candidate) : true;
+    };
+
+    const trySpawnMovingPlatform = ({ attempts = 8, createCandidate, extraStatic = [], isUseful = null }) => {
+        for (let attempt = 0; attempt < attempts; attempt++) {
+            const candidate = createCandidate(attempt);
+            if (!candidate) continue;
+            if (canPlaceMovingPlatform(candidate, extraStatic, isUseful)) {
+                movingPlatforms.push(new MovingPlatform(
+                    candidate.x,
+                    candidate.y,
+                    candidate.width,
+                    candidate.height,
+                    candidate.moveAxis,
+                    candidate.range,
+                    candidate.speed,
+                    theme
+                ));
+                return true;
+            }
         }
         return false;
     };
@@ -68,11 +120,13 @@ export function loadLevel() {
         }
         // Moving platforms (check their entire range of motion)
         for (const mp of movingPlatforms) {
-            const mRangeX = mp.axis === 'x' ? Math.abs(mp.range) : 0;
-            const mRangeY = mp.axis === 'y' ? Math.abs(mp.range) : 0;
+            const mAxis = axisOf(mp);
+            const mRange = rangeOf(mp);
+            const mRangeX = mAxis === 'x' ? Math.abs(mRange) : 0;
+            const mRangeY = mAxis === 'y' ? Math.abs(mRange) : 0;
             const mRect = {
-                x: mp.x + (mp.range < 0 ? mp.range : 0),
-                y: mp.y + (mp.range < 0 ? mp.range : 0),
+                x: mp.x + (mAxis === 'x' && mRange < 0 ? mRange : 0),
+                y: mp.y + (mAxis === 'y' && mRange < 0 ? mRange : 0),
                 width: mp.width + mRangeX,
                 height: mp.height + mRangeY
             };
@@ -232,15 +286,39 @@ export function loadLevel() {
                 }
             }
 
-            // Chance to add a horizontal moving platform bridging the gap
-            if (gap > 100 && Math.random() < 0.5) {
-                const mpWidth = 100 + Math.random() * 60;
-                const mpY = platY - 150 - Math.random() * 100;
-                const mpX = currentX + 20;
-                const mpRange = gap - mpWidth - 10;
-                if (mpRange > 40 && !tooCloseToExisting(mpX, mpY, mpWidth, 30)) {
-                    const mpSpeed = 60 + Math.random() * 60;
-                    movingPlatforms.push(new MovingPlatform(mpX, mpY, mpWidth, 30, 'x', mpRange, mpSpeed, theme));
+            // Utility mover: bridge larger gaps and travel clearly between both sides.
+            if (gap > 120 && Math.random() < 0.65) {
+                const previousPlatform = platforms[platforms.length - 1];
+                const gapLeft = currentX;
+                const nextPlatformRect = { x: currentX + gap, y: platY, width: platWidth, height };
+                const maxBridgeWidth = Math.min(180, gap - 70);
+                if (maxBridgeWidth >= 100) {
+                    trySpawnMovingPlatform({
+                        attempts: 10,
+                        extraStatic: [nextPlatformRect, ...floatingPlatforms],
+                        createCandidate: () => {
+                            const width = 100 + Math.random() * (maxBridgeWidth - 100);
+                            const range = gap - width - 40;
+                            if (range < 90) return null;
+                            const x = gapLeft + 20;
+                            const yBase = Math.min(previousPlatform.y, platY) - 135;
+                            const y = clamp(yBase + (Math.random() * 70 - 35), 130, 670);
+                            return {
+                                x,
+                                y,
+                                width,
+                                height: MOVING_HEIGHT,
+                                moveAxis: 'x',
+                                range,
+                                speed: 70 + Math.random() * 55
+                            };
+                        },
+                        isUseful: (swept, candidate) => {
+                            const gapRect = { x: gapLeft + 12, y: swept.y, width: gap - 24, height: swept.height };
+                            const travelCoverage = candidate.range / gap;
+                            return overlapWidth(swept, gapRect) >= swept.width * 0.7 && travelCoverage >= 0.45;
+                        }
+                    });
                 }
             }
 
@@ -258,17 +336,35 @@ export function loadLevel() {
                 }
             }
 
-            // Extra moving platforms above main platforms (~35% chance)
-            if (platWidth > 150 && Math.random() < 0.35) {
-                const mpWidth = 100 + Math.random() * 80;
-                const mpX = currentX + Math.random() * (platWidth - mpWidth);
-                const mpY = platY - 200 - Math.random() * 150;
-                if (!tooCloseToExisting(mpX, mpY, mpWidth, 30)) {
-                    const axis = Math.random() < 0.6 ? 'x' : 'y';
-                    const range = axis === 'x' ? (220 + Math.random() * 320) : (150 + Math.random() * 220);
-                    const speed = 50 + Math.random() * 80;
-                    movingPlatforms.push(new MovingPlatform(mpX, mpY, mpWidth, 30, axis, range, speed, theme));
-                }
+            // Utility mover: overhead shuttle above wide platforms for optional route shortcuts.
+            if (platWidth > 170 && Math.random() < 0.42) {
+                const supportRect = { x: currentX, y: platY, width: platWidth, height };
+                trySpawnMovingPlatform({
+                    attempts: 10,
+                    createCandidate: () => {
+                        const maxWidth = Math.min(230, platWidth * 0.65);
+                        if (maxWidth < 100) return null;
+                        const width = 100 + Math.random() * (maxWidth - 100);
+                        const maxRange = Math.min(340, platWidth - width - 30);
+                        if (maxRange < 100) return null;
+                        const x = currentX + 15 + Math.random() * Math.max(1, (platWidth - width - 30));
+                        const y = platY - (130 + Math.random() * 140);
+                        return {
+                            x,
+                            y,
+                            width,
+                            height: MOVING_HEIGHT,
+                            moveAxis: 'x',
+                            range: 100 + Math.random() * (maxRange - 100),
+                            speed: 55 + Math.random() * 55
+                        };
+                    },
+                    isUseful: (swept) => {
+                        const aligned = overlapWidth(swept, supportRect) >= swept.width * 0.55;
+                        const verticalGap = supportRect.y - (swept.y + swept.height);
+                        return aligned && verticalGap >= 90 && verticalGap <= 300;
+                    }
+                });
             }
 
             // Coin locations for main platform
@@ -280,15 +376,47 @@ export function loadLevel() {
 
             // Generate floating platforms above if any
             for (let fp of floatingPlatforms) {
-                // ~50% chance to turn a floating platform into a moving one
-                if (Math.random() < 0.5 && !tooCloseToExisting(fp.x, fp.y, fp.width, fp.height)) {
-                    // Decide horizontal or vertical
-                    const axis = Math.random() < 0.5 ? 'x' : 'y';
-                    const range = axis === 'x' ? (240 + Math.random() * 320) : (170 + Math.random() * 230);
-                    const speed = 50 + Math.random() * 70;
-                    movingPlatforms.push(new MovingPlatform(fp.x, fp.y, fp.width, fp.height, axis, range, speed, theme));
-                    potentialCoinLocations.push({ x: fp.x + fp.width / 2, y: fp.y - (40 + Math.random() * 80) });
-                    continue; // Skip normal floating platform creation (no enemies on moving ones)
+                // Convert some floating platforms to movers, centered around the original lane.
+                if (Math.random() < 0.45) {
+                    const anchorCenterX = fp.x + fp.width / 2;
+                    const anchorCenterY = fp.y + fp.height / 2;
+                    const converted = trySpawnMovingPlatform({
+                        attempts: 8,
+                        createCandidate: () => {
+                            if (Math.random() < 0.7) {
+                                const range = 120 + Math.random() * 160;
+                                return {
+                                    x: fp.x - range / 2,
+                                    y: fp.y,
+                                    width: fp.width,
+                                    height: fp.height,
+                                    moveAxis: 'x',
+                                    range,
+                                    speed: 50 + Math.random() * 60
+                                };
+                            }
+                            const range = 90 + Math.random() * 90;
+                            return {
+                                x: fp.x,
+                                y: fp.y - range / 2,
+                                width: fp.width,
+                                height: fp.height,
+                                moveAxis: 'y',
+                                range,
+                                speed: 45 + Math.random() * 45
+                            };
+                        },
+                        isUseful: (swept, candidate) => {
+                            const center = rectCenter(swept);
+                            const centered = Math.abs(center.x - anchorCenterX) < 26 && Math.abs(center.y - anchorCenterY) < 26;
+                            const travel = Math.abs(candidate.range);
+                            return centered && travel >= 90;
+                        }
+                    });
+                    if (converted) {
+                        potentialCoinLocations.push({ x: fp.x + fp.width / 2, y: fp.y - (40 + Math.random() * 80) });
+                        continue; // Skip normal floating platform creation (no enemies on moving ones)
+                    }
                 }
 
                 const floatPlatform = new Platform(fp.x, fp.y, fp.width, fp.height, false, theme);
