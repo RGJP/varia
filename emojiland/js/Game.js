@@ -896,13 +896,6 @@ export class Game {
         ctx.lineWidth = 1.5;
         ctx.strokeRect(barX, barY + 18, barW, barH);
 
-        // HP text
-        ctx.font = 'bold 11px "Outfit", sans-serif';
-        ctx.fillStyle = 'white';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(`${boss.health} / ${boss.maxHealth}`, barX + barW / 2, barY + 18 + barH / 2);
-
         ctx.restore();
     }
 }

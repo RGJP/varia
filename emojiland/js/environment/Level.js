@@ -169,6 +169,23 @@ export function loadLevel() {
         }
     };
 
+    const addSwingingVineCoinArc = (anchorX, anchorY, ropeLen) => {
+        const pivotY = anchorY + 30;
+        const radius = ropeLen * (0.72 + Math.random() * 0.16);
+        const arcHalfAngle = (36 + Math.random() * 12) * (Math.PI / 180);
+        const coinCount = 7 + Math.floor(Math.random() * 4); // 7..10 coins
+
+        for (let i = 0; i < coinCount; i++) {
+            const t = coinCount <= 1 ? 0.5 : i / (coinCount - 1);
+            const angle = -arcHalfAngle + t * arcHalfAngle * 2;
+            const x = anchorX - Math.sin(angle) * radius;
+            const y = pivotY + Math.cos(angle) * radius - (20 + Math.sin(t * Math.PI) * 24);
+            if (x > 60 && y > 90 && y < 760) {
+                potentialCoinLocations.push({ x, y });
+            }
+        }
+    };
+
     const startStyle = Math.floor(Math.random() * 4);
     const startPlatforms = [];
 
@@ -463,6 +480,7 @@ export function loadLevel() {
 
                 if (!isVineClipping(svAnchorX, svAnchorY, svRopeLen, upcoming)) {
                     swingingVines.push(new SwingingVine(svAnchorX, svAnchorY, svRopeLen));
+                    addSwingingVineCoinArc(svAnchorX, svAnchorY, svRopeLen);
                 }
             }
 

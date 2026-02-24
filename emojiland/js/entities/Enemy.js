@@ -1516,14 +1516,12 @@ export class Boss extends Entity {
                 const dir = Math.sign(toPlayer) || (this.facingRight ? 1 : -1);
                 const spawnX = this.x + this.width / 2 + dir * (this.width * 0.26);
                 const spawnY = this.y + this.height * 0.2;
-                const vx = dir * (255 + this.phase * 28 + Math.random() * 34);
-                const vy = -(355 + this.phase * 26 + Math.random() * 28);
+                const vx = dir * (340 + this.phase * 34 + Math.random() * 42);
+                const vy = -(390 + this.phase * 30 + Math.random() * 34);
                 game.enemyProjectiles.push(new BossProjectile(spawnX, spawnY, vx, vy, 'venom'));
-                if (this.phase >= 3 && Math.random() < 0.35) {
-                    const vx2 = dir * (225 + this.phase * 24 + Math.random() * 30);
-                    const vy2 = -(395 + this.phase * 22 + Math.random() * 24);
-                    game.enemyProjectiles.push(new BossProjectile(spawnX, spawnY - 8, vx2, vy2, 'venom'));
-                }
+                const vx2 = dir * (300 + this.phase * 30 + Math.random() * 38);
+                const vy2 = -(430 + this.phase * 28 + Math.random() * 30);
+                game.enemyProjectiles.push(new BossProjectile(spawnX, spawnY - 8, vx2, vy2, 'venom'));
                 this.attackCooldown = 1.7 + Math.random() * 0.95;
                 this.spiderVenomCooldown = 2.3 + Math.random() * 1.7;
                 this.spiderState = 'PAUSE';
@@ -1934,7 +1932,7 @@ export class Boss extends Entity {
         if (this.bossType === 'boss_hedgehog') {
             if (!this._flameCache) this._flameCache = getEmojiCanvas(String.fromCodePoint(0x1F525), 24);
             const flameCount = 16;
-            const radius = this.width * 0.48;
+            const radius = this.width * 0.66;
             const openPulse = this.flameShieldOpen ? (0.78 + Math.sin(this.timeAlive * 9) * 0.16) : 1;
             const closedPulse = this.flameShieldOpen ? 1 : (0.75 + Math.sin(this.timeAlive * 11) * 0.2);
             for (let i = 0; i < flameCount; i++) {
