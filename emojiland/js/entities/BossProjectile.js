@@ -2,7 +2,7 @@ import { Entity } from './Entity.js';
 import { Physics } from '../Physics.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
-// projectileType: 'drumstick' | 'stone' | 'skewer' | 'web' | 'wrench'
+// projectileType: 'drumstick' | 'stone' | 'skewer' | 'web' | 'wrench' | 'venom' | 'flame'
 export class BossProjectile extends Entity {
     constructor(x, y, vx, vy, projectileType) {
         super(x, y, 40, 40);
@@ -40,6 +40,15 @@ export class BossProjectile extends Entity {
                 this.maxBounces = 0;
                 this.ignoreGravity = true;
                 break;
+            case 'venom':
+                this.emoji = String.fromCodePoint(0x1F7E2);
+                this.maxBounces = 0;
+                this.ignorePlatformTimer = 0.14; // Allow the lob to clear the caster platform edge.
+                break;
+            case 'flame':
+                this.emoji = String.fromCodePoint(0x1F525);
+                this.maxBounces = 0;
+                break;
             default:
                 this.emoji = String.fromCodePoint(0x1FAA8);
                 this.maxBounces = 0;
@@ -64,6 +73,7 @@ export class BossProjectile extends Entity {
         this.x += this.vx * dt;
         this.y += this.vy * dt;
         this.rotation += (this.vx > 0 ? 6 : -6) * dt;
+        if (this.ignorePlatformTimer > 0) this.ignorePlatformTimer -= dt;
 
         if (this.markedForDeletion) return;
 
@@ -81,6 +91,9 @@ export class BossProjectile extends Entity {
                 } else if (this.projectileType === 'web') {
                     // Webs briefly lock movement and deal 1 damage.
                     game.player.stunTimer = Math.max(game.player.stunTimer, 0.5);
+                } else if (this.projectileType === 'venom') {
+                    // Venom hits are slippery and briefly slow the player.
+                    game.player.slowTimer = Math.max(game.player.slowTimer || 0, 1.0);
                 }
 
                 this.markedForDeletion = true;
@@ -92,7 +105,7 @@ export class BossProjectile extends Entity {
         const platforms = game._visiblePlatforms;
         for (let i = 0; i < platforms.length; i++) {
             const p = platforms[i];
-            if (Physics.checkAABB(this, p)) {
+            if (this.ignorePlatformTimer <= 0 && Physics.checkAABB(this, p)) {
                 if (this.projectileType === 'drumstick' && this.bounceCount < this.maxBounces) {
                     // Bounce: reverse vy, lose a bit of energy
                     this.vy = -Math.abs(this.vy) * 0.65;

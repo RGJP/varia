@@ -159,19 +159,199 @@ export function loadLevel() {
     const swingingVines = [];
     const potentialCoinLocations = [];
 
-    // Starting platform
-    const startWidth = 300 + Math.random() * 700;
-    const startY = 400 + Math.random() * 200;
-    const startHeight = 50 + Math.random() * 150;
-    platforms.push(new Platform(-100, startY, startWidth + 100, startHeight, false, theme));
+    // Start zone: rotate through distinct opening layouts so the run never opens the same way.
+    const addPlatformCoinPoints = (platform, spacing = 140) => {
+        const pointCount = Math.max(2, Math.floor(platform.width / spacing));
+        for (let i = 0; i < pointCount; i++) {
+            const coinX = platform.x + (platform.width / (pointCount + 1)) * (i + 1);
+            if (coinX < 60) continue;
+            potentialCoinLocations.push({ x: coinX, y: platform.y - (40 + Math.random() * 80) });
+        }
+    };
 
-    // Potential coins on the starting platform
-    const numStartPoints = Math.floor(startWidth / 150);
-    for (let i = 0; i < numStartPoints; i++) {
-        potentialCoinLocations.push({ x: 100 + i * 150, y: startY - (40 + Math.random() * 80) });
+    const startStyle = Math.floor(Math.random() * 4);
+    const startPlatforms = [];
+
+    if (startStyle === 0) {
+        // Wide runway
+        const y = 380 + Math.random() * 170;
+        const width = 460 + Math.random() * 560;
+        const height = 80 + Math.random() * 120;
+        startPlatforms.push(new Platform(-120, y, width + 120, height, false, theme));
+    } else if (startStyle === 1) {
+        // Stepped opener
+        const y1 = 450 + Math.random() * 120;
+        const w1 = 260 + Math.random() * 300;
+        const h1 = 90 + Math.random() * 110;
+        startPlatforms.push(new Platform(-120, y1, w1 + 120, h1, false, theme));
+
+        const gap = 35 + Math.random() * 45;
+        const y2 = clamp(y1 - (35 + Math.random() * 65), 260, 620);
+        const w2 = 280 + Math.random() * 360;
+        const h2 = 80 + Math.random() * 120;
+        startPlatforms.push(new Platform(w1 + gap, y2, w2, h2, false, theme));
+    } else if (startStyle === 2) {
+        // Split islands near spawn
+        const y1 = 400 + Math.random() * 170;
+        const w1 = 280 + Math.random() * 280;
+        const h1 = 90 + Math.random() * 120;
+        startPlatforms.push(new Platform(-120, y1, w1 + 120, h1, false, theme));
+
+        const gap = 70 + Math.random() * 55;
+        const y2 = clamp(y1 + (Math.random() * 80 - 40), 260, 640);
+        const w2 = 260 + Math.random() * 360;
+        const h2 = 80 + Math.random() * 120;
+        startPlatforms.push(new Platform(w1 + gap, y2, w2, h2, false, theme));
+    } else {
+        // Staggered intro: up then down
+        const y1 = 420 + Math.random() * 140;
+        const w1 = 300 + Math.random() * 320;
+        const h1 = 90 + Math.random() * 120;
+        startPlatforms.push(new Platform(-120, y1, w1 + 120, h1, false, theme));
+
+        const gap1 = 35 + Math.random() * 45;
+        const y2 = clamp(y1 - (45 + Math.random() * 70), 240, 610);
+        const w2 = 200 + Math.random() * 220;
+        const h2 = 70 + Math.random() * 110;
+        startPlatforms.push(new Platform(w1 + gap1, y2, w2, h2, false, theme));
+
+        const gap2 = 30 + Math.random() * 55;
+        const y3 = clamp(y2 + (55 + Math.random() * 80), 260, 670);
+        const w3 = 250 + Math.random() * 320;
+        const h3 = 80 + Math.random() * 120;
+        startPlatforms.push(new Platform(w1 + gap1 + w2 + gap2, y3, w3, h3, false, theme));
     }
 
-    let currentX = startWidth;
+    for (let i = 0; i < startPlatforms.length; i++) {
+        const p = startPlatforms[i];
+        platforms.push(p);
+        addPlatformCoinPoints(p, 150);
+    }
+
+    // Start micro-variants: lightweight extras so openings feel fresh without breaking readability.
+    const startGaps = [];
+    for (let i = 0; i < startPlatforms.length - 1; i++) {
+        const left = startPlatforms[i];
+        const right = startPlatforms[i + 1];
+        const gap = right.x - (left.x + left.width);
+        if (gap > 0) startGaps.push({ left, right, gap });
+    }
+
+    // Occasional bonus floating ledge around the start zone.
+    if (Math.random() < 0.48) {
+        const base = startPlatforms[Math.floor(Math.random() * startPlatforms.length)];
+        const maxWidth = Math.min(260, base.width * 0.65);
+        if (maxWidth >= 110) {
+            const width = 110 + Math.random() * (maxWidth - 110);
+            const x = base.x + Math.max(10, (base.width - width) * (0.15 + Math.random() * 0.7));
+            const y = clamp(base.y - (135 + Math.random() * 120), 160, 650);
+            const ledgeRect = { x, y, width, height: 34 };
+            let blocked = false;
+            for (let i = 0; i < platforms.length; i++) {
+                if (overlapsRect(ledgeRect, platforms[i], 28, 26)) {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (!blocked) {
+                const ledge = new Platform(ledgeRect.x, ledgeRect.y, ledgeRect.width, ledgeRect.height, false, theme);
+                platforms.push(ledge);
+                addPlatformCoinPoints(ledge, 120);
+                if (Math.random() < 0.22) {
+                    const vineX = ledge.x + ledge.width * (0.35 + Math.random() * 0.3) - 12;
+                    const vineH = 120 + Math.random() * 170;
+                    vines.push(new Vine(vineX, ledge.y + ledge.height, vineH));
+                }
+            }
+        }
+    }
+
+    // Occasional decorative/utility gap vine near start.
+    if (startGaps.length > 0 && Math.random() < 0.34) {
+        let bestGap = startGaps[0];
+        for (let i = 1; i < startGaps.length; i++) {
+            if (startGaps[i].gap > bestGap.gap) bestGap = startGaps[i];
+        }
+        if (bestGap.gap > 80) {
+            const vineX = bestGap.left.x + bestGap.left.width + bestGap.gap * (0.35 + Math.random() * 0.3) - 12;
+            const topY = Math.min(bestGap.left.y, bestGap.right.y) - (190 + Math.random() * 130);
+            const vineHeight = 190 + Math.random() * 170;
+            vines.push(new Vine(vineX, topY, vineHeight));
+        }
+    }
+
+    // Rare starter mover (bridge a start gap or shuttle over a start platform).
+    if (Math.random() < 0.42) {
+        const tryGapMover = startGaps.length > 0 && Math.random() < 0.58;
+        if (tryGapMover) {
+            const viableGaps = startGaps.filter(g => g.gap > 110);
+            if (viableGaps.length > 0) {
+                const pick = viableGaps[Math.floor(Math.random() * viableGaps.length)];
+                trySpawnMovingPlatform({
+                    attempts: 8,
+                    extraStatic: [pick.left, pick.right],
+                    createCandidate: () => {
+                        const width = 95 + Math.random() * 50;
+                        const range = pick.gap - width - 18;
+                        if (range < 85) return null;
+                        const x = pick.left.x + pick.left.width + 8;
+                        const y = clamp(Math.min(pick.left.y, pick.right.y) - (95 + Math.random() * 80), 150, 680);
+                        return {
+                            x,
+                            y,
+                            width,
+                            height: MOVING_HEIGHT,
+                            moveAxis: 'x',
+                            range,
+                            speed: 65 + Math.random() * 45
+                        };
+                    },
+                    isUseful: (swept) => {
+                        const gapRect = {
+                            x: pick.left.x + pick.left.width + 4,
+                            y: swept.y,
+                            width: pick.gap - 8,
+                            height: swept.height
+                        };
+                        return overlapWidth(swept, gapRect) >= swept.width * 0.62;
+                    }
+                });
+            }
+        } else {
+            let widest = startPlatforms[0];
+            for (let i = 1; i < startPlatforms.length; i++) {
+                if (startPlatforms[i].width > widest.width) widest = startPlatforms[i];
+            }
+            trySpawnMovingPlatform({
+                attempts: 8,
+                createCandidate: () => {
+                    const maxWidth = Math.min(220, widest.width * 0.6);
+                    if (maxWidth < 100) return null;
+                    const width = 100 + Math.random() * (maxWidth - 100);
+                    const maxRange = Math.min(360, widest.width - width - 16);
+                    if (maxRange < 120) return null;
+                    const x = widest.x + 8 + Math.random() * Math.max(1, widest.width - width - 16);
+                    const y = clamp(widest.y - (120 + Math.random() * 120), 140, 660);
+                    return {
+                        x,
+                        y,
+                        width,
+                        height: MOVING_HEIGHT,
+                        moveAxis: 'x',
+                        range: 120 + Math.random() * (maxRange - 120),
+                        speed: 55 + Math.random() * 50
+                    };
+                },
+                isUseful: (swept) => {
+                    const aligned = overlapWidth(swept, widest) >= swept.width * 0.52;
+                    const verticalGap = widest.y - (swept.y + swept.height);
+                    return aligned && verticalGap >= 85 && verticalGap <= 280;
+                }
+            });
+        }
+    }
+
+    let currentX = Math.max(...startPlatforms.map(p => p.x + p.width));
 
     // Generate up to 10000 X
     while (currentX < 10000) {
@@ -298,7 +478,7 @@ export function loadLevel() {
                         extraStatic: [nextPlatformRect, ...floatingPlatforms],
                         createCandidate: () => {
                             const width = 100 + Math.random() * (maxBridgeWidth - 100);
-                            const range = gap - width - 40;
+                            const range = gap - width - 20;
                             if (range < 90) return null;
                             const x = gapLeft + 20;
                             const yBase = Math.min(previousPlatform.y, platY) - 135;
@@ -345,8 +525,8 @@ export function loadLevel() {
                         const maxWidth = Math.min(230, platWidth * 0.65);
                         if (maxWidth < 100) return null;
                         const width = 100 + Math.random() * (maxWidth - 100);
-                        const maxRange = Math.min(340, platWidth - width - 30);
-                        if (maxRange < 100) return null;
+                        const maxRange = Math.min(480, platWidth - width - 16);
+                        if (maxRange < 140) return null;
                         const x = currentX + 15 + Math.random() * Math.max(1, (platWidth - width - 30));
                         const y = platY - (130 + Math.random() * 140);
                         return {
@@ -355,7 +535,7 @@ export function loadLevel() {
                             width,
                             height: MOVING_HEIGHT,
                             moveAxis: 'x',
-                            range: 100 + Math.random() * (maxRange - 100),
+                            range: 140 + Math.random() * (maxRange - 140),
                             speed: 55 + Math.random() * 55
                         };
                     },
@@ -384,7 +564,7 @@ export function loadLevel() {
                         attempts: 8,
                         createCandidate: () => {
                             if (Math.random() < 0.7) {
-                                const range = 120 + Math.random() * 160;
+                                const range = 180 + Math.random() * 240;
                                 return {
                                     x: fp.x - range / 2,
                                     y: fp.y,
@@ -395,7 +575,7 @@ export function loadLevel() {
                                     speed: 50 + Math.random() * 60
                                 };
                             }
-                            const range = 90 + Math.random() * 90;
+                            const range = 130 + Math.random() * 180;
                             return {
                                 x: fp.x,
                                 y: fp.y - range / 2,

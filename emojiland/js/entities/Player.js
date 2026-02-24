@@ -213,7 +213,7 @@ export class Player extends Entity {
 
                 const rock = new Rock(throwX, throwY, this.facingRight, {
                     sizeMultiplier,
-                    damage: fullyCharged ? 5 : 1,
+                    damage: fullyCharged ? 8 : 1,
                     phaseThroughSurfaces: fullyCharged
                 });
                 game.rocks.push(rock);
@@ -540,12 +540,9 @@ export class Player extends Entity {
                     }
                 } else if (Physics.checkAABB(hitbox, enemy)) {
                     const stompableEmojis = ['🐢', '🐸', '🐦', '🦅', '🦉', '🐦‍⬛', '🧟‍♂️', '🦑', '🦗', '🐿️', '🕷️'];
-                    if ((stompableEmojis.includes(enemy.emoji) || enemy.bossType === 'boss_spider') && this.vy > 0 && hitbox.y + hitbox.height - (this.vy * dt) <= enemy.y + enemy.height * 0.5) {
-                        if (enemy.bossType === 'boss_spider') {
-                            enemy.takeDamage(2, game);
-                        } else {
-                            enemy.takeDamage(enemy.health, game);
-                        }
+                    const canStompEnemy = enemy.bossType !== 'boss_spider' && stompableEmojis.includes(enemy.emoji);
+                    if (canStompEnemy && this.vy > 0 && hitbox.y + hitbox.height - (this.vy * dt) <= enemy.y + enemy.height * 0.5) {
+                        enemy.takeDamage(enemy.health, game);
                         this.vy = this.jumpForce;
                         this.grounded = false;
                         this.isJumping = true;
