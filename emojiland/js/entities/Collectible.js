@@ -3,18 +3,19 @@ import { getEmojiCanvas } from '../EmojiCache.js';
 
 export class Collectible extends Entity {
     constructor(x, y, type = 'coin') {
-        const isSpecial = type === 'health' || type === 'bomb' || type === 'diamond_powerup' || type === 'fire_powerup' || type === 'full_health';
+        const isSpecial = type === 'health' || type === 'bomb' || type === 'diamond_powerup' || type === 'fire_powerup' || type === 'full_health' || type === 'wing_powerup';
         const size = isSpecial ? 50 : 30;
         super(x, y, size, size);
         this.baseY = y;
         this.time = Math.random() * Math.PI * 2;
         this.type = type;
-        const emoji = type === 'health' ? '❤️' :
-            type === 'bomb' ? '💣' :
-                type === 'diamond_powerup' ? '🪨' :
-                    type === 'fire_powerup' ? '🔥' :
-                        type === 'full_health' ? '🧚' : '🪙';
-        this.isPowerUp = type === 'diamond_powerup' || type === 'fire_powerup' || type === 'full_health';
+        const emoji = type === 'health' ? '\u2764\uFE0F' :
+            type === 'bomb' ? '\u{1F4A3}' :
+                type === 'diamond_powerup' ? '\u{1FAA8}' :
+                    type === 'fire_powerup' ? '\u{1F525}' :
+                        type === 'full_health' ? '\u{1F9DA}' :
+                            type === 'wing_powerup' ? '\u{1FAB6}' : '\u{1FA99}';
+        this.isPowerUp = type === 'diamond_powerup' || type === 'fire_powerup' || type === 'full_health' || type === 'wing_powerup';
         this.isReplenish = type === 'health' || type === 'bomb';
         this._cachedEmoji = getEmojiCanvas(emoji, size);
     }
@@ -59,7 +60,7 @@ export class Collectible extends Entity {
 
         if (this.type === 'full_health') {
             if (!this._heartEmoji) {
-                this._heartEmoji = getEmojiCanvas('💖', 20);
+                this._heartEmoji = getEmojiCanvas('\u{1F496}', 20);
             }
             const numHearts = 6;
             const radius = 45;

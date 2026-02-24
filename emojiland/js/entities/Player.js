@@ -51,6 +51,9 @@ export class Player extends Entity {
 
         this.firePowerUpTimer = 0;
         this.firePowerUpRotation = 0;
+        this.flightTimer = 0;
+        this.flightSpeed = 480;
+        this.powerVisualTimer = 0;
         this.pulseTimer = 0;
         this.attackChargeTimer = 0;
         this.maxAttackChargeTime = 1.5;
@@ -98,6 +101,13 @@ export class Player extends Entity {
         if (this.ignoreVineTimer > 0) {
             this.ignoreVineTimer -= dt;
         }
+        if (this.flightTimer > 0) {
+            this.flightTimer -= dt;
+            if (this.flightTimer <= 0) {
+                this.flightTimer = 0;
+            }
+        }
+        const isFlying = this.flightTimer > 0;
 
         if (this.grounded) {
             this.coyoteTimer = this.coyoteTime;
@@ -122,6 +132,7 @@ export class Player extends Entity {
         if (this.diamondPowerUpTimer > 0) {
             this.diamondPowerUpTimer -= dt;
             this.diamondShootTimer -= dt;
+            this.powerVisualTimer -= dt;
             if (this.diamondShootTimer <= 0) {
                 this.diamondShootTimer = 0.08; // Fast auto fire
                 const throwX = this.facingRight ? this.x + this.width : this.x - 20;
@@ -129,11 +140,36 @@ export class Player extends Entity {
                 game.rocks.push(rock);
                 if (game.audio) game.audio.playThrow();
             }
+            if (this.powerVisualTimer <= 0 && game && game.particles) {
+                this.powerVisualTimer = 0.09;
+                game.particles.emit(
+                    this.x + this.width / 2 + (Math.random() - 0.5) * 18,
+                    this.y + this.height / 2 + (Math.random() - 0.5) * 18,
+                    6,
+                    '#8be9ff',
+                    [40, 120],
+                    [0.12, 0.25],
+                    [1.5, 3.2]
+                );
+            }
         }
 
         if (this.firePowerUpTimer > 0) {
             this.firePowerUpTimer -= dt;
-            this.firePowerUpRotation += (Math.PI * 4) * dt; // Fast spin
+            this.firePowerUpRotation += (Math.PI * 2.2) * dt; // Slower spin to reduce motion sickness
+            this.powerVisualTimer -= dt;
+            if (this.powerVisualTimer <= 0 && game && game.particles) {
+                this.powerVisualTimer = 0.08;
+                game.particles.emit(
+                    this.x + this.width / 2 + (Math.random() - 0.5) * 16,
+                    this.y + this.height / 2 + (Math.random() - 0.5) * 16,
+                    6,
+                    '#ffb347',
+                    [35, 110],
+                    [0.12, 0.24],
+                    [1.5, 3.2]
+                );
+            }
         }
 
         this.pulseTimer += dt;
@@ -186,7 +222,7 @@ export class Player extends Entity {
         }
 
         // Vine Collision Logic
-        if (!this.isClimbing && this.ignoreVineTimer <= 0 && this.knockbackTimer <= 0) {
+        if (!isFlying && !this.isClimbing && this.ignoreVineTimer <= 0 && this.knockbackTimer <= 0) {
             // Check static vines
             if (game.vines) {
                 for (let vine of game.vines) {
@@ -231,7 +267,22 @@ export class Player extends Entity {
         }
 
         // Movement
-        if (this.knockbackTimer > 0) {
+        if (isFlying && !game.gameOverTriggered) {
+            this.vx = 0;
+            this.vy = 0;
+            if (input.isDown('ArrowLeft')) {
+                this.vx = -this.flightSpeed;
+                this.facingRight = false;
+            } else if (input.isDown('ArrowRight')) {
+                this.vx = this.flightSpeed;
+                this.facingRight = true;
+            }
+            if (input.isDown('ArrowUp')) {
+                this.vy = -this.flightSpeed;
+            } else if (input.isDown('ArrowDown')) {
+                this.vy = this.flightSpeed;
+            }
+        } else if (this.knockbackTimer > 0) {
             // Apply standard friction during knockback so player slides a bit from the hit
             if (this.vx > 0) {
                 this.vx -= Physics.FRICTION * dt;
@@ -259,7 +310,7 @@ export class Player extends Entity {
         }
 
         // Jump
-        if (!game.gameOverTriggered && this.stunTimer <= 0 && this.jumpBufferTimer > 0 && !this.isClimbing) {
+        if (!isFlying && !game.gameOverTriggered && this.stunTimer <= 0 && this.jumpBufferTimer > 0 && !this.isClimbing) {
             if (this.coyoteTimer > 0) {
                 this.vy = this.jumpForce;
                 this.grounded = false;
@@ -288,7 +339,7 @@ export class Player extends Entity {
         }
 
         // Variable Jump Height
-        if (!input.isDown('KeyA') && this.isJumping && this.vy < 0 && !this.isClimbing && !this.forceFullJump) {
+        if (!isFlying && !input.isDown('KeyA') && this.isJumping && this.vy < 0 && !this.isClimbing && !this.forceFullJump) {
             this.vy *= 0.5; // Cut jump short
             this.isJumping = false;
         }
@@ -297,7 +348,7 @@ export class Player extends Entity {
             this.isJumping = false;
         }
 
-        if (!this.grounded && !this.isClimbing && this.isSpinning) {
+        if (!isFlying && !this.grounded && !this.isClimbing && this.isSpinning) {
             const spinSpeed = this.isJumping ? Math.PI * 4 : Math.PI * 2.4; // slower rotation for cut-short jumps
             let increment = spinSpeed * dt;
             let currentDir = this.facingRight ? 1 : -1;
@@ -315,7 +366,13 @@ export class Player extends Entity {
             }
         }
 
-        if (this.isClimbing) {
+        if (isFlying) {
+            this.isClimbing = false;
+            this.currentVine = null;
+            this.grounded = false;
+            this.x += this.vx * dt;
+            this.y += this.vy * dt;
+        } else if (this.isClimbing) {
             this.grounded = false;
             this.vy = 0;
             this.vx = 0;
@@ -435,7 +492,7 @@ export class Player extends Entity {
         }
 
         // Enemy Collision logic
-        if (this.invulnerableTimer <= 0) {
+        if (this.invulnerableTimer <= 0 && !isFlying) {
             const hitbox = this._hitbox;
 
             const fireboxes = this._fireboxes;
@@ -529,6 +586,14 @@ export class Player extends Entity {
                     this.firePowerUpTimer = 8.0;
                     if (game.audio) game.audio.playCollect();
                     game.particles.emit(centerX, centerY, 20, '#FF4500', [50, 200], [0.2, 0.5], [3, 5]);
+                } else if (collectible.type === 'wing_powerup') {
+                    this.flightTimer = 7.0;
+                    this.isClimbing = false;
+                    this.currentVine = null;
+                    this.vx = 0;
+                    this.vy = 0;
+                    if (game.audio) game.audio.playCollect();
+                    game.particles.emit(centerX, centerY, 24, '#9ad9ff', [70, 220], [0.2, 0.6], [2, 5]);
                 } else {
                     this.score += 10;
                     game.coinsCollected++;
@@ -622,6 +687,7 @@ export class Player extends Entity {
     }
 
     takeDamage(game) {
+        if (this.flightTimer > 0) return;
         if (this.firePowerUpTimer > 0) return;
         if (this.hasCatProtector) {
             this.hasCatProtector = false;
@@ -686,6 +752,24 @@ export class Player extends Entity {
 
         ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2 + yOffset);
 
+        if (this.diamondPowerUpTimer > 0 && (!game || !game.gameOverTriggered)) {
+            const pulse = 0.75 + Math.sin(this.pulseTimer * 9) * 0.25;
+            const ringR = 40 + pulse * 6;
+            ctx.save();
+            // Clean premium glow (no sigils/characters)
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.50)';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(0, 5, ringR, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(139, 233, 255, 0.30)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 5, ringR - 10, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
         if (this.stunTimer > 0 && (!game || !game.gameOverTriggered)) {
             if (!this._stunEmoji) {
                 this._stunEmoji = getEmojiCanvas('😵‍💫', 40);
@@ -700,8 +784,7 @@ export class Player extends Entity {
         }
 
         if (this.firePowerUpTimer > 0) {
-            if (!this._fireEmoji) {
-                this._fireEmoji = getEmojiCanvas('🔥', 30);
+            if (!this._fireEmoji) {                this._fireEmoji = getEmojiCanvas(String.fromCodePoint(0x1F525), 30);
             }
             let numFireballs = 3;
             if (this.firePowerUpTimer <= 1.0) {
@@ -717,6 +800,20 @@ export class Player extends Entity {
             if (this.rotation !== 0) {
                 ctx.rotate(-this.rotation); // un-rotate player rotation
             }
+            // Fiery aura (visual only)
+            const pulse = 0.72 + Math.sin(this.pulseTimer * 10) * 0.28;
+            ctx.save();
+            ctx.strokeStyle = 'rgba(255, 140, 40, 0.42)';
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.arc(0, 5, radius + 8 + pulse * 5, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(255, 220, 120, 0.28)';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 5, radius - 4 + pulse * 3, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
             for (let i = 0; i < numFireballs; i++) {
                 const angle = this.firePowerUpRotation + (i * Math.PI * 2 / numFireballs);
                 const ox = Math.cos(angle) * radius - this._fireEmoji.width / 2;
@@ -736,6 +833,24 @@ export class Player extends Entity {
             const catX = this.x + this.width / 2 + offsetX - this._catProtectorEmoji.width / 2;
             const catY = this.y + this.height / 2 - 8 + bobY - this._catProtectorEmoji.height / 2;
             ctx.drawImage(this._catProtectorEmoji.canvas, catX, catY);
+        }
+
+        if (!game?.gameOverTriggered && this.flightTimer > 0) {
+            const secondsLeft = Math.ceil(this.flightTimer);
+            const timerText = `Flight: ${secondsLeft}s`;
+            const timerX = this.x + this.width / 2;
+            const timerY = this.y - 24;
+
+            ctx.save();
+            ctx.font = 'bold 18px "Outfit", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+            ctx.fillStyle = '#9ad9ff';
+            ctx.strokeText(timerText, timerX, timerY);
+            ctx.fillText(timerText, timerX, timerY);
+            ctx.restore();
         }
 
         if (!game?.gameOverTriggered && this.isChargingAttack && this.attackChargeTimer > this.chargeIndicatorDelay) {
@@ -777,5 +892,10 @@ export class Player extends Entity {
         ctx.globalAlpha = 1.0;
     }
 }
+
+
+
+
+
 
 
