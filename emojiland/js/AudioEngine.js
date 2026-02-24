@@ -8,7 +8,7 @@ export class AudioEngine {
         this.lastSongNumber = -1;
         this.fadeInterval = null;
 
-        this.totalSongs = 29;
+        this.totalSongs = 39;
         this.musicPool = [];
         this.unlocked = false;
         this.isMusicMuted = false;
@@ -245,5 +245,21 @@ export class AudioEngine {
         this.playOscillator('square', 90, 0.2, 45);
         this.playOscillator('sine', 65, 0.28, 35);
         setTimeout(() => this.playOscillator('triangle', 140, 0.12, 90), 35);
+    }
+
+    playBossVictoryClimb() {
+        // "doo doo doo doooooo"
+        const notes = [523.25, 587.33, 659.25, 783.99]; // C5 D5 E5 G5
+        const steps = [0, 130, 260, 390];
+        for (let i = 0; i < notes.length; i++) {
+            const duration = i === notes.length - 1 ? 0.95 : 0.14;
+            setTimeout(() => {
+                this.playOscillator('triangle', notes[i], duration);
+                if (i === notes.length - 1) {
+                    // Light harmony on the long final note.
+                    this.playOscillator('sine', notes[i] * 1.25, 0.75);
+                }
+            }, steps[i]);
+        }
     }
 }

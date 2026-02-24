@@ -44,9 +44,10 @@ export class InputHandler {
 
     setupVirtualControls() {
         this._lastVirtualJumpPress = 0;
+        this._attackThumbJumpLatched = false;
         const triggerVirtualJump = () => {
             const now = performance.now();
-            if (now - this._lastVirtualJumpPress < 110) return;
+            if (now - this._lastVirtualJumpPress < 70) return;
             this._lastVirtualJumpPress = now;
             this.justPressed.add('KeyA');
         };
@@ -69,6 +70,9 @@ export class InputHandler {
                     this.justReleased.add(code);
                     this.keys.delete(code);
                     this.justPressed.delete(code);
+                    if (id === 'btn-attack') {
+                        this._attackThumbJumpLatched = false;
+                    }
                 };
 
                 el.addEventListener('touchstart', press, { passive: false });
@@ -80,19 +84,38 @@ export class InputHandler {
                 if (id === 'btn-attack') {
                     const jumpBtn = document.getElementById('btn-jump');
                     if (jumpBtn) {
-                        el.addEventListener('touchmove', (e) => {
-                            e.preventDefault();
-                            if (!this.keys.has('KeyD')) return;
+                        const tryThumbJumpFromTouches = (touchList) => {
                             const rect = jumpBtn.getBoundingClientRect();
-                            for (let i = 0; i < e.touches.length; i++) {
-                                const t = e.touches[i];
-                                const inJumpRect = t.clientX >= rect.left && t.clientX <= rect.right
-                                    && t.clientY >= rect.top && t.clientY <= rect.bottom;
-                                if (inJumpRect) {
-                                    triggerVirtualJump();
+                            let inJumpRect = false;
+                            for (let i = 0; i < touchList.length; i++) {
+                                const t = touchList[i];
+                                if (t.clientX >= rect.left && t.clientX <= rect.right &&
+                                    t.clientY >= rect.top && t.clientY <= rect.bottom) {
+                                    inJumpRect = true;
                                     break;
                                 }
                             }
+
+                            // Trigger on enter only. User can leave/re-enter for another jump
+                            // while still holding attack, enabling normal double-jump flow.
+                            if (inJumpRect && !this._attackThumbJumpLatched) {
+                                triggerVirtualJump();
+                                this._attackThumbJumpLatched = true;
+                            } else if (!inJumpRect) {
+                                this._attackThumbJumpLatched = false;
+                            }
+                        };
+
+                        el.addEventListener('touchmove', (e) => {
+                            e.preventDefault();
+                            if (!this.keys.has('KeyD')) return;
+                            tryThumbJumpFromTouches(e.touches);
+                        }, { passive: false });
+
+                        el.addEventListener('touchstart', (e) => {
+                            e.preventDefault();
+                            if (!this.keys.has('KeyD')) return;
+                            tryThumbJumpFromTouches(e.touches);
                         }, { passive: false });
                     }
                 }

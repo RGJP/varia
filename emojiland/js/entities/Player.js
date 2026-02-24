@@ -47,11 +47,14 @@ export class Player extends Entity {
         this.spinBaseRotation = 0;
 
         this.diamondPowerUpTimer = 0;
+        this.diamondPowerUpDuration = 5.0;
         this.diamondShootTimer = 0;
 
         this.firePowerUpTimer = 0;
+        this.firePowerUpDuration = 8.0;
         this.firePowerUpRotation = 0;
         this.flightTimer = 0;
+        this.flightPowerUpDuration = 7.0;
         this.flightSpeed = 480;
         this.powerVisualTimer = 0;
         this.pulseTimer = 0;
@@ -547,6 +550,10 @@ export class Player extends Entity {
                         this.grounded = false;
                         this.isJumping = true;
                         this.forceFullJump = true;
+                        // Treat stomps like a fresh jump launch so a follow-up air jump is available.
+                        this.airJumps = 1;
+                        this.coyoteTimer = 0;
+                        this.jumpBufferTimer = 0;
                         this.isSpinning = true;
                         this.spinDirection = this.facingRight ? 1 : -1;
                         this.spinBaseRotation = this.rotation;
@@ -574,7 +581,7 @@ export class Player extends Entity {
                     if (game.audio) game.audio.playCollect();
                     game.particles.emit(centerX, centerY, 15, '#444444', [50, 150], [0.2, 0.5], [2, 4]);
                 } else if (collectible.type === 'diamond_powerup') {
-                    this.diamondPowerUpTimer = 5.0;
+                    this.diamondPowerUpTimer = this.diamondPowerUpDuration;
                     if (game.audio) game.audio.playCollect();
                     game.particles.emit(centerX, centerY, 20, '#888888', [50, 200], [0.2, 0.5], [3, 5]);
                 } else if (collectible.type === 'full_health') {
@@ -583,11 +590,11 @@ export class Player extends Entity {
                     if (game.audio) game.audio.playCollect();
                     game.particles.emit(centerX, centerY, 30, '#FF69B4', [50, 250], [0.2, 0.6], [3, 6]);
                 } else if (collectible.type === 'fire_powerup') {
-                    this.firePowerUpTimer = 8.0;
+                    this.firePowerUpTimer = this.firePowerUpDuration;
                     if (game.audio) game.audio.playCollect();
                     game.particles.emit(centerX, centerY, 20, '#FF4500', [50, 200], [0.2, 0.5], [3, 5]);
                 } else if (collectible.type === 'wing_powerup') {
-                    this.flightTimer = 7.0;
+                    this.flightTimer = this.flightPowerUpDuration;
                     this.isClimbing = false;
                     this.currentVine = null;
                     this.vx = 0;
@@ -735,6 +742,94 @@ export class Player extends Entity {
             ctx.scale(-1, 1);
         }
 
+        if (!game?.gameOverTriggered && this.flightTimer > 0) {
+            const speed = Math.hypot(this.vx, this.vy);
+            if (speed > 2) {
+                const speedRatio = Math.min(1, speed / this.flightSpeed);
+                const phase = this.pulseTimer * 24;
+
+                // Convert world movement direction into local draw space (after rotation/flip).
+                let dirX = this.vx / speed;
+                let dirY = this.vy / speed;
+                if (this.rotation !== 0) {
+                    const cos = Math.cos(-this.rotation);
+                    const sin = Math.sin(-this.rotation);
+                    const lx = dirX * cos - dirY * sin;
+                    const ly = dirX * sin + dirY * cos;
+                    dirX = lx;
+                    dirY = ly;
+                }
+                if (!this.facingRight) {
+                    dirX *= -1;
+                }
+
+                const backX = -dirX;
+                const backY = -dirY;
+                const perpX = -backY;
+                const perpY = backX;
+                const trailCount = 16;
+                const spreadStep = 4.6;
+                const emitterX = backX * this.width * 0.16;
+                const emitterY = backY * this.height * 0.16;
+
+                ctx.save();
+                ctx.lineCap = 'round';
+                const glow = ctx.createRadialGradient(
+                    emitterX,
+                    emitterY,
+                    2,
+                    emitterX,
+                    emitterY,
+                    16 + speedRatio * 8
+                );
+                glow.addColorStop(0, 'rgba(230, 247, 255, 0.45)');
+                glow.addColorStop(1, 'rgba(160, 220, 255, 0)');
+                ctx.fillStyle = glow;
+                ctx.beginPath();
+                ctx.arc(emitterX, emitterY, 16 + speedRatio * 8, 0, Math.PI * 2);
+                ctx.fill();
+
+                for (let i = 0; i < trailCount; i++) {
+                    const spread = (i - (trailCount - 1) / 2) * spreadStep;
+                    const wobble = Math.sin(phase + i * 1.25) * 1.8;
+                    const sideOffset = spread + wobble;
+                    const stemEndX = emitterX + backX * (10 + speedRatio * 5) + perpX * (sideOffset * 0.55);
+                    const stemEndY = emitterY + backY * (10 + speedRatio * 5) + perpY * (sideOffset * 0.55);
+                    const baseX = emitterX + backX * (17 + speedRatio * 8) + perpX * sideOffset;
+                    const baseY = emitterY + backY * (17 + speedRatio * 8) + perpY * sideOffset;
+                    const length = 56 + speedRatio * 56 + ((Math.sin(phase * 1.1 + i * 1.6) + 1) * 0.5) * 18;
+                    const tailX = baseX + backX * length;
+                    const tailY = baseY + backY * length;
+
+                    // Short connector so each trail visibly comes from the player.
+                    ctx.strokeStyle = 'rgba(210, 238, 255, 0.65)';
+                    ctx.lineWidth = Math.max(1.2, 2.8 - i * 0.1);
+                    ctx.globalAlpha = Math.max(0.2, 0.45 + speedRatio * 0.24 - i * 0.02);
+                    ctx.beginPath();
+                    ctx.moveTo(emitterX + perpX * (sideOffset * 0.24), emitterY + perpY * (sideOffset * 0.24));
+                    ctx.quadraticCurveTo(stemEndX, stemEndY, baseX, baseY);
+                    ctx.stroke();
+
+                    ctx.strokeStyle = 'rgba(170, 220, 255, 0.7)';
+                    ctx.lineWidth = Math.max(0.85, 2.5 - i * 0.1);
+                    ctx.globalAlpha = Math.max(0.12, 0.5 + speedRatio * 0.3 - i * 0.025);
+                    ctx.beginPath();
+                    ctx.moveTo(baseX, baseY);
+                    ctx.lineTo(tailX, tailY);
+                    ctx.stroke();
+
+                    ctx.strokeStyle = 'rgba(235, 247, 255, 0.8)';
+                    ctx.lineWidth = 1.1;
+                    ctx.globalAlpha = Math.max(0.1, 0.34 + speedRatio * 0.2 - i * 0.018);
+                    ctx.beginPath();
+                    ctx.moveTo(baseX - perpX * 1.5, baseY - perpY * 1.5);
+                    ctx.lineTo(baseX + backX * (length * 0.78), baseY + backY * (length * 0.78));
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
         let cached = this._cachedEmoji;
         let yOffset = 5;
 
@@ -751,24 +846,6 @@ export class Player extends Entity {
         }
 
         ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2 + yOffset);
-
-        if (this.diamondPowerUpTimer > 0 && (!game || !game.gameOverTriggered)) {
-            const pulse = 0.75 + Math.sin(this.pulseTimer * 9) * 0.25;
-            const ringR = 40 + pulse * 6;
-            ctx.save();
-            // Clean premium glow (no sigils/characters)
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.50)';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.arc(0, 5, ringR, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.strokeStyle = 'rgba(139, 233, 255, 0.30)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 5, ringR - 10, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.restore();
-        }
 
         if (this.stunTimer > 0 && (!game || !game.gameOverTriggered)) {
             if (!this._stunEmoji) {
@@ -824,6 +901,53 @@ export class Player extends Entity {
 
         ctx.restore();
 
+        if (!game?.gameOverTriggered) {
+            const activeBars = [];
+            if (this.diamondPowerUpTimer > 0) {
+                activeBars.push({
+                    ratio: Math.max(0, Math.min(1, this.diamondPowerUpTimer / this.diamondPowerUpDuration)),
+                    color: '#ffffff'
+                });
+            }
+            if (this.firePowerUpTimer > 0) {
+                activeBars.push({
+                    ratio: Math.max(0, Math.min(1, this.firePowerUpTimer / this.firePowerUpDuration)),
+                    color: '#ff9800'
+                });
+            }
+            if (this.flightTimer > 0) {
+                activeBars.push({
+                    ratio: Math.max(0, Math.min(1, this.flightTimer / this.flightPowerUpDuration)),
+                    color: '#3b82f6'
+                });
+            }
+
+            const barW = 92;
+            const barH = 10;
+            const barX = this.x + this.width / 2 - barW / 2;
+            for (let i = 0; i < activeBars.length; i++) {
+                const barY = this.y - 44 - i * 16;
+                const ratio = activeBars[i].ratio;
+                const fillW = Math.max(0, Math.round(barW * ratio));
+                const isDanger = ratio <= 0.25;
+                const dangerPulse = isDanger ? 0.65 + (Math.sin(this.pulseTimer * 16) + 1) * 0.175 : 1;
+
+                ctx.save();
+                ctx.globalAlpha = 0.92;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+                ctx.fillRect(barX - 3, barY - 3, barW + 6, barH + 6);
+                ctx.strokeStyle = isDanger ? `rgba(255, 120, 120, ${dangerPulse})` : 'rgba(255, 255, 255, 0.7)';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(barX - 1, barY - 1, barW + 2, barH + 2);
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+                ctx.fillRect(barX, barY, barW, barH);
+                ctx.fillStyle = isDanger ? `rgba(255, 120, 120, ${dangerPulse})` : activeBars[i].color;
+                ctx.fillRect(barX, barY, fillW, barH);
+                ctx.restore();
+            }
+        }
+
         if (this.hasCatProtector && (!game || !game.gameOverTriggered)) {
             if (!this._catProtectorEmoji) {
                 this._catProtectorEmoji = getEmojiCanvas('🐱', 34);
@@ -833,24 +957,6 @@ export class Player extends Entity {
             const catX = this.x + this.width / 2 + offsetX - this._catProtectorEmoji.width / 2;
             const catY = this.y + this.height / 2 - 8 + bobY - this._catProtectorEmoji.height / 2;
             ctx.drawImage(this._catProtectorEmoji.canvas, catX, catY);
-        }
-
-        if (!game?.gameOverTriggered && this.flightTimer > 0) {
-            const secondsLeft = Math.ceil(this.flightTimer);
-            const timerText = `Flight: ${secondsLeft}s`;
-            const timerX = this.x + this.width / 2;
-            const timerY = this.y - 24;
-
-            ctx.save();
-            ctx.font = 'bold 18px "Outfit", sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
-            ctx.fillStyle = '#9ad9ff';
-            ctx.strokeText(timerText, timerX, timerY);
-            ctx.fillText(timerText, timerX, timerY);
-            ctx.restore();
         }
 
         if (!game?.gameOverTriggered && this.isChargingAttack && this.attackChargeTimer > this.chargeIndicatorDelay) {

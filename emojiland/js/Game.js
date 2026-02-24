@@ -84,11 +84,11 @@ export class Game {
         this.gameOverTimer = 0;
 
         // Pre-cache UI emojis
-        this._heartCache = getEmojiCanvas('❤️', 24);
-        this._musicCache = getEmojiCanvas('▶️', 24);
-        this._muteCache = getEmojiCanvas('🔇', 24);
-        this._unmuteCache = getEmojiCanvas('🔊', 24);
-        this._bombUICache = getEmojiCanvas('💣', 24);
+        this._heartCache = getEmojiCanvas('\u2764\uFE0F', 24);
+        this._musicCache = getEmojiCanvas('\u25B6\uFE0F', 24);
+        this._muteCache = getEmojiCanvas('\u{1F507}', 24);
+        this._unmuteCache = getEmojiCanvas('\u{1F50A}', 24);
+        this._bombUICache = getEmojiCanvas('\u{1F4A3}', 24);
 
         const startGameHandler = (e) => {
             if (this.state === GameState.START_MENU || ((this.state === GameState.GAME_OVER || this.state === GameState.VICTORY) && this.canRestart !== false)) {
@@ -110,7 +110,7 @@ export class Game {
                         }
                     }
                 } catch (err) {
-                    // Fullscreen not supported or failed — continue anyway
+                    // Fullscreen not supported or failed; continue anyway
                 }
 
                 this.initLevel();
@@ -136,13 +136,13 @@ export class Game {
 
             // Health is at y=36
             // Bombs is at y=72
-            // Next Song Button (▶️) is now at y=108
+            // Next Song button is now at y=108
             // Hitbox: y from 84 to 132, x from 10 to 96
             if (x >= 10 && x <= 96 && y >= 84 && y <= 132) {
                 this.audio.playBackgroundMusic();
                 return true;
             }
-            // Mute button (🔇/🔊) is now at y=144
+            // Mute button is now at y=144
             // Hitbox: y from 120 to 168, x from 10 to 62
             else if (x >= 10 && x <= 62 && y >= 120 && y <= 168) {
                 this.audio.toggleMusicMute();
@@ -213,11 +213,11 @@ export class Game {
         this.audio.playBackgroundMusic();
 
         // Re-cache UI emojis
-        this._heartCache = getEmojiCanvas('❤️', 24);
-        this._musicCache = getEmojiCanvas('▶️', 24);
-        this._muteCache = getEmojiCanvas('🔇', 24);
-        this._unmuteCache = getEmojiCanvas('🔊', 24);
-        this._bombUICache = getEmojiCanvas('💣', 24);
+        this._heartCache = getEmojiCanvas('\u2764\uFE0F', 24);
+        this._musicCache = getEmojiCanvas('\u25B6\uFE0F', 24);
+        this._muteCache = getEmojiCanvas('\u{1F507}', 24);
+        this._unmuteCache = getEmojiCanvas('\u{1F50A}', 24);
+        this._bombUICache = getEmojiCanvas('\u{1F4A3}', 24);
     }
 
     start() {
@@ -711,7 +711,7 @@ export class Game {
             this.ctx.textAlign = 'left';
             this.ctx.font = 'bold 24px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffd54f';
-            this.ctx.fillText('🎮 CONTROLS', cardX + 40, cardY + 40);
+            this.ctx.fillText('CONTROLS', cardX + 40, cardY + 40);
 
             this.ctx.font = '20px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
@@ -719,9 +719,9 @@ export class Game {
             let ly = cardY + 80;
             const yStep = 32;
             this.ctx.fillText('Arrows/Joystick : Move Character', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('A : Jump (Mobile 🦘)', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('D / HOLD: Throw Rock (Mobile ⚔️)', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('S : Drop Bomb (Mobile 💣)', cardX + 40, ly);
+            this.ctx.fillText('A : Jump (🦘)', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('D / HOLD: Rock Attack (🪨)', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('S : Drop Bomb (💣)', cardX + 40, ly);
 
             // Vertical Divider
             this.ctx.beginPath();
@@ -732,15 +732,15 @@ export class Game {
             // Right Column: Objectives
             this.ctx.font = 'bold 24px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffd54f';
-            this.ctx.fillText('🎯 OBJECTIVES', 40, cardY + 40);
+            this.ctx.fillText('OBJECTIVES', 40, cardY + 40);
 
             this.ctx.font = '20px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
             let ry = cardY + 80;
-            this.ctx.fillText('🪙 Collect All Coins and Power-ups', 40, ry); ry += yStep;
-            this.ctx.fillText('☠️ Defeat All Enemies', 40, ry); ry += yStep;
-            this.ctx.fillText('🏁 Reach the end with the best score', 40, ry); ry += yStep;
-            this.ctx.fillText('🎲 Levels are always unique', 40, ry);
+            this.ctx.fillText('Collect All Coins and Power-ups', 40, ry); ry += yStep;
+            this.ctx.fillText('Defeat All Enemies', 40, ry); ry += yStep;
+            this.ctx.fillText('Reach the end with the best score', 40, ry); ry += yStep;
+            this.ctx.fillText('Levels are always unique', 40, ry);
 
             // Pulsing 'Start' Text
             const alpha = 0.6 + 0.4 * Math.sin(time * 3);
@@ -749,7 +749,7 @@ export class Game {
             this.ctx.textAlign = 'center';
             this.ctx.shadowColor = `rgba(255, 255, 255, ${alpha * 0.5})`;
             this.ctx.shadowBlur = 10;
-            this.ctx.fillText(isMobile ? ' TOUCH TO START ' : '► PRESS ENTER TO START ◄', 0, cardY + cardHeight + 50);
+            this.ctx.fillText(isMobile ? 'TOUCH TO START' : 'PRESS ENTER TO START', 0, cardY + cardHeight + 50);
 
             // Subtle Music Attribution
             this.ctx.shadowBlur = 0;
@@ -821,8 +821,8 @@ export class Game {
             this.ctx.fillText(`${totalScore}`, 0, -cardHeight / 2 + 210);
 
             this.ctx.font = '32px "Outfit", sans-serif';
-            this.ctx.fillText('⭐', -120, -cardHeight / 2 + 210);
-            this.ctx.fillText('⭐', 120, -cardHeight / 2 + 210);
+            this.ctx.fillText('\u2B50', -120, -cardHeight / 2 + 210);
+            this.ctx.fillText('\u2B50', 120, -cardHeight / 2 + 210);
 
             // Separation Line
             this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
@@ -870,7 +870,7 @@ export class Game {
             ctx.fillRect(barX - panelPad - 50, barY - panelPad, barW + panelPad * 2 + 50, barH + panelPad * 2 + 26);
         }
 
-        // "⚠️ BOSS!" label
+        // Boss label
         ctx.font = 'bold 13px "Outfit", sans-serif';
         ctx.fillStyle = '#ffca28';
         ctx.textAlign = 'center';
@@ -882,7 +882,7 @@ export class Game {
         ctx.fillStyle = 'rgba(255,255,255,0.15)';
         ctx.fillRect(barX, barY + 18, barW, barH);
 
-        // Fill colour: green → yellow → red
+        // Fill color transitions from green to yellow to red
         let barColor;
         if (fillRatio > 0.6) barColor = '#4caf50';
         else if (fillRatio > 0.3) barColor = '#ffc107';

@@ -1123,7 +1123,11 @@ export class Boss extends Entity {
         this.robotRushTimer = 0;
         this.robotRushCooldown = 1.5 + Math.random() * 0.8;
         this.robotGrabTimer = 0;
-        this.robotWrenchCooldown = 1.7 + Math.random() * 1.0;
+        this.robotWrenchCooldown = 1.4 + Math.random() * 0.7;
+        this.robotThrowLightTimer = 0;
+        this.robotThrowLightDuration = 0.62;
+        this.robotThrowLightX = 0;
+        this.robotThrowLightY = 0;
 
         switch (this.bossType) {
             case 'boss_chick': this.emoji = String.fromCodePoint(0x1F423); break;
@@ -1247,6 +1251,9 @@ export class Boss extends Entity {
                         cy + Math.sin(a) * r
                     );
                 }
+            }
+            if (game && game.audio && typeof game.audio.playBossVictoryClimb === 'function') {
+                game.audio.playBossVictoryClimb();
             }
             if (game && game.player) {
                 game.player.score += 700;
@@ -1571,11 +1578,16 @@ export class Boss extends Entity {
 
         if (this.robotRushCooldown > 0) this.robotRushCooldown -= dt;
         if (this.robotWrenchCooldown > 0) this.robotWrenchCooldown -= dt;
+        if (this.robotThrowLightTimer > 0) this.robotThrowLightTimer -= dt;
 
         if (player && this.robotWrenchCooldown <= 0) {
-            const speed = 320 + this.phase * 18;
-            this._spawnProjectile(game, player, 'wrench', speed, 0, -30);
-            this.robotWrenchCooldown = 2.1 - (this.phase - 1) * 0.15 + Math.random() * 0.8;
+            const toPlayer = (player.x + player.width / 2) - (this.x + this.width / 2);
+            const dir = Math.sign(toPlayer) || (this.facingRight ? 1 : -1);
+            const speed = 520 + this.phase * 45;
+            const spawnX = this.x + this.width / 2 + dir * (this.width * 0.32);
+            const spawnY = this.y + this.height * 0.38;
+            game.enemyProjectiles.push(new BossProjectile(spawnX, spawnY, dir * speed, 0, 'wrench'));
+            this.robotWrenchCooldown = 1.35 - (this.phase - 1) * 0.1 + Math.random() * 0.45;
         }
 
         if (this.robotState === 'GRAB') {
@@ -1593,6 +1605,9 @@ export class Boss extends Entity {
                 player.grounded = false;
                 player.isJumping = true;
                 if (typeof player.forceFullJump === 'boolean') player.forceFullJump = true;
+                this.robotThrowLightTimer = this.robotThrowLightDuration;
+                this.robotThrowLightX = player.x + player.width / 2;
+                this.robotThrowLightY = player.y + player.height / 2;
                 this.robotState = 'PATROL';
                 this.robotRushCooldown = 2.4 + Math.random() * 1.1;
             }
@@ -1788,6 +1803,28 @@ export class Boss extends Entity {
         }
 
         ctx.restore();
+
+        if (this.bossType === 'boss_robot' && this.robotThrowLightTimer > 0) {
+            const t = Math.max(0, this.robotThrowLightTimer / this.robotThrowLightDuration);
+            const beamW = 62 + (1 - t) * 30;
+            const beamH = 280 + (1 - t) * 120;
+            const bx = this.robotThrowLightX - beamW / 2;
+            const by = this.robotThrowLightY - beamH * 0.72;
+            const beamGrad = ctx.createLinearGradient(0, by, 0, by + beamH);
+            beamGrad.addColorStop(0, `rgba(120, 210, 255, ${0.05 + t * 0.24})`);
+            beamGrad.addColorStop(0.45, `rgba(70, 180, 255, ${0.12 + t * 0.32})`);
+            beamGrad.addColorStop(1, `rgba(40, 120, 255, ${0.03 + t * 0.16})`);
+            ctx.save();
+            ctx.fillStyle = beamGrad;
+            if (ctx.roundRect) {
+                ctx.beginPath();
+                ctx.roundRect(bx, by, beamW, beamH, 18);
+                ctx.fill();
+            } else {
+                ctx.fillRect(bx, by, beamW, beamH);
+            }
+            ctx.restore();
+        }
 
         if (this.activated) {
             const barW = this.width * 1.1;

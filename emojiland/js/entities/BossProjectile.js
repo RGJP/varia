@@ -38,6 +38,7 @@ export class BossProjectile extends Entity {
             case 'wrench':
                 this.emoji = String.fromCodePoint(0x1F527);
                 this.maxBounces = 0;
+                this.ignoreGravity = true;
                 break;
             default:
                 this.emoji = String.fromCodePoint(0x1FAA8);
@@ -54,9 +55,11 @@ export class BossProjectile extends Entity {
             return;
         }
 
-        // Apply gravity
-        this.vy += Physics.GRAVITY * dt;
-        if (this.vy > Physics.TERMINAL_VELOCITY) this.vy = Physics.TERMINAL_VELOCITY;
+        if (!this.ignoreGravity) {
+            // Apply gravity
+            this.vy += Physics.GRAVITY * dt;
+            if (this.vy > Physics.TERMINAL_VELOCITY) this.vy = Physics.TERMINAL_VELOCITY;
+        }
 
         this.x += this.vx * dt;
         this.y += this.vy * dt;
