@@ -11,7 +11,7 @@ import { Barrel } from './Barrel.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 import { BossProjectile } from './BossProjectile.js';
 
-const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_hedgehog', 'boss_spider'];
+const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_hedgehog', 'boss_spider', 'boss_dragon', 'boss_robot'];
 
 const TYPE_PATROL = 'patrol';
 const TYPE_CHASER = 'chaser'; // 👹
@@ -61,7 +61,7 @@ export class Enemy extends Entity {
             { type: TYPE_TROLL, width: 60, height: 60, emoji: '🧌', baseSpeed: 40, health: 6 },
             { type: TYPE_ALIEN, width: 45, height: 45, emoji: '🛸', baseSpeed: 80, health: 4 },
             { type: TYPE_APE, width: 60, height: 60, emoji: '🦍', baseSpeed: 0, health: 5 },
-            { type: TYPE_SPIDER, width: 70, height: 70, emoji: '🕷️', baseSpeed: 120, health: 4 },
+            { type: TYPE_SPIDER, width: 70, height: 70, emoji: '🕷️', baseSpeed: 100, health: 4 },
         ];
 
         const pick = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
@@ -205,7 +205,7 @@ export class Enemy extends Entity {
                         mini.height = 45;
                         mini.emoji = '🕷️';
                         mini._cachedEmoji = getEmojiCanvas(mini.emoji, mini.height);
-                        mini.baseSpeed = 120;
+                        mini.baseSpeed = 100;
                         mini.speed = mini.baseSpeed;
                         mini.health = 1;
                         mini.maxHealth = 1;
@@ -1026,7 +1026,7 @@ export class Enemy extends Entity {
 export class Boss extends Entity {
     constructor(x, y, platform, bossType) {
         const resolvedBossType = bossType || BOSS_TYPES[Math.floor(Math.random() * BOSS_TYPES.length)];
-        const size = resolvedBossType === 'boss_spider' ? 92 : 160;
+        const size = resolvedBossType === 'boss_spider' ? 92 : (resolvedBossType === 'boss_dragon' ? 170 : (resolvedBossType === 'boss_robot' ? 156 : 160));
         super(x, y - size, size, size);
 
         this.bossType = resolvedBossType;
@@ -1098,15 +1098,49 @@ export class Boss extends Entity {
         this.spiderPounceTimer = 0;
         this.spiderPounceDir = 0;
 
+        // Tengu (boss_hedgehog) flame-shield state
+        this.flameShieldOpen = false;
+        this.flameShieldTimer = 0;
+        this.flameShieldOpenDuration = 1.0;
+        this.flameShieldClosedDuration = 2.4;
+        this.flameGapAngle = 0;
+        this.flameGapArc = Math.PI * 0.36;
+
+        // Dragon (boss_dragon) grounded fire-cone state
+        this.dragonPatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.dragonFireTelegraphTimer = 0;
+        this.dragonFireTelegraphDuration = 0.9;
+        this.dragonFireActiveTimer = 0;
+        this.dragonFireDuration = 0.8;
+        this.dragonFireRange = 370;
+        this.dragonFireHalfAngle = Math.PI * 0.32;
+        this.dragonFireHitTimer = 0;
+
+        // Robot (boss_robot) grounded rush/grab/throw + wrench toss
+        this.robotState = 'PATROL';
+        this.robotPatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.robotRushDir = 0;
+        this.robotRushTimer = 0;
+        this.robotRushCooldown = 1.5 + Math.random() * 0.8;
+        this.robotGrabTimer = 0;
+        this.robotWrenchCooldown = 1.7 + Math.random() * 1.0;
+
         switch (this.bossType) {
             case 'boss_chick': this.emoji = String.fromCodePoint(0x1F423); break;
             case 'boss_moai': this.emoji = String.fromCodePoint(0x1F5FF); break;
             case 'boss_hedgehog': this.emoji = String.fromCodePoint(0x1F47A); break;
             case 'boss_spider': this.emoji = String.fromCodePoint(0x1F577) + '\uFE0F'; break;
+            case 'boss_dragon': this.emoji = String.fromCodePoint(0x1F409); break;
+            case 'boss_robot': this.emoji = String.fromCodePoint(0x1F916); break;
             default: this.emoji = String.fromCodePoint(0x1F5FF); break;
         }
 
         this._cachedEmoji = getEmojiCanvas(this.emoji, size);
+        if (this.bossType === 'boss_hedgehog') {
+            this.flameShieldOpen = false;
+            this.flameShieldTimer = this.flameShieldClosedDuration * (0.6 + Math.random() * 0.5);
+            this.flameGapAngle = Math.random() * Math.PI * 2;
+        }
     }
 
     _updatePhase() {
@@ -1114,7 +1148,77 @@ export class Boss extends Entity {
         this.phase = ratio > 0.66 ? 1 : (ratio > 0.33 ? 2 : 3);
     }
 
+    _angleDelta(a, b) {
+        let d = a - b;
+        while (d > Math.PI) d -= Math.PI * 2;
+        while (d < -Math.PI) d += Math.PI * 2;
+        return d;
+    }
+
+    _isPlayerInFlameGap(player) {
+        if (!player) return false;
+        if (this.bossType !== 'boss_hedgehog' || !this.flameShieldOpen) return true;
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
+        const px = player.x + player.width / 2;
+        const py = player.y + player.height / 2;
+        const playerAngle = Math.atan2(py - cy, px - cx);
+        return Math.abs(this._angleDelta(playerAngle, this.flameGapAngle)) <= this.flameGapArc * 0.5;
+    }
+
+    _updateTenguFlameShield(dt, player) {
+        if (this.bossType !== 'boss_hedgehog') return;
+        this.flameShieldTimer -= dt;
+        if (this.flameShieldTimer > 0) return;
+
+        if (this.flameShieldOpen) {
+            this.flameShieldOpen = false;
+            this.flameShieldTimer = this.flameShieldClosedDuration + Math.random() * 0.45;
+            this.flameGapAngle = Math.random() * Math.PI * 2;
+        } else {
+            this.flameShieldOpen = true;
+            const cx = this.x + this.width / 2;
+            const cy = this.y + this.height / 2;
+            if (player) {
+                const px = player.x + player.width / 2;
+                const py = player.y + player.height / 2;
+                this.flameGapAngle = Math.atan2(py - cy, px - cx) + (Math.random() - 0.5) * 0.22;
+            } else {
+                this.flameGapAngle = Math.random() * Math.PI * 2;
+            }
+            this.flameShieldTimer = this.flameShieldOpenDuration + Math.random() * 0.3;
+        }
+    }
+
+    _isPlayerInDragonFireCone(player) {
+        if (!player || this.bossType !== 'boss_dragon') return false;
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
+        const px = player.x + player.width / 2;
+        const py = player.y + player.height / 2;
+        const dx = px - cx;
+        const dy = py - cy;
+        const dist = Math.hypot(dx, dy);
+        if (dist > this.dragonFireRange) return false;
+        const facingAngle = this.facingRight ? 0 : Math.PI;
+        const playerAngle = Math.atan2(dy, dx);
+        return Math.abs(this._angleDelta(playerAngle, facingAngle)) <= this.dragonFireHalfAngle;
+    }
+
     takeDamage(amount, game) {
+        if (this.bossType === 'boss_hedgehog') {
+            const player = game ? game.player : null;
+            if (!this._isPlayerInFlameGap(player)) {
+                if (game && game.particles) {
+                    const cx = this.x + this.width / 2;
+                    const cy = this.y + this.height / 2;
+                    game.particles.emitHit(cx, cy);
+                    game.particles.emitHit(cx + (Math.random() - 0.5) * 36, cy + (Math.random() - 0.5) * 36);
+                }
+                return;
+            }
+        }
+
         this.health -= amount;
         this.damageFlashTimer = 0.15;
         this._updatePhase();
@@ -1128,12 +1232,19 @@ export class Boss extends Entity {
             const cx = this.x + this.width / 2;
             const cy = this.y + this.height / 2;
             if (game && game.particles) {
+                // Bigger, more obvious boss-defeat celebration burst.
                 game.particles.emitFireworks(cx, cy);
+                game.particles.emitFireworks(cx - 60, cy - 35);
+                game.particles.emitFireworks(cx + 60, cy - 35);
                 game.particles.emitDeath(cx, cy);
-                for (let i = 0; i < 8; i++) {
+                game.particles.emitDeath(cx - 26, cy + 10);
+                game.particles.emitDeath(cx + 26, cy + 10);
+                for (let i = 0; i < 22; i++) {
+                    const a = (i / 22) * Math.PI * 2;
+                    const r = 130 + Math.random() * 90;
                     game.particles.emitDeath(
-                        cx + (Math.random() - 0.5) * 90,
-                        cy + (Math.random() - 0.5) * 90
+                        cx + Math.cos(a) * r,
+                        cy + Math.sin(a) * r
                     );
                 }
             }
@@ -1192,10 +1303,10 @@ export class Boss extends Entity {
                 speed: 390 + this.phase * 22,
                 arcBias: 0,
                 shots,
-                interval: Math.max(0.2, 0.34 - this.phase * 0.04),
+                interval: Math.max(0.24, 0.38 - this.phase * 0.035),
                 burstTimer: 0
             };
-            this.attackCooldown = 2.35 - (this.phase - 1) * 0.2 + Math.random() * 0.6;
+            this.attackCooldown = 2.75 - (this.phase - 1) * 0.18 + Math.random() * 0.7;
         }
     }
 
@@ -1399,6 +1510,148 @@ export class Boss extends Entity {
         }
     }
 
+    _updateDragonBoss(dt, game, player) {
+        const left = this.platform.x + 8;
+        const right = this.platform.x + this.platform.width - this.width - 8;
+        this.y = this.platform.y - this.height;
+        this.x = Math.max(left, Math.min(right, this.x));
+
+        if (this.dragonFireTelegraphTimer > 0) {
+            this.dragonFireTelegraphTimer -= dt;
+            this.vx = 0;
+            if (this.dragonFireTelegraphTimer <= 0) {
+                this.dragonFireActiveTimer = this.dragonFireDuration;
+                this.dragonFireHitTimer = 0;
+            }
+            return;
+        }
+
+        if (this.dragonFireActiveTimer > 0) {
+            this.dragonFireActiveTimer -= dt;
+            this.vx = 0;
+            this.dragonFireHitTimer -= dt;
+            if (player && player.invulnerableTimer <= 0 && this.dragonFireHitTimer <= 0 && this._isPlayerInDragonFireCone(player)) {
+                player.takeDamage(game);
+                this.dragonFireHitTimer = 0.28;
+            }
+            if (this.dragonFireActiveTimer <= 0) {
+                this.attackCooldown = 2.7 - (this.phase - 1) * 0.25 + Math.random() * 0.55;
+            }
+            return;
+        }
+
+        const patrolSpeed = 120 + this.phase * 10;
+        this.vx = this.dragonPatrolDir * patrolSpeed;
+        this.x += this.vx * dt;
+        if (this.x <= left) {
+            this.x = left;
+            this.dragonPatrolDir = 1;
+        } else if (this.x >= right) {
+            this.x = right;
+            this.dragonPatrolDir = -1;
+        }
+
+        if (player) {
+            this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+        } else {
+            this.facingRight = this.dragonPatrolDir > 0;
+        }
+
+        if (this.attackCooldown <= 0 && player) {
+            this.dragonFireTelegraphTimer = this.dragonFireTelegraphDuration;
+            this.vx = 0;
+        }
+    }
+
+    _updateRobotBoss(dt, game, player) {
+        const left = this.platform.x + 8;
+        const right = this.platform.x + this.platform.width - this.width - 8;
+        this.y = this.platform.y - this.height;
+        this.x = Math.max(left, Math.min(right, this.x));
+
+        if (this.robotRushCooldown > 0) this.robotRushCooldown -= dt;
+        if (this.robotWrenchCooldown > 0) this.robotWrenchCooldown -= dt;
+
+        if (player && this.robotWrenchCooldown <= 0) {
+            const speed = 320 + this.phase * 18;
+            this._spawnProjectile(game, player, 'wrench', speed, 0, -30);
+            this.robotWrenchCooldown = 2.1 - (this.phase - 1) * 0.15 + Math.random() * 0.8;
+        }
+
+        if (this.robotState === 'GRAB') {
+            this.vx = 0;
+            this.robotGrabTimer -= dt;
+            if (player) {
+                player.x = this.x + this.width / 2 - player.width / 2;
+                player.y = this.y - player.height - 4;
+                player.vx = 0;
+                player.vy = 0;
+            }
+            if (this.robotGrabTimer <= 0 && player) {
+                player.vx = 0;
+                player.vy = -820;
+                player.grounded = false;
+                player.isJumping = true;
+                if (typeof player.forceFullJump === 'boolean') player.forceFullJump = true;
+                this.robotState = 'PATROL';
+                this.robotRushCooldown = 2.4 + Math.random() * 1.1;
+            }
+            return;
+        }
+
+        if (this.robotState === 'RUSH') {
+            this.robotRushTimer -= dt;
+            this.vx = this.robotRushDir * (360 + this.phase * 14);
+            this.x += this.vx * dt;
+            if (this.x <= left || this.x >= right) {
+                this.x = Math.max(left, Math.min(right, this.x));
+                this.robotState = 'PATROL';
+                this.robotRushCooldown = 1.5 + Math.random() * 0.7;
+                return;
+            }
+
+            if (player && Physics.checkAABB(this, player.getHitbox())) {
+                this.robotState = 'GRAB';
+                this.robotGrabTimer = 0.22;
+                this.vx = 0;
+                this.facingRight = this.robotRushDir > 0;
+                return;
+            }
+
+            if (this.robotRushTimer <= 0) {
+                this.robotState = 'PATROL';
+                this.robotRushCooldown = 1.4 + Math.random() * 0.9;
+            }
+            return;
+        }
+
+        // PATROL
+        const patrolSpeed = 130 + this.phase * 10;
+        this.vx = this.robotPatrolDir * patrolSpeed;
+        this.x += this.vx * dt;
+        if (this.x <= left) {
+            this.x = left;
+            this.robotPatrolDir = 1;
+        } else if (this.x >= right) {
+            this.x = right;
+            this.robotPatrolDir = -1;
+        }
+
+        if (player) {
+            const dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+            this.facingRight = dx >= 0;
+            const shouldRush = this.robotRushCooldown <= 0 && Math.abs(dx) < 340 && Math.random() < 0.03;
+            if (shouldRush) {
+                this.robotState = 'RUSH';
+                this.robotRushDir = Math.sign(dx) || this.robotPatrolDir;
+                this.robotRushTimer = 0.55;
+                this.vx = 0;
+            }
+        } else {
+            this.facingRight = this.robotPatrolDir > 0;
+        }
+    }
+
     update(dt, game) {
         if (this.damageFlashTimer > 0) this.damageFlashTimer -= dt;
         this.spawnFadeTimer += dt;
@@ -1416,9 +1669,14 @@ export class Boss extends Entity {
         this._updatePhase();
 
         const player = game ? game.player : null;
+        this._updateTenguFlameShield(dt, player);
 
         if (this.bossType === 'boss_spider') {
             this._updateSpiderBoss(dt, game, player);
+        } else if (this.bossType === 'boss_dragon') {
+            this._updateDragonBoss(dt, game, player);
+        } else if (this.bossType === 'boss_robot') {
+            this._updateRobotBoss(dt, game, player);
         } else {
             this._updateAerialBoss(dt, game, player);
         }
@@ -1433,7 +1691,12 @@ export class Boss extends Entity {
         }
 
         // Contact damage is slightly forgiving while telegraphing/charging.
-        const inFairWindow = this.attackTelegraphTimer > 0 || this.webTelegraphTimer > 0 || this.spiderPounceTelegraph > 0;
+        const inFairWindow = this.attackTelegraphTimer > 0
+            || this.webTelegraphTimer > 0
+            || this.spiderPounceTelegraph > 0
+            || this.dragonFireTelegraphTimer > 0
+            || this.robotState === 'RUSH'
+            || this.robotState === 'GRAB';
         if (game && player && player.invulnerableTimer <= 0 && !inFairWindow) {
             if (Physics.checkAABB(this, player.getHitbox())) {
                 player.takeDamage(game);
@@ -1451,7 +1714,7 @@ export class Boss extends Entity {
         ctx.save();
         ctx.globalAlpha = alpha;
 
-        if (this.bossType !== 'boss_spider') {
+        if (this.bossType !== 'boss_spider' && this.bossType !== 'boss_dragon') {
             ctx.shadowColor = 'rgba(255, 80, 0, 0.6)';
             ctx.shadowBlur = 20;
         }
@@ -1471,7 +1734,46 @@ export class Boss extends Entity {
         const cached = this._cachedEmoji;
         ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2);
 
-        const isTelegraphing = this.attackTelegraphTimer > 0 || this.webTelegraphTimer > 0 || this.spiderPounceTelegraph > 0;
+        if (this.bossType === 'boss_dragon' && (this.dragonFireTelegraphTimer > 0 || this.dragonFireActiveTimer > 0)) {
+            const mouthX = this.width * 0.2;
+            const fireRange = this.dragonFireRange;
+            const half = this.dragonFireHalfAngle;
+            const telegraphPulse = 0.4 + Math.sin(this.timeAlive * 20) * 0.25;
+            ctx.beginPath();
+            ctx.moveTo(mouthX, 0);
+            ctx.arc(mouthX, 0, fireRange, -half, half);
+            ctx.closePath();
+            if (this.dragonFireTelegraphTimer > 0) {
+                ctx.fillStyle = `rgba(255, 210, 80, ${Math.max(0.15, telegraphPulse)})`;
+            } else {
+                ctx.fillStyle = 'rgba(255, 90, 0, 0.30)';
+            }
+            ctx.fill();
+
+            if (!this._fireTellCache) this._fireTellCache = getEmojiCanvas(String.fromCodePoint(0x1F525), 30);
+            ctx.drawImage(this._fireTellCache.canvas, mouthX + 18, -this._fireTellCache.height / 2);
+        }
+
+        if (this.bossType === 'boss_hedgehog') {
+            if (!this._flameCache) this._flameCache = getEmojiCanvas(String.fromCodePoint(0x1F525), 24);
+            const flameCount = 16;
+            const radius = this.width * 0.48;
+            const gapHalf = this.flameShieldOpen ? this.flameGapArc * 0.5 : 0;
+            const openPulse = this.flameShieldOpen ? (0.78 + Math.sin(this.timeAlive * 9) * 0.16) : 1;
+            const closedPulse = this.flameShieldOpen ? 1 : (0.75 + Math.sin(this.timeAlive * 11) * 0.2);
+            for (let i = 0; i < flameCount; i++) {
+                const a = (i / flameCount) * Math.PI * 2 + this.timeAlive * 0.7;
+                const inGap = this.flameShieldOpen && Math.abs(this._angleDelta(a, this.flameGapAngle)) <= gapHalf;
+                if (inGap) continue;
+                const fx = Math.cos(a) * radius;
+                const fy = Math.sin(a) * radius;
+                ctx.globalAlpha = alpha * closedPulse * openPulse;
+                ctx.drawImage(this._flameCache.canvas, fx - this._flameCache.width / 2, fy - this._flameCache.height / 2);
+            }
+            ctx.globalAlpha = alpha;
+        }
+
+        const isTelegraphing = this.attackTelegraphTimer > 0 || this.webTelegraphTimer > 0 || this.spiderPounceTelegraph > 0 || this.dragonFireTelegraphTimer > 0;
         if (isTelegraphing) {
             const pulse = 0.55 + Math.sin(this.timeAlive * 24) * 0.45;
             if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);

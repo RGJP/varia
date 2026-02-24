@@ -43,6 +43,14 @@ export class InputHandler {
     }
 
     setupVirtualControls() {
+        this._lastVirtualJumpPress = 0;
+        const triggerVirtualJump = () => {
+            const now = performance.now();
+            if (now - this._lastVirtualJumpPress < 110) return;
+            this._lastVirtualJumpPress = now;
+            this.justPressed.add('KeyA');
+        };
+
         const attachButton = (id, code) => {
             setTimeout(() => {
                 const el = document.getElementById(id);
@@ -66,6 +74,34 @@ export class InputHandler {
                 el.addEventListener('touchstart', press, { passive: false });
                 el.addEventListener('touchend', release, { passive: false });
                 el.addEventListener('touchcancel', release, { passive: false });
+
+                // Mobile quality-of-life: while charging attack, allow a rolling thumb
+                // movement to still trigger jump if that same touch reaches jump's area.
+                if (id === 'btn-attack') {
+                    const jumpBtn = document.getElementById('btn-jump');
+                    if (jumpBtn) {
+                        el.addEventListener('touchmove', (e) => {
+                            e.preventDefault();
+                            if (!this.keys.has('KeyD')) return;
+                            const rect = jumpBtn.getBoundingClientRect();
+                            for (let i = 0; i < e.touches.length; i++) {
+                                const t = e.touches[i];
+                                const inJumpRect = t.clientX >= rect.left && t.clientX <= rect.right
+                                    && t.clientY >= rect.top && t.clientY <= rect.bottom;
+                                if (inJumpRect) {
+                                    triggerVirtualJump();
+                                    break;
+                                }
+                            }
+                        }, { passive: false });
+                    }
+                }
+
+                if (id === 'btn-jump') {
+                    el.addEventListener('touchstart', () => {
+                        triggerVirtualJump();
+                    }, { passive: false });
+                }
             }, 0);
         };
 

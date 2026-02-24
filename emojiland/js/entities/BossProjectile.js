@@ -2,7 +2,7 @@ import { Entity } from './Entity.js';
 import { Physics } from '../Physics.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
-// projectileType: 'drumstick' | 'stone' | 'skewer' | 'web'
+// projectileType: 'drumstick' | 'stone' | 'skewer' | 'web' | 'wrench'
 export class BossProjectile extends Entity {
     constructor(x, y, vx, vy, projectileType) {
         super(x, y, 40, 40);
@@ -28,6 +28,16 @@ export class BossProjectile extends Entity {
             case 'web':
                 this.emoji = String.fromCodePoint(0x1F578) + '\uFE0F';
                 this.maxBounces = 0;
+                this.webState = 'AIRBORNE';
+                this.webPlatform = null;
+                this.webFallStartY = y;
+                this.webFallTimer = 0;
+                this.webFallMaxTime = 3.5;
+                this.webFallDespawnDistance = 900;
+                break;
+            case 'wrench':
+                this.emoji = String.fromCodePoint(0x1F527);
+                this.maxBounces = 0;
                 break;
             default:
                 this.emoji = String.fromCodePoint(0x1FAA8);
@@ -39,9 +49,13 @@ export class BossProjectile extends Entity {
     }
 
     update(dt, game) {
-        // Apply gravity (webs float more than other projectiles)
-        const gravityScale = this.projectileType === 'web' ? 0.35 : 1;
-        this.vy += Physics.GRAVITY * gravityScale * dt;
+        if (this.projectileType === 'web') {
+            this._updateWeb(dt, game);
+            return;
+        }
+
+        // Apply gravity
+        this.vy += Physics.GRAVITY * dt;
         if (this.vy > Physics.TERMINAL_VELOCITY) this.vy = Physics.TERMINAL_VELOCITY;
 
         this.x += this.vx * dt;
@@ -100,6 +114,72 @@ export class BossProjectile extends Entity {
 
         // Off-screen cleanup
         if (Math.abs(this.x - game.player.x) > 2000 || this.y > game.lowestY) {
+            this.markedForDeletion = true;
+        }
+    }
+
+    _updateWeb(dt, game) {
+        const prevBottom = this.y + this.height;
+
+        if (this.webState === 'SLIDING') {
+            this.x += this.vx * dt;
+            this.y = this.webPlatform.y - this.height;
+            this.vy = 0;
+        } else {
+            this.vy += Physics.GRAVITY * dt;
+            if (this.vy > Physics.TERMINAL_VELOCITY) this.vy = Physics.TERMINAL_VELOCITY;
+            this.x += this.vx * dt;
+            this.y += this.vy * dt;
+        }
+
+        this.rotation += (this.vx > 0 ? 6 : -6) * dt;
+        if (this.markedForDeletion) return;
+
+        // Player collision
+        if (game.player.invulnerableTimer <= 0 && Physics.checkAABB(this, game.player.getHitbox())) {
+            game.player.takeDamage(game);
+            game.audio.playHit();
+            game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
+            game.player.stunTimer = Math.max(game.player.stunTimer, 0.5);
+            this.markedForDeletion = true;
+            return;
+        }
+
+        if (this.webState === 'AIRBORNE') {
+            const platforms = game._visiblePlatforms;
+            for (let i = 0; i < platforms.length; i++) {
+                const p = platforms[i];
+                const overlapsX = this.x + this.width > p.x && this.x < p.x + p.width;
+                const crossedTop = prevBottom <= p.y && this.y + this.height >= p.y;
+                if (this.vy >= 0 && overlapsX && crossedTop) {
+                    this.webState = 'SLIDING';
+                    this.webPlatform = p;
+                    this.y = p.y - this.height;
+                    this.vy = 0;
+                    break;
+                }
+            }
+        }
+
+        if (this.webState === 'SLIDING') {
+            const p = this.webPlatform;
+            const stillOnSurface = p && this.x + this.width > p.x && this.x < p.x + p.width;
+            if (!stillOnSurface) {
+                this.webState = 'FALLING';
+                this.webPlatform = null;
+                this.webFallStartY = this.y;
+                this.webFallTimer = 0;
+            }
+        } else if (this.webState === 'FALLING') {
+            this.webFallTimer += dt;
+            const fallenDistance = this.y - this.webFallStartY;
+            if (fallenDistance >= this.webFallDespawnDistance || this.webFallTimer >= this.webFallMaxTime) {
+                this.markedForDeletion = true;
+            }
+        }
+
+        // Keep airborne webs bounded vertically if they never land.
+        if (this.webState === 'AIRBORNE' && this.y > game.lowestY) {
             this.markedForDeletion = true;
         }
     }
