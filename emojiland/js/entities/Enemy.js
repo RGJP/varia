@@ -43,7 +43,7 @@ export class Enemy extends Entity {
 
         // All enemy types with equal spawn chance
         const ENEMY_POOL = [
-            { type: TYPE_PATROL, width: 40, height: 40, emoji: '🐢', baseSpeed: 50, health: 2 },
+            { type: TYPE_PATROL, width: 46, height: 46, emoji: '🐢', baseSpeed: 50, health: 2 },
             { type: TYPE_CHASER, width: 55, height: 55, emoji: '👹', baseSpeed: 100, health: 4 },
             { type: TYPE_JUMPER, width: 35, height: 35, emoji: '🐸', baseSpeed: 80, health: 2 },
             { type: TYPE_SHOOTER, width: 50, height: 60, emoji: '🧞', baseSpeed: 75, health: 3 },
@@ -56,8 +56,8 @@ export class Enemy extends Entity {
             { type: TYPE_DINO, width: 70, height: 70, emoji: '🦕', baseSpeed: 60, health: 5 },
             { type: TYPE_SQUID, width: 45, height: 45, emoji: '🦑', baseSpeed: 90, health: 2 },
             { type: TYPE_LIZARD, width: 40, height: 40, emoji: '🦗', baseSpeed: 40, health: 2 },
-            { type: TYPE_CRAB, width: 35, height: 35, emoji: '🦀', baseSpeed: 220, health: 2 },
-            { type: TYPE_SQUIRREL, width: 38, height: 38, emoji: '🐿️', baseSpeed: 160, health: 2 },
+            { type: TYPE_CRAB, width: 42, height: 42, emoji: '🦀', baseSpeed: 220, health: 2 },
+            { type: TYPE_SQUIRREL, width: 44, height: 44, emoji: '🐿️', baseSpeed: 160, health: 2 },
             { type: TYPE_TROLL, width: 60, height: 60, emoji: '🧌', baseSpeed: 40, health: 6 },
             { type: TYPE_ALIEN, width: 45, height: 45, emoji: '🛸', baseSpeed: 80, health: 4 },
             { type: TYPE_APE, width: 60, height: 60, emoji: '🦍', baseSpeed: 0, health: 5 },
@@ -267,7 +267,7 @@ export class Enemy extends Entity {
 
         if (this.type === TYPE_TROLL && game && game.particles) {
             // Constantly emanate a bit of smoke
-            if (this.timeAlive % 0.1 < dt) {
+            if (this.timeAlive % 0.2 < dt) {
                 game.particles.emitGreenSmoke(this.x + this.width / 2, this.y + this.height / 2);
             }
 
@@ -955,8 +955,11 @@ export class Enemy extends Entity {
         }
 
         if (this.type === TYPE_SPIDER || this.type === TYPE_MINI_SPIDER) {
-            ctx.shadowColor = '#ff2a2a';
-            ctx.shadowBlur = 6;
+            // Subtle glow to separate spiders from dark backgrounds without hard outlines.
+            ctx.shadowColor = 'rgba(255, 70, 70, 0.85)';
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
         }
 
         ctx.globalAlpha = alpha;
@@ -1109,14 +1112,6 @@ export class Boss extends Entity {
         this.spiderPounceTimer = 0;
         this.spiderPounceDir = 0;
 
-        // Tengu (boss_hedgehog) flame-shield state
-        this.flameShieldOpen = false;
-        this.flameShieldTimer = 0;
-        this.flameShieldOpenDuration = 1.0;
-        this.flameShieldClosedDuration = 2.4;
-        this.flameGapAngle = 0;
-        this.flameGapArc = Math.PI * 0.36;
-
         // Dragon (boss_dragon) grounded fire-cone state
         this.dragonPatrolDir = Math.random() > 0.5 ? 1 : -1;
         this.dragonFireTelegraphTimer = 0;
@@ -1157,20 +1152,9 @@ export class Boss extends Entity {
             case 'boss_robot': this.emoji = String.fromCodePoint(0x1F3CB) + '\uFE0F\u200D\u2642\uFE0F'; break;
             default: this.emoji = String.fromCodePoint(0x1F5FF); break;
         }
-        this.minionEmoji = this.bossType === 'boss_spider'
-            ? (String.fromCodePoint(0x1F578) + '\uFE0F')
-            : (this.bossType === 'boss_dragon'
-                ? String.fromCodePoint(0x1F525)
-                : (this.bossType === 'boss_robot'
-                    ? String.fromCodePoint(0x1F527)
-                    : String.fromCodePoint(0x1F47E)));
+        this.minionEmoji = this.emoji;
 
         this._cachedEmoji = getEmojiCanvas(this.emoji, size);
-        if (this.bossType === 'boss_hedgehog') {
-            this.flameShieldOpen = false;
-            this.flameShieldTimer = this.flameShieldClosedDuration * (0.6 + Math.random() * 0.5);
-            this.flameGapAngle = Math.random() * Math.PI * 2;
-        }
     }
 
     _updatePhase() {
@@ -1183,36 +1167,6 @@ export class Boss extends Entity {
         while (d > Math.PI) d -= Math.PI * 2;
         while (d < -Math.PI) d += Math.PI * 2;
         return d;
-    }
-
-    _isPlayerInFlameGap(player) {
-        if (this.bossType !== 'boss_hedgehog') return true;
-        // Tengu now uses a full flame ring with no opening.
-        return !this.flameShieldOpen;
-    }
-
-    _updateTenguFlameShield(dt, player) {
-        if (this.bossType !== 'boss_hedgehog') return;
-        this.flameShieldTimer -= dt;
-        if (this.flameShieldTimer > 0) return;
-
-        if (this.flameShieldOpen) {
-            this.flameShieldOpen = false;
-            this.flameShieldTimer = this.flameShieldClosedDuration + Math.random() * 0.45;
-            this.flameGapAngle = Math.random() * Math.PI * 2;
-        } else {
-            this.flameShieldOpen = true;
-            const cx = this.x + this.width / 2;
-            const cy = this.y + this.height / 2;
-            if (player) {
-                const px = player.x + player.width / 2;
-                const py = player.y + player.height / 2;
-                this.flameGapAngle = Math.atan2(py - cy, px - cx) + (Math.random() - 0.5) * 0.22;
-            } else {
-                this.flameGapAngle = Math.random() * Math.PI * 2;
-            }
-            this.flameShieldTimer = this.flameShieldOpenDuration + Math.random() * 0.3;
-        }
     }
 
     _isPlayerInDragonFireCone(player) {
@@ -1231,19 +1185,6 @@ export class Boss extends Entity {
     }
 
     takeDamage(amount, game) {
-        if (this.bossType === 'boss_hedgehog') {
-            const player = game ? game.player : null;
-            if (!this._isPlayerInFlameGap(player)) {
-                if (game && game.particles) {
-                    const cx = this.x + this.width / 2;
-                    const cy = this.y + this.height / 2;
-                    game.particles.emitHit(cx, cy);
-                    game.particles.emitHit(cx + (Math.random() - 0.5) * 36, cy + (Math.random() - 0.5) * 36);
-                }
-                return;
-            }
-        }
-
         this.health -= amount;
         this.damageFlashTimer = 0.15;
         this._updatePhase();
@@ -1516,12 +1457,16 @@ export class Boss extends Entity {
                 const dir = Math.sign(toPlayer) || (this.facingRight ? 1 : -1);
                 const spawnX = this.x + this.width / 2 + dir * (this.width * 0.26);
                 const spawnY = this.y + this.height * 0.2;
-                const vx = dir * (340 + this.phase * 34 + Math.random() * 42);
-                const vy = -(390 + this.phase * 30 + Math.random() * 34);
-                game.enemyProjectiles.push(new BossProjectile(spawnX, spawnY, vx, vy, 'venom'));
-                const vx2 = dir * (300 + this.phase * 30 + Math.random() * 38);
-                const vy2 = -(430 + this.phase * 28 + Math.random() * 30);
-                game.enemyProjectiles.push(new BossProjectile(spawnX, spawnY - 8, vx2, vy2, 'venom'));
+                const baseVx = 320 + this.phase * 34;
+                const baseVy = 408 + this.phase * 30;
+                const spreadMultipliers = [-0.40, -0.20, 0, 0.20, 0.40];
+                for (let i = 0; i < spreadMultipliers.length; i++) {
+                    const spread = spreadMultipliers[i];
+                    const vx = dir * (baseVx + spread * 240 + Math.random() * 24);
+                    const vy = -(baseVy - Math.abs(spread) * 58 + Math.random() * 24);
+                    const shotY = spawnY - Math.abs(spread) * 10;
+                    game.enemyProjectiles.push(new BossProjectile(spawnX, shotY, vx, vy, 'venom'));
+                }
                 this.attackCooldown = 1.7 + Math.random() * 0.95;
                 this.spiderVenomCooldown = 2.3 + Math.random() * 1.7;
                 this.spiderState = 'PAUSE';
@@ -1638,10 +1583,13 @@ export class Boss extends Entity {
             this.dragonVolleyTimer -= dt;
             if (this.dragonVolleyTimer <= 0 && player) {
                 const shotIdx = this.dragonVolleyShots;
-                const swing = (shotIdx % 2 === 0 ? -1 : 1) * (0.07 + Math.random() * 0.06);
-                this._spawnProjectile(game, player, 'flame', 360 + this.phase * 26, swing, -170 - this.phase * 12);
+                const dir = this.facingRight ? 1 : -1;
+                const spawnX = this.x + this.width / 2 + dir * (this.width * 0.22);
+                const spawnY = this.y + this.height * 0.46;
+                const speed = 360 + this.phase * 26 + (shotIdx % 2 === 0 ? 12 : -6);
+                game.enemyProjectiles.push(new BossProjectile(spawnX, spawnY, dir * speed, 0, 'flame'));
                 if (this.phase >= 3 && shotIdx % 3 === 0) {
-                    this._spawnProjectile(game, player, 'flame', 335 + this.phase * 22, -swing * 0.9, -200);
+                    game.enemyProjectiles.push(new BossProjectile(spawnX, spawnY + 10, dir * (335 + this.phase * 22), 0, 'flame'));
                 }
                 this.dragonVolleyShots--;
                 this.dragonVolleyTimer = 0.16 + Math.random() * 0.08;
@@ -1801,7 +1749,6 @@ export class Boss extends Entity {
         this._updatePhase();
 
         const player = game ? game.player : null;
-        this._updateTenguFlameShield(dt, player);
 
         if (this.bossType === 'boss_spider') {
             this._updateSpiderBoss(dt, game, player);
@@ -1871,7 +1818,7 @@ export class Boss extends Entity {
 
         // Cosmetic wingmen for all bosses; visual flair only (no collision/damage).
         if (!this._bossMinionCache) this._bossMinionCache = getEmojiCanvas(this.minionEmoji, 24);
-        const minionCount = 3;
+        const minionCount = 5;
         const orbitBase = (this.bossType === 'boss_spider' || this.bossType === 'boss_robot')
             ? (this.width * 0.38 + Math.sin(this.timeAlive * 2.3) * 6)
             : (this.aerialMinionRadius + Math.sin(this.timeAlive * 2.1) * 8);
@@ -1901,7 +1848,7 @@ export class Boss extends Entity {
                     for (let i = 0; i < embers; i++) {
                         const blend = embers <= 1 ? 0.5 : i / (embers - 1);
                         const a = (-rowHalf + blend * rowHalf * 2) + this.dragonConeAimOffset * (0.7 + 0.3 * t);
-                        const fx = mouthX + Math.cos(a) * radius;
+                        const fx = mouthX + Math.cos(a) * radius * -1;
                         const fy = Math.sin(a) * radius * 0.9;
                         const flicker = 0.75 + Math.sin(this.timeAlive * 11 + r * 0.8 + i) * 0.25;
                         const alphaMul = this.dragonFireTelegraphTimer > 0 ? (0.12 + telePulse * 0.28) : (0.25 + 0.22 * flicker);
@@ -1929,22 +1876,6 @@ export class Boss extends Entity {
             }
         }
 
-        if (this.bossType === 'boss_hedgehog') {
-            if (!this._flameCache) this._flameCache = getEmojiCanvas(String.fromCodePoint(0x1F525), 24);
-            const flameCount = 16;
-            const radius = this.width * 0.66;
-            const openPulse = this.flameShieldOpen ? (0.78 + Math.sin(this.timeAlive * 9) * 0.16) : 1;
-            const closedPulse = this.flameShieldOpen ? 1 : (0.75 + Math.sin(this.timeAlive * 11) * 0.2);
-            for (let i = 0; i < flameCount; i++) {
-                const a = (i / flameCount) * Math.PI * 2 + this.timeAlive * 0.7;
-                const fx = Math.cos(a) * radius;
-                const fy = Math.sin(a) * radius;
-                ctx.globalAlpha = alpha * closedPulse * openPulse;
-                ctx.drawImage(this._flameCache.canvas, fx - this._flameCache.width / 2, fy - this._flameCache.height / 2);
-            }
-            ctx.globalAlpha = alpha;
-        }
-
         const isTelegraphing = this.attackTelegraphTimer > 0 || this.webTelegraphTimer > 0 || this.spiderPounceTelegraph > 0 || this.dragonFireTelegraphTimer > 0;
         if (isTelegraphing) {
             const pulse = 0.55 + Math.sin(this.timeAlive * 24) * 0.45;
@@ -1960,7 +1891,7 @@ export class Boss extends Entity {
         }
 
         if (this.bossType === 'boss_robot' && this.robotWrenchTelegraphTimer > 0) {
-            if (!this._wrenchTellCache) this._wrenchTellCache = getEmojiCanvas(String.fromCodePoint(0x1F527), 28);
+            if (!this._wrenchTellCache) this._wrenchTellCache = getEmojiCanvas(String.fromCodePoint(0x2692) + '\uFE0F', 28);
             const pulse = 0.7 + Math.sin(this.timeAlive * 28) * 0.3;
             ctx.globalAlpha = alpha * Math.max(0.45, pulse);
             ctx.drawImage(this._wrenchTellCache.canvas, -this._wrenchTellCache.width / 2, -this.height / 2 - 54);

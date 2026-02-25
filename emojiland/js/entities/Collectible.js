@@ -64,7 +64,7 @@ export class Collectible extends Entity {
             }
             const numHearts = 6;
             const radius = 45;
-            const timeOffset = this.time * 2;
+            const timeOffset = this.time * 0.9;
 
             ctx.save();
             ctx.translate(this.x + this.width / 2, this.y + this.height / 2);

@@ -12,11 +12,13 @@ export function loadLevel() {
     const movingPlatforms = [];
 
     const MOVING_HEIGHT = 30;
-    const STATIC_CLEARANCE_X = 36;
-    const STATIC_CLEARANCE_Y = 28;
+    const STATIC_CLEARANCE_X = 56;
+    const STATIC_CLEARANCE_Y = 44;
     const MP_TO_MP_CLEARANCE_X = 80;
     const MP_TO_MP_CLEARANCE_Y = 70;
     const MIN_MP_CENTER_DISTANCE = 220;
+    const FINAL_STATIC_CLEARANCE_X = 48;
+    const FINAL_STATIC_CLEARANCE_Y = 38;
 
     const axisOf = (obj) => obj.moveAxis || obj.axis;
     const rangeOf = (obj) => obj.range || 0;
@@ -88,6 +90,39 @@ export function loadLevel() {
             }
         }
         return false;
+    };
+
+    const pruneOverlappingMovingPlatforms = () => {
+        if (movingPlatforms.length === 0) return;
+        const kept = [];
+        for (let i = 0; i < movingPlatforms.length; i++) {
+            const mp = movingPlatforms[i];
+            const swept = getSweptRect(mp);
+
+            if (swept.y < 80 || swept.y + swept.height > 880) {
+                continue;
+            }
+
+            let blocked = false;
+            for (let j = 0; j < platforms.length; j++) {
+                if (overlapsRect(swept, platforms[j], FINAL_STATIC_CLEARANCE_X, FINAL_STATIC_CLEARANCE_Y)) {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (blocked) continue;
+
+            for (let j = 0; j < kept.length; j++) {
+                const keptSwept = getSweptRect(kept[j]);
+                if (overlapsRect(swept, keptSwept, MP_TO_MP_CLEARANCE_X, MP_TO_MP_CLEARANCE_Y)) {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (!blocked) kept.push(mp);
+        }
+        movingPlatforms.length = 0;
+        for (let i = 0; i < kept.length; i++) movingPlatforms.push(kept[i]);
     };
 
     const isVineClipping = (anchorX, anchorY, ropeLen, otherRects = []) => {
@@ -169,20 +204,22 @@ export function loadLevel() {
         }
     };
 
-    const addSwingingVineCoinArc = (anchorX, anchorY, ropeLen) => {
-        const pivotY = anchorY + 30;
-        const radius = ropeLen * (0.72 + Math.random() * 0.16);
-        const arcHalfAngle = (36 + Math.random() * 12) * (Math.PI / 180);
-        const coinCount = 7 + Math.floor(Math.random() * 4); // 7..10 coins
+    const addSwingingVineCoinArc = (anchorX, anchorY, ropeLen, maxAngle) => {
+        const pivotY = anchorY + 30; // Matches SwingingVine's pivot offset
+        const radius = ropeLen * 0.88; // Place coins near the lower part of the vine
+        const coinCount = 6;
 
         for (let i = 0; i < coinCount; i++) {
-            const t = coinCount <= 1 ? 0.5 : i / (coinCount - 1);
-            const angle = -arcHalfAngle + t * arcHalfAngle * 2;
+            const t = i / (coinCount - 1);
+            // Map t from [0, 1] to [-maxAngle, maxAngle]
+            const angle = -maxAngle + t * (maxAngle * 2);
+
+            // Calculate position matching the vine's swing trajectory
             const x = anchorX - Math.sin(angle) * radius;
-            const y = pivotY + Math.cos(angle) * radius - (20 + Math.sin(t * Math.PI) * 24);
-            if (x > 60 && y > 90 && y < 760) {
-                potentialCoinLocations.push({ x, y });
-            }
+            const y = pivotY + Math.cos(angle) * radius;
+
+            // Directly push to collectibles to ensure they aren't filtered out or replaced
+            collectibles.push(new Collectible(x - 12, y - 12, 'coin'));
         }
     };
 
@@ -345,8 +382,8 @@ export function loadLevel() {
                     const maxWidth = Math.min(220, widest.width * 0.6);
                     if (maxWidth < 100) return null;
                     const width = 100 + Math.random() * (maxWidth - 100);
-                    const maxRange = Math.min(360, widest.width - width - 16);
-                    if (maxRange < 120) return null;
+                    const maxRange = Math.min(520, widest.width - width - 16);
+                    if (maxRange < 160) return null;
                     const x = widest.x + 8 + Math.random() * Math.max(1, widest.width - width - 16);
                     const y = clamp(widest.y - (120 + Math.random() * 120), 140, 660);
                     return {
@@ -355,7 +392,7 @@ export function loadLevel() {
                         width,
                         height: MOVING_HEIGHT,
                         moveAxis: 'x',
-                        range: 120 + Math.random() * (maxRange - 120),
+                        range: 160 + Math.random() * (maxRange - 160),
                         speed: 55 + Math.random() * 50
                     };
                 },
@@ -471,6 +508,7 @@ export function loadLevel() {
                 const svAnchorX = currentX + gap / 2 + (Math.random() * 60 - 30);
                 const svAnchorY = -40 + Math.random() * 60;
                 const svRopeLen = 350 + Math.random() * 100;
+                const svMaxAngle = (Math.PI / 180) * (35 + Math.random() * 55); // 35°–90°
 
                 // Platforms to be added in this cycle
                 const upcoming = [
@@ -479,8 +517,10 @@ export function loadLevel() {
                 ];
 
                 if (!isVineClipping(svAnchorX, svAnchorY, svRopeLen, upcoming)) {
-                    swingingVines.push(new SwingingVine(svAnchorX, svAnchorY, svRopeLen));
-                    addSwingingVineCoinArc(svAnchorX, svAnchorY, svRopeLen);
+                    swingingVines.push(new SwingingVine(svAnchorX, svAnchorY, svRopeLen, svMaxAngle));
+                    if (Math.random() < 0.30) {
+                        addSwingingVineCoinArc(svAnchorX, svAnchorY, svRopeLen, svMaxAngle);
+                    }
                 }
             }
 
@@ -543,8 +583,8 @@ export function loadLevel() {
                         const maxWidth = Math.min(230, platWidth * 0.65);
                         if (maxWidth < 100) return null;
                         const width = 100 + Math.random() * (maxWidth - 100);
-                        const maxRange = Math.min(480, platWidth - width - 16);
-                        if (maxRange < 140) return null;
+                        const maxRange = Math.min(640, platWidth - width - 16);
+                        if (maxRange < 180) return null;
                         const x = currentX + 15 + Math.random() * Math.max(1, (platWidth - width - 30));
                         const y = platY - (130 + Math.random() * 140);
                         return {
@@ -553,7 +593,7 @@ export function loadLevel() {
                             width,
                             height: MOVING_HEIGHT,
                             moveAxis: 'x',
-                            range: 140 + Math.random() * (maxRange - 140),
+                            range: 180 + Math.random() * (maxRange - 180),
                             speed: 55 + Math.random() * 55
                         };
                     },
@@ -580,9 +620,10 @@ export function loadLevel() {
                     const anchorCenterY = fp.y + fp.height / 2;
                     const converted = trySpawnMovingPlatform({
                         attempts: 8,
+                        extraStatic: floatingPlatforms.filter(other => other !== fp),
                         createCandidate: () => {
                             if (Math.random() < 0.7) {
-                                const range = 180 + Math.random() * 240;
+                                const range = 260 + Math.random() * 260;
                                 return {
                                     x: fp.x - range / 2,
                                     y: fp.y,
@@ -593,7 +634,7 @@ export function loadLevel() {
                                     speed: 50 + Math.random() * 60
                                 };
                             }
-                            const range = 130 + Math.random() * 180;
+                            const range = 180 + Math.random() * 210;
                             return {
                                 x: fp.x,
                                 y: fp.y - range / 2,
@@ -666,6 +707,9 @@ export function loadLevel() {
     // Victory platform at the end
     const victoryPlatform = new Platform(currentX + 300, 500, 300, 100, true, theme);
     platforms.push(victoryPlatform);
+
+    // Final safety pass: remove any mover whose entire path is too close to static geometry.
+    pruneOverlappingMovingPlatforms();
 
     // Coins hovering over the victory platform to replace the gap trail
     for (let i = 0; i < 4; i++) {

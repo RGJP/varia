@@ -45,11 +45,32 @@ export class InputHandler {
     setupVirtualControls() {
         this._lastVirtualJumpPress = 0;
         this._attackThumbJumpLatched = false;
+        this._mobileAttackToggleCharging = false;
+        this._lastAttackToggleTouchTs = 0;
         const triggerVirtualJump = () => {
             const now = performance.now();
             if (now - this._lastVirtualJumpPress < 70) return;
             this._lastVirtualJumpPress = now;
             this.justPressed.add('KeyA');
+        };
+
+        const setAttackToggleVisual = (isActive) => {
+            const toggleBtn = document.getElementById('btn-charge-toggle');
+            if (!toggleBtn) return;
+            toggleBtn.classList.toggle('is-active', isActive);
+        };
+
+        const pressVirtualKey = (code) => {
+            if (!this.keys.has(code)) {
+                this.justPressed.add(code);
+            }
+            this.keys.add(code);
+        };
+
+        const releaseVirtualKey = (code) => {
+            this.justReleased.add(code);
+            this.keys.delete(code);
+            this.justPressed.delete(code);
         };
 
         const attachButton = (id, code) => {
@@ -59,19 +80,18 @@ export class InputHandler {
 
                 const press = (e) => {
                     e.preventDefault();
-                    if (!this.keys.has(code)) {
-                        this.justPressed.add(code);
-                    }
-                    this.keys.add(code);
+                    pressVirtualKey(code);
                 };
 
                 const release = (e) => {
                     e.preventDefault();
-                    this.justReleased.add(code);
-                    this.keys.delete(code);
-                    this.justPressed.delete(code);
+                    releaseVirtualKey(code);
                     if (id === 'btn-attack') {
                         this._attackThumbJumpLatched = false;
+                        if (this._mobileAttackToggleCharging) {
+                            this._mobileAttackToggleCharging = false;
+                            setAttackToggleVisual(false);
+                        }
                     }
                 };
 
@@ -132,6 +152,33 @@ export class InputHandler {
         attachButton('btn-attack', 'KeyD');
         attachButton('btn-bomb', 'KeyS');
         attachButton('btn-pause', 'KeyP');
+
+        setTimeout(() => {
+            const chargeToggleBtn = document.getElementById('btn-charge-toggle');
+            if (!chargeToggleBtn) return;
+
+            const toggleAttackCharge = () => {
+                this._mobileAttackToggleCharging = !this._mobileAttackToggleCharging;
+                if (this._mobileAttackToggleCharging) {
+                    pressVirtualKey('KeyD');
+                } else {
+                    releaseVirtualKey('KeyD');
+                }
+                setAttackToggleVisual(this._mobileAttackToggleCharging);
+            };
+
+            chargeToggleBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this._lastAttackToggleTouchTs = performance.now();
+                toggleAttackCharge();
+            }, { passive: false });
+
+            chargeToggleBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (performance.now() - this._lastAttackToggleTouchTs < 500) return;
+                toggleAttackCharge();
+            });
+        }, 0);
 
         setTimeout(() => {
             const joyZone = document.getElementById('joystick-zone');

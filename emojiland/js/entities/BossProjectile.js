@@ -36,7 +36,7 @@ export class BossProjectile extends Entity {
                 this.webFallDespawnDistance = 900;
                 break;
             case 'wrench':
-                this.emoji = String.fromCodePoint(0x1F527);
+                this.emoji = String.fromCodePoint(0x2692) + '\uFE0F';
                 this.maxBounces = 0;
                 this.ignoreGravity = true;
                 break;

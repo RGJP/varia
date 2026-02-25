@@ -39,6 +39,8 @@ export class Player extends Entity {
         this.vineClimbDist = 0; // distance along swinging vine rope from pivot
 
         this.airJumps = 1;
+        this.touchingWall = false;
+        this.wasTouchingWall = false;
 
         this.score = 0;
         this.rotation = 0;
@@ -87,6 +89,8 @@ export class Player extends Entity {
     }
 
     update(dt, input, platforms, game) {
+        this.wasTouchingWall = this.touchingWall;
+        this.touchingWall = false;
         // Timers
         if (this.invulnerableTimer > 0) {
             this.invulnerableTimer -= dt;
@@ -112,7 +116,7 @@ export class Player extends Entity {
         }
         const isFlying = this.flightTimer > 0;
 
-        if (this.grounded) {
+        if (this.grounded || (this.wasTouchingWall && this.vy >= 0)) {
             this.coyoteTimer = this.coyoteTime;
             this.airJumps = 1;
         } else {
@@ -556,6 +560,10 @@ export class Player extends Entity {
                         this.spinBaseRotation = this.rotation;
                         if (game.audio) game.audio.playJump();
                     } else {
+                        // Special case: Robot boss grab/rush shouldn't damage the player directly
+                        if (enemy.bossType === 'boss_robot' && (enemy.robotState === 'RUSH' || enemy.robotState === 'GRAB')) {
+                            return;
+                        }
                         this.takeDamage(game);
                     }
                 }
@@ -623,39 +631,46 @@ export class Player extends Entity {
     resolveCollision(platforms, axis) {
         for (let platform of platforms) {
             if (Physics.checkAABB(this, platform)) {
+                const overlapX = Math.min(this.x + this.width, platform.x + platform.width) - Math.max(this.x, platform.x);
+                const overlapY = Math.min(this.y + this.height, platform.y + platform.height) - Math.max(this.y, platform.y);
+
                 if (axis === 'x') {
-                    // Check if we are really "beside" the platform. 
-                    // If the Y overlap is tiny, it's likely a corner snag from a jump/fall, so skip X resolution.
-                    const overlapY = Math.min(this.y + this.height, platform.y + platform.height) - Math.max(this.y, platform.y);
-                    if (overlapY < 12) continue;
+                    // Landing help: only skip X resolution if we are falling and barely overlapping the top.
+                    // If we're jumping (vy < 0) or falling deep, we should be pushed out horizontally.
+                    if (this.vy > 0 && overlapY < 12) continue;
 
                     if (this.vx > 0) {
                         this.x = platform.x - this.width;
                         this.vx = 0;
+                        this.touchingWall = true;
                     } else if (this.vx < 0) {
                         this.x = platform.x + platform.width;
                         this.vx = 0;
-                    } else if (platform.isMovingPlatform && platform.dx !== 0) {
-                        // If platform moves into player while they are still
-                        if (platform.dx > 0) this.x = platform.x + platform.width;
-                        else if (platform.dx < 0) this.x = platform.x - this.width;
+                        this.touchingWall = true;
+                    } else {
+                        // If vx is 0 (e.g. key released mid-collision), push out based on centers
+                        if (this.x + this.width / 2 < platform.x + platform.width / 2) {
+                            this.x = platform.x - this.width;
+                        } else {
+                            this.x = platform.x + platform.width;
+                        }
+                        this.touchingWall = true;
                     }
                 } else if (axis === 'y') {
-                    // Similar check for X overlap to prevent side/corner snags
-                    const overlapX = Math.min(this.x + this.width, platform.x + platform.width) - Math.max(this.x, platform.x);
-                    if (overlapX < 8) continue;
-
-                    // Extra corner-snag protection when moving upward:
-                    // If the player barely clips the corner of a platform while jumping,
-                    // skip the Y resolution entirely to avoid being pushed below.
-                    if (this.vy < 0 && overlapX < this.width * 0.25) continue;
+                    // If we are more "beside" the platform than "above/below" it, skip Y resolution.
+                    // This prevents the "violent downward push" when clipping corners from the side.
+                    if (overlapX < 16 && overlapY > overlapX) continue;
 
                     if (this.vy > 0) {
                         this.y = platform.y - this.height;
                         this.grounded = true;
                     } else if (this.vy < 0) {
-                        // If platform is a MovingPlatform, push player to top instead of bumping head
-                        if (platform.isMovingPlatform) {
+                        // Improved head-bonk logic: if we are already mostly above the top edge,
+                        // snap to top (land) instead of bonking (teleporting down).
+                        if (this.y + this.height * 0.5 < platform.y) {
+                            this.y = platform.y - this.height;
+                            this.grounded = true;
+                        } else if (platform.isMovingPlatform) {
                             this.y = platform.y - this.height;
                             this.grounded = true;
                         } else {
@@ -663,12 +678,10 @@ export class Player extends Entity {
                         }
                     } else if (platform.isMovingPlatform) {
                         // vy is 0, but we collided. A moving platform hit us.
-                        // If it's hitting us while moving down, push us to the top.
                         if (platform.dy > 0) {
                             this.y = platform.y - this.height;
                             this.grounded = true;
                         } else if (platform.dy < 0) {
-                            // Hit from below while moving up? Push us UP to the top.
                             this.y = platform.y - this.height;
                             this.grounded = true;
                         }
@@ -688,6 +701,14 @@ export class Player extends Entity {
 
     getHitbox() {
         return this._hitbox;
+    }
+
+    clearActivePowerUps() {
+        this.diamondPowerUpTimer = 0;
+        this.firePowerUpTimer = 0;
+        this.flightTimer = 0;
+        this.isChargingAttack = false;
+        this.attackChargeTimer = 0;
     }
 
     takeDamage(game) {
@@ -949,7 +970,7 @@ export class Player extends Entity {
             if (!this._catProtectorEmoji) {
                 this._catProtectorEmoji = getEmojiCanvas('🐱', 34);
             }
-            const offsetX = this.facingRight ? -44 : 44;
+            const offsetX = this.facingRight ? -62 : 62;
             const bobY = Math.sin(this.catProtectorBob * 6) * 5;
             const catX = this.x + this.width / 2 + offsetX - this._catProtectorEmoji.width / 2;
             const catY = this.y + this.height / 2 - 8 + bobY - this._catProtectorEmoji.height / 2;

@@ -2,7 +2,7 @@ import { Entity } from './Entity.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
 export class SwingingVine extends Entity {
-    constructor(anchorX, anchorY, ropeLength) {
+    constructor(anchorX, anchorY, ropeLength, maxAngle = null) {
         // Initial bounding box — will be recalculated each frame
         super(anchorX - 12, anchorY, 24, ropeLength + 30);
 
@@ -16,7 +16,7 @@ export class SwingingVine extends Entity {
 
         // Swing parameters
         this.swingSpeed = 1.3;
-        this.maxAngle = (Math.PI / 180) * (35 + Math.random() * 55); // 35°–90°
+        this.maxAngle = maxAngle !== null ? maxAngle : (Math.PI / 180) * (35 + Math.random() * 55); // 35°–90°
         this.swingTime = Math.random() * Math.PI * 2; // random starting phase
         this.currentAngle = 0;
 

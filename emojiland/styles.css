@@ -152,6 +152,20 @@ canvas {
     margin: 0;
 }
 
+#btn-charge-toggle {
+    position: absolute;
+    bottom: 88px;
+    left: 6px;
+    margin: 0;
+    font-size: 26px;
+}
+
+#btn-charge-toggle.is-active {
+    opacity: 0.65;
+    background: rgba(255, 176, 48, 0.35);
+    border-color: rgba(255, 214, 128, 0.7);
+}
+
 #btn-bomb {
     position: absolute;
     top: 0;

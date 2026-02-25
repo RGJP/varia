@@ -419,6 +419,8 @@ export class Game {
             const spawn = this.pendingBossSpawns[i];
             const shouldSpawn = Math.abs(this.player.x - spawn.x) <= SPAWN_DISTANCE_X;
             if (shouldSpawn) {
+                this.player.clearActivePowerUps();
+                this.player.bombs = 0;
                 this.enemies.push(new Boss(spawn.x, spawn.y, spawn.platform, spawn.bossType));
             } else {
                 this.pendingBossSpawns[writeIdx++] = spawn;
