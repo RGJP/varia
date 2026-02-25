@@ -34,9 +34,11 @@ canvas {
         display: none;
         justify-content: space-between;
         align-items: flex-end;
-        padding: 5px;
-        /* More extreme anchoring */
-        padding-bottom: 10px;
+        /* Keep controls inside natural thumb zones instead of edge corners */
+        padding-left: clamp(16px, 4vw, 56px);
+        padding-right: clamp(16px, 4vw, 56px);
+        padding-bottom: clamp(18px, 5vh, 48px);
+        padding-bottom: max(clamp(18px, 5vh, 48px), env(safe-area-inset-bottom));
     }
 
     #mobile-ui.active {
@@ -81,8 +83,8 @@ canvas {
 }
 
 .joystick-zone {
-    width: 240px;
-    height: 240px;
+    width: clamp(190px, 30vw, 230px);
+    height: clamp(190px, 30vw, 230px);
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(255, 255, 255, 0.3);
     /* Thinner border */
@@ -90,8 +92,8 @@ canvas {
     position: relative;
     pointer-events: auto;
     touch-action: none;
-    margin-bottom: -10px;
-    margin-left: -5px;
+    margin-bottom: 0;
+    margin-left: 0;
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
@@ -127,8 +129,8 @@ canvas {
     position: relative;
     width: 160px;
     height: 160px;
-    margin-bottom: 30px;
-    margin-right: 40px;
+    margin-bottom: 0;
+    margin-right: 0;
 }
 
 .ui-btn-large {
@@ -171,6 +173,27 @@ canvas {
     top: 0;
     right: 20px;
     margin: 0;
+}
+
+@media (pointer: coarse) and (orientation: landscape) {
+    #mobile-ui {
+        /* Typical landscape comfort zone: inward from edges and up from bottom */
+        padding-left: clamp(28px, 7vw, 96px);
+        padding-right: clamp(28px, 7vw, 96px);
+        padding-bottom: clamp(20px, 7vh, 64px);
+        padding-bottom: max(clamp(20px, 7vh, 64px), env(safe-area-inset-bottom));
+    }
+
+    .joystick-zone {
+        width: clamp(185px, 26vw, 220px);
+        height: clamp(185px, 26vw, 220px);
+    }
+
+    .action-buttons {
+        width: 170px;
+        height: 170px;
+        transform: translate(-4px, -6px);
+    }
 }
 
 #btn-pause {
