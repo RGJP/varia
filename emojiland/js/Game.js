@@ -653,11 +653,28 @@ export class Game {
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // 2. Calculate Responsive Scale
-        // Reference size 800x600, but we allow it to be smaller
-        const baseWidth = 850;
-        const baseHeight = 650;
-        const scale = Math.min(this.canvas.width / baseWidth, this.canvas.height / baseHeight, 1.0);
+        // 2. Calculate responsive overlay scale.
+        // We use per-state design bounds and never cap at 1.0 so menus can expand
+        // to the full visible viewport while still fitting without clipping.
+        let baseWidth = 850;
+        let baseHeight = 650;
+
+        if (this.state === GameState.START_MENU) {
+            // Bounds cover title + card + start + attribution with a tight fit.
+            baseWidth = 800;
+            baseHeight = 460;
+        } else if (this.state === GameState.GAME_OVER) {
+            baseWidth = 760;
+            baseHeight = 260;
+        } else if (this.state === GameState.VICTORY) {
+            baseWidth = 680;
+            baseHeight = 420;
+        }
+
+        const edgePadding = 20;
+        const availableWidth = Math.max(1, this.canvas.width - edgePadding * 2);
+        const availableHeight = Math.max(1, this.canvas.height - edgePadding * 2);
+        const scale = Math.min(availableWidth / baseWidth, availableHeight / baseHeight);
 
         // 3. Move context to center and apply scale for all menu elements
         this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);

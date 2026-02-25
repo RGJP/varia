@@ -9,6 +9,8 @@ window.addEventListener('load', () => {
 
         canvas.width = vpWidth;
         canvas.height = vpHeight;
+        canvas.style.width = `${vpWidth}px`;
+        canvas.style.height = `${vpHeight}px`;
         if (game) game.resize(vpWidth, vpHeight);
     };
 
