@@ -127,16 +127,16 @@ canvas {
 
 .action-buttons {
     position: relative;
-    width: 190px;
-    height: 190px;
+    width: 170px;
+    height: 170px;
     margin-bottom: 0;
     margin-right: 0;
 }
 
 .ui-btn-large {
-    width: 60px;
-    height: 60px;
-    font-size: 32px;
+    width: 64px;
+    height: 64px;
+    font-size: 33px;
 }
 
 /* Positioning specific buttons in an ergonomic thumb arc */
@@ -149,15 +149,15 @@ canvas {
 
 #btn-attack {
     position: absolute;
-    bottom: 34px;
-    left: 0;
+    bottom: 26px;
+    left: 2px;
     margin: 0;
 }
 
 #btn-charge-toggle {
     position: absolute;
-    bottom: 106px;
-    left: 12px;
+    bottom: 96px;
+    left: 6px;
     margin: 0;
     font-size: 26px;
 }
@@ -170,8 +170,8 @@ canvas {
 
 #btn-bomb {
     position: absolute;
-    top: 0;
-    right: 34px;
+    top: 2px;
+    right: 24px;
     margin: 0;
 }
 
@@ -190,38 +190,43 @@ canvas {
     }
 
     .action-buttons {
-        width: 200px;
-        height: 200px;
-        transform: translate(-8px, -8px);
+        width: 178px;
+        height: 178px;
+        transform: translate(-4px, -6px);
     }
 }
 
 @media (pointer: coarse) {
     .ui-btn-large {
-        width: 72px;
-        height: 72px;
-        font-size: 34px;
+        width: 78px;
+        height: 78px;
+        font-size: 36px;
+    }
+
+    .action-buttons {
+        width: 176px;
+        height: 176px;
     }
 
     #btn-jump {
-        right: 4px;
-        bottom: 2px;
+        right: 0;
+        bottom: 0;
     }
 
     #btn-attack {
-        bottom: 36px;
-        left: 4px;
+        bottom: 30px;
+        left: 0;
     }
 
     #btn-charge-toggle {
-        bottom: 110px;
-        left: 14px;
+        bottom: 122px;
+        left: 2px;
         font-size: 28px;
     }
 
     #btn-bomb {
-        top: 4px;
-        right: 36px;
+        top: 0;
+        right: 28px;
     }
 }
 
