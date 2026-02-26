@@ -45,9 +45,9 @@ export class Player extends Entity {
         this.score = 0;
         this.collectedLetters = { E: false, M: false, O: false, J: false, I: false };
         this.letterCelebrationTimer = 0;
-        this.letterCelebrationDuration = 3.6;
+        this.letterCelebrationDuration = 2.6;
         this.letterCelebrationSpawnTimer = 0;
-        this.letterCelebrationSpawnInterval = 0.085;
+        this.letterCelebrationSpawnInterval = 0.12;
         this.letterCelebrationVisibleCount = 0;
         this.letterCelebrationMax = 5;
         this.letterCelebrationSparkTimer = 0;
@@ -205,21 +205,21 @@ export class Player extends Entity {
                 for (let i = prevCount; i < this.letterCelebrationVisibleCount; i++) {
                     const handX = centerX + (i - (this.letterCelebrationMax - 1) / 2) * 28;
                     const handY = this.y - 72 - Math.sin(this.pulseTimer * 9 + i * 0.8) * 8;
-                    game.particles.emitFireworks(handX, handY);
-                    game.particles.emit(handX, handY, 28, '#ffe26a', [80, 260], [0.25, 0.8], [2, 6]);
+                    game.particles.emitFireworksLite(handX, handY);
+                    game.particles.emit(handX, handY, 14, '#ffe26a', [70, 200], [0.2, 0.55], [1.5, 4.5]);
                 }
             }
             this.letterCelebrationSparkTimer -= dt;
             if (game && game.particles && this.letterCelebrationSparkTimer <= 0) {
-                this.letterCelebrationSparkTimer = 0.1;
+                this.letterCelebrationSparkTimer = 0.18;
                 game.particles.emit(
                     this.x + this.width / 2 + (Math.random() - 0.5) * 110,
                     this.y - 80 + (Math.random() - 0.5) * 30,
-                    14,
+                    10,
                     '#fff4a3',
-                    [40, 170],
-                    [0.18, 0.55],
-                    [1.5, 4]
+                    [35, 120],
+                    [0.16, 0.42],
+                    [1.2, 3]
                 );
             }
             if (this.letterCelebrationTimer <= 0) {
@@ -661,15 +661,13 @@ export class Player extends Entity {
                     game.particles.emit(centerX, centerY, 24, '#9ad9ff', [70, 220], [0.2, 0.6], [2, 5]);
                 } else if (collectible.type === 'letter') {
                     const letter = collectible.letter;
-                    const wasIFound = this.collectedLetters.I;
+                    const hadAllLettersBeforePickup = Object.values(this.collectedLetters).every(Boolean);
                     if (letter && Object.prototype.hasOwnProperty.call(this.collectedLetters, letter)) {
                         this.collectedLetters[letter] = true;
                     }
-                    if (letter === 'I' && !wasIFound) {
-                        const hasAllLetters = Object.values(this.collectedLetters).every(Boolean);
-                        if (hasAllLetters) {
-                            this._startLetterCelebration(game);
-                        }
+                    const hasAllLettersAfterPickup = Object.values(this.collectedLetters).every(Boolean);
+                    if (!hadAllLettersBeforePickup && hasAllLettersAfterPickup) {
+                        this._startLetterCelebration(game);
                     }
                     this.score += 75;
                     if (game.audio) game.audio.playCollect();
@@ -703,9 +701,11 @@ export class Player extends Entity {
                 const overlapY = Math.min(this.y + this.height, platform.y + platform.height) - Math.max(this.y, platform.y);
 
                 if (axis === 'x') {
-                    // Landing help: only skip X resolution if we are falling and barely overlapping the top.
-                    // If we're jumping (vy < 0) or falling deep, we should be pushed out horizontally.
-                    if (this.vy > 0 && overlapY < 12) continue;
+                    // If overlap is only a thin slice near the platform top, treat it as top contact
+                    // (not a wall). This prevents upward movers from side-launching the player
+                    // when walking/jumping from the platform surface.
+                    const playerBottom = this.y + this.height;
+                    if (overlapY < 14 && playerBottom <= platform.y + 16) continue;
 
                     if (this.vx > 0) {
                         this.x = platform.x - this.width;
@@ -842,7 +842,7 @@ export class Player extends Entity {
             const speed = Math.hypot(this.vx, this.vy);
             if (speed > 2) {
                 const speedRatio = Math.min(1, speed / this.flightSpeed);
-                const phase = this.pulseTimer * 24;
+                const phase = this.pulseTimer * 10;
 
                 // Convert world movement direction into local draw space (after rotation/flip).
                 let dirX = this.vx / speed;
@@ -863,73 +863,50 @@ export class Player extends Entity {
                 const backY = -dirY;
                 const perpX = -backY;
                 const perpY = backX;
-                const trailCount = 12;
-                const spreadStep = 6.2;
-                const emitterX = backX * this.width * 0.16;
-                const emitterY = backY * this.height * 0.16;
+                const streakCount = 4;
+                const spreadStep = 12;
+                const emitterX = backX * this.width * 0.14;
+                const emitterY = backY * this.height * 0.14;
+                const minLen = 30 + speedRatio * 28;
+                const extraLen = 8 + speedRatio * 18;
 
                 ctx.save();
                 ctx.lineCap = 'round';
-                const glow = ctx.createRadialGradient(
-                    emitterX,
-                    emitterY,
-                    2,
-                    emitterX,
-                    emitterY,
-                    16 + speedRatio * 8
-                );
-                glow.addColorStop(0, 'rgba(230, 247, 255, 0.45)');
-                glow.addColorStop(1, 'rgba(160, 220, 255, 0)');
-                ctx.fillStyle = glow;
+
+                ctx.strokeStyle = 'rgba(165, 220, 255, 0.42)';
+                ctx.lineWidth = 2.6;
+                ctx.globalAlpha = 0.24 + speedRatio * 0.26;
                 ctx.beginPath();
-                ctx.arc(emitterX, emitterY, 16 + speedRatio * 8, 0, Math.PI * 2);
-                ctx.fill();
-
-                for (let i = 0; i < trailCount; i++) {
-                    const spread = (i - (trailCount - 1) / 2) * spreadStep;
-                    const wobble = Math.sin(phase + i * 1.25) * 1.8;
+                for (let i = 0; i < streakCount; i++) {
+                    const spread = (i - (streakCount - 1) / 2) * spreadStep;
+                    const wobble = Math.sin(phase + i * 1.7) * 1.8;
                     const sideOffset = spread + wobble;
-                    const stemEndX = emitterX + backX * (10 + speedRatio * 5) + perpX * (sideOffset * 0.72);
-                    const stemEndY = emitterY + backY * (10 + speedRatio * 5) + perpY * (sideOffset * 0.72);
-                    const baseX = emitterX + backX * (17 + speedRatio * 8) + perpX * sideOffset;
-                    const baseY = emitterY + backY * (17 + speedRatio * 8) + perpY * sideOffset;
-                    const length = 54 + speedRatio * 52 + ((Math.sin(phase * 1.1 + i * 1.6) + 1) * 0.5) * 16;
-                    const tailX = baseX + backX * length;
-                    const tailY = baseY + backY * length;
-                    const wave = Math.sin(phase * 1.45 + i * 1.75) * (4.5 + speedRatio * 3.2);
-                    const midX = baseX + backX * (length * 0.5) + perpX * wave;
-                    const midY = baseY + backY * (length * 0.5) + perpY * wave;
-
-                    // Short connector so each trail visibly comes from the player.
-                    ctx.strokeStyle = 'rgba(210, 238, 255, 0.65)';
-                    ctx.lineWidth = Math.max(1.5, 3.4 - i * 0.1);
-                    ctx.globalAlpha = Math.max(0.2, 0.45 + speedRatio * 0.24 - i * 0.02);
-                    ctx.beginPath();
-                    ctx.moveTo(emitterX + perpX * (sideOffset * 0.24), emitterY + perpY * (sideOffset * 0.24));
-                    ctx.quadraticCurveTo(stemEndX, stemEndY, baseX, baseY);
-                    ctx.stroke();
-
-                    ctx.strokeStyle = 'rgba(170, 220, 255, 0.7)';
-                    ctx.lineWidth = Math.max(1.05, 3.0 - i * 0.1);
-                    ctx.globalAlpha = Math.max(0.12, 0.5 + speedRatio * 0.3 - i * 0.025);
-                    ctx.beginPath();
-                    ctx.moveTo(baseX, baseY);
-                    ctx.quadraticCurveTo(midX, midY, tailX, tailY);
-                    ctx.stroke();
-
-                    ctx.strokeStyle = 'rgba(235, 247, 255, 0.8)';
-                    ctx.lineWidth = 1.1;
-                    ctx.globalAlpha = Math.max(0.1, 0.34 + speedRatio * 0.2 - i * 0.018);
-                    ctx.beginPath();
-                    ctx.moveTo(baseX - perpX * 1.5, baseY - perpY * 1.5);
-                    ctx.quadraticCurveTo(
-                        baseX + backX * (length * 0.4) + perpX * (wave * 0.7),
-                        baseY + backY * (length * 0.4) + perpY * (wave * 0.7),
-                        baseX + backX * (length * 0.78),
-                        baseY + backY * (length * 0.78)
-                    );
-                    ctx.stroke();
+                    const startX = emitterX + perpX * sideOffset;
+                    const startY = emitterY + perpY * sideOffset;
+                    const len = minLen + (Math.sin(phase * 1.15 + i * 1.25) + 1) * 0.5 * extraLen;
+                    const tailX = startX + backX * len + perpX * (Math.sin(phase * 1.35 + i) * 2.5);
+                    const tailY = startY + backY * len + perpY * (Math.cos(phase * 1.35 + i) * 2.5);
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(tailX, tailY);
                 }
+                ctx.stroke();
+
+                ctx.strokeStyle = 'rgba(235, 247, 255, 0.6)';
+                ctx.lineWidth = 1.2;
+                ctx.globalAlpha = 0.18 + speedRatio * 0.2;
+                ctx.beginPath();
+                for (let i = 0; i < streakCount; i++) {
+                    const spread = (i - (streakCount - 1) / 2) * spreadStep;
+                    const sideOffset = spread + Math.sin(phase + i * 1.7) * 1.8;
+                    const startX = emitterX + perpX * sideOffset;
+                    const startY = emitterY + perpY * sideOffset;
+                    const len = (minLen - 8) + (Math.sin(phase * 1.15 + i * 1.25) + 1) * 0.5 * (extraLen - 4);
+                    const tailX = startX + backX * len;
+                    const tailY = startY + backY * len;
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(tailX, tailY);
+                }
+                ctx.stroke();
                 ctx.restore();
             }
         }

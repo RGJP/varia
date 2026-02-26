@@ -11,7 +11,7 @@ import { Barrel } from './Barrel.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 import { BossProjectile } from './BossProjectile.js';
 
-const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_hedgehog', 'boss_spider', 'boss_dragon', 'boss_robot'];
+const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_hedgehog', 'boss_spider', 'boss_dragon', 'boss_robot', 'boss_lobster'];
 
 const TYPE_PATROL = 'patrol';
 const TYPE_CHASER = 'chaser'; // 👹
@@ -36,6 +36,7 @@ const TYPE_APE = 'ape'; // 🦍
 const TYPE_SPIDER = 'spider'; // 🕷️
 const TYPE_MINI_SPIDER = 'mini_spider'; // 🕷️
 const TYPE_JELLYFISH = 'jellyfish'; // 🪼
+const TYPE_LOBSTER_MINION = 'lobster_minion'; // 🦞
 const SHOOTER_OPACITY_SPEED = 1.6;
 
 export class Enemy extends Entity {
@@ -290,6 +291,7 @@ export class Enemy extends Entity {
             case TYPE_SPIDER: this.updateSpider(dt, player, distToPlayer, game); break;
             case TYPE_MINI_SPIDER: this.updateSpider(dt, player, distToPlayer, game); break;
             case TYPE_JELLYFISH: this.updateJellyfish(dt, player); break;
+            case TYPE_LOBSTER_MINION: this.updateLobsterMinion(dt); break;
         }
 
         if (this.type === TYPE_TROLL && game) {
@@ -444,6 +446,17 @@ export class Enemy extends Entity {
         this.state = 'PATROL';
         this.speed = this.baseSpeed;
         this.vx = this.facingRight ? this.speed : -this.speed;
+    }
+
+    updateLobsterMinion(dt) {
+        if (this.stateTimer > 0) this.stateTimer -= dt;
+        this.state = 'SCUTTLE';
+        this.speed = this.baseSpeed;
+        this.vx = this.facingRight ? this.speed : -this.speed;
+        if (this.stateTimer <= 0) {
+            this.facingRight = !this.facingRight;
+            this.stateTimer = 0.35 + Math.random() * 0.7;
+        }
     }
 
     stomp(game) {
@@ -1177,7 +1190,7 @@ export class Enemy extends Entity {
 export class Boss extends Entity {
     constructor(x, y, platform, bossType) {
         const resolvedBossType = bossType || BOSS_TYPES[Math.floor(Math.random() * BOSS_TYPES.length)];
-        const size = resolvedBossType === 'boss_spider' ? 92 : (resolvedBossType === 'boss_dragon' ? 170 : (resolvedBossType === 'boss_robot' ? 156 : 160));
+        const size = resolvedBossType === 'boss_spider' ? 92 : (resolvedBossType === 'boss_dragon' ? 170 : (resolvedBossType === 'boss_robot' ? 156 : (resolvedBossType === 'boss_lobster' ? 150 : 160)));
         super(x, y - size, size, size);
 
         this.bossType = resolvedBossType;
@@ -1263,7 +1276,7 @@ export class Boss extends Entity {
         // Dragon (boss_dragon) grounded fire-cone state
         this.dragonPatrolDir = Math.random() > 0.5 ? 1 : -1;
         this.dragonFireTelegraphTimer = 0;
-        this.dragonFireTelegraphDuration = 0.9;
+        this.dragonFireTelegraphDuration = 0.5;
         this.dragonFireActiveTimer = 0;
         this.dragonFireDuration = 0.8;
         this.dragonFireRange = 370;
@@ -1292,6 +1305,17 @@ export class Boss extends Entity {
         this.robotThrowLightX = 0;
         this.robotThrowLightY = 0;
 
+        // Lobster (boss_lobster): grounded scuttle + shrimp barrage + lobster minion calls.
+        this.lobsterPatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.lobsterTelegraphTimer = 0;
+        this.lobsterTelegraphType = 'spray'; // 'spray' | 'dash'
+        this.lobsterShrimpShots = 0;
+        this.lobsterShrimpTimer = 0;
+        this.lobsterDashTimer = 0;
+        this.lobsterDashDir = 0;
+        this.lobsterDashFxTimer = 0;
+        this.lobsterMinionCooldown = 2.8 + Math.random() * 1.2;
+
         switch (this.bossType) {
             case 'boss_chick': this.emoji = String.fromCodePoint(0x1F423); break;
             case 'boss_moai': this.emoji = String.fromCodePoint(0x1F5FF); break;
@@ -1299,9 +1323,23 @@ export class Boss extends Entity {
             case 'boss_spider': this.emoji = String.fromCodePoint(0x1F577) + '\uFE0F'; break;
             case 'boss_dragon': this.emoji = String.fromCodePoint(0x1F409); break;
             case 'boss_robot': this.emoji = String.fromCodePoint(0x1F3CB) + '\uFE0F\u200D\u2642\uFE0F'; break;
+            case 'boss_lobster': this.emoji = String.fromCodePoint(0x1F99E); break;
             default: this.emoji = String.fromCodePoint(0x1F5FF); break;
         }
-        this.minionEmoji = this.emoji;
+        this.minionEmoji = this.bossType === 'boss_lobster'
+            ? String.fromCodePoint(0x1F99E)
+            : this.emoji;
+
+        if (this.bossType === 'boss_lobster') {
+            const lobsterNames = [
+                'LOBSTER MOBSTER',
+                'SIR SNIPSNAP',
+                'CLAWD THE CHAOTIC',
+                'CAPTAIN CRUSTACEAN',
+                'THE SHRIMP DEALER'
+            ];
+            this.displayName = lobsterNames[Math.floor(Math.random() * lobsterNames.length)];
+        }
 
         this._cachedEmoji = getEmojiCanvas(this.emoji, size);
     }
@@ -1759,7 +1797,7 @@ export class Boss extends Entity {
             return;
         }
 
-        const patrolSpeed = 120 + this.phase * 10;
+        const patrolSpeed = 175 + this.phase * 22;
         this.vx = this.dragonPatrolDir * patrolSpeed;
         this.x += this.vx * dt;
         if (this.x <= left) {
@@ -1780,10 +1818,73 @@ export class Boss extends Entity {
             this.dragonAttackPattern = Math.random() < (this.phase >= 2 ? 0.45 : 0.35) ? 'volley' : 'cone';
             this.dragonConeSweepDir = Math.random() > 0.5 ? 1 : -1;
             this.dragonConeAimOffset = 0;
+            const coneTelegraph = this.phase >= 3 ? 0.35 : (this.phase >= 2 ? 0.42 : this.dragonFireTelegraphDuration);
+            const volleyTelegraph = this.phase >= 3 ? 0.26 : (this.phase >= 2 ? 0.32 : 0.38);
             this.dragonFireTelegraphTimer = this.dragonAttackPattern === 'volley'
-                ? (0.62 + Math.random() * 0.18)
-                : this.dragonFireTelegraphDuration;
+                ? (volleyTelegraph + Math.random() * 0.08)
+                : coneTelegraph;
             this.vx = 0;
+        }
+    }
+
+    _countActiveLobsterMinions(game) {
+        if (!game || !game.enemies) return 0;
+        let count = 0;
+        for (let i = 0; i < game.enemies.length; i++) {
+            const enemy = game.enemies[i];
+            if (!enemy.markedForDeletion && enemy.type === TYPE_LOBSTER_MINION) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    _countActiveShrimpProjectiles(game) {
+        if (!game || !game.enemyProjectiles) return 0;
+        let count = 0;
+        for (let i = 0; i < game.enemyProjectiles.length; i++) {
+            const p = game.enemyProjectiles[i];
+            if (!p.markedForDeletion && p instanceof Shrimp) count++;
+        }
+        return count;
+    }
+
+    _spawnLobsterMinion(game) {
+        if (!game || !this.platform) return;
+        const minionLimit = this.phase >= 3 ? 3 : 2;
+        if (this._countActiveLobsterMinions(game) >= minionLimit) return;
+
+        const left = this.platform.x + 20;
+        const right = this.platform.x + this.platform.width - 62;
+        const sideBias = Math.random() < 0.5 ? -1 : 1;
+        const spawnX = Math.max(left, Math.min(right, this.x + this.width / 2 + sideBias * (70 + Math.random() * 70)));
+
+        const mini = new Enemy(spawnX, this.platform.y - 42, this.platform);
+        mini.type = TYPE_LOBSTER_MINION;
+        mini.emoji = String.fromCodePoint(0x1F99E);
+        mini.width = 42;
+        mini.height = 42;
+        mini.x = spawnX;
+        mini.y = this.platform.y - mini.height;
+        mini.startX = mini.x;
+        mini.startY = mini.y;
+        mini.baseSpeed = 125 + this.phase * 12;
+        mini.speed = mini.baseSpeed;
+        mini.health = 1;
+        mini.maxHealth = 1;
+        mini.state = 'SCUTTLE';
+        mini.stateTimer = 0.35 + Math.random() * 0.7;
+        mini.facingRight = sideBias > 0;
+        mini.vx = mini.facingRight ? mini.speed : -mini.speed;
+        mini.vy = 0;
+        mini._cachedEmoji = getEmojiCanvas(mini.emoji, mini.height);
+        game.enemies.push(mini);
+        game.totalEnemies++;
+
+        if (game.particles) {
+            const mx = mini.x + mini.width / 2;
+            const my = mini.y + mini.height / 2;
+            game.particles.emit(mx, my, 8, '#ffad7a', [40, 120], [0.14, 0.35], [1.2, 2.8]);
         }
     }
 
@@ -1891,6 +1992,111 @@ export class Boss extends Entity {
         }
     }
 
+    _updateLobsterBoss(dt, game, player) {
+        const left = this.platform.x + 8;
+        const right = this.platform.x + this.platform.width - this.width - 8;
+        this.y = this.platform.y - this.height;
+        this.x = Math.max(left, Math.min(right, this.x));
+
+        if (this.lobsterMinionCooldown > 0) this.lobsterMinionCooldown -= dt;
+        if (this.lobsterMinionCooldown <= 0) {
+            this._spawnLobsterMinion(game);
+            this.lobsterMinionCooldown = (this.phase >= 3 ? 3.0 : (this.phase >= 2 ? 3.4 : 3.8)) + Math.random() * 1.0;
+        }
+
+        if (this.lobsterTelegraphTimer > 0) {
+            this.lobsterTelegraphTimer -= dt;
+            this.vx = 0;
+            if (player) {
+                this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            }
+            if (this.lobsterTelegraphTimer <= 0) {
+                if (this.lobsterTelegraphType === 'dash') {
+                    this.lobsterDashDir = this.facingRight ? 1 : -1;
+                    this.lobsterDashTimer = 0.32 + this.phase * 0.06;
+                    this.lobsterDashFxTimer = 0;
+                } else {
+                    this.lobsterShrimpShots = this.phase >= 3 ? 6 : (this.phase >= 2 ? 5 : 4);
+                    this.lobsterShrimpTimer = 0;
+                }
+            }
+            return;
+        }
+
+        if (this.lobsterDashTimer > 0) {
+            this.lobsterDashTimer -= dt;
+            this.vx = this.lobsterDashDir * (320 + this.phase * 42);
+            this.x += this.vx * dt;
+            if (this.x <= left || this.x >= right) {
+                this.x = Math.max(left, Math.min(right, this.x));
+                this.lobsterDashTimer = 0;
+            }
+            this.lobsterDashFxTimer -= dt;
+            if (this.lobsterDashFxTimer <= 0 && game && game.particles) {
+                this.lobsterDashFxTimer = 0.08;
+                game.particles.emit(this.x + this.width / 2, this.y + this.height * 0.7, 7, '#ffd6a6', [40, 120], [0.1, 0.26], [1.2, 2.6]);
+            }
+            if (this.lobsterDashTimer <= 0) {
+                this.vx = 0;
+                this.attackCooldown = 1.35 + Math.random() * 0.6;
+            }
+            return;
+        }
+
+        if (this.lobsterShrimpShots > 0) {
+            this.vx = 0;
+            this.lobsterShrimpTimer -= dt;
+            if (this.lobsterShrimpTimer <= 0 && game) {
+                const shrimpBudgetOk = this._countActiveShrimpProjectiles(game) < 18;
+                const dir = this.facingRight ? 1 : -1;
+                if (shrimpBudgetOk) {
+                    const shotIndex = (this.phase >= 3 ? 6 : (this.phase >= 2 ? 5 : 4)) - this.lobsterShrimpShots;
+                    const spawnX = this.x + this.width / 2 + dir * (this.width * 0.26);
+                    const spawnY = this.y + this.height * 0.34;
+                    const upVel = -340 - this.phase * 25 - Math.sin(shotIndex * 1.25) * 40;
+                    const xVel = 220 + this.phase * 20 + ((shotIndex % 2 === 0) ? 28 : -18);
+                    game.enemyProjectiles.push(new Shrimp(spawnX, spawnY, dir > 0, upVel, xVel));
+                    if (game.particles) {
+                        game.particles.emit(spawnX, spawnY, 6, '#ffb199', [45, 140], [0.12, 0.3], [1.2, 2.8]);
+                    }
+                }
+                this.lobsterShrimpShots--;
+                this.lobsterShrimpTimer = 0.12;
+                if (this.lobsterShrimpShots <= 0) {
+                    this.attackCooldown = 1.65 + Math.random() * 0.75;
+                }
+            }
+            return;
+        }
+
+        const patrolSpeed = 130 + this.phase * 14;
+        this.vx = this.lobsterPatrolDir * patrolSpeed;
+        this.x += this.vx * dt;
+        if (this.x <= left) {
+            this.x = left;
+            this.lobsterPatrolDir = 1;
+        } else if (this.x >= right) {
+            this.x = right;
+            this.lobsterPatrolDir = -1;
+        }
+
+        if (player) {
+            const dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+            this.facingRight = dx >= 0;
+            if (this.attackCooldown <= 0) {
+                const canDash = Math.abs(dx) > 110 && Math.abs(dx) < 420;
+                const chooseDash = canDash && Math.random() < (this.phase >= 3 ? 0.5 : 0.4);
+                this.lobsterTelegraphType = chooseDash ? 'dash' : 'spray';
+                this.lobsterTelegraphTimer = chooseDash
+                    ? (this.phase >= 3 ? 0.18 : (this.phase >= 2 ? 0.22 : 0.26))
+                    : (this.phase >= 3 ? 0.28 : (this.phase >= 2 ? 0.32 : 0.36));
+                this.vx = 0;
+            }
+        } else {
+            this.facingRight = this.lobsterPatrolDir > 0;
+        }
+    }
+
     update(dt, game) {
         if (this.damageFlashTimer > 0) this.damageFlashTimer -= dt;
         this.spawnFadeTimer += dt;
@@ -1915,6 +2121,8 @@ export class Boss extends Entity {
             this._updateDragonBoss(dt, game, player);
         } else if (this.bossType === 'boss_robot') {
             this._updateRobotBoss(dt, game, player);
+        } else if (this.bossType === 'boss_lobster') {
+            this._updateLobsterBoss(dt, game, player);
         } else {
             this._updateAerialBoss(dt, game, player);
         }
@@ -1936,7 +2144,10 @@ export class Boss extends Entity {
             || this.dragonVolleyShots > 0
             || this.robotWrenchTelegraphTimer > 0
             || this.robotState === 'RUSH'
-            || this.robotState === 'GRAB';
+            || this.robotState === 'GRAB'
+            || this.lobsterTelegraphTimer > 0
+            || this.lobsterDashTimer > 0
+            || this.lobsterShrimpShots > 0;
         if (game && player && player.invulnerableTimer <= 0 && !inFairWindow) {
             if (Physics.checkAABB(this, player.getHitbox())) {
                 player.takeDamage(game);
@@ -1978,7 +2189,7 @@ export class Boss extends Entity {
         // Cosmetic wingmen for all bosses; visual flair only (no collision/damage).
         if (!this._bossMinionCache) this._bossMinionCache = getEmojiCanvas(this.minionEmoji, 24);
         const minionCount = 5;
-        const orbitBase = (this.bossType === 'boss_spider' || this.bossType === 'boss_robot')
+        const orbitBase = (this.bossType === 'boss_spider' || this.bossType === 'boss_robot' || this.bossType === 'boss_lobster')
             ? (this.width * 0.38 + Math.sin(this.timeAlive * 2.3) * 6)
             : (this.aerialMinionRadius + Math.sin(this.timeAlive * 2.1) * 8);
         for (let i = 0; i < minionCount; i++) {
@@ -2049,7 +2260,11 @@ export class Boss extends Entity {
             }
         }
 
-        const isTelegraphing = this.attackTelegraphTimer > 0 || this.webTelegraphTimer > 0 || this.spiderPounceTelegraph > 0 || this.dragonFireTelegraphTimer > 0;
+        const isTelegraphing = this.attackTelegraphTimer > 0
+            || this.webTelegraphTimer > 0
+            || this.spiderPounceTelegraph > 0
+            || this.dragonFireTelegraphTimer > 0
+            || this.lobsterTelegraphTimer > 0;
         if (isTelegraphing) {
             const pulse = 0.55 + Math.sin(this.timeAlive * 24) * 0.45;
             if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
@@ -2069,6 +2284,45 @@ export class Boss extends Entity {
             ctx.globalAlpha = alpha * Math.max(0.45, pulse);
             ctx.drawImage(this._wrenchTellCache.canvas, -this._wrenchTellCache.width / 2, -this.height / 2 - 54);
             ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_lobster' && this.lobsterTelegraphTimer > 0) {
+            if (!this._shrimpTellCache) this._shrimpTellCache = getEmojiCanvas(String.fromCodePoint(0x1F990), 26);
+            const pulse = 0.58 + Math.sin(this.timeAlive * 24) * 0.35;
+            if (this.lobsterTelegraphType === 'spray') {
+                const spread = 28;
+                for (let i = -1; i <= 1; i++) {
+                    ctx.globalAlpha = alpha * (0.45 + pulse * 0.4);
+                    ctx.drawImage(this._shrimpTellCache.canvas, i * spread - this._shrimpTellCache.width / 2, -this.height / 2 - 44 - Math.abs(i) * 7);
+                }
+            } else {
+                if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+                ctx.globalAlpha = alpha * (0.48 + pulse * 0.42);
+                ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2 - 20, -this.height / 2 - 44);
+                ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2 + 20, -this.height / 2 - 44);
+            }
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_lobster' && this.lobsterShrimpShots > 0) {
+            if (!this._shrimpTellCache) this._shrimpTellCache = getEmojiCanvas(String.fromCodePoint(0x1F990), 26);
+            const pulse = 0.5 + Math.sin(this.timeAlive * 20) * 0.35;
+            ctx.globalAlpha = alpha * (0.35 + pulse * 0.4);
+            ctx.drawImage(this._shrimpTellCache.canvas, -this._shrimpTellCache.width / 2, -this.height * 0.18);
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_lobster' && this.lobsterDashTimer > 0) {
+            const forward = this.facingRight ? 1 : -1;
+            ctx.strokeStyle = `rgba(255, 190, 120, ${0.45 + Math.sin(this.timeAlive * 28) * 0.2})`;
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-forward * 18, 6);
+            ctx.lineTo(-forward * 52, 6);
+            ctx.moveTo(-forward * 12, -10);
+            ctx.lineTo(-forward * 44, -10);
+            ctx.stroke();
         }
 
         ctx.restore();

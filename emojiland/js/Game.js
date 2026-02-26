@@ -79,6 +79,8 @@ export class Game {
         this.coinsCollected = 0;
         this.totalEnemies = 0;
         this.enemiesDefeated = 0;
+        this.lastVictoryEmojiBonus = 0;
+        this.fpsDisplay = 60;
 
         this.gameOverTriggered = false;
         this.gameOverTimer = 0;
@@ -231,8 +233,13 @@ export class Game {
 
     loop(time) {
         let dt = (time - this.lastTime) / 1000;
+        const hadPreviousFrame = this.lastTime > 0;
         this.lastTime = time;
         if (dt > 0.1) dt = 0.1;
+        if (hadPreviousFrame && dt > 0) {
+            const instantFps = 1 / dt;
+            this.fpsDisplay = this.fpsDisplay * 0.9 + instantFps * 0.1;
+        }
 
         this.update(dt);
         this.draw();
@@ -392,6 +399,14 @@ export class Game {
 
     triggerVictory() {
         if (!this.canTriggerVictory()) return;
+        this.lastVictoryEmojiBonus = 0;
+        if (this.player && this.player.collectedLetters) {
+            const hasAllEmojiLetters = ['E', 'M', 'O', 'J', 'I'].every(letter => this.player.collectedLetters[letter]);
+            if (hasAllEmojiLetters) {
+                this.lastVictoryEmojiBonus = 3000;
+                this.player.score += this.lastVictoryEmojiBonus;
+            }
+        }
         this.state = GameState.VICTORY;
         this.canRestart = false;
         setTimeout(() => { this.canRestart = true; }, 1000);
@@ -577,6 +592,17 @@ export class Game {
         }
 
         this.drawUI();
+        this.drawFpsCounter();
+    }
+
+    drawFpsCounter() {
+        this.ctx.save();
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'bottom';
+        this.ctx.font = '12px "Outfit", sans-serif';
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+        this.ctx.fillText(`${Math.round(this.fpsDisplay)}`, this.canvas.width / 2, this.canvas.height - 8);
+        this.ctx.restore();
     }
 
     drawUI() {
@@ -792,7 +818,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('All copyright free music from Pixabay - v1.04', 0, cardY + cardHeight + 100);
+            this.ctx.fillText('All copyright free music from Pixabay - v1.05', 0, cardY + cardHeight + 100);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
