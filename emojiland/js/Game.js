@@ -71,8 +71,6 @@ export class Game {
         this._visibleVines = [];
         this._visibleSwingingVines = [];
 
-        this.hitStopTimer = 0;
-
         this.lowestY = 800;
 
         this.totalCoins = 0;
@@ -298,13 +296,6 @@ export class Game {
         }
 
         if (this.state === GameState.PAUSED) {
-            return;
-        }
-
-        if (this.hitStopTimer > 0) {
-            this.hitStopTimer -= dt;
-            this.particles.update(dt);
-            this.camera.update(this.player, dt);
             return;
         }
 

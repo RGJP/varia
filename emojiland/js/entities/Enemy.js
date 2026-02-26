@@ -11,7 +11,7 @@ import { Barrel } from './Barrel.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 import { BossProjectile } from './BossProjectile.js';
 
-const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_hedgehog', 'boss_spider', 'boss_dragon', 'boss_robot', 'boss_lobster', 'boss_kangaroo', 'boss_monkey', 'boss_mammoth', 'boss_trex', 'boss_mosquito', 'boss_beetle'];
+const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_tengu', 'boss_spider', 'boss_dragon', 'boss_manliftingweights', 'boss_lobster', 'boss_kangaroo', 'boss_monkey', 'boss_mammoth', 'boss_trex', 'boss_mosquito', 'boss_beetle'];
 
 const TYPE_PATROL = 'patrol';
 const TYPE_CHASER = 'chaser'; // 👹
@@ -325,8 +325,13 @@ export class Enemy extends Entity {
 
             // Spiders in JUMP state are free to leave their platform
             const isSpiderJumping = (this.type === TYPE_SPIDER || this.type === TYPE_MINI_SPIDER) && this.state === 'JUMP';
+            const isSlidingShell = this.type === TYPE_PATROL &&
+                this.emoji === '🐢' &&
+                this.turtleFlipped &&
+                !this.turtleRecovering &&
+                Math.abs(this.vx) > 1;
 
-            if (!isSpiderJumping) {
+            if (!isSpiderJumping && !isSlidingShell) {
                 let platLeft = this.platform.x;
                 let platRight = this.platform.x + this.platform.width;
 
@@ -382,6 +387,33 @@ export class Enemy extends Entity {
                         }
                     }
                 }
+            } else if (isSlidingShell && this.vy > 0 && game) {
+                const allPlats = game.platforms;
+                let landed = false;
+                for (let pi = 0; pi < allPlats.length; pi++) {
+                    const p = allPlats[pi];
+                    if (this.y + this.height >= p.y && this.y + this.height <= p.y + 20 &&
+                        this.x + this.width > p.x && this.x < p.x + p.width) {
+                        this.y = p.y - this.height;
+                        this.vy = 0;
+                        this.platform = p;
+                        landed = true;
+                        break;
+                    }
+                }
+                if (!landed && game.movingPlatforms) {
+                    for (let pi = 0; pi < game.movingPlatforms.length; pi++) {
+                        const p = game.movingPlatforms[pi];
+                        if (this.y + this.height >= p.y && this.y + this.height <= p.y + 20 &&
+                            this.x + this.width > p.x && this.x < p.x + p.width) {
+                            this.y = p.y - this.height;
+                            this.vy = 0;
+                            this.platform = p;
+                            landed = true;
+                            break;
+                        }
+                    }
+                }
             } else if (this.vy > 0 && this.y + this.height >= this.platform.y) {
                 this.y = this.platform.y - this.height;
 
@@ -424,25 +456,6 @@ export class Enemy extends Entity {
 
     updatePatrol(dt) {
         if (this.turtleFlipped) {
-            if (this.turtleRecovering) {
-                this.state = 'SHELL';
-                this.vx = 0;
-                if (this.turtleRecoverTimer <= 0) {
-                    this.turtleRecovering = false;
-                    this.turtleFlipped = false;
-                    this.state = 'PATROL';
-                    this.vx = this.facingRight ? this.baseSpeed : -this.baseSpeed;
-                }
-                return;
-            }
-
-            if (this.turtleFlipTimer <= 0) {
-                this.turtleRecovering = true;
-                this.turtleRecoverTimer = this.turtleRecoverDuration;
-                this.state = 'SHELL';
-                this.vx = 0;
-                return;
-            }
             this.state = Math.abs(this.vx) > 1 ? 'SHELL_SLIDE' : 'SHELL';
             return;
         }
@@ -501,14 +514,13 @@ export class Enemy extends Entity {
 
     kickShell(kickDir, game) {
         const isTurtle = this.type === TYPE_PATROL && this.emoji === '🐢';
-        if (!isTurtle || !this.turtleFlipped || this.turtleRecovering) return false;
+        if (!isTurtle || !this.turtleFlipped) return false;
 
         const dir = kickDir >= 0 ? 1 : -1;
         this.facingRight = dir > 0;
         this.state = 'SHELL_SLIDE';
-        this.vx = dir * 460;
+        this.vx = dir * 620;
         this.vy = 0;
-        this.turtleFlipTimer = Math.max(this.turtleFlipTimer, 2.5);
         this.damageFlashTimer = 0.08;
         this.shellHitCooldownTimer = 0;
         if (game && game.audio) game.audio.playHit();
@@ -1229,8 +1241,11 @@ export class Enemy extends Entity {
 // ─────────────────────────────────────────────────────────────
 export class Boss extends Entity {
     constructor(x, y, platform, bossType) {
-        const resolvedBossType = bossType || BOSS_TYPES[Math.floor(Math.random() * BOSS_TYPES.length)];
-        const size = resolvedBossType === 'boss_spider' ? 92 : (resolvedBossType === 'boss_dragon' ? 170 : (resolvedBossType === 'boss_robot' ? 156 : (resolvedBossType === 'boss_lobster' ? 150 : (resolvedBossType === 'boss_kangaroo' ? 154 : (resolvedBossType === 'boss_monkey' ? 150 : (resolvedBossType === 'boss_mammoth' ? 168 : (resolvedBossType === 'boss_trex' ? 166 : (resolvedBossType === 'boss_mosquito' ? 144 : (resolvedBossType === 'boss_beetle' ? 158 : 160)))))))));
+        const normalizedBossType = bossType === 'boss_hedgehog'
+            ? 'boss_tengu'
+            : (bossType === 'boss_robot' ? 'boss_manliftingweights' : bossType);
+        const resolvedBossType = normalizedBossType || BOSS_TYPES[Math.floor(Math.random() * BOSS_TYPES.length)];
+        const size = resolvedBossType === 'boss_spider' ? 92 : (resolvedBossType === 'boss_dragon' ? 170 : (resolvedBossType === 'boss_manliftingweights' ? 156 : (resolvedBossType === 'boss_lobster' ? 150 : (resolvedBossType === 'boss_kangaroo' ? 154 : (resolvedBossType === 'boss_monkey' ? 150 : (resolvedBossType === 'boss_mammoth' ? 168 : (resolvedBossType === 'boss_trex' ? 166 : (resolvedBossType === 'boss_mosquito' ? 144 : (resolvedBossType === 'boss_beetle' ? 158 : 160)))))))));
         super(x, y - size, size, size);
 
         this.bossType = resolvedBossType;
@@ -1329,7 +1344,21 @@ export class Boss extends Entity {
         this.dragonVolleyTimer = 0;
         this.dragonVolleyLaneY = this.y + this.height * 0.52;
 
-        // Robot (boss_robot) grounded rush/grab/throw + wrench toss
+        // Moai (boss_moai): grounded sentinel pressure with gaze beams, meteor rain, and quake bursts.
+        this.moaiState = 'PATROL'; // 'PATROL' | 'GAZE' | 'METEOR' | 'QUAKE'
+        this.moaiPatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.moaiTelegraphTimer = 0;
+        this.moaiTelegraphType = 'gaze_beam'; // 'gaze_beam' | 'meteor_rain' | 'quake'
+        this.moaiBeamShots = 0;
+        this.moaiBeamTimer = 0;
+        this.moaiMeteorWaves = 0;
+        this.moaiMeteorTimer = 0;
+        this.moaiMeteorCenterX = this.x + this.width / 2;
+        this.moaiQuakeWaves = 0;
+        this.moaiQuakeTimer = 0;
+        this.moaiHoverCenterY = this.platform.y - this.height - 210;
+
+        // Man lifting weights (boss_manliftingweights) grounded rush/grab/throw + wrench toss
         this.robotState = 'PATROL';
         this.robotPatrolDir = Math.random() > 0.5 ? 1 : -1;
         this.robotRushDir = 0;
@@ -1444,10 +1473,10 @@ export class Boss extends Entity {
         switch (this.bossType) {
             case 'boss_chick': this.emoji = String.fromCodePoint(0x1F423); break;
             case 'boss_moai': this.emoji = String.fromCodePoint(0x1F5FF); break;
-            case 'boss_hedgehog': this.emoji = String.fromCodePoint(0x1F47A); break;
+            case 'boss_tengu': this.emoji = String.fromCodePoint(0x1F47A); break;
             case 'boss_spider': this.emoji = String.fromCodePoint(0x1F577) + '\uFE0F'; break;
             case 'boss_dragon': this.emoji = String.fromCodePoint(0x1F409); break;
-            case 'boss_robot': this.emoji = String.fromCodePoint(0x1F3CB) + '\uFE0F\u200D\u2642\uFE0F'; break;
+            case 'boss_manliftingweights': this.emoji = String.fromCodePoint(0x1F3CB) + '\uFE0F\u200D\u2642\uFE0F'; break;
             case 'boss_lobster': this.emoji = String.fromCodePoint(0x1F99E); break;
             case 'boss_kangaroo': this.emoji = String.fromCodePoint(0x1F998); break;
             case 'boss_monkey': this.emoji = String.fromCodePoint(0x1F412); break;
@@ -1628,16 +1657,7 @@ export class Boss extends Entity {
                 spreads: this.phase >= 3 ? [-0.2, 0, 0.2] : (this.phase >= 2 ? [-0.12, 0.12] : [0])
             };
             this.attackCooldown = 1.8 - (this.phase - 1) * 0.2 + Math.random() * 0.5;
-        } else if (this.bossType === 'boss_moai') {
-            this.pendingAttack = {
-                pattern: 'fan',
-                projectile: 'stone',
-                speed: 560 + this.phase * 35,
-                arcBias: 0,
-                spreads: this.phase >= 3 ? [-0.08, 0, 0.08] : [0]
-            };
-            this.attackCooldown = 2.2 - (this.phase - 1) * 0.15 + Math.random() * 0.55;
-        } else if (this.bossType === 'boss_hedgehog') {
+        } else if (this.bossType === 'boss_tengu') {
             const shots = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 2);
             this.pendingAttack = {
                 pattern: 'burst',
@@ -2408,6 +2428,159 @@ export class Boss extends Entity {
         }
     }
 
+    _spawnMoaiQuakeBurst(game) {
+        if (!game) return;
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height * 0.78;
+        const lanes = this.phase >= 3 ? 3 : 2;
+        for (let dir = -1; dir <= 1; dir += 2) {
+            for (let i = 0; i < lanes; i++) {
+                const vx = dir * (220 + this.phase * 18 + i * 95 + Math.random() * 30);
+                const vy = 20 + i * 28 + Math.random() * 18;
+                game.enemyProjectiles.push(new BossProjectile(cx, cy, vx, vy, 'stone'));
+            }
+        }
+    }
+
+    _updateMoaiBoss(dt, game, player) {
+        const left = this.platform.x + 12;
+        const right = this.platform.x + this.platform.width - this.width - 12;
+        const groundY = this.platform.y - this.height;
+        const highY = this.platform.y - this.height - (200 + this.phase * 18);
+        const lowY = groundY - (16 + this.phase * 2);
+        const swoopBlend = (Math.sin(this.timeAlive * 0.58) + 1) * 0.5;
+        const hoverBaseY = highY + (lowY - highY) * swoopBlend;
+        this.moaiHoverCenterY += (hoverBaseY - this.moaiHoverCenterY) * Math.min(1, dt * 2.2);
+        const hoverY = this.moaiHoverCenterY + Math.sin(this.timeAlive * (2.1 + this.phase * 0.2)) * (18 + this.phase * 2);
+
+        if (this.moaiTelegraphTimer > 0) {
+            this.moaiTelegraphTimer -= dt;
+            this.vx = 0;
+            this.y = hoverY;
+            if (player) this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            if (this.moaiTelegraphTimer <= 0) {
+                if (this.moaiTelegraphType === 'gaze_beam') {
+                    this.moaiState = 'GAZE';
+                    this.moaiBeamShots = this.phase >= 3 ? 7 : (this.phase >= 2 ? 6 : 5);
+                    this.moaiBeamTimer = 0;
+                } else if (this.moaiTelegraphType === 'meteor_rain') {
+                    this.moaiState = 'METEOR';
+                    this.moaiMeteorWaves = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 2);
+                    this.moaiMeteorTimer = 0;
+                    this.moaiMeteorCenterX = player ? (player.x + player.width / 2) : (this.x + this.width / 2 + this.moaiPatrolDir * 120);
+                } else {
+                    this.moaiState = 'QUAKE';
+                    this.moaiQuakeWaves = this.phase >= 3 ? 3 : 2;
+                    this.moaiQuakeTimer = 0;
+                }
+            }
+            return;
+        }
+
+        if (this.moaiState === 'GAZE') {
+            this.vx = 0;
+            this.y = hoverY;
+            this.moaiBeamTimer -= dt;
+            if (this.moaiBeamTimer <= 0) {
+                const total = this.phase >= 3 ? 7 : (this.phase >= 2 ? 6 : 5);
+                const shotIndex = total - this.moaiBeamShots;
+                const verticalPattern = [-0.2, -0.08, 0.05, 0.18, 0, -0.12, 0.12];
+                const tilt = verticalPattern[shotIndex % verticalPattern.length];
+                const dir = this.facingRight ? 1 : -1;
+                const eyeX = this.x + this.width / 2 + dir * (this.width * 0.24);
+                const eyeY = this.y + this.height * 0.34;
+                const vx = dir * (640 + this.phase * 34);
+                const vy = tilt * (250 + this.phase * 35);
+                game.enemyProjectiles.push(new BossProjectile(eyeX, eyeY, vx, vy, 'needle'));
+                this.moaiBeamShots--;
+                this.moaiBeamTimer = 0.08;
+                if (this.moaiBeamShots <= 0) {
+                    this.moaiState = 'PATROL';
+                    this.attackCooldown = 1.45 + Math.random() * 0.65;
+                }
+            }
+            return;
+        }
+
+        if (this.moaiState === 'METEOR') {
+            this.vx = 0;
+            this.y = hoverY;
+            this.moaiMeteorTimer -= dt;
+            if (this.moaiMeteorTimer <= 0) {
+                const drops = this.phase >= 3 ? 5 : 4;
+                for (let i = 0; i < drops; i++) {
+                    const lane = i - (drops - 1) / 2;
+                    const dropX = Math.max(left + 30, Math.min(right + this.width - 30, this.moaiMeteorCenterX + lane * 78 + (Math.random() * 46 - 23)));
+                    const dropY = this.y - 380 - Math.random() * 120;
+                    const vx = Math.random() * 44 - 22;
+                    const vy = 350 + this.phase * 34 + Math.random() * 50;
+                    game.enemyProjectiles.push(new BossProjectile(dropX, dropY, vx, vy, 'stone'));
+                }
+                this.moaiMeteorWaves--;
+                this.moaiMeteorTimer = 0.2;
+                if (this.moaiMeteorWaves <= 0) {
+                    this.moaiState = 'PATROL';
+                    this.attackCooldown = 1.8 + Math.random() * 0.75;
+                }
+            }
+            return;
+        }
+
+        if (this.moaiState === 'QUAKE') {
+            this.vx = 0;
+            this.y = hoverY;
+            this.moaiQuakeTimer -= dt;
+            if (this.moaiQuakeTimer <= 0) {
+                this._spawnMoaiQuakeBurst(game);
+                this.moaiQuakeWaves--;
+                this.moaiQuakeTimer = 0.18;
+                if (this.moaiQuakeWaves <= 0) {
+                    this.moaiState = 'PATROL';
+                    this.attackCooldown = 1.55 + Math.random() * 0.7;
+                }
+            }
+            return;
+        }
+
+        // PATROL: slow sentinel glide while hovering.
+        const patrolSpeed = 96 + this.phase * 12;
+        this.vx = this.moaiPatrolDir * patrolSpeed;
+        this.x += this.vx * dt;
+        this.y = hoverY;
+        if (this.x <= left) {
+            this.x = left;
+            this.moaiPatrolDir = 1;
+        } else if (this.x >= right) {
+            this.x = right;
+            this.moaiPatrolDir = -1;
+        }
+
+        if (player) {
+            const dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+            this.facingRight = dx >= 0;
+            if (this.attackCooldown <= 0) {
+                const dist = Math.abs(dx);
+                const roll = Math.random();
+                if (dist > 190 && dist < 850 && roll < 0.42) {
+                    this.moaiTelegraphType = 'gaze_beam';
+                } else if (roll < 0.72) {
+                    this.moaiTelegraphType = 'meteor_rain';
+                    this.moaiMeteorCenterX = player.x + player.width / 2;
+                } else {
+                    this.moaiTelegraphType = 'quake';
+                }
+                this.moaiTelegraphTimer = this.moaiTelegraphType === 'gaze_beam'
+                    ? (this.phase >= 3 ? 0.22 : (this.phase >= 2 ? 0.28 : 0.34))
+                    : (this.moaiTelegraphType === 'meteor_rain'
+                        ? (this.phase >= 3 ? 0.2 : (this.phase >= 2 ? 0.26 : 0.33))
+                        : (this.phase >= 3 ? 0.18 : (this.phase >= 2 ? 0.24 : 0.3)));
+                this.vx = 0;
+            }
+        } else {
+            this.facingRight = this.moaiPatrolDir > 0;
+        }
+    }
+
     _spawnMonkeyLandingBurst(game) {
         if (!game) return;
         const cx = this.x + this.width / 2;
@@ -2426,8 +2599,19 @@ export class Boss extends Entity {
         const left = this.platform.x + 8;
         const right = this.platform.x + this.platform.width - this.width - 8;
         const groundY = this.platform.y - this.height;
-        const canopyY = this.platform.y - this.height - (210 + this.phase * 16);
+        const canopyY = Math.max(56, this.platform.y - this.height - (210 + this.phase * 16));
         this.monkeyCanopyY = canopyY;
+
+        // Safety: recover immediately if an invalid transform sneaks in.
+        if (!Number.isFinite(this.x) || !Number.isFinite(this.y)) {
+            this.x = Math.max(left, Math.min(right, this.platform.x + this.platform.width * 0.5 - this.width * 0.5));
+            this.y = groundY;
+            this.monkeyState = 'PATROL';
+            this.monkeyTelegraphTimer = 0;
+            this.monkeyCoconutShots = 0;
+            this.monkeyDiveVx = 0;
+            this.monkeyDiveVy = 0;
+        }
 
         if (this.monkeyTelegraphTimer > 0) {
             this.monkeyTelegraphTimer -= dt;
@@ -2476,7 +2660,7 @@ export class Boss extends Entity {
                 const shotIndex = total - this.monkeyCoconutShots;
                 const spreads = total === 5 ? [-0.24, -0.11, 0, 0.11, 0.24] : (total === 4 ? [-0.2, -0.07, 0.07, 0.2] : [-0.12, 0, 0.12]);
                 const spread = spreads[Math.max(0, Math.min(shotIndex, spreads.length - 1))];
-                this._spawnProjectile(game, player, 'stone', 500 + this.phase * 28, spread, -95);
+                this._spawnProjectile(game, player, 'banana', 500 + this.phase * 28, spread, -95);
                 this.monkeyCoconutShots--;
                 this.monkeyCoconutTimer = 0.11;
                 if (this.monkeyCoconutShots <= 0) {
@@ -2514,7 +2698,8 @@ export class Boss extends Entity {
                 const target = player ? (player.x + player.width / 2 - this.width / 2 + (Math.random() * 70 - 35)) : (this.x + this.monkeyCanopyDir * 180);
                 this.monkeyDiveTargetX = Math.max(left, Math.min(right, target));
                 this.monkeyDiveVx = (this.monkeyDiveTargetX - this.x) / diveWindow;
-                this.monkeyDiveVy = -(420 + this.phase * 30);
+                // From canopy we should dive down immediately, not pop further upward.
+                this.monkeyDiveVy = 260 + this.phase * 30;
             }
             return;
         }
@@ -3194,9 +3379,11 @@ export class Boss extends Entity {
 
         if (this.bossType === 'boss_spider') {
             this._updateSpiderBoss(dt, game, player);
+        } else if (this.bossType === 'boss_moai') {
+            this._updateMoaiBoss(dt, game, player);
         } else if (this.bossType === 'boss_dragon') {
             this._updateDragonBoss(dt, game, player);
-        } else if (this.bossType === 'boss_robot') {
+        } else if (this.bossType === 'boss_manliftingweights') {
             this._updateRobotBoss(dt, game, player);
         } else if (this.bossType === 'boss_lobster') {
             this._updateLobsterBoss(dt, game, player);
@@ -3229,6 +3416,10 @@ export class Boss extends Entity {
         const inFairWindow = this.attackTelegraphTimer > 0
             || this.webTelegraphTimer > 0
             || this.spiderPounceTelegraph > 0
+            || this.moaiTelegraphTimer > 0
+            || this.moaiState === 'GAZE'
+            || this.moaiState === 'METEOR'
+            || this.moaiState === 'QUAKE'
             || this.dragonFireTelegraphTimer > 0
             || this.dragonVolleyShots > 0
             || this.robotWrenchTelegraphTimer > 0
@@ -3287,7 +3478,11 @@ export class Boss extends Entity {
         const cy = this.y + this.height / 2;
         ctx.translate(cx, cy);
         const useDirectFacing = this.bossType === 'boss_dragon' || this.bossType === 'boss_kangaroo';
-        const shouldFlipSprite = useDirectFacing ? this.facingRight : !this.facingRight;
+        let shouldFlipSprite = useDirectFacing ? this.facingRight : !this.facingRight;
+        const emojiFacingInvertedBosses = new Set(['boss_monkey', 'boss_trex', 'boss_mammoth', 'boss_mosquito']);
+        if (emojiFacingInvertedBosses.has(this.bossType)) {
+            shouldFlipSprite = !shouldFlipSprite;
+        }
         if (shouldFlipSprite) ctx.scale(-1, 1);
 
         if (this.attackTelegraphTimer > 0) {
@@ -3303,7 +3498,7 @@ export class Boss extends Entity {
         // Cosmetic wingmen for all bosses; visual flair only (no collision/damage).
         if (!this._bossMinionCache) this._bossMinionCache = getEmojiCanvas(this.minionEmoji, 24);
         const minionCount = 5;
-        const orbitBase = (this.bossType === 'boss_spider' || this.bossType === 'boss_robot' || this.bossType === 'boss_lobster' || this.bossType === 'boss_kangaroo' || this.bossType === 'boss_monkey' || this.bossType === 'boss_mammoth' || this.bossType === 'boss_trex' || this.bossType === 'boss_beetle')
+        const orbitBase = (this.bossType === 'boss_spider' || this.bossType === 'boss_manliftingweights' || this.bossType === 'boss_lobster' || this.bossType === 'boss_kangaroo' || this.bossType === 'boss_monkey' || this.bossType === 'boss_mammoth' || this.bossType === 'boss_trex' || this.bossType === 'boss_beetle')
             ? (this.width * 0.38 + Math.sin(this.timeAlive * 2.3) * 6)
             : (this.aerialMinionRadius + Math.sin(this.timeAlive * 2.1) * 8);
         for (let i = 0; i < minionCount; i++) {
@@ -3398,7 +3593,7 @@ export class Boss extends Entity {
             ctx.drawImage(this._webTellCache.canvas, -this._webTellCache.width / 2, -this.height / 2 - 56);
         }
 
-        if (this.bossType === 'boss_robot' && this.robotWrenchTelegraphTimer > 0) {
+        if (this.bossType === 'boss_manliftingweights' && this.robotWrenchTelegraphTimer > 0) {
             if (!this._wrenchTellCache) this._wrenchTellCache = getEmojiCanvas(String.fromCodePoint(0x2692) + '\uFE0F', 28);
             const pulse = 0.7 + Math.sin(this.timeAlive * 28) * 0.3;
             ctx.globalAlpha = alpha * Math.max(0.45, pulse);
@@ -3442,6 +3637,48 @@ export class Boss extends Entity {
             ctx.lineTo(-forward * 52, 6);
             ctx.moveTo(-forward * 12, -10);
             ctx.lineTo(-forward * 44, -10);
+            ctx.stroke();
+        }
+
+        if (this.bossType === 'boss_moai' && this.moaiTelegraphTimer > 0) {
+            const pulse = 0.58 + Math.sin(this.timeAlive * 24) * 0.34;
+            if (this.moaiTelegraphType === 'gaze_beam') {
+                if (!this._eyeTellCache) this._eyeTellCache = getEmojiCanvas(String.fromCodePoint(0x1F441) + '\uFE0F', 27);
+                const dir = this.facingRight ? 1 : -1;
+                ctx.globalAlpha = alpha * (0.42 + pulse * 0.45);
+                ctx.drawImage(this._eyeTellCache.canvas, dir * 18 - this._eyeTellCache.width / 2, -this.height * 0.16 - this._eyeTellCache.height / 2);
+                ctx.strokeStyle = `rgba(255, 150, 90, ${0.38 + pulse * 0.4})`;
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(dir * 12, -this.height * 0.14);
+                ctx.lineTo(dir * 82, -this.height * 0.1);
+                ctx.stroke();
+            } else if (this.moaiTelegraphType === 'meteor_rain') {
+                if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+                const markerX = this.moaiMeteorCenterX - (this.x + this.width / 2);
+                ctx.globalAlpha = alpha * (0.4 + pulse * 0.42);
+                ctx.drawImage(this._warnCache.canvas, markerX - this._warnCache.width / 2, -this.height / 2 - 52);
+                ctx.drawImage(this._warnCache.canvas, markerX - this._warnCache.width / 2, -this.height / 2 - 24);
+            } else {
+                if (!this._stoneTellCache) this._stoneTellCache = getEmojiCanvas(String.fromCodePoint(0x1F94C), 24);
+                for (let i = -1; i <= 1; i++) {
+                    ctx.globalAlpha = alpha * (0.4 + pulse * 0.4);
+                    ctx.drawImage(this._stoneTellCache.canvas, i * 28 - this._stoneTellCache.width / 2, this.height * 0.22 - Math.abs(i) * 4);
+                }
+            }
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_moai' && this.moaiState === 'GAZE') {
+            const dir = this.facingRight ? 1 : -1;
+            const beamPulse = 0.54 + Math.sin(this.timeAlive * 40) * 0.36;
+            ctx.strokeStyle = `rgba(255, 190, 130, ${0.28 + beamPulse * 0.3})`;
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(dir * 14, -this.height * 0.14);
+            ctx.lineTo(dir * 86, -this.height * 0.1);
             ctx.stroke();
         }
 
@@ -3693,7 +3930,7 @@ export class Boss extends Entity {
 
         ctx.restore();
 
-        if (this.bossType === 'boss_robot' && this.robotThrowLightTimer > 0) {
+        if (this.bossType === 'boss_manliftingweights' && this.robotThrowLightTimer > 0) {
             const t = Math.max(0, this.robotThrowLightTimer / this.robotThrowLightDuration);
             const beamW = 62 + (1 - t) * 30;
             const beamH = 280 + (1 - t) * 120;

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>EmojiLand Dev Arena</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%AA%3C/text%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        #dev-setup {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            background: rgba(12, 16, 22, 0.86);
+            z-index: 9999;
+            backdrop-filter: blur(4px);
+        }
+
+        #dev-setup.hidden {
+            display: none;
+        }
+
+        .dev-card {
+            width: min(92vw, 520px);
+            background: linear-gradient(180deg, #1c2533 0%, #121923 100%);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 16px;
+            box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
+            padding: 20px;
+            color: #f4f8ff;
+        }
+
+        .dev-card h1 {
+            margin: 0 0 8px 0;
+            font-size: 1.25rem;
+        }
+
+        .dev-card p {
+            margin: 0 0 14px 0;
+            color: rgba(244, 248, 255, 0.8);
+            line-height: 1.4;
+            font-size: 0.95rem;
+        }
+
+        #dev-spawn-select {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            background: #0f151f;
+            color: #f4f8ff;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 0.98rem;
+            margin-bottom: 12px;
+        }
+
+        #dev-spawn-count {
+            width: 100%;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            background: #0f151f;
+            color: #f4f8ff;
+            padding: 12px;
+            font-family: inherit;
+            font-size: 0.98rem;
+            margin-bottom: 12px;
+        }
+
+        .dev-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .dev-btn {
+            appearance: none;
+            border: 0;
+            border-radius: 10px;
+            font-family: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 11px 14px;
+            min-width: 140px;
+        }
+
+        #dev-start {
+            background: #ffcc33;
+            color: #111;
+        }
+
+        #dev-reopen {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            z-index: 3000;
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            font-family: inherit;
+            font-weight: 700;
+            padding: 8px 12px;
+            cursor: pointer;
+            display: none;
+        }
+
+        #dev-reopen.active {
+            display: block;
+        }
+
+        .dev-note {
+            margin-top: 10px;
+            font-size: 0.82rem;
+            color: rgba(244, 248, 255, 0.72);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="mobile-ui">
+        <button id="btn-camera" class="ui-btn ui-btn-camera">🎦</button>
+        <button id="btn-pause" class="ui-btn ui-btn-pause">⏸️</button>
+        <div id="joystick-zone" class="joystick-zone">
+            <div id="joystick-knob" class="joystick-knob"></div>
+        </div>
+        <div class="action-buttons">
+            <button id="btn-charge-toggle" class="ui-btn">⬆️</button>
+            <button id="btn-attack" class="ui-btn ui-btn-large">🪨</button>
+            <button id="btn-bomb" class="ui-btn ui-btn-large">💣</button>
+            <button id="btn-jump" class="ui-btn ui-btn-large">🦘</button>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <button id="dev-reopen" type="button">Dev Menu</button>
+
+    <div id="dev-setup">
+        <div class="dev-card">
+            <h1>EmojiLand Dev Arena</h1>
+            <p>Select a target enemy/boss, then start. A standalone test arena will load with one long platform and your selected spawn.</p>
+            <select id="dev-spawn-select"></select>
+            <input id="dev-spawn-count" type="number" min="1" max="20" step="1" value="1" />
+            <div class="dev-actions">
+                <button id="dev-start" class="dev-btn" type="button">Start Arena</button>
+            </div>
+            <div class="dev-note">This page is development-only and does not alter normal gameplay.</div>
+        </div>
+    </div>
+
+    <script type="module" src="js/dev-main.js"></script>
+</body>
+
+</html>

@@ -99,9 +99,8 @@ export class BossProjectile extends Entity {
                 break;
             case 'scarab':
                 this.emoji = String.fromCodePoint(0x1FAB2);
-                this.maxBounces = 1;
+                this.maxBounces = 0;
                 this.canBounceOnPlatforms = true;
-                this.projectileLifetime = 2.2;
                 break;
             default:
                 this.emoji = String.fromCodePoint(0x1FAA8);
@@ -200,7 +199,13 @@ export class BossProjectile extends Entity {
             const crossedTop = this.vy >= 0 && overlapsX && prevBottom <= p.y && currBottom >= p.y;
             if (!aabbHit && !crossedTop) continue;
 
-            if (this.canBounceOnPlatforms && crossedTop && this.bounceCount < this.maxBounces) {
+            if (this.projectileType === 'scarab' && crossedTop) {
+                // Beetle scarabs should keep rolling on top surfaces until they fall off.
+                this.y = p.y - this.height;
+                this.vy = 0;
+                if (Math.abs(this.vx) < 110) this.vx = this.vx >= 0 ? 110 : -110;
+                break;
+            } else if (this.canBounceOnPlatforms && crossedTop && this.bounceCount < this.maxBounces) {
                 // Top-crossing bounce prevents high-speed tunneling through platform tops.
                 this.vy = -Math.abs(this.vy) * 0.65;
                 this.y = p.y - this.height;

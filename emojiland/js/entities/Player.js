@@ -18,6 +18,8 @@ export class Player extends Entity {
         this.catProtectorBob = 0;
         this.bombs = 3;
         this.invulnerableTimer = 0;
+        this.damageGlowTimer = 0;
+        this.damageGlowDuration = 0.35;
         this.knockbackTimer = 0;
         this.stunTimer = 0;
         this.slowTimer = 0;
@@ -101,6 +103,9 @@ export class Player extends Entity {
         // Timers
         if (this.invulnerableTimer > 0) {
             this.invulnerableTimer -= dt;
+        }
+        if (this.damageGlowTimer > 0) {
+            this.damageGlowTimer -= dt;
         }
         this._updateHitbox();
         if (this.knockbackTimer > 0) {
@@ -381,16 +386,10 @@ export class Player extends Entity {
         }
 
         if (!isFlying && !this.grounded && !this.isClimbing && this.isSpinning) {
-            const spinSpeed = this.isJumping ? Math.PI * 4 : Math.PI * 2.4; // slower rotation for cut-short jumps
-            let increment = spinSpeed * dt;
-            let currentDir = this.facingRight ? 1 : -1;
-
+            const spinSpeed = Math.PI * 4;
+            const increment = spinSpeed * dt;
+            const currentDir = this.spinDirection || (this.facingRight ? 1 : -1);
             this.rotation += currentDir * increment;
-
-            let maxRelativeRotation = Math.PI * 2;
-            if (!this.isJumping && Math.abs(this.rotation - this.spinBaseRotation) > maxRelativeRotation) {
-                this.rotation = this.spinBaseRotation + maxRelativeRotation * Math.sign(this.rotation - this.spinBaseRotation);
-            }
         } else {
             this.rotation = 0;
             if (this.grounded || this.isClimbing) {
@@ -568,9 +567,24 @@ export class Player extends Entity {
                         if (game.particles) game.particles.emitHit(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, '#FF4500');
                     }
                 } else if (Physics.checkAABB(hitbox, enemy)) {
+                    const isTurtleEnemy = enemy.type === 'patrol' && enemy.emoji === '🐢';
                     const isTurtleShell = enemy.type === 'patrol' && enemy.emoji === '🐢' && enemy.turtleFlipped;
-                    const isTopStomp = this.vy > 0 && hitbox.y + hitbox.height - (this.vy * dt) <= enemy.y + enemy.height * 0.5;
-                    if (isTurtleShell && !isTopStomp) {
+                    const prevBottom = hitbox.y + hitbox.height - (this.vy * dt);
+                    const playerCenterY = hitbox.y + hitbox.height * 0.5;
+                    const enemyCenterY = enemy.y + enemy.height * 0.5;
+                    const fromAbove = prevBottom <= enemy.y + enemy.height * 0.72 && playerCenterY <= enemyCenterY;
+                    const isTopStomp = this.vy >= -20 && fromAbove;
+                    const prevHitboxX = hitbox.x - (this.vx * dt);
+                    const prevHitboxRight = prevHitboxX + hitbox.width;
+                    const fromLeftSide = this.vx > 0 && prevHitboxRight <= enemy.x + 8;
+                    const fromRightSide = this.vx < 0 && prevHitboxX >= enemy.x + enemy.width - 8;
+                    const playerMidY = playerCenterY;
+                    const sideKickVerticalBandTop = enemy.y + enemy.height * 0.2;
+                    const sideKickVerticalBandBottom = enemy.y + enemy.height * 0.9;
+                    const isSideKickContact = (fromLeftSide || fromRightSide) &&
+                        playerMidY >= sideKickVerticalBandTop &&
+                        playerMidY <= sideKickVerticalBandBottom;
+                    if (isTurtleShell && isSideKickContact) {
                         if (typeof enemy.kickShell === 'function') {
                             const playerCenterX = this.x + this.width / 2;
                             const enemyCenterX = enemy.x + enemy.width / 2;
@@ -597,8 +611,11 @@ export class Player extends Entity {
                         this.spinBaseRotation = this.rotation;
                         if (game.audio) game.audio.playJump();
                     } else {
-                        // Special case: Robot boss grab/rush shouldn't damage the player directly
-                        if (enemy.bossType === 'boss_robot' && (enemy.robotState === 'RUSH' || enemy.robotState === 'GRAB')) {
+                        if (isTurtleEnemy) {
+                            return;
+                        }
+                        // Special case: man lifting weights boss grab/rush shouldn't damage the player directly
+                        if (enemy.bossType === 'boss_manliftingweights' && (enemy.robotState === 'RUSH' || enemy.robotState === 'GRAB')) {
                             return;
                         }
                         this.takeDamage(game);
@@ -799,6 +816,7 @@ export class Player extends Entity {
         }
         this.health -= 1;
         this.invulnerableTimer = 1.0;
+        this.damageGlowTimer = this.damageGlowDuration;
         this.knockbackTimer = 0.2; // brief loss of control for noticeable knockback
 
         this.vy = -300;
@@ -807,7 +825,6 @@ export class Player extends Entity {
         if (game) {
             game.audio.playHurt();
             game.particles.emitExplosion(this.x + this.width / 2, this.y + this.height / 2, 'red');
-            game.hitStopTimer = 0.2;
         }
     }
 
@@ -818,10 +835,21 @@ export class Player extends Entity {
 
         ctx.save();
 
+        if (!game?.gameOverTriggered && this.damageGlowTimer > 0) {
+            const t = Math.max(0, this.damageGlowTimer / this.damageGlowDuration);
+            const pulse = 0.75 + Math.sin(this.pulseTimer * 28) * 0.25;
+            const strength = (0.9 + pulse * 0.45) * t;
+            ctx.shadowBlur = 95 * strength;
+            ctx.shadowColor = `rgba(255, 10, 10, ${Math.min(1, 1.2 * strength)})`;
+        }
+
         if (this.health === 1 && (!game || !game.gameOverTriggered)) {
             const pulse = (Math.sin(this.pulseTimer * 12) + 1) / 2;
-            ctx.shadowBlur = 25 * pulse;
-            ctx.shadowColor = `rgba(255, 0, 0, ${pulse})`;
+            const lowHealthBlur = 25 * pulse;
+            if (ctx.shadowBlur < lowHealthBlur) {
+                ctx.shadowBlur = lowHealthBlur;
+                ctx.shadowColor = `rgba(255, 0, 0, ${pulse})`;
+            }
         }
 
         ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
