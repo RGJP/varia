@@ -1184,9 +1184,7 @@ export class Boss extends Entity {
         this.platform = platform;
         this.facingRight = true;
 
-        this.maxHealth = this.bossType === 'boss_spider'
-            ? 12 + Math.floor(Math.random() * 7)
-            : 16 + Math.floor(Math.random() * 15);
+        this.maxHealth = 25 + Math.floor(Math.random() * 11);
         this.health = this.maxHealth;
         this.damageFlashTimer = 0;
         this.attackCooldown = 1.8;
