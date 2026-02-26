@@ -772,10 +772,10 @@ export class Game {
             this.ctx.font = '20px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
             let ry = cardY + 80;
-            this.ctx.fillText('Collect All Coins and Power-ups', 40, ry); ry += yStep;
-            this.ctx.fillText('Defeat All Enemies', 40, ry); ry += yStep;
-            this.ctx.fillText('Reach the end with the best score', 40, ry); ry += yStep;
-            this.ctx.fillText('Levels are always unique', 40, ry);
+            this.ctx.fillText('🪙 Collect All Coins and Collectibles', 40, ry); ry += yStep;
+            this.ctx.fillText('⚔️ Defeat All Enemies', 40, ry); ry += yStep;
+            this.ctx.fillText('🏁 Reach the end with the best score', 40, ry); ry += yStep;
+            this.ctx.fillText('🎲 Levels are always unique', 40, ry);
 
             // Pulsing 'Start' Text
             const alpha = 0.6 + 0.4 * Math.sin(time * 3);
