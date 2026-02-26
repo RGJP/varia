@@ -33,12 +33,23 @@ export class Particle {
 export class ParticleSystem {
     constructor() {
         this.particles = [];
-        this.maxParticles = 850;
+        this.baseMaxParticles = 850;
+        this.maxParticles = this.baseMaxParticles;
+        this.quality = 1;
         this.pool = [];
-        for (let i = 0; i < this.maxParticles; i++) {
+        for (let i = 0; i < this.baseMaxParticles; i++) {
             this.pool.push(new Particle());
         }
         this._byColor = new Map();
+    }
+
+    setQuality(quality) {
+        this.quality = Math.max(0.62, Math.min(1, quality));
+        this.maxParticles = Math.max(320, Math.floor(this.baseMaxParticles * this.quality));
+    }
+
+    _scaledCount(baseCount, minCount = 1) {
+        return Math.max(minCount, Math.floor(baseCount * this.quality));
     }
 
     _getParticle() {
@@ -50,7 +61,7 @@ export class ParticleSystem {
 
     emit(x, y, count, color, speedRange, lifeRange, sizeRange) {
         if (count <= 0) return;
-        const reducedCount = Math.max(1, Math.floor(count / 4));
+        const reducedCount = this._scaledCount(count / 4);
         for (let i = 0; i < reducedCount; i++) {
             if (this.particles.length >= this.maxParticles) break;
             const p = this._getParticle();
@@ -82,7 +93,7 @@ export class ParticleSystem {
             'rgba(0, 128, 0, 0.3)',
             'rgba(107, 142, 35, 0.25)',
         ];
-        const count = 5; // Slightly reduced for better performance
+        const count = this._scaledCount(5);
         for (let i = 0; i < count; i++) {
             if (this.particles.length >= this.maxParticles) break;
             const p = this._getParticle();
@@ -114,7 +125,7 @@ export class ParticleSystem {
             'rgba(160,160,160,0.7)',
             'rgba(200,195,185,0.75)',
         ];
-        const count = 18;
+        const count = this._scaledCount(18);
         for (let i = 0; i < count; i++) {
             if (this.particles.length >= this.maxParticles) break;
             const p = this._getParticle();
@@ -136,10 +147,10 @@ export class ParticleSystem {
 
     emitFireworks(x, y, intensity = 1) {
         const colors = ['#FFD700', '#FF4D6D', '#00C2FF', '#7CFC00', '#FF8C00', '#b388ff', '#ffffff'];
-        const bursts = Math.max(3, Math.round(4 * intensity));
+        const bursts = this._scaledCount(Math.max(3, Math.round(4 * intensity)), 1);
         for (let b = 0; b < bursts; b++) {
             const burstColor = colors[Math.floor(Math.random() * colors.length)];
-            const count = Math.max(18, Math.round(24 * intensity));
+            const count = this._scaledCount(Math.max(18, Math.round(24 * intensity)), 6);
             for (let i = 0; i < count; i++) {
                 if (this.particles.length >= this.maxParticles) return;
                 const p = this._getParticle();
@@ -158,10 +169,10 @@ export class ParticleSystem {
 
     emitFireworksLite(x, y, intensity = 1) {
         const colors = ['#FFD700', '#FF4D6D', '#00C2FF', '#ffffff'];
-        const bursts = Math.max(1, Math.round(2 * intensity));
+        const bursts = this._scaledCount(Math.max(1, Math.round(2 * intensity)), 1);
         for (let b = 0; b < bursts; b++) {
             const burstColor = colors[Math.floor(Math.random() * colors.length)];
-            const count = Math.max(8, Math.round(10 * intensity));
+            const count = this._scaledCount(Math.max(8, Math.round(10 * intensity)), 4);
             for (let i = 0; i < count; i++) {
                 if (this.particles.length >= this.maxParticles) return;
                 const p = this._getParticle();
@@ -264,9 +275,15 @@ export class ParticleSystem {
                 if (ratio <= 0) continue;
                 // If fadeInverse is true, it's faint at start and opaque at end of life
                 ctx.globalAlpha = p.fadeInverse ? (1 - ratio) : ratio;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size * (p.fadeInverse ? 1 : ratio), 0, Math.PI * 2);
-                ctx.fill();
+                const drawRadius = p.size * (p.fadeInverse ? 1 : ratio);
+                if (drawRadius <= 2.2) {
+                    const d = drawRadius * 2;
+                    ctx.fillRect(p.x - drawRadius, p.y - drawRadius, d, d);
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, drawRadius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
         }
         ctx.globalAlpha = savedAlpha;

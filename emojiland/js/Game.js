@@ -81,6 +81,9 @@ export class Game {
         this.enemiesDefeated = 0;
         this.lastVictoryEmojiBonus = 0;
         this.fpsDisplay = 60;
+        this.performanceQuality = 1;
+        this._performanceAdjustTimer = 0;
+        this.targetFrameRate = 90;
 
         this.gameOverTriggered = false;
         this.gameOverTimer = 0;
@@ -239,6 +242,20 @@ export class Game {
         if (hadPreviousFrame && dt > 0) {
             const instantFps = 1 / dt;
             this.fpsDisplay = this.fpsDisplay * 0.9 + instantFps * 0.1;
+            this._performanceAdjustTimer += dt;
+            if (this._performanceAdjustTimer >= 0.25) {
+                const lowThreshold = this.targetFrameRate * 0.94;
+                const recoverThreshold = this.targetFrameRate * 0.985;
+                if (this.fpsDisplay < lowThreshold) {
+                    this.performanceQuality = Math.max(0.62, this.performanceQuality - 0.06);
+                } else if (this.fpsDisplay > recoverThreshold) {
+                    this.performanceQuality = Math.min(1, this.performanceQuality + 0.03);
+                }
+                if (this.particles && typeof this.particles.setQuality === 'function') {
+                    this.particles.setQuality(this.performanceQuality);
+                }
+                this._performanceAdjustTimer = 0;
+            }
         }
 
         this.update(dt);
@@ -349,8 +366,19 @@ export class Game {
             }
 
             const enemies = this.enemies;
+            const updateMargin = 1000;
+            const updateLeft = this.camera.x - updateMargin;
+            const updateRight = this.camera.x + this.camera.effectiveWidth + updateMargin;
+            const updateTop = this.camera.y - updateMargin;
+            const updateBottom = this.camera.y + this.camera.effectiveHeight + updateMargin;
             for (let i = 0; i < enemies.length; i++) {
-                if (this._isVisible(enemies[i], 1000)) {
+                const enemy = enemies[i];
+                if (
+                    enemy.x + enemy.width > updateLeft &&
+                    enemy.x < updateRight &&
+                    enemy.y + enemy.height > updateTop &&
+                    enemy.y < updateBottom
+                ) {
                     enemies[i].update(dt, this);
                 }
             }
@@ -372,7 +400,13 @@ export class Game {
 
             const collectibles = this.collectibles;
             for (let i = 0; i < collectibles.length; i++) {
-                if (this._isVisible(collectibles[i], 1000)) {
+                const collectible = collectibles[i];
+                if (
+                    collectible.x + collectible.width > updateLeft &&
+                    collectible.x < updateRight &&
+                    collectible.y + collectible.height > updateTop &&
+                    collectible.y < updateBottom
+                ) {
                     collectibles[i].update(dt);
                 }
             }
@@ -518,13 +552,34 @@ export class Game {
             }
 
             const collectibles = this.collectibles;
+            const drawMargin = 200;
+            const drawLeft = this.camera.x - drawMargin;
+            const drawRight = this.camera.x + this.camera.effectiveWidth + drawMargin;
+            const drawTop = this.camera.y - drawMargin;
+            const drawBottom = this.camera.y + this.camera.effectiveHeight + drawMargin;
             for (let i = 0; i < collectibles.length; i++) {
-                if (this._isVisible(collectibles[i])) collectibles[i].draw(this.ctx);
+                const collectible = collectibles[i];
+                if (
+                    collectible.x + collectible.width > drawLeft &&
+                    collectible.x < drawRight &&
+                    collectible.y + collectible.height > drawTop &&
+                    collectible.y < drawBottom
+                ) {
+                    collectible.draw(this.ctx);
+                }
             }
 
             const enemies = this.enemies;
             for (let i = 0; i < enemies.length; i++) {
-                if (this._isVisible(enemies[i])) enemies[i].draw(this.ctx);
+                const enemy = enemies[i];
+                if (
+                    enemy.x + enemy.width > drawLeft &&
+                    enemy.x < drawRight &&
+                    enemy.y + enemy.height > drawTop &&
+                    enemy.y < drawBottom
+                ) {
+                    enemy.draw(this.ctx);
+                }
             }
 
             const rocks = this.rocks;
@@ -592,7 +647,9 @@ export class Game {
         }
 
         this.drawUI();
-        this.drawFpsCounter();
+        if (this.state !== GameState.START_MENU) {
+            this.drawFpsCounter();
+        }
     }
 
     drawFpsCounter() {
@@ -818,7 +875,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('All copyright free music from Pixabay - v1.05', 0, cardY + cardHeight + 100);
+            this.ctx.fillText('All copyright free music from Pixabay - v1.06', 0, cardY + cardHeight + 100);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
