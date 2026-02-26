@@ -980,7 +980,10 @@ export class Player extends Entity {
             ctx.rotate(this.rotation);
         }
 
-        const shouldMirrorForFacing = (!game || !game.gameOverTriggered) && (this._emojiFacesLeft ? this.facingRight : !this.facingRight);
+        const isMobileViewport = typeof window !== 'undefined' &&
+            (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 800);
+        const emojiFacesLeft = this._emojiFacesLeft || (isMobileViewport && this.emoji === '🐧');
+        const shouldMirrorForFacing = (!game || !game.gameOverTriggered) && (emojiFacesLeft ? this.facingRight : !this.facingRight);
         if (shouldMirrorForFacing) {
             ctx.scale(-1, 1);
         }
@@ -1373,8 +1376,6 @@ export class Player extends Entity {
         if (!game?.gameOverTriggered && this.frostPowerUpTimer <= 0 && this.isChargingAttack && this.attackChargeTimer > this.chargeIndicatorDelay) {
             const chargeRatio = Math.max(0, Math.min(1, this.attackChargeTimer / this.maxAttackChargeTime));
             const dir = this.facingRight ? 1 : -1;
-            const handX = this.x + this.width / 2 + dir * (this.width * 0.42 + 12 + chargeRatio * 8);
-            const handY = this.y + this.height * 0.58;
             const scale = 1 + chargeRatio * 2; // matches throw sizeMultiplier: 1 -> 3
 
             ctx.save();
@@ -1382,6 +1383,11 @@ export class Player extends Entity {
                 this._chargeRockEmoji = getEmojiCanvas('\u{1FAA8}', 24);
             }
             const preview = this._chargeRockEmoji;
+            // Anchor to gameplay rock size (not emoji canvas size, which includes padding).
+            const rockRadius = 10 * scale; // projectile radius for sizeMultiplier 1..3
+            const handForward = this.width / 2 + rockRadius * 0.72 + 10;
+            const handX = this.x + this.width / 2 + dir * handForward;
+            const handY = this.y + this.height * 0.56;
 
             // Small rock that grows to the exact full-charge projectile size.
             ctx.translate(handX, handY);

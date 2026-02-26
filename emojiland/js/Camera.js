@@ -47,8 +47,8 @@ export class Camera {
     }
 
     resize(viewportWidth, viewportHeight) {
-        this.viewportWidth = viewportWidth;
-        this.viewportHeight = viewportHeight;
+        this.viewportWidth = Math.max(1, Math.floor(viewportWidth || 1));
+        this.viewportHeight = Math.max(1, Math.floor(viewportHeight || 1));
 
         // Dynamic zoom adjustment on resize (only if user hasn't chosen a custom zoom)
         if (!this.mobileZoomOverride) {

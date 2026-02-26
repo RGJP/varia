@@ -291,6 +291,53 @@ export class AudioEngine {
         }
     }
 
+    playBackgroundMusicTrack(songNumber) {
+        const normalizedSong = Number.isInteger(songNumber)
+            ? ((songNumber % this.totalSongs) + this.totalSongs) % this.totalSongs
+            : 0;
+
+        const startMusic = () => {
+            this._ensureContext();
+            if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => { });
+
+            this.lastSongNumber = normalizedSong;
+            this._saveSettings();
+            console.log(`Playing music track: ${normalizedSong}`);
+
+            if (!this.currentMusicAudio) {
+                this.currentMusicAudio = new Audio();
+            }
+
+            this.currentMusicAudio.src = `js/music/${String(normalizedSong).padStart(2, '0')}.mp3`;
+            this.currentMusicAudio.loop = false;
+            this.currentMusicAudio.volume = 0;
+            this.currentMusicAudio.muted = this.isMusicMuted;
+            this.currentMusicAudio.onended = () => {
+                console.log("Music track ended, playing next...");
+                this.playBackgroundMusic(true);
+            };
+
+            const playPromise = this.currentMusicAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    this.fadeMusic(0, 0.22, 300);
+                }).catch(e => console.error("Audio playback failed:", e));
+            }
+        };
+
+        if (this.currentMusicAudio) {
+            this.fadeMusic(this.currentMusicAudio.volume, 0, 300, () => {
+                if (this.currentMusicAudio) {
+                    this.currentMusicAudio.pause();
+                    this.currentMusicAudio.onended = null;
+                }
+                startMusic();
+            });
+        } else {
+            startMusic();
+        }
+    }
+
     fadeOutMusic(duration = 1000) {
         if (!this.currentMusicAudio) return;
         this.fadeMusic(this.currentMusicAudio.volume, 0, duration, () => {

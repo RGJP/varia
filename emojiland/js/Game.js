@@ -76,7 +76,9 @@ export class Game {
         this.totalCoins = 0;
         this.coinsCollected = 0;
         this.totalEnemies = 0;
+        this.totalCompletionEnemies = 0;
         this.enemiesDefeated = 0;
+        this.totalCompletionCoins = 0;
         this.lastVictoryEmojiBonus = 0;
         this.fpsDisplay = 60;
         this.performanceQuality = 1;
@@ -85,6 +87,7 @@ export class Game {
 
         this.gameOverTriggered = false;
         this.gameOverTimer = 0;
+        this._autoPausedByVisibility = false;
 
         // Pre-cache UI emojis
         this._heartCache = getEmojiCanvas('\u2764\uFE0F', 24);
@@ -178,8 +181,28 @@ export class Game {
         window.addEventListener('blur', () => {
             if (this.state === GameState.PLAYING) {
                 this.state = GameState.PAUSED;
+                this._autoPausedByVisibility = true;
                 if (this.audio && this.audio.pauseBackgroundMusic) {
                     this.audio.pauseBackgroundMusic();
+                }
+            }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (this.state === GameState.PLAYING) {
+                    this.state = GameState.PAUSED;
+                    this._autoPausedByVisibility = true;
+                    if (this.audio && this.audio.pauseBackgroundMusic) {
+                        this.audio.pauseBackgroundMusic();
+                    }
+                }
+            } else if (this._autoPausedByVisibility && this.state === GameState.PAUSED) {
+                this.state = GameState.PLAYING;
+                this._autoPausedByVisibility = false;
+                this.lastTime = 0;
+                if (this.audio && this.audio.resumeBackgroundMusic) {
+                    this.audio.resumeBackgroundMusic();
                 }
             }
         });
@@ -202,7 +225,13 @@ export class Game {
         this.totalCoins = this.collectibles.length;
         this.coinsCollected = 0;
         this.totalEnemies = this.enemies.length + this.pendingBossSpawns.length;
+        this.totalCompletionEnemies = this.totalEnemies;
         this.enemiesDefeated = 0;
+        this.totalCompletionCoins = 0;
+        for (let i = 0; i < this.collectibles.length; i++) {
+            const collectible = this.collectibles[i];
+            if (collectible && collectible.type === 'coin') this.totalCompletionCoins++;
+        }
 
         this.gameOverTriggered = false;
         this.gameOverTimer = 0;
@@ -228,8 +257,10 @@ export class Game {
     }
 
     resize(width, height) {
-        if (this.camera) this.camera.resize(width, height);
-        if (this.background) this.background.resize(width, height);
+        const safeWidth = Math.max(1, Math.floor(width || 1));
+        const safeHeight = Math.max(1, Math.floor(height || 1));
+        if (this.camera) this.camera.resize(safeWidth, safeHeight);
+        if (this.background) this.background.resize(safeWidth, safeHeight);
     }
 
     loop(time) {
@@ -458,6 +489,7 @@ export class Game {
         if (!this.player || this.pendingBossSpawns.length === 0) return;
         const SPAWN_DISTANCE_X = 450;
         let writeIdx = 0;
+        let spawnedBoss = false;
         for (let i = 0; i < this.pendingBossSpawns.length; i++) {
             const spawn = this.pendingBossSpawns[i];
             const shouldSpawn = Math.abs(this.player.x - spawn.x) <= SPAWN_DISTANCE_X;
@@ -465,11 +497,17 @@ export class Game {
                 this.player.clearActivePowerUps();
                 this.player.bombs = 0;
                 this.enemies.push(new Boss(spawn.x, spawn.y, spawn.platform, spawn.bossType));
+                spawnedBoss = true;
             } else {
                 this.pendingBossSpawns[writeIdx++] = spawn;
             }
         }
         this.pendingBossSpawns.length = writeIdx;
+        if (spawnedBoss && this.audio && this.audio.playBackgroundMusicTrack) {
+            const bossTracks = [6, 16, 28];
+            const chosenTrack = bossTracks[Math.floor(Math.random() * bossTracks.length)];
+            this.audio.playBackgroundMusicTrack(chosenTrack);
+        }
     }
 
     _spawnBossPityHeart(boss) {
@@ -651,7 +689,7 @@ export class Game {
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'bottom';
         this.ctx.font = '12px "Outfit", sans-serif';
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.22)';
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
         this.ctx.fillText(`${Math.round(this.fpsDisplay)}`, this.canvas.width / 2, this.canvas.height - 8);
         this.ctx.restore();
     }
@@ -714,12 +752,33 @@ export class Game {
             this.ctx.textAlign = 'center';
             const letterStartX = startX + 4;
             const letterSpacing = 16;
+            const emojiTrackerWidth = (letters.length - 1) * letterSpacing + 12;
             for (let i = 0; i < letters.length; i++) {
                 const letter = letters[i];
                 const isCollected = !!collected[letter];
                 this.ctx.fillStyle = isCollected ? '#ffd54f' : 'rgba(255, 255, 255, 0.28)';
                 this.ctx.fillText(letter, letterStartX + i * letterSpacing, currentY + 2);
             }
+            currentY += 20;
+
+            const completion = this.getLevelCompletionPercent();
+            this.ctx.textAlign = 'left';
+            this.ctx.font = 'bold 16px "Outfit", sans-serif';
+            const completionText = `${completion}%`;
+            const textWidth = this.ctx.measureText(completionText).width;
+            const gap = 6;
+            const completionTextX = startX + emojiTrackerWidth - textWidth;
+            const barX = startX;
+            const barW = Math.max(10, completionTextX - barX - gap);
+            const barH = 6;
+            const barY = currentY + 2 - barH / 2;
+            const fillW = Math.round(barW * (completion / 100));
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+            this.ctx.fillRect(barX, barY, barW, barH);
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+            this.ctx.fillRect(barX, barY, fillW, barH);
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+            this.ctx.fillText(completionText, completionTextX, currentY + 2);
 
 
             this.ctx.restore();
@@ -869,7 +928,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('Music from Pixabay - version 1.10', 0, cardY + cardHeight + 100);
+            this.ctx.fillText('Music from Pixabay - version 1.11', 0, cardY + cardHeight + 100);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
@@ -887,8 +946,8 @@ export class Game {
             this.ctx.textBaseline = 'middle';
 
             // Victory Card
-            const cardWidth = 600;
-            const cardHeight = 320;
+            const cardWidth = 620;
+            const cardHeight = 340;
             const cardX = -cardWidth / 2;
             const cardY = -cardHeight / 2;
 
@@ -898,7 +957,7 @@ export class Game {
             this.ctx.shadowBlur = 20;
             this.ctx.beginPath();
             if (this.ctx.roundRect) {
-                this.ctx.roundRect(cardX, cardY, cardWidth, cardHeight, 20);
+                this.ctx.roundRect(cardX, cardY, cardWidth, cardHeight, 24);
             } else {
                 this.ctx.rect(cardX, cardY, cardWidth, cardHeight);
             }
@@ -906,14 +965,15 @@ export class Game {
 
             // Card Border
             this.ctx.strokeStyle = 'rgba(255, 235, 59, 0.3)';
-            this.ctx.lineWidth = 3;
+            this.ctx.lineWidth = 2.5;
             this.ctx.stroke();
 
             this.ctx.shadowBlur = 0;
+            const topY = -cardHeight / 2;
 
             // Level Complete Title
-            this.ctx.font = 'bold 64px "Outfit", sans-serif';
-            const gradient = this.ctx.createLinearGradient(0, -cardHeight / 2 + 40, 0, -cardHeight / 2 + 110);
+            this.ctx.font = 'bold 58px "Outfit", sans-serif';
+            const gradient = this.ctx.createLinearGradient(0, topY + 24, 0, topY + 100);
             gradient.addColorStop(0, '#ffffff');
             gradient.addColorStop(0.5, '#ffeb3b');
             gradient.addColorStop(1, '#fbc02d');
@@ -921,29 +981,35 @@ export class Game {
             this.ctx.fillStyle = gradient;
             this.ctx.shadowColor = 'rgba(255, 235, 59, 0.4)';
             this.ctx.shadowBlur = 15;
-            this.ctx.fillText('Level Complete!', 0, -cardHeight / 2 + 80);
+            this.ctx.fillText('Level Complete!', 0, topY + 68);
 
             // Score Section
             const totalScore = this.player ? this.player.score : 0;
+            const completionPercent = this.getLevelCompletionPercent();
             this.ctx.shadowBlur = 0;
-            this.ctx.font = 'bold 24px "Outfit", sans-serif';
+            this.ctx.font = 'bold 22px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffd54f';
-            this.ctx.fillText('TOTAL SCORE', 0, -cardHeight / 2 + 160);
+            this.ctx.fillText('TOTAL SCORE', 0, topY + 132);
 
-            this.ctx.font = 'bold 56px "Outfit", sans-serif';
+            this.ctx.font = 'bold 44px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText(`${totalScore}`, 0, -cardHeight / 2 + 210);
+            this.ctx.fillText(`${totalScore}`, 0, topY + 184);
 
-            this.ctx.font = '32px "Outfit", sans-serif';
-            this.ctx.fillText('\u2B50', -120, -cardHeight / 2 + 210);
-            this.ctx.fillText('\u2B50', 120, -cardHeight / 2 + 210);
+            this.ctx.font = '30px "Outfit", sans-serif';
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
+            this.ctx.fillText('\u2B50', -150, topY + 184);
+            this.ctx.fillText('\u2B50', 150, topY + 184);
+
+            this.ctx.font = 'bold 24px "Outfit", sans-serif';
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            this.ctx.fillText(`${completionPercent}%`, 0, topY + 226);
 
             // Separation Line
             this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
             this.ctx.lineWidth = 1;
             this.ctx.beginPath();
-            this.ctx.moveTo(-cardWidth / 2 + 100, -cardHeight / 2 + 250);
-            this.ctx.lineTo(cardWidth / 2 - 100, -cardHeight / 2 + 250);
+            this.ctx.moveTo(-cardWidth / 2 + 96, topY + 255);
+            this.ctx.lineTo(cardWidth / 2 - 96, topY + 255);
             this.ctx.stroke();
 
             // Next Level Instruction
@@ -952,7 +1018,7 @@ export class Game {
             this.ctx.font = 'bold 24px "Outfit", sans-serif';
             this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
             const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            this.ctx.fillText(isMobile ? 'Touch to Play Next Level' : 'Press ENTER to Play Next Level', 0, -cardHeight / 2 + 285);
+            this.ctx.fillText(isMobile ? 'Touch to Play Next Level' : 'Press ENTER to Play Next Level', 0, topY + 302);
         } else if (this.state === GameState.PAUSED) {
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
@@ -1011,6 +1077,29 @@ export class Game {
         ctx.strokeRect(barX, barY + 18, barW, barH);
 
         ctx.restore();
+    }
+
+    getLevelCompletionPercent() {
+        const letterKeys = ['E', 'M', 'O', 'J', 'I'];
+        const collected = (this.player && this.player.collectedLetters) ? this.player.collectedLetters : {};
+        let lettersCollected = 0;
+        for (let i = 0; i < letterKeys.length; i++) {
+            if (collected[letterKeys[i]]) lettersCollected++;
+        }
+
+        const completionEnemyTotal = Math.max(0, this.totalCompletionEnemies);
+        const totalObjectives = Math.max(0, this.totalCompletionCoins) + completionEnemyTotal + letterKeys.length;
+        if (totalObjectives <= 0) return 100;
+
+        const completedCoins = Math.min(Math.max(0, this.coinsCollected), Math.max(0, this.totalCompletionCoins));
+        const completedEnemies = Math.min(Math.max(0, this.enemiesDefeated), completionEnemyTotal);
+        const completedLetters = Math.min(Math.max(0, lettersCollected), letterKeys.length);
+        const completedObjectives = completedCoins + completedEnemies + completedLetters;
+
+        if (completedObjectives >= totalObjectives) return 100;
+        const percent = Math.floor((completedObjectives * 100) / totalObjectives);
+        if (percent > 95 && this.pendingBossSpawns.length === 0 && !this.hasAliveBoss()) return 100;
+        return percent;
     }
 }
 

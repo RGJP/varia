@@ -142,8 +142,8 @@ export class Background {
     }
 
     resize(width, height) {
-        this.width = width;
-        this.height = height;
+        this.width = Math.max(1, Math.floor(width || 1));
+        this.height = Math.max(1, Math.floor(height || 1));
         this._skyCache = null;
         this.initLayers();
     }
