@@ -157,7 +157,19 @@ export class Game {
             return false;
         };
 
+        const isOrientationWarningVisible = () => {
+            const warning = document.getElementById('orientation-warning');
+            if (!warning) return false;
+            const styles = window.getComputedStyle(warning);
+            return styles.display !== 'none' && styles.visibility !== 'hidden' && styles.opacity !== '0';
+        };
+
         const handleInteraction = (e) => {
+            if (isOrientationWarningVisible()) {
+                if (e && e.cancelable) e.preventDefault();
+                return;
+            }
+
             const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0));
             const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0));
 
@@ -928,7 +940,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('Music from Pixabay - version 1.11', 0, cardY + cardHeight + 100);
+            this.ctx.fillText('Music from Pixabay - version 1.12', 0, cardY + cardHeight + 100);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
