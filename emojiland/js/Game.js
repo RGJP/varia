@@ -755,9 +755,9 @@ export class Game {
             const yStep = 30;
             this.ctx.fillText('Arrows/Joystick : Move Character', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('A : Jump (🦘)', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('D / HOLD: Rock Attack (🪨)', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('D / HOLD: Rock Attack (🪨⬆️)', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('S : Drop Bomb (💣)', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('P : Pause/Unpause', cardX + 40, ly);
+            this.ctx.fillText('P : Pause/Unpause (⏸️)', cardX + 40, ly);
 
             // Vertical Divider
             this.ctx.beginPath();
@@ -792,7 +792,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('All copyright free music from Pixabay - v1.1', 0, cardY + cardHeight + 100);
+            this.ctx.fillText('All copyright free music from Pixabay - v1.2', 0, cardY + cardHeight + 100);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
