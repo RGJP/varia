@@ -43,6 +43,14 @@ export class Player extends Entity {
         this.wasTouchingWall = false;
 
         this.score = 0;
+        this.collectedLetters = { E: false, M: false, O: false, J: false, I: false };
+        this.letterCelebrationTimer = 0;
+        this.letterCelebrationDuration = 3.6;
+        this.letterCelebrationSpawnTimer = 0;
+        this.letterCelebrationSpawnInterval = 0.085;
+        this.letterCelebrationVisibleCount = 0;
+        this.letterCelebrationMax = 5;
+        this.letterCelebrationSparkTimer = 0;
         this.rotation = 0;
         this.isSpinning = false;
         this.spinDirection = 1;
@@ -181,6 +189,45 @@ export class Player extends Entity {
 
         this.pulseTimer += dt;
         this.catProtectorBob += dt;
+        if (this.letterCelebrationTimer > 0) {
+            const prevCount = this.letterCelebrationVisibleCount;
+            this.letterCelebrationTimer -= dt;
+            this.letterCelebrationSpawnTimer -= dt;
+            while (
+                this.letterCelebrationVisibleCount < this.letterCelebrationMax &&
+                this.letterCelebrationSpawnTimer <= 0
+            ) {
+                this.letterCelebrationVisibleCount++;
+                this.letterCelebrationSpawnTimer += this.letterCelebrationSpawnInterval;
+            }
+            if (game && game.particles && this.letterCelebrationVisibleCount > prevCount) {
+                const centerX = this.x + this.width / 2;
+                for (let i = prevCount; i < this.letterCelebrationVisibleCount; i++) {
+                    const handX = centerX + (i - (this.letterCelebrationMax - 1) / 2) * 28;
+                    const handY = this.y - 72 - Math.sin(this.pulseTimer * 9 + i * 0.8) * 8;
+                    game.particles.emitFireworks(handX, handY);
+                    game.particles.emit(handX, handY, 28, '#ffe26a', [80, 260], [0.25, 0.8], [2, 6]);
+                }
+            }
+            this.letterCelebrationSparkTimer -= dt;
+            if (game && game.particles && this.letterCelebrationSparkTimer <= 0) {
+                this.letterCelebrationSparkTimer = 0.1;
+                game.particles.emit(
+                    this.x + this.width / 2 + (Math.random() - 0.5) * 110,
+                    this.y - 80 + (Math.random() - 0.5) * 30,
+                    14,
+                    '#fff4a3',
+                    [40, 170],
+                    [0.18, 0.55],
+                    [1.5, 4]
+                );
+            }
+            if (this.letterCelebrationTimer <= 0) {
+                this.letterCelebrationTimer = 0;
+                this.letterCelebrationVisibleCount = 0;
+                this.letterCelebrationSparkTimer = 0;
+            }
+        }
 
         // Input
         // Drop Bomb
@@ -543,10 +590,15 @@ export class Player extends Entity {
                         if (game.particles) game.particles.emitHit(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, '#FF4500');
                     }
                 } else if (Physics.checkAABB(hitbox, enemy)) {
-                    const stompableEmojis = ['🐢', '🐸', '🐦', '🦅', '🦉', '🐦‍⬛', '🧟‍♂️', '🦑', '🦗', '🐿️', '🕷️'];
+                    const isTurtleShell = enemy.type === 'patrol' && enemy.emoji === '🐢' && enemy.turtleFlipped;
+                    if (isTurtleShell) {
+                        return;
+                    }
+                    const stompableEmojis = ['🐢', '🐸', '🐦', '🦅', '🦉', '🐦‍⬛', '🧟‍♂️', '🦑', '🦗', '🐿️', '🕷️', '🪼'];
                     const canStompEnemy = enemy.bossType !== 'boss_spider' && stompableEmojis.includes(enemy.emoji);
                     if (canStompEnemy && this.vy > 0 && hitbox.y + hitbox.height - (this.vy * dt) <= enemy.y + enemy.height * 0.5) {
-                        enemy.takeDamage(enemy.health, game);
+                        if (typeof enemy.stomp === 'function') enemy.stomp(game);
+                        else enemy.takeDamage(enemy.health, game);
                         this.vy = this.jumpForce;
                         this.grounded = false;
                         this.isJumping = true;
@@ -606,6 +658,21 @@ export class Player extends Entity {
                     this.vy = 0;
                     if (game.audio) game.audio.playCollect();
                     game.particles.emit(centerX, centerY, 24, '#9ad9ff', [70, 220], [0.2, 0.6], [2, 5]);
+                } else if (collectible.type === 'letter') {
+                    const letter = collectible.letter;
+                    const wasIFound = this.collectedLetters.I;
+                    if (letter && Object.prototype.hasOwnProperty.call(this.collectedLetters, letter)) {
+                        this.collectedLetters[letter] = true;
+                    }
+                    if (letter === 'I' && !wasIFound) {
+                        const hasAllLetters = Object.values(this.collectedLetters).every(Boolean);
+                        if (hasAllLetters) {
+                            this._startLetterCelebration(game);
+                        }
+                    }
+                    this.score += 75;
+                    if (game.audio) game.audio.playCollect();
+                    game.particles.emit(centerX, centerY, 16, '#ffd54f', [80, 180], [0.2, 0.45], [2, 5]);
                 } else {
                     this.score += 10;
                     game.coinsCollected++;
@@ -711,6 +778,16 @@ export class Player extends Entity {
         this.attackChargeTimer = 0;
     }
 
+    _startLetterCelebration(game) {
+        this.letterCelebrationTimer = this.letterCelebrationDuration;
+        this.letterCelebrationVisibleCount = 0;
+        this.letterCelebrationSpawnTimer = 0.02;
+        this.letterCelebrationSparkTimer = 0.02;
+        if (game && game.audio && typeof game.audio.playLetterVictoryChime === 'function') {
+            game.audio.playLetterVictoryChime();
+        }
+    }
+
     takeDamage(game) {
         if (this.flightTimer > 0) return;
         if (this.firePowerUpTimer > 0) return;
@@ -785,8 +862,8 @@ export class Player extends Entity {
                 const backY = -dirY;
                 const perpX = -backY;
                 const perpY = backX;
-                const trailCount = 16;
-                const spreadStep = 4.6;
+                const trailCount = 10;
+                const spreadStep = 4.2;
                 const emitterX = backX * this.width * 0.16;
                 const emitterY = backY * this.height * 0.16;
 
@@ -815,9 +892,12 @@ export class Player extends Entity {
                     const stemEndY = emitterY + backY * (10 + speedRatio * 5) + perpY * (sideOffset * 0.55);
                     const baseX = emitterX + backX * (17 + speedRatio * 8) + perpX * sideOffset;
                     const baseY = emitterY + backY * (17 + speedRatio * 8) + perpY * sideOffset;
-                    const length = 56 + speedRatio * 56 + ((Math.sin(phase * 1.1 + i * 1.6) + 1) * 0.5) * 18;
+                    const length = 54 + speedRatio * 52 + ((Math.sin(phase * 1.1 + i * 1.6) + 1) * 0.5) * 16;
                     const tailX = baseX + backX * length;
                     const tailY = baseY + backY * length;
+                    const wave = Math.sin(phase * 1.45 + i * 1.75) * (4.5 + speedRatio * 3.2);
+                    const midX = baseX + backX * (length * 0.5) + perpX * wave;
+                    const midY = baseY + backY * (length * 0.5) + perpY * wave;
 
                     // Short connector so each trail visibly comes from the player.
                     ctx.strokeStyle = 'rgba(210, 238, 255, 0.65)';
@@ -833,7 +913,7 @@ export class Player extends Entity {
                     ctx.globalAlpha = Math.max(0.12, 0.5 + speedRatio * 0.3 - i * 0.025);
                     ctx.beginPath();
                     ctx.moveTo(baseX, baseY);
-                    ctx.lineTo(tailX, tailY);
+                    ctx.quadraticCurveTo(midX, midY, tailX, tailY);
                     ctx.stroke();
 
                     ctx.strokeStyle = 'rgba(235, 247, 255, 0.8)';
@@ -841,7 +921,12 @@ export class Player extends Entity {
                     ctx.globalAlpha = Math.max(0.1, 0.34 + speedRatio * 0.2 - i * 0.018);
                     ctx.beginPath();
                     ctx.moveTo(baseX - perpX * 1.5, baseY - perpY * 1.5);
-                    ctx.lineTo(baseX + backX * (length * 0.78), baseY + backY * (length * 0.78));
+                    ctx.quadraticCurveTo(
+                        baseX + backX * (length * 0.4) + perpX * (wave * 0.7),
+                        baseY + backY * (length * 0.4) + perpY * (wave * 0.7),
+                        baseX + backX * (length * 0.78),
+                        baseY + backY * (length * 0.78)
+                    );
                     ctx.stroke();
                 }
                 ctx.restore();
@@ -1011,6 +1096,47 @@ export class Player extends Entity {
             ctx.lineWidth = 1;
             ctx.strokeRect(barX, barY, barW, barH);
             ctx.restore();
+        }
+
+        if (!game?.gameOverTriggered && this.letterCelebrationTimer > 0 && this.letterCelebrationVisibleCount > 0) {
+            if (!this._clapEmoji) {
+                this._clapEmoji = getEmojiCanvas('👏', 38);
+            }
+            const fadeOut = this.letterCelebrationTimer < 0.45 ? (this.letterCelebrationTimer / 0.45) : 1;
+            const centerX = this.x + this.width / 2;
+            const baseY = this.y - 84;
+            const spacing = 30;
+            const elapsed = this.letterCelebrationDuration - this.letterCelebrationTimer;
+            for (let i = 0; i < this.letterCelebrationVisibleCount; i++) {
+                const x = centerX + (i - (this.letterCelebrationMax - 1) / 2) * spacing;
+                const bob = Math.sin(this.pulseTimer * 10 + i * 0.8) * 7;
+                const y = baseY - bob;
+                const localT = Math.max(0, elapsed - i * this.letterCelebrationSpawnInterval);
+                const popIn = Math.min(1, localT / 0.12);
+                const pulse = 1 + Math.sin(localT * 16) * 0.22 * Math.exp(-localT * 0.55);
+                const sizeMul = Math.max(0.25, popIn) * pulse;
+                const w = this._clapEmoji.width * sizeMul;
+                const h = this._clapEmoji.height * sizeMul;
+
+                ctx.globalAlpha = Math.max(0, Math.min(1, fadeOut));
+                ctx.shadowColor = 'rgba(255, 235, 120, 0.8)';
+                ctx.shadowBlur = 16 + 10 * Math.sin(this.pulseTimer * 8 + i);
+                ctx.drawImage(this._clapEmoji.canvas, x - w / 2, y - h / 2, w, h);
+            }
+            if (!this._celebrationStarEmoji) {
+                this._celebrationStarEmoji = getEmojiCanvas('✨', 20);
+            }
+            const starCount = 6;
+            for (let s = 0; s < starCount; s++) {
+                const a = this.pulseTimer * 2.8 + (s / starCount) * Math.PI * 2;
+                const r = 62 + Math.sin(this.pulseTimer * 7 + s) * 8;
+                const sx = centerX + Math.cos(a) * r - this._celebrationStarEmoji.width / 2;
+                const sy = baseY - 10 + Math.sin(a * 1.3) * 16 - this._celebrationStarEmoji.height / 2;
+                ctx.globalAlpha = Math.max(0, Math.min(1, fadeOut * 0.85));
+                ctx.drawImage(this._celebrationStarEmoji.canvas, sx, sy);
+            }
+            ctx.shadowBlur = 0;
+            ctx.shadowColor = 'transparent';
         }
 
         ctx.globalAlpha = 1.0;

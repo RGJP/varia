@@ -11,19 +11,23 @@ export class BossProjectile extends Entity {
         this.projectileType = projectileType;
         this.rotation = 0;
         this.bounceCount = 0;
+        this.canBounceOnPlatforms = false;
 
         switch (projectileType) {
             case 'drumstick':
                 this.emoji = String.fromCodePoint(0x1F357);
                 this.maxBounces = 2;
+                this.canBounceOnPlatforms = true;
                 break;
             case 'stone':
                 this.emoji = String.fromCodePoint(0x1F94C);
-                this.maxBounces = 0;
+                this.maxBounces = 2;
+                this.canBounceOnPlatforms = true;
                 break;
             case 'skewer':
                 this.emoji = String.fromCodePoint(0x1F362);
-                this.maxBounces = 0;
+                this.maxBounces = 2;
+                this.canBounceOnPlatforms = true;
                 break;
             case 'web':
                 this.emoji = String.fromCodePoint(0x1F578) + '\uFE0F';
@@ -48,6 +52,8 @@ export class BossProjectile extends Entity {
             case 'flame':
                 this.emoji = String.fromCodePoint(0x1F525);
                 this.maxBounces = 0;
+                // Dragon volley flames must stay on a flat lane.
+                this.ignoreGravity = true;
                 break;
             default:
                 this.emoji = String.fromCodePoint(0x1FAA8);
@@ -70,6 +76,7 @@ export class BossProjectile extends Entity {
             if (this.vy > Physics.TERMINAL_VELOCITY) this.vy = Physics.TERMINAL_VELOCITY;
         }
 
+        const prevY = this.y;
         this.x += this.vx * dt;
         this.y += this.vy * dt;
         this.rotation += (this.vx > 0 ? 6 : -6) * dt;
@@ -105,27 +112,26 @@ export class BossProjectile extends Entity {
         const platforms = game._visiblePlatforms;
         for (let i = 0; i < platforms.length; i++) {
             const p = platforms[i];
-            if (this.ignorePlatformTimer <= 0 && Physics.checkAABB(this, p)) {
-                if (this.projectileType === 'drumstick' && this.bounceCount < this.maxBounces) {
-                    // Bounce: reverse vy, lose a bit of energy
-                    this.vy = -Math.abs(this.vy) * 0.65;
-                    this.y = p.y - this.height;
-                    this.bounceCount++;
-                    game.particles.emitHit(this.x + this.width / 2, p.y);
-                } else if (this.projectileType === 'stone') {
-                    // Shockwave: burst of hit particles around impact point
-                    const cx = this.x + this.width / 2;
-                    const cy = p.y;
-                    for (let k = 0; k < 8; k++) {
-                        game.particles.emitHit(cx + Math.cos(k * Math.PI / 4) * 20, cy + Math.sin(k * Math.PI / 4) * 10);
-                    }
-                    this.markedForDeletion = true;
-                } else {
-                    game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
-                    this.markedForDeletion = true;
-                }
-                break;
+            if (this.ignorePlatformTimer > 0) continue;
+
+            const aabbHit = Physics.checkAABB(this, p);
+            const overlapsX = this.x + this.width > p.x && this.x < p.x + p.width;
+            const prevBottom = prevY + this.height;
+            const currBottom = this.y + this.height;
+            const crossedTop = this.vy >= 0 && overlapsX && prevBottom <= p.y && currBottom >= p.y;
+            if (!aabbHit && !crossedTop) continue;
+
+            if (this.canBounceOnPlatforms && crossedTop && this.bounceCount < this.maxBounces) {
+                // Top-crossing bounce prevents high-speed tunneling through platform tops.
+                this.vy = -Math.abs(this.vy) * 0.65;
+                this.y = p.y - this.height;
+                this.bounceCount++;
+                game.particles.emitHit(this.x + this.width / 2, p.y);
+            } else {
+                game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
+                this.markedForDeletion = true;
             }
+            break;
         }
 
         // Off-screen cleanup
@@ -209,4 +215,3 @@ export class BossProjectile extends Entity {
         ctx.restore();
     }
 }
-

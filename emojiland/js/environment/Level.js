@@ -5,6 +5,7 @@ import { Collectible } from '../entities/Collectible.js';
 import { Vine } from '../entities/Vine.js';
 import { SwingingVine } from '../entities/SwingingVine.js';
 import { getRandomTheme } from './ThemeManager.js';
+import { getEmojiCanvas } from '../EmojiCache.js';
 
 export function loadLevel() {
     const theme = getRandomTheme();
@@ -193,6 +194,62 @@ export function loadLevel() {
     const vines = [];
     const swingingVines = [];
     const potentialCoinLocations = [];
+    const JELLY_EMOJI = '🪼';
+
+    const createJellyfishEnemy = (x, y, platform) => {
+        const jelly = new Enemy(x, y, platform);
+        jelly.type = 'jellyfish';
+        jelly.emoji = JELLY_EMOJI;
+        jelly.width = 46;
+        jelly.height = 46;
+        jelly.x = x;
+        jelly.y = y;
+        jelly.startX = x;
+        jelly.startY = y;
+        jelly.baseSpeed = 0;
+        jelly.speed = 0;
+        jelly.health = 1;
+        jelly.maxHealth = 1;
+        jelly.state = 'FLOAT';
+        jelly.vx = 0;
+        jelly.vy = 0;
+        jelly._cachedEmoji = getEmojiCanvas(jelly.emoji, jelly.height);
+        return jelly;
+    };
+
+    const isJellySpawnRectClear = (rect) => {
+        for (let i = 0; i < platforms.length; i++) {
+            if (overlapsRect(rect, platforms[i], 36, 54)) return false;
+        }
+        for (let i = 0; i < movingPlatforms.length; i++) {
+            if (overlapsRect(rect, getSweptRect(movingPlatforms[i]), 36, 54)) return false;
+        }
+        for (let i = 0; i < enemies.length; i++) {
+            if (overlapsRect(rect, enemies[i], 44, 44)) return false;
+        }
+        return true;
+    };
+
+    const findPlatformBelow = (x, y) => {
+        let best = null;
+        let bestDy = Infinity;
+        const jellyBottom = y + 46;
+        const findOn = (arr) => {
+            for (let i = 0; i < arr.length; i++) {
+                const p = arr[i];
+                const overlapsX = x + 46 > p.x && x < p.x + p.width;
+                if (!overlapsX) continue;
+                const dy = p.y - jellyBottom;
+                if (dy >= 70 && dy <= 360 && dy < bestDy) {
+                    bestDy = dy;
+                    best = p;
+                }
+            }
+        };
+        findOn(platforms);
+        findOn(movingPlatforms);
+        return best;
+    };
 
     // Start zone: rotate through distinct opening layouts so the run never opens the same way.
     const addPlatformCoinPoints = (platform, spacing = 140) => {
@@ -687,6 +744,42 @@ export function loadLevel() {
         }
     }
 
+    // Optional airborne stomp chain: 5-7 jellyfish spaced out in a fair, clear lane.
+    if (Math.random() < 0.34) {
+        const count = 5 + Math.floor(Math.random() * 3); // 5..7
+        const spacing = 118 + Math.random() * 52;
+        const chainLen = (count - 1) * spacing;
+        const minX = 850;
+        const maxX = Math.max(minX, currentX - 1050 - chainLen);
+
+        for (let attempt = 0; attempt < 60 && maxX > minX; attempt++) {
+            const startX = minX + Math.random() * (maxX - minX);
+            const baseY = 190 + Math.random() * 230;
+            const candidates = [];
+            let blocked = false;
+
+            for (let i = 0; i < count; i++) {
+                const x = startX + i * spacing;
+                const y = baseY + Math.sin(i * 0.85) * 16;
+                const rect = { x, y, width: 46, height: 46 };
+                const below = findPlatformBelow(x, y);
+                if (!below || !isJellySpawnRectClear(rect)) {
+                    blocked = true;
+                    break;
+                }
+                candidates.push({ x, y, platform: below });
+            }
+
+            if (!blocked) {
+                for (let i = 0; i < candidates.length; i++) {
+                    const c = candidates[i];
+                    enemies.push(createJellyfishEnemy(c.x, c.y, c.platform));
+                }
+                break;
+            }
+        }
+    }
+
     // ── Boss encounter ──
     // A dedicated, larger arena platform inserted before the victory flag
     // We increase the gap and the arena size to make it feel more focused.
@@ -727,11 +820,54 @@ export function loadLevel() {
     // to ensure they are always reachable before finishing the level.
     const safeCoinLocations = potentialCoinLocations.filter(loc => loc.x <= victoryPlatform.x + victoryPlatform.width - 50);
 
+    const hasSupportBelow = (x, y) => {
+        const maxDrop = 240;
+        const check = (p) => (
+            x >= p.x - 18 &&
+            x <= p.x + p.width + 18 &&
+            p.y > y &&
+            (p.y - y) <= maxDrop
+        );
+        for (let i = 0; i < platforms.length; i++) if (check(platforms[i])) return true;
+        for (let i = 0; i < movingPlatforms.length; i++) if (check(movingPlatforms[i])) return true;
+        return false;
+    };
+
     if (safeCoinLocations.length > 0) {
         // Sort by X to ensure we can spread them out across the level progress
         safeCoinLocations.sort((a, b) => a.x - b.x);
 
         const occupiedIndices = new Set();
+        const letterSequence = ['E', 'M', 'O', 'J', 'I'];
+
+        // KONG-style fixed letter set scattered across progression.
+        let letterCandidates = safeCoinLocations
+            .map((loc, index) => ({ loc, index }))
+            .filter(item => item.loc.y >= 80 && item.loc.y <= 760 && hasSupportBelow(item.loc.x, item.loc.y));
+
+        if (letterCandidates.length < letterSequence.length) {
+            letterCandidates = safeCoinLocations.map((loc, index) => ({ loc, index }));
+        }
+
+        if (letterCandidates.length >= letterSequence.length) {
+            const step = letterCandidates.length / letterSequence.length;
+            for (let i = 0; i < letterSequence.length; i++) {
+                const minIdx = Math.floor(i * step);
+                const maxIdx = Math.max(minIdx, Math.floor((i + 1) * step) - 1);
+                let pickIdx = minIdx + Math.floor(Math.random() * (maxIdx - minIdx + 1));
+                let attempts = 0;
+                while (attempts < 20) {
+                    const picked = letterCandidates[pickIdx];
+                    if (picked && !occupiedIndices.has(picked.index)) {
+                        collectibles.push(new Collectible(picked.loc.x, picked.loc.y, 'letter', letterSequence[i]));
+                        occupiedIndices.add(picked.index);
+                        break;
+                    }
+                    pickIdx = minIdx + Math.floor(Math.random() * (maxIdx - minIdx + 1));
+                    attempts++;
+                }
+            }
+        }
 
         const spawnSpecial = (type, count) => {
             if (safeCoinLocations.length > occupiedIndices.size + count) {

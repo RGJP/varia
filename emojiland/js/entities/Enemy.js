@@ -35,6 +35,7 @@ const TYPE_TROLL = 'troll'; // 🧌
 const TYPE_APE = 'ape'; // 🦍
 const TYPE_SPIDER = 'spider'; // 🕷️
 const TYPE_MINI_SPIDER = 'mini_spider'; // 🕷️
+const TYPE_JELLYFISH = 'jellyfish'; // 🪼
 const SHOOTER_OPACITY_SPEED = 1.6;
 
 export class Enemy extends Entity {
@@ -108,6 +109,11 @@ export class Enemy extends Entity {
         this.damageFlashTimer = 0;
         this.burstCount = 0;
         this.burstTimer = 0;
+        this.turtleFlipped = false;
+        this.turtleFlipTimer = 0;
+        this.turtleRecovering = false;
+        this.turtleRecoverTimer = 0;
+        this.turtleRecoverDuration = 0.32;
 
         if (this.type === TYPE_PATROL) this.state = 'PATROL';
         if (this.type === TYPE_CHASER) this.state = 'PATROL';
@@ -141,6 +147,11 @@ export class Enemy extends Entity {
         }
         if (this.type === TYPE_TROLL) {
             this.state = 'PATROL';
+            this.toxicCloudBaseRadius = 130;
+            this.toxicCloudPulse = Math.random() * Math.PI * 2;
+            this.toxicCloudDamageCooldown = 0;
+            this.toxicCloudTick = 0.6;
+            this.toxicCloudEmitTimer = 0.08;
         }
         if (this.type === TYPE_APE) {
             this.state = 'IDLE';
@@ -156,6 +167,12 @@ export class Enemy extends Entity {
     }
 
     takeDamage(amount, game) {
+        // Jellyfish are stomp-only enemies.
+        if (this.type === TYPE_JELLYFISH) {
+            if (game && game.particles) game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
+            return;
+        }
+
         this.health -= amount;
         this.damageFlashTimer = 0.2;
 
@@ -235,6 +252,15 @@ export class Enemy extends Entity {
         this.timeAlive += dt;
         if (this.attackCooldown > 0) this.attackCooldown -= dt;
         if (this.damageFlashTimer > 0) this.damageFlashTimer -= dt;
+        if (this.turtleFlipped && this.turtleFlipTimer > 0) this.turtleFlipTimer = Math.max(0, this.turtleFlipTimer - dt);
+        if (this.turtleRecovering && this.turtleRecoverTimer > 0) this.turtleRecoverTimer = Math.max(0, this.turtleRecoverTimer - dt);
+        if (this.type === TYPE_TROLL) {
+            this.toxicCloudPulse += dt * 2.4;
+            if (this.toxicCloudDamageCooldown > 0) {
+                this.toxicCloudDamageCooldown = Math.max(0, this.toxicCloudDamageCooldown - dt);
+            }
+            this.toxicCloudEmitTimer -= dt;
+        }
 
         let player = game ? game.player : null;
         let distToPlayerX = player ? player.x - this.x : Infinity;
@@ -263,27 +289,30 @@ export class Enemy extends Entity {
             case TYPE_APE: this.updateApe(dt, game, player, distToPlayer, distToPlayerX); break;
             case TYPE_SPIDER: this.updateSpider(dt, player, distToPlayer, game); break;
             case TYPE_MINI_SPIDER: this.updateSpider(dt, player, distToPlayer, game); break;
+            case TYPE_JELLYFISH: this.updateJellyfish(dt, player); break;
         }
 
-        if (this.type === TYPE_TROLL && game && game.particles) {
-            // Constantly emanate a bit of smoke
-            if (this.timeAlive % 0.2 < dt) {
+        if (this.type === TYPE_TROLL && game) {
+            // Supplemental particles; primary cloud is rendered directly in draw().
+            if (game.particles && this.toxicCloudEmitTimer <= 0) {
                 game.particles.emitGreenSmoke(this.x + this.width / 2, this.y + this.height / 2);
+                this.toxicCloudEmitTimer = 0.22;
             }
 
             if (player && player.invulnerableTimer <= 0) {
-                const cloudRadius = 180;
+                const cloudRadius = this.toxicCloudBaseRadius + Math.sin(this.toxicCloudPulse) * 16 + 14;
                 const cx = this.x + this.width / 2;
                 const cy = this.y + this.height / 2;
                 const pcx = player.x + player.width / 2;
                 const pcy = player.y + player.height / 2;
-                if (Math.hypot(pcx - cx, pcy - cy) < cloudRadius) {
+                if (Math.hypot(pcx - cx, pcy - cy) < cloudRadius && this.toxicCloudDamageCooldown <= 0) {
                     player.takeDamage(game);
+                    this.toxicCloudDamageCooldown = this.toxicCloudTick;
                 }
             }
         }
 
-        if (this.type !== TYPE_FLYER && this.type !== TYPE_BIRD && this.type !== TYPE_EAGLE && this.type !== TYPE_OWL && this.type !== TYPE_CROW && this.type !== TYPE_GHOST && this.type !== TYPE_SQUID && this.type !== TYPE_SHOOTER && this.type !== TYPE_ALIEN) {
+        if (this.type !== TYPE_FLYER && this.type !== TYPE_BIRD && this.type !== TYPE_EAGLE && this.type !== TYPE_OWL && this.type !== TYPE_CROW && this.type !== TYPE_GHOST && this.type !== TYPE_SQUID && this.type !== TYPE_SHOOTER && this.type !== TYPE_ALIEN && this.type !== TYPE_JELLYFISH) {
             this.vy += Physics.GRAVITY * dt;
             if (this.vy > Physics.TERMINAL_VELOCITY) this.vy = Physics.TERMINAL_VELOCITY;
 
@@ -388,9 +417,70 @@ export class Enemy extends Entity {
     }
 
     updatePatrol(dt) {
+        if (this.turtleFlipped) {
+            if (this.turtleRecovering) {
+                this.state = 'SHELL';
+                this.vx = 0;
+                if (this.turtleRecoverTimer <= 0) {
+                    this.turtleRecovering = false;
+                    this.turtleFlipped = false;
+                    this.state = 'PATROL';
+                    this.vx = this.facingRight ? this.baseSpeed : -this.baseSpeed;
+                }
+                return;
+            }
+
+            if (this.turtleFlipTimer <= 0) {
+                this.turtleRecovering = true;
+                this.turtleRecoverTimer = this.turtleRecoverDuration;
+                this.state = 'SHELL';
+                this.vx = 0;
+                return;
+            }
+            this.state = 'SHELL';
+            this.vx = 0;
+            return;
+        }
         this.state = 'PATROL';
         this.speed = this.baseSpeed;
         this.vx = this.facingRight ? this.speed : -this.speed;
+    }
+
+    stomp(game) {
+        if (this.type === TYPE_JELLYFISH) {
+            this.markedForDeletion = true;
+            if (game && game.particles) game.particles.emitDeath(this.x + this.width / 2, this.y + this.height / 2);
+            if (game && game.player) game.player.score += 50;
+            if (game) game.enemiesDefeated++;
+            return;
+        }
+
+        const isTurtle = this.type === TYPE_PATROL && this.emoji === '🐢';
+        if (!isTurtle) {
+            this.takeDamage(this.health, game);
+            return;
+        }
+
+        // Mario-style shell behavior:
+        // first stomp flips the turtle on its back (still alive),
+        // second stomp finishes it.
+        if (!this.turtleFlipped) {
+            this.turtleFlipped = true;
+            this.turtleFlipTimer = 2.0;
+            this.turtleRecovering = false;
+            this.turtleRecoverTimer = 0;
+            this.state = 'SHELL';
+            this.vx = 0;
+            this.vy = 0;
+            this.health = Math.max(1, this.health - 1);
+            this.damageFlashTimer = 0.14;
+            if (game && game.particles) {
+                game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
+            }
+            return;
+        }
+
+        this.takeDamage(this.health, game);
     }
 
     updateChaser(dt, game, player, dist, distX) {
@@ -823,6 +913,15 @@ export class Enemy extends Entity {
         this.vy = 0;
     }
 
+    updateJellyfish(dt, player) {
+        this.state = 'FLOAT';
+        this.vx = 0;
+        this.vy = 0;
+        this.x = this.startX + Math.sin(this.timeAlive * 1.6 + this.startY * 0.01) * 18;
+        this.y = this.startY + Math.sin(this.timeAlive * 2.2 + this.startX * 0.008) * 22;
+        if (player) this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+    }
+
     updateSpider(dt, player, dist, game) {
         if (this.stateTimer > 0) this.stateTimer -= dt;
 
@@ -913,6 +1012,41 @@ export class Enemy extends Entity {
 
     draw(ctx) {
         ctx.save();
+        if (this.type === TYPE_TROLL) {
+            const cx = this.x + this.width / 2;
+            const cy = this.y + this.height * 0.55;
+            const pulse = 0.5 + 0.5 * Math.sin(this.toxicCloudPulse);
+            const radiusOuter = this.toxicCloudBaseRadius + 18 + pulse * 16;
+            const radiusMid = radiusOuter * 0.72;
+            const radiusInner = radiusOuter * 0.46;
+
+            ctx.save();
+            const outer = ctx.createRadialGradient(cx, cy, 8, cx, cy, radiusOuter);
+            outer.addColorStop(0, 'rgba(110, 255, 120, 0.14)');
+            outer.addColorStop(0.45, 'rgba(80, 200, 90, 0.11)');
+            outer.addColorStop(1, 'rgba(30, 120, 40, 0)');
+            ctx.fillStyle = outer;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radiusOuter, 0, Math.PI * 2);
+            ctx.fill();
+
+            const mid = ctx.createRadialGradient(cx, cy, 2, cx, cy, radiusMid);
+            mid.addColorStop(0, 'rgba(145, 255, 125, 0.2)');
+            mid.addColorStop(1, 'rgba(35, 130, 50, 0)');
+            ctx.fillStyle = mid;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radiusMid, 0, Math.PI * 2);
+            ctx.fill();
+
+            const inner = ctx.createRadialGradient(cx, cy, 0, cx, cy, radiusInner);
+            inner.addColorStop(0, 'rgba(170, 255, 150, 0.2)');
+            inner.addColorStop(1, 'rgba(80, 170, 80, 0)');
+            ctx.fillStyle = inner;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radiusInner, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
 
         let drawX = this.x + this.width / 2;
         let drawY = this.y + this.height / 2;
@@ -973,6 +1107,14 @@ export class Enemy extends Entity {
         if (this.state === 'REVIVING' && this.type === TYPE_ZOMBIE) {
             ctx.rotate(Math.PI / 2); // lie down
         }
+        if (this.turtleFlipped && this.type === TYPE_PATROL && this.emoji === '🐢') {
+            let shellAngle = Math.PI;
+            if (this.turtleRecovering && this.turtleRecoverDuration > 0) {
+                const t = 1 - Math.max(0, Math.min(1, this.turtleRecoverTimer / this.turtleRecoverDuration));
+                shellAngle = Math.PI * (1 - t);
+            }
+            ctx.rotate(shellAngle);
+        }
 
         if (this.facingRight) {
             ctx.scale(-1 * scaleX, 1 * scaleY);
@@ -981,6 +1123,10 @@ export class Enemy extends Entity {
         }
 
         let yOffset = this.height * 0.1;
+        if (this.turtleFlipped && this.type === TYPE_PATROL && this.emoji === '🐢') {
+            // Rotated shell needs a lower visual anchor so it sits on the platform.
+            yOffset = -this.height * 0.05;
+        }
 
         if (this.state === 'PATROL' && this.type !== TYPE_FLYER && this.type !== TYPE_BIRD && this.type !== TYPE_EAGLE && this.type !== TYPE_OWL && this.type !== TYPE_CROW && this.type !== TYPE_JUMPER && this.type !== TYPE_DINO && this.type !== TYPE_GHOST) {
             yOffset -= Math.abs(Math.sin(this.timeAlive * 12)) * 6;
@@ -990,9 +1136,11 @@ export class Enemy extends Entity {
             ctx.rotate(Math.sin(this.timeAlive * 4) * 0.1);
         } else if (this.state === 'IDLE' && this.type !== TYPE_FLYER && this.type !== TYPE_GHOST) {
             yOffset -= Math.sin(this.timeAlive * 4) * 2;
-        } else if (this.type === TYPE_FLYER || this.type === TYPE_BIRD || this.type === TYPE_EAGLE || this.type === TYPE_OWL || this.type === TYPE_CROW || this.type === TYPE_SQUID || this.type === TYPE_ALIEN) {
+        } else if (this.type === TYPE_FLYER || this.type === TYPE_BIRD || this.type === TYPE_EAGLE || this.type === TYPE_OWL || this.type === TYPE_CROW || this.type === TYPE_SQUID || this.type === TYPE_ALIEN || this.type === TYPE_JELLYFISH) {
             if (this.type === TYPE_ALIEN) {
                 ctx.rotate(Math.sin(this.timeAlive * 5) * 0.1);
+            } else if (this.type === TYPE_JELLYFISH) {
+                ctx.rotate(Math.sin(this.timeAlive * 3.2) * 0.1);
             } else {
                 ctx.rotate(Math.sin(this.timeAlive * 15) * 0.25);
             }
@@ -1085,11 +1233,13 @@ export class Boss extends Entity {
         this.anchorY = platform.y - this.height - 250;
         this.targetX = this.x;
         this.targetY = this.y;
-        this.maxMoveSpeed = 560;
+        this.maxMoveSpeed = 470;
         this.repositionCooldown = 2.0 + Math.random() * 1.5;
         this.repositionBurstTimer = 0;
+        this.aerialLowSwoopTimer = 0;
+        this.aerialLowSwoopDuration = 1.45;
         this.aerialSwoopTimer = 0;
-        this.aerialSwoopDuration = 0.75;
+        this.aerialSwoopDuration = 1.2;
         this.aerialSwoopDepth = 0;
         this.aerialMinionPhase = Math.random() * Math.PI * 2;
         this.aerialMinionRadius = 88 + Math.random() * 24;
@@ -1126,6 +1276,7 @@ export class Boss extends Entity {
         this.dragonAttackPattern = 'cone'; // 'cone' | 'volley'
         this.dragonVolleyShots = 0;
         this.dragonVolleyTimer = 0;
+        this.dragonVolleyLaneY = this.y + this.height * 0.52;
 
         // Robot (boss_robot) grounded rush/grab/throw + wrench toss
         this.robotState = 'PATROL';
@@ -1198,10 +1349,11 @@ export class Boss extends Entity {
             const cx = this.x + this.width / 2;
             const cy = this.y + this.height / 2;
             if (game && game.particles) {
-                // Bigger, more obvious boss-defeat celebration burst.
-                game.particles.emitFireworks(cx, cy);
-                game.particles.emitFireworks(cx - 60, cy - 35);
-                game.particles.emitFireworks(cx + 60, cy - 35);
+                // Cinematic boss-defeat fireworks show.
+                game.particles.emitFireworksShow(cx, cy, 1.4);
+                game.particles.emitFireworks(cx - 90, cy - 46, 1.2);
+                game.particles.emitFireworks(cx + 90, cy - 46, 1.2);
+                game.particles.emitFireworks(cx, cy - 95, 1.45);
                 game.particles.emitDeath(cx, cy);
                 game.particles.emitDeath(cx - 26, cy + 10);
                 game.particles.emitDeath(cx + 26, cy + 10);
@@ -1309,36 +1461,48 @@ export class Boss extends Entity {
         if (this.movementTimer > 0) this.movementTimer -= dt;
         if (this.repositionCooldown > 0) this.repositionCooldown -= dt;
         if (this.repositionBurstTimer > 0) this.repositionBurstTimer -= dt;
+        if (this.aerialLowSwoopTimer > 0) this.aerialLowSwoopTimer -= dt;
         if (this.aerialSwoopTimer > 0) this.aerialSwoopTimer -= dt;
 
         // Switch between path styles.
         if (this.movementTimer <= 0) {
             this.movementState = this.movementState === 'WAVE' ? 'ORBIT' : 'WAVE';
-            this.movementTimer = 3.2 + Math.random() * 3.4;
+            this.movementTimer = 4.8 + Math.random() * 1.2;
         }
 
-        // Occasional quick reposition keeps fights active but readable.
+        // Periodic smooth repositions keep pressure on the player without twitchy snaps.
         if (this.repositionCooldown <= 0 && player) {
             const left = this.platform.x + 20;
             const right = this.platform.x + this.platform.width - this.width - 20;
-            const desired = player.x + player.width / 2 + (Math.random() > 0.5 ? -260 : 260) - this.width / 2;
+            const desired = player.x + player.width / 2 + (Math.random() > 0.5 ? -180 : 180) - this.width / 2;
             this.targetX = Math.max(left, Math.min(right, desired));
-            this.targetY = this.anchorY + 50 + Math.sin(this.timeAlive * 3.2) * 40;
-            this.repositionBurstTimer = 0.48;
-            this.repositionCooldown = 2.6 + Math.random() * 1.8;
+            this.targetY = this.platform.y - this.height - (52 + Math.random() * 26);
+            this.repositionBurstTimer = 0.9;
+            this.repositionCooldown = 3.2 + Math.random() * 1.7;
+            this.aerialLowSwoopTimer = this.aerialLowSwoopDuration + Math.random() * 0.35;
             this.aerialSwoopTimer = this.aerialSwoopDuration;
-            this.aerialSwoopDepth = 95 + Math.random() * 70;
+            this.aerialSwoopDepth = 80 + Math.random() * 40;
         }
 
         if (this.movementState === 'WAVE') {
-            this.targetX = this.anchorX + Math.sin(this.timeAlive * (0.8 + this.phase * 0.12)) * (this.platform.width * (0.32 + this.phase * 0.04));
-            this.targetY = this.anchorY + Math.sin(this.timeAlive * 1.4) * (70 + this.phase * 10) + Math.cos(this.timeAlive * 0.75) * 45;
+            this.targetX = this.anchorX + Math.sin(this.timeAlive * (0.55 + this.phase * 0.08)) * (this.platform.width * (0.22 + this.phase * 0.03));
+            this.targetY = this.anchorY + Math.sin(this.timeAlive * 1.0) * (52 + this.phase * 8) + Math.cos(this.timeAlive * 0.5) * 28;
         } else {
-            const radiusX = 210 + this.phase * 40;
-            const radiusY = 110 + this.phase * 22;
-            const speed = 1.0 + this.phase * 0.14;
+            const radiusX = 150 + this.phase * 26;
+            const radiusY = 80 + this.phase * 16;
+            const speed = 0.72 + this.phase * 0.08;
             this.targetX = this.anchorX + Math.cos(this.timeAlive * speed) * radiusX;
             this.targetY = this.anchorY + Math.sin(this.timeAlive * speed) * radiusY;
+        }
+
+        // During low swoops, bias motion lower and closer to player for fair rock windows.
+        if (this.aerialLowSwoopTimer > 0 && player) {
+            const left = this.platform.x + 20;
+            const right = this.platform.x + this.platform.width - this.width - 20;
+            const followX = Math.max(left, Math.min(right, player.x + player.width / 2 - this.width / 2));
+            const lowY = this.platform.y - this.height - (40 + Math.sin(this.timeAlive * 2.2) * 10);
+            this.targetX = this.targetX * 0.7 + followX * 0.3;
+            this.targetY = this.targetY * 0.35 + lowY * 0.65;
         }
 
         // Lower aerial passes during swoops so grounded attacks can reach more reliably.
@@ -1348,16 +1512,16 @@ export class Boss extends Entity {
         const swoopCurve = Math.sin((1 - swoopProgress) * Math.PI);
         this.targetY += this.aerialSwoopDepth * swoopCurve;
 
-        const topY = this.platform.y - this.height - 430;
-        const bottomY = this.platform.y - this.height - 26;
+        const topY = this.platform.y - this.height - 380;
+        const bottomY = this.platform.y - this.height - 12;
         this.targetY = Math.max(topY, Math.min(bottomY, this.targetY));
 
         const toTargetX = this.targetX - this.x;
         const toTargetY = this.targetY - this.y;
         const dist = Math.hypot(toTargetX, toTargetY);
         if (dist > 0) {
-            const speedMult = this.repositionBurstTimer > 0 ? 1.9 : 1;
-            const maxStep = this.maxMoveSpeed * (1 + this.phase * 0.08) * speedMult * dt;
+            const speedMult = this.repositionBurstTimer > 0 ? 1.2 : 1;
+            const maxStep = this.maxMoveSpeed * (1 + this.phase * 0.05) * speedMult * dt;
             const step = Math.min(dist, maxStep);
             this.x += (toTargetX / dist) * step;
             this.y += (toTargetY / dist) * step;
@@ -1552,6 +1716,7 @@ export class Boss extends Entity {
                 if (this.dragonAttackPattern === 'volley') {
                     this.dragonVolleyShots = this.phase >= 3 ? 6 : (this.phase >= 2 ? 5 : 4);
                     this.dragonVolleyTimer = 0;
+                    this.dragonVolleyLaneY = this.platform.y - this.height * 0.48;
                 } else {
                     this.dragonFireActiveTimer = this.dragonFireDuration;
                     this.dragonFireHitTimer = 0;
@@ -1582,17 +1747,13 @@ export class Boss extends Entity {
             this.dragonConeAimOffset = 0;
             this.dragonVolleyTimer -= dt;
             if (this.dragonVolleyTimer <= 0 && player) {
-                const shotIdx = this.dragonVolleyShots;
                 const dir = this.facingRight ? 1 : -1;
                 const spawnX = this.x + this.width / 2 + dir * (this.width * 0.22);
-                const spawnY = this.y + this.height * 0.46;
-                const speed = 360 + this.phase * 26 + (shotIdx % 2 === 0 ? 12 : -6);
+                const spawnY = this.dragonVolleyLaneY;
+                const speed = 400 + this.phase * 24;
                 game.enemyProjectiles.push(new BossProjectile(spawnX, spawnY, dir * speed, 0, 'flame'));
-                if (this.phase >= 3 && shotIdx % 3 === 0) {
-                    game.enemyProjectiles.push(new BossProjectile(spawnX, spawnY + 10, dir * (335 + this.phase * 22), 0, 'flame'));
-                }
                 this.dragonVolleyShots--;
-                this.dragonVolleyTimer = 0.16 + Math.random() * 0.08;
+                this.dragonVolleyTimer = 0.17;
                 if (this.dragonVolleyShots <= 0) {
                     this.attackCooldown = 2.35 - (this.phase - 1) * 0.18 + Math.random() * 0.55;
                 }
@@ -1851,22 +2012,36 @@ export class Boss extends Entity {
                         const fx = mouthX + Math.cos(a) * radius * -1;
                         const fy = Math.sin(a) * radius * 0.9;
                         const flicker = 0.75 + Math.sin(this.timeAlive * 11 + r * 0.8 + i) * 0.25;
-                        const alphaMul = this.dragonFireTelegraphTimer > 0 ? (0.12 + telePulse * 0.28) : (0.25 + 0.22 * flicker);
-                        ctx.globalAlpha = alpha * alphaMul;
+                        const alphaMul = this.dragonFireTelegraphTimer > 0 ? (0.14 + telePulse * 0.3) : Math.min(1, 0.94 + 0.06 * flicker);
+                        ctx.globalAlpha = this.dragonFireActiveTimer > 0 ? 1 : (alpha * alphaMul);
                         ctx.drawImage(this._fireTellCache.canvas, fx - this._fireTellCache.width / 2, fy - this._fireTellCache.height / 2);
                     }
                 }
-                ctx.globalAlpha = alpha;
+                ctx.globalAlpha = this.dragonFireActiveTimer > 0 ? 1 : alpha;
                 ctx.drawImage(this._fireTellCache.canvas, mouthX - this._fireTellCache.width * 0.35, -this._fireTellCache.height / 2);
             } else if (this.dragonAttackPattern === 'volley' && this.dragonFireTelegraphTimer > 0) {
                 const pulse = 0.6 + Math.sin(this.timeAlive * 24) * 0.4;
+                const lineLen = this.dragonFireRange * 0.82;
+                const lineY = this.dragonVolleyLaneY - (this.y + this.height / 2);
+                const startX = mouthX;
+                const endX = mouthX - lineLen;
+                ctx.strokeStyle = `rgba(255, 170, 30, ${0.55 + pulse * 0.35})`;
+                ctx.lineWidth = 8;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(startX, lineY);
+                ctx.lineTo(endX, lineY);
+                ctx.stroke();
                 for (let i = 0; i < 3; i++) {
                     const a = this.timeAlive * 2.5 + (i / 3) * Math.PI * 2;
-                    const rx = Math.cos(a) * (24 + i * 4);
-                    const ry = -this.height * 0.45 + Math.sin(a * 1.3) * 12;
-                    ctx.globalAlpha = alpha * (0.35 + pulse * 0.45);
+                    const rx = startX - lineLen * (0.25 + i * 0.22) + Math.cos(a) * 6;
+                    const ry = lineY + Math.sin(a * 1.3) * 6;
+                    ctx.globalAlpha = alpha * (0.45 + pulse * 0.45);
                     ctx.drawImage(this._fireTellCache.canvas, rx - this._fireTellCache.width / 2, ry - this._fireTellCache.height / 2);
                 }
+                if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+                ctx.globalAlpha = alpha * (0.55 + pulse * 0.4);
+                ctx.drawImage(this._warnCache.canvas, endX - this._warnCache.width / 2, lineY - this._warnCache.height / 2);
                 ctx.globalAlpha = alpha;
             } else if (this.dragonVolleyShots > 0) {
                 const pulse = 0.55 + Math.sin(this.timeAlive * 18) * 0.35;

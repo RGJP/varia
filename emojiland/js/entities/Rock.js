@@ -29,7 +29,12 @@ export class Rock extends Entity {
                 if (game.audio) game.audio.playHit();
 
                 if (enemy.takeDamage) {
-                    enemy.takeDamage(this.damage, game);
+                    const isTurtle = enemy.type === 'patrol' && enemy.emoji === '🐢';
+                    if (isTurtle && typeof enemy.stomp === 'function') {
+                        enemy.stomp(game);
+                    } else {
+                        enemy.takeDamage(this.damage, game);
+                    }
                 } else {
                     enemy.markedForDeletion = true;
                     game.player.score += 50;

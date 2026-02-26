@@ -628,6 +628,22 @@ export class Game {
             const muteCached = this.audio.isMusicMuted ? this._muteCache : this._unmuteCache;
             ctx_drawCachedEmoji(this.ctx, muteCached, startX, currentY);
 
+            // 5. EMOJI letter collectibles progress
+            currentY += lineSpacing;
+            const letters = ['E', 'M', 'O', 'J', 'I'];
+            const collected = (this.player && this.player.collectedLetters) ? this.player.collectedLetters : {};
+            this.ctx.font = 'bold 20px monospace';
+            this.ctx.fontKerning = 'none';
+            this.ctx.textAlign = 'center';
+            const letterStartX = startX + 4;
+            const letterSpacing = 16;
+            for (let i = 0; i < letters.length; i++) {
+                const letter = letters[i];
+                const isCollected = !!collected[letter];
+                this.ctx.fillStyle = isCollected ? '#ffd54f' : 'rgba(255, 255, 255, 0.28)';
+                this.ctx.fillText(letter, letterStartX + i * letterSpacing, currentY + 2);
+            }
+
 
             this.ctx.restore();
         }

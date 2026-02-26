@@ -86,6 +86,73 @@ export class AudioEngine {
         osc.stop(this.ctx.currentTime + duration);
     }
 
+    _playTone(type, startFreq, duration, options = {}) {
+        this._ensureContext();
+        if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => { });
+
+        const now = this.ctx.currentTime;
+        const {
+            endFreq = null,
+            gain = 0.12,
+            attack = 0.003,
+            decayFloor = 0.0001,
+            detune = 0
+        } = options;
+
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(startFreq, now);
+        if (endFreq && endFreq > 0) {
+            osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration);
+        }
+        if (detune !== 0) {
+            osc.detune.setValueAtTime(detune, now);
+        }
+
+        g.gain.setValueAtTime(decayFloor, now);
+        g.gain.exponentialRampToValueAtTime(Math.max(decayFloor, gain), now + Math.max(0.001, attack));
+        g.gain.exponentialRampToValueAtTime(decayFloor, now + duration);
+
+        osc.connect(g);
+        g.connect(this.masterGain);
+        osc.start(now);
+        osc.stop(now + duration);
+    }
+
+    _playNoiseBurst(duration = 0.08, gain = 0.04, highpassFreq = 1200) {
+        this._ensureContext();
+        if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => { });
+
+        const now = this.ctx.currentTime;
+        const frameCount = Math.max(1, Math.floor(this.ctx.sampleRate * duration));
+        const buffer = this.ctx.createBuffer(1, frameCount, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < frameCount; i++) {
+            data[i] = (Math.random() * 2 - 1) * (1 - i / frameCount);
+        }
+
+        const src = this.ctx.createBufferSource();
+        src.buffer = buffer;
+
+        const hp = this.ctx.createBiquadFilter();
+        hp.type = 'highpass';
+        hp.frequency.setValueAtTime(highpassFreq, now);
+
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain), now + 0.004);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        src.connect(hp);
+        hp.connect(g);
+        g.connect(this.masterGain);
+
+        src.start(now);
+        src.stop(now + duration);
+    }
+
     playBackgroundMusic(isAutoNext = false) {
         const startMusic = () => {
             this._ensureContext();
@@ -210,7 +277,13 @@ export class AudioEngine {
     }
 
     playHit() {
-        this.playOscillator('square', 100, 0.2, 50);
+        // Rock impact: audible mid punch with a short sparkling transient.
+        this._playTone('triangle', 330, 0.17, { endFreq: 180, gain: 0.5, attack: 0.002 });
+        this._playTone('sine', 980, 0.11, { endFreq: 420, gain: 0.26, attack: 0.0015 });
+        setTimeout(() => {
+            this._playTone('triangle', 760, 0.1, { endFreq: 360, gain: 0.2, attack: 0.0015 });
+        }, 30);
+        this._playNoiseBurst(0.055, 0.075, 1050);
     }
 
     playCollect() {
@@ -220,7 +293,13 @@ export class AudioEngine {
     }
 
     playHurt() {
-        this.playOscillator('sawtooth', 200, 0.4, 100);
+        // Player hurt: clear "ouch" contour, audible but not piercing.
+        this._playTone('triangle', 500, 0.24, { endFreq: 220, gain: 0.46, attack: 0.002 });
+        this._playTone('square', 190, 0.3, { endFreq: 95, gain: 0.24, attack: 0.003, detune: -6 });
+        setTimeout(() => {
+            this._playTone('sine', 760, 0.18, { endFreq: 280, gain: 0.28, attack: 0.002, detune: 5 });
+        }, 38);
+        this._playNoiseBurst(0.085, 0.07, 760);
     }
 
     playWin() {
@@ -248,16 +327,33 @@ export class AudioEngine {
     }
 
     playBossVictoryClimb() {
-        // "doo doo doo doooooo"
-        const notes = [523.25, 587.33, 659.25, 783.99]; // C5 D5 E5 G5
-        const steps = [0, 130, 260, 390];
+        // 7-note ascending victory climb with a long final tone.
+        const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.0, 987.77]; // C5 D5 E5 F5 G5 A5 B5
+        const steps = [0, 120, 240, 360, 480, 600, 720];
         for (let i = 0; i < notes.length; i++) {
-            const duration = i === notes.length - 1 ? 0.95 : 0.14;
+            const duration = i === notes.length - 1 ? 1.0 : 0.13;
             setTimeout(() => {
                 this.playOscillator('triangle', notes[i], duration);
                 if (i === notes.length - 1) {
                     // Light harmony on the long final note.
-                    this.playOscillator('sine', notes[i] * 1.25, 0.75);
+                    this.playOscillator('sine', notes[i] * 1.25, 0.8);
+                }
+            }, steps[i]);
+        }
+    }
+
+    playLetterVictoryChime() {
+        // 5-note ascending major shape: doo-doo-doo-doo-doo (C D E F G)
+        const notes = [523.25, 587.33, 659.25, 698.46, 783.99];
+        const steps = [0, 130, 260, 390, 520];
+        for (let i = 0; i < notes.length; i++) {
+            const isLast = i === notes.length - 1;
+            const duration = isLast ? 0.48 : 0.14;
+            setTimeout(() => {
+                this.playOscillator('triangle', notes[i], duration);
+                // Add a bright supporting overtone on the final note.
+                if (isLast) {
+                    this.playOscillator('sine', notes[i] * 1.5, 0.34);
                 }
             }, steps[i]);
         }
