@@ -353,20 +353,16 @@ export class AudioEngine {
         }
     }
 
-    playLetterVictoryChime() {
-        // 5-note ascending major shape: doo-doo-doo-doo-doo (C D E F G)
-        const notes = [523.25, 587.33, 659.25, 698.46, 783.99];
-        const steps = [0, 130, 260, 390, 520];
-        for (let i = 0; i < notes.length; i++) {
-            const isLast = i === notes.length - 1;
-            const duration = isLast ? 0.48 : 0.14;
-            setTimeout(() => {
-                this.playOscillator('triangle', notes[i], duration);
-                // Add a bright supporting overtone on the final note.
-                if (isLast) {
-                    this.playOscillator('sine', notes[i] * 1.5, 0.34);
-                }
-            }, steps[i]);
+    playLetterVictoryStep(stepIndex) {
+        // 6-step climb synchronized with E-M-O-J-I-✅ reveal.
+        const notes = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5]; // C5 D5 E5 G5 A5 C6
+        if (stepIndex < 0 || stepIndex >= notes.length) return;
+
+        const isFinal = stepIndex === notes.length - 1;
+        this.playOscillator('triangle', notes[stepIndex], isFinal ? 0.62 : 0.14);
+        if (isFinal) {
+            // Longer, brighter final ding for the check mark.
+            this.playOscillator('sine', notes[stepIndex] * 1.5, 0.44);
         }
     }
 }

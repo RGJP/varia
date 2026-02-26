@@ -1,5 +1,6 @@
 import { Platform } from './Platform.js';
 import { MovingPlatform } from './MovingPlatform.js';
+import { TrampolinePlatform } from './TrampolinePlatform.js';
 import { Enemy } from '../entities/Enemy.js';
 import { Collectible } from '../entities/Collectible.js';
 import { Vine } from '../entities/Vine.js';
@@ -13,6 +14,9 @@ export function loadLevel() {
     const movingPlatforms = [];
 
     const MOVING_HEIGHT = 30;
+    const TRAMPOLINE_HEIGHT = 26;
+    const TRAMPOLINE_MIN_WIDTH = 92;
+    const TRAMPOLINE_MAX_WIDTH = 130;
     const STATIC_CLEARANCE_X = 56;
     const STATIC_CLEARANCE_Y = 44;
     const MP_TO_MP_CLEARANCE_X = 80;
@@ -48,6 +52,54 @@ export function loadLevel() {
     );
 
     const overlapWidth = (a, b) => Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x));
+
+    const canPlaceTrampoline = (candidate, extraStatic = []) => {
+        if (!candidate) return false;
+        const rect = {
+            x: candidate.x,
+            y: candidate.y,
+            width: candidate.width,
+            height: candidate.height
+        };
+        if (rect.y < 110 || rect.y + rect.height > 860) return false;
+
+        const staticRects = [...platforms, ...extraStatic];
+        for (let i = 0; i < staticRects.length; i++) {
+            if (overlapsRect(rect, staticRects[i], 20, 18)) return false;
+        }
+
+        for (let i = 0; i < movingPlatforms.length; i++) {
+            if (overlapsRect(rect, getSweptRect(movingPlatforms[i]), 24, 22)) return false;
+        }
+
+        for (let i = 0; i < vines.length; i++) {
+            if (overlapsRect(rect, vines[i], 10, 10)) return false;
+        }
+
+        for (let i = 0; i < swingingVines.length; i++) {
+            const sv = swingingVines[i];
+            if (Math.abs((rect.x + rect.width / 2) - sv.anchorX) < 95) return false;
+        }
+
+        return true;
+    };
+
+    const tryPlaceTrampoline = ({ attempts = 6, createCandidate, extraStatic = [] }) => {
+        for (let i = 0; i < attempts; i++) {
+            const candidate = createCandidate(i);
+            if (!candidate) continue;
+            if (!canPlaceTrampoline(candidate, extraStatic)) continue;
+            platforms.push(new TrampolinePlatform(
+                candidate.x,
+                candidate.y,
+                candidate.width,
+                candidate.height,
+                theme
+            ));
+            return true;
+        }
+        return false;
+    };
 
     const canPlaceMovingPlatform = (candidate, extraStatic = [], isUseful = null) => {
         const swept = getSweptRect(candidate);
@@ -462,6 +514,26 @@ export function loadLevel() {
         }
     }
 
+    // Start-zone utility trampolines (DKC-style tire bounce lanes).
+    for (let i = 0; i < startGaps.length; i++) {
+        const g = startGaps[i];
+        if (g.gap < 130 || Math.random() >= 0.42) continue;
+        tryPlaceTrampoline({
+            attempts: 6,
+            extraStatic: [g.left, g.right],
+            createCandidate: () => {
+                const width = TRAMPOLINE_MIN_WIDTH + Math.random() * (TRAMPOLINE_MAX_WIDTH - TRAMPOLINE_MIN_WIDTH);
+                const minX = g.left.x + g.left.width + 14;
+                const maxX = g.right.x - width - 14;
+                if (maxX <= minX) return null;
+                const x = minX + Math.random() * (maxX - minX);
+                const yBase = Math.min(g.left.y, g.right.y) - (34 + Math.random() * 48);
+                const y = clamp(yBase, 160, 760);
+                return { x, y, width, height: TRAMPOLINE_HEIGHT };
+            }
+        });
+    }
+
     let currentX = Math.max(...startPlatforms.map(p => p.x + p.width));
 
     // Generate up to 10000 X
@@ -615,6 +687,26 @@ export function loadLevel() {
                         }
                     });
                 }
+            }
+
+            // Optional trampoline in the gap for vertical rescue routes.
+            if (gap > 130 && Math.random() < 0.33) {
+                const previousPlatform = platforms[platforms.length - 1];
+                const nextPlatformRect = { x: currentX + gap, y: platY, width: platWidth, height };
+                tryPlaceTrampoline({
+                    attempts: 6,
+                    extraStatic: [previousPlatform, nextPlatformRect, ...floatingPlatforms],
+                    createCandidate: () => {
+                        const width = TRAMPOLINE_MIN_WIDTH + Math.random() * (TRAMPOLINE_MAX_WIDTH - TRAMPOLINE_MIN_WIDTH);
+                        const minX = currentX + 14;
+                        const maxX = currentX + gap - width - 14;
+                        if (maxX <= minX) return null;
+                        const x = minX + Math.random() * (maxX - minX);
+                        const yBase = Math.min(previousPlatform.y, platY) - (30 + Math.random() * 62);
+                        const y = clamp(yBase, 150, 760);
+                        return { x, y, width, height: TRAMPOLINE_HEIGHT };
+                    }
+                });
             }
 
             currentX += gap;

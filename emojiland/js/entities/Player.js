@@ -196,6 +196,9 @@ export class Player extends Entity {
                 this.letterCelebrationSpawnTimer <= 0
             ) {
                 this.letterCelebrationVisibleCount++;
+                if (game && game.audio && typeof game.audio.playLetterVictoryStep === 'function') {
+                    game.audio.playLetterVictoryStep(this.letterCelebrationVisibleCount - 1);
+                }
                 this.letterCelebrationSpawnTimer += this.letterCelebrationSpawnInterval;
             }
             if (this.letterCelebrationTimer <= 0) {
@@ -568,6 +571,12 @@ export class Player extends Entity {
                     const isTurtleShell = enemy.type === 'patrol' && enemy.emoji === '🐢' && enemy.turtleFlipped;
                     const isTopStomp = this.vy > 0 && hitbox.y + hitbox.height - (this.vy * dt) <= enemy.y + enemy.height * 0.5;
                     if (isTurtleShell && !isTopStomp) {
+                        if (typeof enemy.kickShell === 'function') {
+                            const playerCenterX = this.x + this.width / 2;
+                            const enemyCenterX = enemy.x + enemy.width / 2;
+                            const kickDir = playerCenterX <= enemyCenterX ? 1 : -1;
+                            enemy.kickShell(kickDir, game);
+                        }
                         return;
                     }
                     const stompableEmojis = ['🐢', '🐸', '🐦', '🦅', '🦉', '🐦‍⬛', '🧟‍♂️', '🦑', '🦗', '🐿️', '🕷️', '🪼'];
@@ -706,6 +715,22 @@ export class Player extends Entity {
 
                     if (this.vy > 0) {
                         this.y = platform.y - this.height;
+                        if (platform.isTrampoline) {
+                            // Match enemy-stomp bounce 1:1 so trampoline response feels identical.
+                            this.y -= 0.01;
+                            // Height is proportional to v^2, so sqrt(2)x speed gives ~2x apex height.
+                            this.vy = this.jumpForce * Math.SQRT2;
+                            this.grounded = false;
+                            this.isJumping = true;
+                            this.forceFullJump = true;
+                            this.airJumps = 1;
+                            this.coyoteTimer = 0;
+                            this.jumpBufferTimer = 0;
+                            this.isSpinning = true;
+                            this.spinDirection = this.facingRight ? 1 : -1;
+                            this.spinBaseRotation = this.rotation;
+                            return;
+                        }
                         this.grounded = true;
                     } else if (this.vy < 0) {
                         // Improved head-bonk logic: if we are already mostly above the top edge,
@@ -758,9 +783,6 @@ export class Player extends Entity {
         this.letterCelebrationTimer = this.letterCelebrationDuration;
         this.letterCelebrationVisibleCount = 0;
         this.letterCelebrationSpawnTimer = 0.02;
-        if (game && game.audio && typeof game.audio.playLetterVictoryChime === 'function') {
-            game.audio.playLetterVictoryChime();
-        }
     }
 
     takeDamage(game) {
@@ -1051,8 +1073,9 @@ export class Player extends Entity {
         }
 
         if (!game?.gameOverTriggered && this.letterCelebrationTimer > 0 && this.letterCelebrationVisibleCount > 0) {
-            const sequence = ['E', 'M', 'O', 'J', 'I', '✅'];
-            const visible = Math.min(this.letterCelebrationVisibleCount, sequence.length);
+            const letters = ['E', 'M', 'O', 'J', 'I'];
+            const visible = Math.min(this.letterCelebrationVisibleCount, letters.length);
+            const showCheck = this.letterCelebrationVisibleCount > letters.length;
             const fadeOut = this.letterCelebrationTimer < 0.4 ? (this.letterCelebrationTimer / 0.4) : 1;
             const centerX = this.x + this.width / 2;
             const baseY = this.y - 136;
@@ -1066,48 +1089,48 @@ export class Player extends Entity {
             ctx.textBaseline = 'middle';
 
             for (let i = 0; i < visible; i++) {
-                const x = centerX + (i - (sequence.length - 1) / 2) * spacing;
+                const x = centerX + (i - (letters.length - 1) / 2) * spacing;
                 const y = baseY - Math.sin(this.pulseTimer * 8 + i * 0.6) * 2;
                 const tileX = x - tileSize / 2;
                 const tileY = y - tileSize / 2;
-                const mark = sequence[i];
+                const mark = letters[i];
 
-                if (mark !== '✅') {
-                    const tileGrad = ctx.createLinearGradient(tileX, tileY, tileX, tileY + tileSize);
-                    tileGrad.addColorStop(0, '#ffe082');
-                    tileGrad.addColorStop(1, '#ffb300');
-                    ctx.fillStyle = tileGrad;
-                    if (ctx.roundRect) {
-                        ctx.beginPath();
-                        ctx.roundRect(tileX, tileY, tileSize, tileSize, radius);
-                        ctx.fill();
-                    } else {
-                        ctx.fillRect(tileX, tileY, tileSize, tileSize);
-                    }
-
-                    ctx.strokeStyle = '#8a5200';
-                    ctx.lineWidth = 2;
-                    if (ctx.roundRect) {
-                        ctx.beginPath();
-                        ctx.roundRect(tileX, tileY, tileSize, tileSize, radius);
-                        ctx.stroke();
-                    } else {
-                        ctx.strokeRect(tileX, tileY, tileSize, tileSize);
-                    }
-                }
-                if (mark === '✅') {
-                    if (!this._letterCheckEmoji) this._letterCheckEmoji = getEmojiCanvas('✅', 36);
-                    const cached = this._letterCheckEmoji;
-                    ctx.drawImage(cached.canvas, x - cached.width / 2, y - cached.height / 2);
+                const tileGrad = ctx.createLinearGradient(tileX, tileY, tileX, tileY + tileSize);
+                tileGrad.addColorStop(0, '#ffe082');
+                tileGrad.addColorStop(1, '#ffb300');
+                ctx.fillStyle = tileGrad;
+                if (ctx.roundRect) {
+                    ctx.beginPath();
+                    ctx.roundRect(tileX, tileY, tileSize, tileSize, radius);
+                    ctx.fill();
                 } else {
-                    ctx.font = 'bold 32px "Outfit", sans-serif';
-                    ctx.lineJoin = 'round';
-                    ctx.lineWidth = 5;
-                    ctx.strokeStyle = '#3a2300';
-                    ctx.strokeText(mark, x, y + 0.5);
-                    ctx.fillStyle = '#ffffff';
-                    ctx.fillText(mark, x, y + 0.5);
+                    ctx.fillRect(tileX, tileY, tileSize, tileSize);
                 }
+
+                ctx.strokeStyle = '#8a5200';
+                ctx.lineWidth = 2;
+                if (ctx.roundRect) {
+                    ctx.beginPath();
+                    ctx.roundRect(tileX, tileY, tileSize, tileSize, radius);
+                    ctx.stroke();
+                } else {
+                    ctx.strokeRect(tileX, tileY, tileSize, tileSize);
+                }
+
+                ctx.font = 'bold 32px "Outfit", sans-serif';
+                ctx.lineJoin = 'round';
+                ctx.lineWidth = 5;
+                ctx.strokeStyle = '#3a2300';
+                ctx.strokeText(mark, x, y + 0.5);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText(mark, x, y + 0.5);
+            }
+
+            if (showCheck) {
+                if (!this._letterCheckEmoji) this._letterCheckEmoji = getEmojiCanvas('✅', 36);
+                const cached = this._letterCheckEmoji;
+                const checkY = baseY - tileSize - 20 - Math.sin(this.pulseTimer * 8 + 4.2) * 2;
+                ctx.drawImage(cached.canvas, centerX - cached.width / 2, checkY - cached.height / 2);
             }
             ctx.restore();
         }

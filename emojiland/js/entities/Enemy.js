@@ -115,6 +115,7 @@ export class Enemy extends Entity {
         this.turtleRecovering = false;
         this.turtleRecoverTimer = 0;
         this.turtleRecoverDuration = 0.32;
+        this.shellHitCooldownTimer = 0;
 
         if (this.type === TYPE_PATROL) this.state = 'PATROL';
         if (this.type === TYPE_CHASER) this.state = 'PATROL';
@@ -255,6 +256,7 @@ export class Enemy extends Entity {
         if (this.damageFlashTimer > 0) this.damageFlashTimer -= dt;
         if (this.turtleFlipped && this.turtleFlipTimer > 0) this.turtleFlipTimer = Math.max(0, this.turtleFlipTimer - dt);
         if (this.turtleRecovering && this.turtleRecoverTimer > 0) this.turtleRecoverTimer = Math.max(0, this.turtleRecoverTimer - dt);
+        if (this.shellHitCooldownTimer > 0) this.shellHitCooldownTimer = Math.max(0, this.shellHitCooldownTimer - dt);
         if (this.type === TYPE_TROLL) {
             this.toxicCloudPulse += dt * 2.4;
             if (this.toxicCloudDamageCooldown > 0) {
@@ -416,6 +418,8 @@ export class Enemy extends Entity {
             this.x += this.vx * dt;
             this.y += this.vy * dt;
         }
+
+        this.tryDamageEnemiesAsSlidingShell(game);
     }
 
     updatePatrol(dt) {
@@ -439,8 +443,7 @@ export class Enemy extends Entity {
                 this.vx = 0;
                 return;
             }
-            this.state = 'SHELL';
-            this.vx = 0;
+            this.state = Math.abs(this.vx) > 1 ? 'SHELL_SLIDE' : 'SHELL';
             return;
         }
         this.state = 'PATROL';
@@ -494,6 +497,43 @@ export class Enemy extends Entity {
         }
 
         this.takeDamage(this.health, game);
+    }
+
+    kickShell(kickDir, game) {
+        const isTurtle = this.type === TYPE_PATROL && this.emoji === '🐢';
+        if (!isTurtle || !this.turtleFlipped || this.turtleRecovering) return false;
+
+        const dir = kickDir >= 0 ? 1 : -1;
+        this.facingRight = dir > 0;
+        this.state = 'SHELL_SLIDE';
+        this.vx = dir * 460;
+        this.vy = 0;
+        this.turtleFlipTimer = Math.max(this.turtleFlipTimer, 2.5);
+        this.damageFlashTimer = 0.08;
+        this.shellHitCooldownTimer = 0;
+        if (game && game.audio) game.audio.playHit();
+        if (game && game.particles) {
+            game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
+        }
+        return true;
+    }
+
+    tryDamageEnemiesAsSlidingShell(game) {
+        const isSlidingShell = this.type === TYPE_PATROL &&
+            this.emoji === '🐢' &&
+            this.turtleFlipped &&
+            !this.turtleRecovering &&
+            Math.abs(this.vx) > 1;
+        if (!isSlidingShell || !game || !game.enemies || this.shellHitCooldownTimer > 0) return;
+
+        for (let i = 0; i < game.enemies.length; i++) {
+            const target = game.enemies[i];
+            if (!target || target === this || target.markedForDeletion || !target.takeDamage) continue;
+            if (!Physics.checkAABB(this, target)) continue;
+            target.takeDamage(1, game);
+            this.shellHitCooldownTimer = 0.08;
+            break;
+        }
     }
 
     updateChaser(dt, game, player, dist, distX) {
