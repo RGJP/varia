@@ -97,13 +97,13 @@ canvas {
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    opacity: 0.15;
-    /* Requested 15% opacity */
+    opacity: 0.06;
+    /* Subtle default visibility; still clear on touch */
     transition: opacity 0.3s ease;
 }
 
 .joystick-zone:active {
-    opacity: 0.4;
+    opacity: 1;
     /* Slightly more visible when used */
 }
 
@@ -245,7 +245,7 @@ canvas {
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    opacity: 0.3;
+    opacity: 0.5;
 }
 
 #btn-pause:active {
@@ -269,7 +269,7 @@ canvas {
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    opacity: 0.4;
+    opacity: 1;
     transition: opacity 0.2s ease, transform 0.15s ease;
 }
 

@@ -591,12 +591,13 @@ export class Player extends Entity {
                     }
                 } else if (Physics.checkAABB(hitbox, enemy)) {
                     const isTurtleShell = enemy.type === 'patrol' && enemy.emoji === '🐢' && enemy.turtleFlipped;
-                    if (isTurtleShell) {
+                    const isTopStomp = this.vy > 0 && hitbox.y + hitbox.height - (this.vy * dt) <= enemy.y + enemy.height * 0.5;
+                    if (isTurtleShell && !isTopStomp) {
                         return;
                     }
                     const stompableEmojis = ['🐢', '🐸', '🐦', '🦅', '🦉', '🐦‍⬛', '🧟‍♂️', '🦑', '🦗', '🐿️', '🕷️', '🪼'];
                     const canStompEnemy = enemy.bossType !== 'boss_spider' && stompableEmojis.includes(enemy.emoji);
-                    if (canStompEnemy && this.vy > 0 && hitbox.y + hitbox.height - (this.vy * dt) <= enemy.y + enemy.height * 0.5) {
+                    if (canStompEnemy && isTopStomp) {
                         if (typeof enemy.stomp === 'function') enemy.stomp(game);
                         else enemy.takeDamage(enemy.health, game);
                         this.vy = this.jumpForce;

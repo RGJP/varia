@@ -706,7 +706,7 @@ export class Game {
             // Title with Premium Gradient
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
-            this.ctx.font = 'bold 96px "Outfit", sans-serif';
+            this.ctx.font = 'bold 84px "Outfit", sans-serif';
             const gradient = this.ctx.createLinearGradient(0, -200, 0, -110);
             gradient.addColorStop(0, '#ffffff'); // White
             gradient.addColorStop(1, '#ffea00'); // Gold
@@ -718,7 +718,7 @@ export class Game {
 
             // Controls & Info Card
             const cardWidth = 760;
-            const cardHeight = 220;
+            const cardHeight = 230;
             const cardX = -cardWidth / 2;
             const cardY = -90;
 
@@ -751,12 +751,13 @@ export class Game {
             this.ctx.font = '20px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
 
-            let ly = cardY + 80;
-            const yStep = 32;
+            let ly = cardY + 74;
+            const yStep = 30;
             this.ctx.fillText('Arrows/Joystick : Move Character', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('A : Jump (🦘)', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('D / HOLD: Rock Attack (🪨)', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('S : Drop Bomb (💣)', cardX + 40, ly);
+            this.ctx.fillText('S : Drop Bomb (💣)', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('P : Pause/Unpause', cardX + 40, ly);
 
             // Vertical Divider
             this.ctx.beginPath();
@@ -771,11 +772,12 @@ export class Game {
 
             this.ctx.font = '20px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
-            let ry = cardY + 80;
+            let ry = cardY + 74;
             this.ctx.fillText('🪙 Collect All Coins and Collectibles', 40, ry); ry += yStep;
             this.ctx.fillText('⚔️ Defeat All Enemies', 40, ry); ry += yStep;
             this.ctx.fillText('🏁 Reach the end with the best score', 40, ry); ry += yStep;
-            this.ctx.fillText('🎲 Levels are always unique', 40, ry);
+            this.ctx.fillText('🎲 Levels are always unique', 40, ry); ry += yStep;
+            this.ctx.fillText('Embrace the Chaos!', 40, ry);
 
             // Pulsing 'Start' Text
             const alpha = 0.6 + 0.4 * Math.sin(time * 3);
@@ -790,7 +792,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('All copyright free music from Pixabay', 0, cardY + cardHeight + 100);
+            this.ctx.fillText('All copyright free music from Pixabay - v1.1', 0, cardY + cardHeight + 100);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
