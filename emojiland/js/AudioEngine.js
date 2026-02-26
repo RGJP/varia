@@ -286,6 +286,17 @@ export class AudioEngine {
         this._playNoiseBurst(0.055, 0.075, 1050);
     }
 
+    playExplosion() {
+        // Bomb detonation: low boom + short crack for punch.
+        this._playTone('square', 95, 0.3, { endFreq: 42, gain: 0.5, attack: 0.002 });
+        this._playTone('triangle', 180, 0.24, { endFreq: 85, gain: 0.34, attack: 0.0025, detune: -5 });
+        this._playNoiseBurst(0.12, 0.12, 380);
+        setTimeout(() => {
+            this._playTone('sine', 720, 0.09, { endFreq: 260, gain: 0.16, attack: 0.0015 });
+            this._playNoiseBurst(0.05, 0.06, 1200);
+        }, 24);
+    }
+
     playCollect() {
         // Shorter, softer sound
         this.playOscillator('sine', 1000, 0.05, 1200);

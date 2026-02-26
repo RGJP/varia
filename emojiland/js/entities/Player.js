@@ -863,8 +863,8 @@ export class Player extends Entity {
                 const backY = -dirY;
                 const perpX = -backY;
                 const perpY = backX;
-                const trailCount = 10;
-                const spreadStep = 4.2;
+                const trailCount = 12;
+                const spreadStep = 6.2;
                 const emitterX = backX * this.width * 0.16;
                 const emitterY = backY * this.height * 0.16;
 
@@ -889,8 +889,8 @@ export class Player extends Entity {
                     const spread = (i - (trailCount - 1) / 2) * spreadStep;
                     const wobble = Math.sin(phase + i * 1.25) * 1.8;
                     const sideOffset = spread + wobble;
-                    const stemEndX = emitterX + backX * (10 + speedRatio * 5) + perpX * (sideOffset * 0.55);
-                    const stemEndY = emitterY + backY * (10 + speedRatio * 5) + perpY * (sideOffset * 0.55);
+                    const stemEndX = emitterX + backX * (10 + speedRatio * 5) + perpX * (sideOffset * 0.72);
+                    const stemEndY = emitterY + backY * (10 + speedRatio * 5) + perpY * (sideOffset * 0.72);
                     const baseX = emitterX + backX * (17 + speedRatio * 8) + perpX * sideOffset;
                     const baseY = emitterY + backY * (17 + speedRatio * 8) + perpY * sideOffset;
                     const length = 54 + speedRatio * 52 + ((Math.sin(phase * 1.1 + i * 1.6) + 1) * 0.5) * 16;
@@ -902,7 +902,7 @@ export class Player extends Entity {
 
                     // Short connector so each trail visibly comes from the player.
                     ctx.strokeStyle = 'rgba(210, 238, 255, 0.65)';
-                    ctx.lineWidth = Math.max(1.2, 2.8 - i * 0.1);
+                    ctx.lineWidth = Math.max(1.5, 3.4 - i * 0.1);
                     ctx.globalAlpha = Math.max(0.2, 0.45 + speedRatio * 0.24 - i * 0.02);
                     ctx.beginPath();
                     ctx.moveTo(emitterX + perpX * (sideOffset * 0.24), emitterY + perpY * (sideOffset * 0.24));
@@ -910,7 +910,7 @@ export class Player extends Entity {
                     ctx.stroke();
 
                     ctx.strokeStyle = 'rgba(170, 220, 255, 0.7)';
-                    ctx.lineWidth = Math.max(0.85, 2.5 - i * 0.1);
+                    ctx.lineWidth = Math.max(1.05, 3.0 - i * 0.1);
                     ctx.globalAlpha = Math.max(0.12, 0.5 + speedRatio * 0.3 - i * 0.025);
                     ctx.beginPath();
                     ctx.moveTo(baseX, baseY);

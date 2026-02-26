@@ -65,7 +65,9 @@ export class Bomb extends Entity {
             game.rocks.push(new ExplosionParticle(spawnX, spawnY));
         }
 
-        if (game.audio) game.audio.playHit();
+        if (game.audio && typeof game.audio.playExplosion === 'function') {
+            game.audio.playExplosion();
+        }
 
         // Area of Effect (AOE): Damage enemies within the radius
 

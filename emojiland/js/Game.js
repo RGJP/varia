@@ -777,7 +777,7 @@ export class Game {
             this.ctx.fillText('⚔️ Defeat All Enemies', 40, ry); ry += yStep;
             this.ctx.fillText('🏁 Reach the end with the best score', 40, ry); ry += yStep;
             this.ctx.fillText('🎲 Levels are always unique', 40, ry); ry += yStep;
-            this.ctx.fillText('Embrace the Chaos!', 40, ry);
+            this.ctx.fillText('😎 Embrace the Chaos!', 40, ry);
 
             // Pulsing 'Start' Text
             const alpha = 0.6 + 0.4 * Math.sin(time * 3);
@@ -792,7 +792,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('All copyright free music from Pixabay - v1.3', 0, cardY + cardHeight + 100);
+            this.ctx.fillText('All copyright free music from Pixabay - v1.04', 0, cardY + cardHeight + 100);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
