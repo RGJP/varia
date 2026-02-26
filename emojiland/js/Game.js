@@ -875,7 +875,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('All copyright free music from Pixabay - v1.06', 0, cardY + cardHeight + 100);
+            this.ctx.fillText('Music from Pixabay - version 1.07', 0, cardY + cardHeight + 100);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';

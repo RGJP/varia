@@ -45,12 +45,11 @@ export class Player extends Entity {
         this.score = 0;
         this.collectedLetters = { E: false, M: false, O: false, J: false, I: false };
         this.letterCelebrationTimer = 0;
-        this.letterCelebrationDuration = 2.6;
+        this.letterCelebrationDuration = 2.2;
         this.letterCelebrationSpawnTimer = 0;
-        this.letterCelebrationSpawnInterval = 0.12;
+        this.letterCelebrationSpawnInterval = 0.16;
         this.letterCelebrationVisibleCount = 0;
-        this.letterCelebrationMax = 5;
-        this.letterCelebrationSparkTimer = 0;
+        this.letterCelebrationMax = 6;
         this.rotation = 0;
         this.isSpinning = false;
         this.spinDirection = 1;
@@ -190,7 +189,6 @@ export class Player extends Entity {
         this.pulseTimer += dt;
         this.catProtectorBob += dt;
         if (this.letterCelebrationTimer > 0) {
-            const prevCount = this.letterCelebrationVisibleCount;
             this.letterCelebrationTimer -= dt;
             this.letterCelebrationSpawnTimer -= dt;
             while (
@@ -200,32 +198,9 @@ export class Player extends Entity {
                 this.letterCelebrationVisibleCount++;
                 this.letterCelebrationSpawnTimer += this.letterCelebrationSpawnInterval;
             }
-            if (game && game.particles && this.letterCelebrationVisibleCount > prevCount) {
-                const centerX = this.x + this.width / 2;
-                for (let i = prevCount; i < this.letterCelebrationVisibleCount; i++) {
-                    const handX = centerX + (i - (this.letterCelebrationMax - 1) / 2) * 28;
-                    const handY = this.y - 72 - Math.sin(this.pulseTimer * 9 + i * 0.8) * 8;
-                    game.particles.emitFireworksLite(handX, handY);
-                    game.particles.emit(handX, handY, 14, '#ffe26a', [70, 200], [0.2, 0.55], [1.5, 4.5]);
-                }
-            }
-            this.letterCelebrationSparkTimer -= dt;
-            if (game && game.particles && this.letterCelebrationSparkTimer <= 0) {
-                this.letterCelebrationSparkTimer = 0.18;
-                game.particles.emit(
-                    this.x + this.width / 2 + (Math.random() - 0.5) * 110,
-                    this.y - 80 + (Math.random() - 0.5) * 30,
-                    10,
-                    '#fff4a3',
-                    [35, 120],
-                    [0.16, 0.42],
-                    [1.2, 3]
-                );
-            }
             if (this.letterCelebrationTimer <= 0) {
                 this.letterCelebrationTimer = 0;
                 this.letterCelebrationVisibleCount = 0;
-                this.letterCelebrationSparkTimer = 0;
             }
         }
 
@@ -783,7 +758,6 @@ export class Player extends Entity {
         this.letterCelebrationTimer = this.letterCelebrationDuration;
         this.letterCelebrationVisibleCount = 0;
         this.letterCelebrationSpawnTimer = 0.02;
-        this.letterCelebrationSparkTimer = 0.02;
         if (game && game.audio && typeof game.audio.playLetterVictoryChime === 'function') {
             game.audio.playLetterVictoryChime();
         }
@@ -1077,44 +1051,65 @@ export class Player extends Entity {
         }
 
         if (!game?.gameOverTriggered && this.letterCelebrationTimer > 0 && this.letterCelebrationVisibleCount > 0) {
-            if (!this._clapEmoji) {
-                this._clapEmoji = getEmojiCanvas('👏', 38);
-            }
-            const fadeOut = this.letterCelebrationTimer < 0.45 ? (this.letterCelebrationTimer / 0.45) : 1;
+            const sequence = ['E', 'M', 'O', 'J', 'I', '✅'];
+            const visible = Math.min(this.letterCelebrationVisibleCount, sequence.length);
+            const fadeOut = this.letterCelebrationTimer < 0.4 ? (this.letterCelebrationTimer / 0.4) : 1;
             const centerX = this.x + this.width / 2;
-            const baseY = this.y - 84;
-            const spacing = 30;
-            const elapsed = this.letterCelebrationDuration - this.letterCelebrationTimer;
-            for (let i = 0; i < this.letterCelebrationVisibleCount; i++) {
-                const x = centerX + (i - (this.letterCelebrationMax - 1) / 2) * spacing;
-                const bob = Math.sin(this.pulseTimer * 10 + i * 0.8) * 7;
-                const y = baseY - bob;
-                const localT = Math.max(0, elapsed - i * this.letterCelebrationSpawnInterval);
-                const popIn = Math.min(1, localT / 0.12);
-                const pulse = 1 + Math.sin(localT * 16) * 0.22 * Math.exp(-localT * 0.55);
-                const sizeMul = Math.max(0.25, popIn) * pulse;
-                const w = this._clapEmoji.width * sizeMul;
-                const h = this._clapEmoji.height * sizeMul;
+            const baseY = this.y - 136;
+            const spacing = 48;
+            const tileSize = 42;
+            const radius = 10;
 
-                ctx.globalAlpha = Math.max(0, Math.min(1, fadeOut));
-                ctx.shadowColor = 'rgba(255, 235, 120, 0.8)';
-                ctx.shadowBlur = 16 + 10 * Math.sin(this.pulseTimer * 8 + i);
-                ctx.drawImage(this._clapEmoji.canvas, x - w / 2, y - h / 2, w, h);
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, Math.min(1, fadeOut));
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            for (let i = 0; i < visible; i++) {
+                const x = centerX + (i - (sequence.length - 1) / 2) * spacing;
+                const y = baseY - Math.sin(this.pulseTimer * 8 + i * 0.6) * 2;
+                const tileX = x - tileSize / 2;
+                const tileY = y - tileSize / 2;
+                const mark = sequence[i];
+
+                if (mark !== '✅') {
+                    const tileGrad = ctx.createLinearGradient(tileX, tileY, tileX, tileY + tileSize);
+                    tileGrad.addColorStop(0, '#ffe082');
+                    tileGrad.addColorStop(1, '#ffb300');
+                    ctx.fillStyle = tileGrad;
+                    if (ctx.roundRect) {
+                        ctx.beginPath();
+                        ctx.roundRect(tileX, tileY, tileSize, tileSize, radius);
+                        ctx.fill();
+                    } else {
+                        ctx.fillRect(tileX, tileY, tileSize, tileSize);
+                    }
+
+                    ctx.strokeStyle = '#8a5200';
+                    ctx.lineWidth = 2;
+                    if (ctx.roundRect) {
+                        ctx.beginPath();
+                        ctx.roundRect(tileX, tileY, tileSize, tileSize, radius);
+                        ctx.stroke();
+                    } else {
+                        ctx.strokeRect(tileX, tileY, tileSize, tileSize);
+                    }
+                }
+                if (mark === '✅') {
+                    if (!this._letterCheckEmoji) this._letterCheckEmoji = getEmojiCanvas('✅', 36);
+                    const cached = this._letterCheckEmoji;
+                    ctx.drawImage(cached.canvas, x - cached.width / 2, y - cached.height / 2);
+                } else {
+                    ctx.font = 'bold 32px "Outfit", sans-serif';
+                    ctx.lineJoin = 'round';
+                    ctx.lineWidth = 5;
+                    ctx.strokeStyle = '#3a2300';
+                    ctx.strokeText(mark, x, y + 0.5);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillText(mark, x, y + 0.5);
+                }
             }
-            if (!this._celebrationStarEmoji) {
-                this._celebrationStarEmoji = getEmojiCanvas('✨', 20);
-            }
-            const starCount = 6;
-            for (let s = 0; s < starCount; s++) {
-                const a = this.pulseTimer * 2.8 + (s / starCount) * Math.PI * 2;
-                const r = 62 + Math.sin(this.pulseTimer * 7 + s) * 8;
-                const sx = centerX + Math.cos(a) * r - this._celebrationStarEmoji.width / 2;
-                const sy = baseY - 10 + Math.sin(a * 1.3) * 16 - this._celebrationStarEmoji.height / 2;
-                ctx.globalAlpha = Math.max(0, Math.min(1, fadeOut * 0.85));
-                ctx.drawImage(this._celebrationStarEmoji.canvas, sx, sy);
-            }
-            ctx.shadowBlur = 0;
-            ctx.shadowColor = 'transparent';
+            ctx.restore();
         }
 
         ctx.globalAlpha = 1.0;

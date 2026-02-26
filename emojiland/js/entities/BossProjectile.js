@@ -2,7 +2,7 @@ import { Entity } from './Entity.js';
 import { Physics } from '../Physics.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
-// projectileType: 'drumstick' | 'stone' | 'skewer' | 'web' | 'wrench' | 'venom' | 'flame'
+// projectileType: 'drumstick' | 'stone' | 'skewer' | 'web' | 'wrench' | 'venom' | 'flame' | 'boomerang' | 'banana' | 'icicle' | 'roar' | 'fossil' | 'needle' | 'scarab'
 export class BossProjectile extends Entity {
     constructor(x, y, vx, vy, projectileType) {
         super(x, y, 40, 40);
@@ -55,6 +55,54 @@ export class BossProjectile extends Entity {
                 // Dragon volley flames must stay on a flat lane.
                 this.ignoreGravity = true;
                 break;
+            case 'boomerang':
+                this.emoji = String.fromCodePoint(0x1FA83);
+                this.maxBounces = 0;
+                this.ignoreGravity = true;
+                this.boomerangTimer = 0;
+                this.boomerangReturnDelay = 0.42 + Math.random() * 0.12;
+                this.boomerangLifetime = 1.65;
+                this.boomerangReturned = false;
+                this.boomerangTurnRate = 4.8;
+                this.boomerangMaxSpeed = 640;
+                break;
+            case 'banana':
+                this.emoji = String.fromCodePoint(0x1F34C);
+                this.maxBounces = 1;
+                this.canBounceOnPlatforms = true;
+                this.bananaLifetime = 2.6;
+                break;
+            case 'icicle':
+                this.emoji = String.fromCodePoint(0x1F9CA);
+                this.maxBounces = 0;
+                this.projectileLifetime = 2.3;
+                break;
+            case 'roar':
+                this.emoji = String.fromCodePoint(0x1F4A8);
+                this.maxBounces = 0;
+                this.ignoreGravity = true;
+                this.ignorePlatformTimer = 0.2;
+                this.projectileLifetime = 0.9;
+                break;
+            case 'fossil':
+                this.emoji = String.fromCodePoint(0x1F9B4);
+                this.maxBounces = 1;
+                this.canBounceOnPlatforms = true;
+                this.projectileLifetime = 2.5;
+                break;
+            case 'needle':
+                this.emoji = String.fromCodePoint(0x1FAA1);
+                this.maxBounces = 0;
+                this.ignoreGravity = true;
+                this.ignorePlatformTimer = 0.16;
+                this.projectileLifetime = 1.35;
+                break;
+            case 'scarab':
+                this.emoji = String.fromCodePoint(0x1FAB2);
+                this.maxBounces = 1;
+                this.canBounceOnPlatforms = true;
+                this.projectileLifetime = 2.2;
+                break;
             default:
                 this.emoji = String.fromCodePoint(0x1FAA8);
                 this.maxBounces = 0;
@@ -69,6 +117,10 @@ export class BossProjectile extends Entity {
             this._updateWeb(dt, game);
             return;
         }
+        if (this.projectileType === 'boomerang') {
+            this._updateBoomerang(dt, game);
+            return;
+        }
 
         if (!this.ignoreGravity) {
             // Apply gravity
@@ -79,8 +131,11 @@ export class BossProjectile extends Entity {
         const prevY = this.y;
         this.x += this.vx * dt;
         this.y += this.vy * dt;
-        this.rotation += (this.vx > 0 ? 6 : -6) * dt;
+        const spinSpeed = this.projectileType === 'banana' ? 8 : 6;
+        this.rotation += (this.vx > 0 ? spinSpeed : -spinSpeed) * dt;
         if (this.ignorePlatformTimer > 0) this.ignorePlatformTimer -= dt;
+        if (this.projectileType === 'banana' && this.bananaLifetime !== undefined) this.bananaLifetime -= dt;
+        if (this.projectileLifetime !== undefined) this.projectileLifetime -= dt;
 
         if (this.markedForDeletion) return;
 
@@ -101,6 +156,30 @@ export class BossProjectile extends Entity {
                 } else if (this.projectileType === 'venom') {
                     // Venom hits are slippery and briefly slow the player.
                     game.player.slowTimer = Math.max(game.player.slowTimer || 0, 1.0);
+                } else if (this.projectileType === 'banana') {
+                    // Banana peel hit: mild slip/stagger combo.
+                    game.player.slowTimer = Math.max(game.player.slowTimer || 0, 0.85);
+                    game.player.stunTimer = Math.max(game.player.stunTimer || 0, 0.16);
+                } else if (this.projectileType === 'icicle') {
+                    // Cold hit: stronger brief slow.
+                    game.player.slowTimer = Math.max(game.player.slowTimer || 0, 1.15);
+                    game.player.stunTimer = Math.max(game.player.stunTimer || 0, 0.12);
+                } else if (this.projectileType === 'roar') {
+                    // Roar gust: tiny stagger and brief slow.
+                    game.player.slowTimer = Math.max(game.player.slowTimer || 0, 0.7);
+                    game.player.stunTimer = Math.max(game.player.stunTimer || 0, 0.1);
+                } else if (this.projectileType === 'fossil') {
+                    // Heavy fossil toss: stronger stagger.
+                    game.player.slowTimer = Math.max(game.player.slowTimer || 0, 0.95);
+                    game.player.stunTimer = Math.max(game.player.stunTimer || 0, 0.2);
+                } else if (this.projectileType === 'needle') {
+                    // Needle sting: quick puncture debuff.
+                    game.player.slowTimer = Math.max(game.player.slowTimer || 0, 0.9);
+                    game.player.stunTimer = Math.max(game.player.stunTimer || 0, 0.14);
+                } else if (this.projectileType === 'scarab') {
+                    // Beetle shell chunk: medium stagger.
+                    game.player.slowTimer = Math.max(game.player.slowTimer || 0, 0.9);
+                    game.player.stunTimer = Math.max(game.player.stunTimer || 0, 0.18);
                 }
 
                 this.markedForDeletion = true;
@@ -135,7 +214,52 @@ export class BossProjectile extends Entity {
         }
 
         // Off-screen cleanup
-        if (Math.abs(this.x - game.player.x) > 2000 || this.y > game.lowestY) {
+        if (Math.abs(this.x - game.player.x) > 2000 || this.y > game.lowestY || (this.projectileType === 'banana' && this.bananaLifetime <= 0) || (this.projectileLifetime !== undefined && this.projectileLifetime <= 0)) {
+            this.markedForDeletion = true;
+        }
+    }
+
+    _updateBoomerang(dt, game) {
+        this.boomerangTimer += dt;
+        this.boomerangLifetime -= dt;
+
+        if (!this.boomerangReturned && this.boomerangTimer >= this.boomerangReturnDelay) {
+            this.boomerangReturned = true;
+        }
+
+        if (this.boomerangReturned && game && game.player) {
+            const tx = game.player.x + game.player.width / 2;
+            const ty = game.player.y + game.player.height / 2;
+            const dx = tx - (this.x + this.width / 2);
+            const dy = ty - (this.y + this.height / 2);
+            const dist = Math.hypot(dx, dy) || 1;
+            const currSpeed = Math.hypot(this.vx, this.vy);
+            const desiredSpeed = Math.min(this.boomerangMaxSpeed, Math.max(280, currSpeed));
+            const targetVx = (dx / dist) * desiredSpeed;
+            const targetVy = (dy / dist) * desiredSpeed;
+            const turn = Math.max(0, Math.min(1, dt * this.boomerangTurnRate));
+            this.vx += (targetVx - this.vx) * turn;
+            this.vy += (targetVy - this.vy) * turn;
+        } else {
+            this.vy += Math.sin(this.boomerangTimer * 12) * 16 * dt;
+        }
+
+        this.x += this.vx * dt;
+        this.y += this.vy * dt;
+        this.rotation += (this.vx > 0 ? 10 : -10) * dt;
+
+        // Player collision
+        if (game.player.invulnerableTimer <= 0) {
+            if (Physics.checkAABB(this, game.player.getHitbox())) {
+                game.player.takeDamage(game);
+                game.audio.playHit();
+                game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
+                this.markedForDeletion = true;
+                return;
+            }
+        }
+
+        if (this.boomerangLifetime <= 0 || Math.abs(this.x - game.player.x) > 2400 || this.y > game.lowestY + 320 || this.y < -1200) {
             this.markedForDeletion = true;
         }
     }

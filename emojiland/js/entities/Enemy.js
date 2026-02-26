@@ -11,7 +11,7 @@ import { Barrel } from './Barrel.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 import { BossProjectile } from './BossProjectile.js';
 
-const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_hedgehog', 'boss_spider', 'boss_dragon', 'boss_robot', 'boss_lobster'];
+const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_hedgehog', 'boss_spider', 'boss_dragon', 'boss_robot', 'boss_lobster', 'boss_kangaroo', 'boss_monkey', 'boss_mammoth', 'boss_trex', 'boss_mosquito', 'boss_beetle'];
 
 const TYPE_PATROL = 'patrol';
 const TYPE_CHASER = 'chaser'; // 👹
@@ -1190,7 +1190,7 @@ export class Enemy extends Entity {
 export class Boss extends Entity {
     constructor(x, y, platform, bossType) {
         const resolvedBossType = bossType || BOSS_TYPES[Math.floor(Math.random() * BOSS_TYPES.length)];
-        const size = resolvedBossType === 'boss_spider' ? 92 : (resolvedBossType === 'boss_dragon' ? 170 : (resolvedBossType === 'boss_robot' ? 156 : (resolvedBossType === 'boss_lobster' ? 150 : 160)));
+        const size = resolvedBossType === 'boss_spider' ? 92 : (resolvedBossType === 'boss_dragon' ? 170 : (resolvedBossType === 'boss_robot' ? 156 : (resolvedBossType === 'boss_lobster' ? 150 : (resolvedBossType === 'boss_kangaroo' ? 154 : (resolvedBossType === 'boss_monkey' ? 150 : (resolvedBossType === 'boss_mammoth' ? 168 : (resolvedBossType === 'boss_trex' ? 166 : (resolvedBossType === 'boss_mosquito' ? 144 : (resolvedBossType === 'boss_beetle' ? 158 : 160)))))))));
         super(x, y - size, size, size);
 
         this.bossType = resolvedBossType;
@@ -1316,6 +1316,91 @@ export class Boss extends Entity {
         this.lobsterDashFxTimer = 0;
         this.lobsterMinionCooldown = 2.8 + Math.random() * 1.2;
 
+        // Kangaroo (boss_kangaroo): grounded hop duels, pouch boomerangs, and leap slams.
+        this.kangarooState = 'PATROL'; // 'PATROL' | 'LEAP'
+        this.kangarooPatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.kangarooHopCycle = Math.random() * Math.PI * 2;
+        this.kangarooTelegraphTimer = 0;
+        this.kangarooTelegraphType = 'boomerang'; // 'boomerang' | 'slam'
+        this.kangarooBoomerangShots = 0;
+        this.kangarooBoomerangTimer = 0;
+        this.kangarooLeapTargetX = this.x;
+        this.kangarooLeapVx = 0;
+        this.kangarooLeapVy = 0;
+        this.kangarooLeapLandFxTimer = 0;
+
+        // Monkey (boss_monkey): trickster canopy cycles + coconut juggles + dive-bombs.
+        this.monkeyState = 'PATROL'; // 'PATROL' | 'CANOPY' | 'DIVE'
+        this.monkeyPatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.monkeyHopCycle = Math.random() * Math.PI * 2;
+        this.monkeyTelegraphTimer = 0;
+        this.monkeyTelegraphType = 'banana_rain'; // 'banana_rain' | 'coconut_burst' | 'dive'
+        this.monkeyCoconutShots = 0;
+        this.monkeyCoconutTimer = 0;
+        this.monkeyCanopyTimer = 0;
+        this.monkeyCanopyDir = 1;
+        this.monkeyCanopyY = this.platform.y - this.height - 240;
+        this.monkeyBananaDropTimer = 0;
+        this.monkeyDiveTargetX = this.x;
+        this.monkeyDiveVx = 0;
+        this.monkeyDiveVy = 0;
+
+        // Mammoth (boss_mammoth): heavy charge lanes + frost fan + icicle rain.
+        this.mammothState = 'PATROL'; // 'PATROL' | 'CHARGE'
+        this.mammothPatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.mammothTelegraphTimer = 0;
+        this.mammothTelegraphType = 'charge'; // 'charge' | 'frost_fan' | 'icicle_rain'
+        this.mammothChargeDir = 0;
+        this.mammothChargeTimer = 0;
+        this.mammothChargeFxTimer = 0;
+        this.mammothFrostShots = 0;
+        this.mammothFrostTimer = 0;
+        this.mammothRainWaves = 0;
+        this.mammothRainTimer = 0;
+        this.mammothRainCenterX = this.x + this.width / 2;
+
+        // T-Rex (boss_trex): shockwave roars + fossil volleys + feral lunges.
+        this.trexState = 'PATROL'; // 'PATROL' | 'LUNGE'
+        this.trexPatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.trexTelegraphTimer = 0;
+        this.trexTelegraphType = 'roar'; // 'roar' | 'fossil' | 'lunge'
+        this.trexRoarWaves = 0;
+        this.trexRoarTimer = 0;
+        this.trexFossilShots = 0;
+        this.trexFossilTimer = 0;
+        this.trexLungeTimer = 0;
+        this.trexLungeDir = 0;
+        this.trexLungeFxTimer = 0;
+
+        // Mosquito (boss_mosquito): aerial harassment with needle fans, swarm dashes, and blood-trail dives.
+        this.mosquitoState = 'HOVER'; // 'HOVER' | 'DASH' | 'DRAIN'
+        this.mosquitoPatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.mosquitoHoverCenterY = this.platform.y - this.height - 190;
+        this.mosquitoTelegraphTimer = 0;
+        this.mosquitoTelegraphType = 'needle_fan'; // 'needle_fan' | 'swarm' | 'drain'
+        this.mosquitoNeedleShots = 0;
+        this.mosquitoNeedleTimer = 0;
+        this.mosquitoSwarmBursts = 0;
+        this.mosquitoSwarmTimer = 0;
+        this.mosquitoDashTimer = 0;
+        this.mosquitoDashVx = 0;
+        this.mosquitoDashVy = 0;
+        this.mosquitoDrainTimer = 0;
+        this.mosquitoDrainTrailTimer = 0;
+
+        // Beetle (boss_beetle): armored rolls + scarab shell volleys + burrow ambushes.
+        this.beetleState = 'PATROL'; // 'PATROL' | 'ROLL' | 'BURROW'
+        this.beetlePatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.beetleTelegraphTimer = 0;
+        this.beetleTelegraphType = 'roll'; // 'roll' | 'scarab_spray' | 'burrow'
+        this.beetleRollDir = 0;
+        this.beetleRollTimer = 0;
+        this.beetleRollFxTimer = 0;
+        this.beetleSprayShots = 0;
+        this.beetleSprayTimer = 0;
+        this.beetleBurrowTimer = 0;
+        this.beetleBurrowTargetX = this.x;
+
         switch (this.bossType) {
             case 'boss_chick': this.emoji = String.fromCodePoint(0x1F423); break;
             case 'boss_moai': this.emoji = String.fromCodePoint(0x1F5FF); break;
@@ -1324,6 +1409,12 @@ export class Boss extends Entity {
             case 'boss_dragon': this.emoji = String.fromCodePoint(0x1F409); break;
             case 'boss_robot': this.emoji = String.fromCodePoint(0x1F3CB) + '\uFE0F\u200D\u2642\uFE0F'; break;
             case 'boss_lobster': this.emoji = String.fromCodePoint(0x1F99E); break;
+            case 'boss_kangaroo': this.emoji = String.fromCodePoint(0x1F998); break;
+            case 'boss_monkey': this.emoji = String.fromCodePoint(0x1F412); break;
+            case 'boss_mammoth': this.emoji = String.fromCodePoint(0x1F9A3); break;
+            case 'boss_trex': this.emoji = String.fromCodePoint(0x1F996); break;
+            case 'boss_mosquito': this.emoji = String.fromCodePoint(0x1F99F); break;
+            case 'boss_beetle': this.emoji = String.fromCodePoint(0x1FAB2); break;
             default: this.emoji = String.fromCodePoint(0x1F5FF); break;
         }
         this.minionEmoji = this.bossType === 'boss_lobster'
@@ -1339,6 +1430,60 @@ export class Boss extends Entity {
                 'THE SHRIMP DEALER'
             ];
             this.displayName = lobsterNames[Math.floor(Math.random() * lobsterNames.length)];
+        } else if (this.bossType === 'boss_kangaroo') {
+            const kangarooNames = [
+                'POUCH PUNISHER',
+                'SKIPPY UPPERCUT',
+                'BOOMERANGER PRIME',
+                'K.O. KANGAROO',
+                'THUNDER POUCH'
+            ];
+            this.displayName = kangarooNames[Math.floor(Math.random() * kangarooNames.length)];
+        } else if (this.bossType === 'boss_monkey') {
+            const monkeyNames = [
+                'BANANA BANDIT',
+                'KING MISCHIEF',
+                'COCONUT CONDUCTOR',
+                'CANOPY MENACE',
+                'PRIMATE PANDEMONIUM'
+            ];
+            this.displayName = monkeyNames[Math.floor(Math.random() * monkeyNames.length)];
+        } else if (this.bossType === 'boss_mammoth') {
+            const mammothNames = [
+                'GLACIAL JUGGERNAUT',
+                'TUSK THUNDER',
+                'ICE AGE EMPEROR',
+                'BLIZZARD RAM',
+                'PERMAFROST COLOSSUS'
+            ];
+            this.displayName = mammothNames[Math.floor(Math.random() * mammothNames.length)];
+        } else if (this.bossType === 'boss_trex') {
+            const trexNames = [
+                'PRIMAL TYRANT',
+                'BONECRUSHER REX',
+                'ROARLORD OMEGA',
+                'THUNDERJAW',
+                'THE LAST CARNIVORE'
+            ];
+            this.displayName = trexNames[Math.floor(Math.random() * trexNames.length)];
+        } else if (this.bossType === 'boss_mosquito') {
+            const mosquitoNames = [
+                'NIGHT WHINE',
+                'BLOOD TAX COLLECTOR',
+                'PLAGUE NEEDLE',
+                'THE BUZZING BARON',
+                'VECTOR PRIME'
+            ];
+            this.displayName = mosquitoNames[Math.floor(Math.random() * mosquitoNames.length)];
+        } else if (this.bossType === 'boss_beetle') {
+            const beetleNames = [
+                'CARAPACE COMMANDER',
+                'SCARAB SIEGELORD',
+                'DUNE BULLDOZER',
+                'CHITIN SHREDDER',
+                'THE IRON ELYTRON'
+            ];
+            this.displayName = beetleNames[Math.floor(Math.random() * beetleNames.length)];
         }
 
         this._cachedEmoji = getEmojiCanvas(this.emoji, size);
@@ -2097,6 +2242,898 @@ export class Boss extends Entity {
         }
     }
 
+    _spawnKangarooStompDebris(game) {
+        if (!game) return;
+        const centerX = this.x + this.width / 2;
+        const centerY = this.y + this.height * 0.58;
+        const speed = 250 + this.phase * 26;
+        const shards = this.phase >= 3 ? 6 : (this.phase >= 2 ? 5 : 4);
+        for (let i = 0; i < shards; i++) {
+            const lane = i - (shards - 1) / 2;
+            const dir = lane === 0 ? (Math.random() > 0.5 ? 1 : -1) : Math.sign(lane);
+            const vx = dir * (speed + Math.abs(lane) * 42 + Math.random() * 34);
+            const vy = -260 - Math.abs(lane) * 20 - Math.random() * 42;
+            game.enemyProjectiles.push(new BossProjectile(centerX, centerY, vx, vy, 'stone'));
+        }
+    }
+
+    _updateKangarooBoss(dt, game, player) {
+        const left = this.platform.x + 8;
+        const right = this.platform.x + this.platform.width - this.width - 8;
+        const groundY = this.platform.y - this.height;
+
+        if (this.kangarooLeapLandFxTimer > 0) this.kangarooLeapLandFxTimer -= dt;
+
+        if (this.kangarooTelegraphTimer > 0) {
+            this.kangarooTelegraphTimer -= dt;
+            this.vx = 0;
+            this.y = groundY;
+            if (player) this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            if (this.kangarooTelegraphTimer <= 0) {
+                if (this.kangarooTelegraphType === 'boomerang') {
+                    this.kangarooBoomerangShots = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 2);
+                    this.kangarooBoomerangTimer = 0;
+                } else {
+                    this.kangarooState = 'LEAP';
+                    const leapWindow = Math.max(0.5, 0.78 - this.phase * 0.08);
+                    const playerBiasX = player
+                        ? (player.x + player.width / 2 - this.width / 2 + (Math.random() * 80 - 40))
+                        : this.x + this.kangarooPatrolDir * 220;
+                    this.kangarooLeapTargetX = Math.max(left, Math.min(right, playerBiasX));
+                    this.kangarooLeapVx = (this.kangarooLeapTargetX - this.x) / leapWindow;
+                    this.kangarooLeapVy = -(680 + this.phase * 45);
+                }
+            }
+            return;
+        }
+
+        if (this.kangarooBoomerangShots > 0) {
+            this.vx = 0;
+            this.y = groundY;
+            this.kangarooBoomerangTimer -= dt;
+            if (this.kangarooBoomerangTimer <= 0 && player) {
+                const total = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 2);
+                const shotIndex = total - this.kangarooBoomerangShots;
+                const spreadPattern = total === 4 ? [-0.26, -0.09, 0.09, 0.26] : (total === 3 ? [-0.18, 0, 0.18] : [-0.12, 0.12]);
+                const spread = spreadPattern[Math.max(0, Math.min(shotIndex, spreadPattern.length - 1))];
+                this._spawnProjectile(game, player, 'boomerang', 420 + this.phase * 34, spread, -12);
+                this.kangarooBoomerangShots--;
+                this.kangarooBoomerangTimer = 0.13;
+                if (this.kangarooBoomerangShots <= 0) {
+                    this.attackCooldown = 1.55 + Math.random() * 0.75;
+                }
+            }
+            return;
+        }
+
+        if (this.kangarooState === 'LEAP') {
+            this.kangarooLeapVy += Physics.GRAVITY * 0.95 * dt;
+            this.x += this.kangarooLeapVx * dt;
+            this.y += this.kangarooLeapVy * dt;
+            this.vx = this.kangarooLeapVx;
+            this.facingRight = this.vx >= 0;
+
+            if (this.x <= left || this.x >= right) {
+                this.x = Math.max(left, Math.min(right, this.x));
+                this.kangarooLeapVx *= -0.45;
+            }
+
+            if (this.y >= groundY) {
+                this.y = groundY;
+                this.kangarooState = 'PATROL';
+                this.kangarooLeapVy = 0;
+                this.kangarooLeapVx = 0;
+                this.kangarooHopCycle = Math.random() * Math.PI * 2;
+                this.kangarooLeapLandFxTimer = 0.22;
+                this._spawnKangarooStompDebris(game);
+                if (game && game.particles) {
+                    game.particles.emit(this.x + this.width / 2, this.y + this.height * 0.9, 11, '#ffd8a8', [50, 150], [0.12, 0.32], [1.2, 2.9]);
+                }
+                this.attackCooldown = 1.45 + Math.random() * 0.7;
+            }
+            return;
+        }
+
+        // PATROL: rhythmic forward hops.
+        const patrolSpeed = 150 + this.phase * 16;
+        this.vx = this.kangarooPatrolDir * patrolSpeed;
+        this.x += this.vx * dt;
+        if (this.x <= left) {
+            this.x = left;
+            this.kangarooPatrolDir = 1;
+        } else if (this.x >= right) {
+            this.x = right;
+            this.kangarooPatrolDir = -1;
+        }
+
+        this.kangarooHopCycle += dt * (5.4 + this.phase * 0.55);
+        const hopLift = Math.max(0, Math.sin(this.kangarooHopCycle)) * (16 + this.phase * 3);
+        this.y = groundY - hopLift;
+
+        if (player) {
+            const dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+            this.facingRight = dx >= 0;
+            if (this.attackCooldown <= 0) {
+                const canSlam = Math.abs(dx) > 130 && Math.abs(dx) < 460;
+                const chooseSlam = canSlam && Math.random() < (this.phase >= 3 ? 0.6 : (this.phase >= 2 ? 0.52 : 0.44));
+                this.kangarooTelegraphType = chooseSlam ? 'slam' : 'boomerang';
+                this.kangarooTelegraphTimer = chooseSlam
+                    ? (this.phase >= 3 ? 0.2 : (this.phase >= 2 ? 0.24 : 0.3))
+                    : (this.phase >= 3 ? 0.18 : (this.phase >= 2 ? 0.24 : 0.3));
+                this.kangarooLeapTargetX = Math.max(left, Math.min(right, player.x + player.width / 2 - this.width / 2));
+                this.vx = 0;
+            }
+        } else {
+            this.facingRight = this.kangarooPatrolDir > 0;
+        }
+    }
+
+    _spawnMonkeyLandingBurst(game) {
+        if (!game) return;
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height * 0.72;
+        const shots = this.phase >= 3 ? 6 : (this.phase >= 2 ? 5 : 4);
+        for (let i = 0; i < shots; i++) {
+            const lane = i - (shots - 1) / 2;
+            const dir = lane === 0 ? (Math.random() > 0.5 ? 1 : -1) : Math.sign(lane);
+            const vx = dir * (240 + this.phase * 20 + Math.abs(lane) * 38 + Math.random() * 24);
+            const vy = -240 - Math.abs(lane) * 18 - Math.random() * 45;
+            game.enemyProjectiles.push(new BossProjectile(cx, cy, vx, vy, 'banana'));
+        }
+    }
+
+    _updateMonkeyBoss(dt, game, player) {
+        const left = this.platform.x + 8;
+        const right = this.platform.x + this.platform.width - this.width - 8;
+        const groundY = this.platform.y - this.height;
+        const canopyY = this.platform.y - this.height - (210 + this.phase * 16);
+        this.monkeyCanopyY = canopyY;
+
+        if (this.monkeyTelegraphTimer > 0) {
+            this.monkeyTelegraphTimer -= dt;
+            this.vx = 0;
+            this.y = groundY;
+            if (player) this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            if (this.monkeyTelegraphTimer <= 0) {
+                if (this.monkeyTelegraphType === 'coconut_burst') {
+                    this.monkeyCoconutShots = this.phase >= 3 ? 5 : (this.phase >= 2 ? 4 : 3);
+                    this.monkeyCoconutTimer = 0;
+                } else if (this.monkeyTelegraphType === 'banana_rain') {
+                    this.monkeyState = 'CANOPY';
+                    this.monkeyCanopyTimer = 1.25 + this.phase * 0.22;
+                    this.monkeyBananaDropTimer = 0;
+                    if (player) {
+                        const playerMid = player.x + player.width / 2;
+                        if (playerMid > this.platform.x + this.platform.width / 2) {
+                            this.x = left + 24;
+                            this.monkeyCanopyDir = 1;
+                        } else {
+                            this.x = right - 24;
+                            this.monkeyCanopyDir = -1;
+                        }
+                    } else {
+                        this.monkeyCanopyDir = this.monkeyPatrolDir;
+                    }
+                    this.y = canopyY;
+                } else {
+                    this.monkeyState = 'DIVE';
+                    const diveWindow = Math.max(0.42, 0.62 - this.phase * 0.05);
+                    const target = player ? (player.x + player.width / 2 - this.width / 2 + (Math.random() * 60 - 30)) : (this.x + this.monkeyPatrolDir * 190);
+                    this.monkeyDiveTargetX = Math.max(left, Math.min(right, target));
+                    this.monkeyDiveVx = (this.monkeyDiveTargetX - this.x) / diveWindow;
+                    this.monkeyDiveVy = -(560 + this.phase * 35);
+                }
+            }
+            return;
+        }
+
+        if (this.monkeyCoconutShots > 0) {
+            this.vx = 0;
+            this.y = groundY;
+            this.monkeyCoconutTimer -= dt;
+            if (this.monkeyCoconutTimer <= 0 && player) {
+                const total = this.phase >= 3 ? 5 : (this.phase >= 2 ? 4 : 3);
+                const shotIndex = total - this.monkeyCoconutShots;
+                const spreads = total === 5 ? [-0.24, -0.11, 0, 0.11, 0.24] : (total === 4 ? [-0.2, -0.07, 0.07, 0.2] : [-0.12, 0, 0.12]);
+                const spread = spreads[Math.max(0, Math.min(shotIndex, spreads.length - 1))];
+                this._spawnProjectile(game, player, 'stone', 500 + this.phase * 28, spread, -95);
+                this.monkeyCoconutShots--;
+                this.monkeyCoconutTimer = 0.11;
+                if (this.monkeyCoconutShots <= 0) {
+                    this.attackCooldown = 1.5 + Math.random() * 0.75;
+                }
+            }
+            return;
+        }
+
+        if (this.monkeyState === 'CANOPY') {
+            this.monkeyCanopyTimer -= dt;
+            const canopySpeed = 250 + this.phase * 28;
+            this.x += this.monkeyCanopyDir * canopySpeed * dt;
+            this.y = canopyY + Math.sin(this.timeAlive * 8.5) * 8;
+            this.vx = this.monkeyCanopyDir * canopySpeed;
+            this.facingRight = this.monkeyCanopyDir > 0;
+            if (this.x <= left || this.x >= right) {
+                this.x = Math.max(left, Math.min(right, this.x));
+                this.monkeyCanopyDir *= -1;
+            }
+
+            this.monkeyBananaDropTimer -= dt;
+            if (this.monkeyBananaDropTimer <= 0) {
+                const px = player ? (player.x + player.width / 2) : (this.x + this.width / 2 + this.monkeyCanopyDir * 80);
+                const dx = px - (this.x + this.width / 2);
+                const vx = Math.max(-260, Math.min(260, dx * 1.9 + (Math.random() * 70 - 35)));
+                const vy = 250 + this.phase * 30;
+                game.enemyProjectiles.push(new BossProjectile(this.x + this.width / 2, this.y + this.height * 0.7, vx, vy, 'banana'));
+                this.monkeyBananaDropTimer = Math.max(0.1, 0.18 - this.phase * 0.02);
+            }
+
+            if (this.monkeyCanopyTimer <= 0) {
+                this.monkeyState = 'DIVE';
+                const diveWindow = Math.max(0.4, 0.58 - this.phase * 0.05);
+                const target = player ? (player.x + player.width / 2 - this.width / 2 + (Math.random() * 70 - 35)) : (this.x + this.monkeyCanopyDir * 180);
+                this.monkeyDiveTargetX = Math.max(left, Math.min(right, target));
+                this.monkeyDiveVx = (this.monkeyDiveTargetX - this.x) / diveWindow;
+                this.monkeyDiveVy = -(420 + this.phase * 30);
+            }
+            return;
+        }
+
+        if (this.monkeyState === 'DIVE') {
+            this.monkeyDiveVy += Physics.GRAVITY * dt;
+            this.x += this.monkeyDiveVx * dt;
+            this.y += this.monkeyDiveVy * dt;
+            this.vx = this.monkeyDiveVx;
+            this.facingRight = this.vx >= 0;
+            if (this.x <= left || this.x >= right) {
+                this.x = Math.max(left, Math.min(right, this.x));
+                this.monkeyDiveVx *= -0.35;
+            }
+
+            if (this.y >= groundY) {
+                this.y = groundY;
+                this.monkeyState = 'PATROL';
+                this.monkeyDiveVx = 0;
+                this.monkeyDiveVy = 0;
+                this.monkeyHopCycle = Math.random() * Math.PI * 2;
+                this._spawnMonkeyLandingBurst(game);
+                if (game && game.particles) {
+                    game.particles.emit(this.x + this.width / 2, this.y + this.height * 0.92, 12, '#ffe29a', [55, 160], [0.12, 0.34], [1.2, 3.0]);
+                }
+                this.attackCooldown = 1.3 + Math.random() * 0.65;
+            }
+            return;
+        }
+
+        // PATROL: short, jittery monkey hops.
+        const patrolSpeed = 145 + this.phase * 14;
+        this.vx = this.monkeyPatrolDir * patrolSpeed;
+        this.x += this.vx * dt;
+        if (this.x <= left) {
+            this.x = left;
+            this.monkeyPatrolDir = 1;
+        } else if (this.x >= right) {
+            this.x = right;
+            this.monkeyPatrolDir = -1;
+        }
+        this.monkeyHopCycle += dt * (6.2 + this.phase * 0.45);
+        this.y = groundY - Math.max(0, Math.sin(this.monkeyHopCycle)) * (12 + this.phase * 2.5);
+
+        if (player) {
+            const dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+            this.facingRight = dx >= 0;
+            if (this.attackCooldown <= 0) {
+                const dist = Math.abs(dx);
+                const canDive = dist > 140 && dist < 460;
+                const roll = Math.random();
+                if (canDive && roll < (this.phase >= 3 ? 0.45 : 0.34)) {
+                    this.monkeyTelegraphType = 'dive';
+                    this.monkeyDiveTargetX = Math.max(left, Math.min(right, player.x + player.width / 2 - this.width / 2));
+                } else if (roll < 0.72) {
+                    this.monkeyTelegraphType = 'banana_rain';
+                } else {
+                    this.monkeyTelegraphType = 'coconut_burst';
+                }
+                this.monkeyTelegraphTimer = this.monkeyTelegraphType === 'banana_rain'
+                    ? (this.phase >= 3 ? 0.2 : (this.phase >= 2 ? 0.25 : 0.32))
+                    : (this.monkeyTelegraphType === 'dive'
+                        ? (this.phase >= 3 ? 0.18 : (this.phase >= 2 ? 0.23 : 0.3))
+                        : (this.phase >= 3 ? 0.22 : (this.phase >= 2 ? 0.28 : 0.34)));
+                this.vx = 0;
+            }
+        } else {
+            this.facingRight = this.monkeyPatrolDir > 0;
+        }
+    }
+
+    _spawnMammothIcicleRain(game) {
+        if (!game) return;
+        const wavesLeft = this.mammothRainWaves;
+        const lanes = this.phase >= 3 ? 5 : (this.phase >= 2 ? 4 : 3);
+        const spacing = 76;
+        for (let i = 0; i < lanes; i++) {
+            const lane = i - (lanes - 1) / 2;
+            const x = this.mammothRainCenterX + lane * spacing + (Math.random() * 34 - 17);
+            const y = this.platform.y - this.height - 330 - Math.random() * 110 - (wavesLeft * 12);
+            const vy = 470 + this.phase * 36 + Math.random() * 30;
+            const vx = lane * 8;
+            game.enemyProjectiles.push(new BossProjectile(x, y, vx, vy, 'icicle'));
+        }
+    }
+
+    _updateMammothBoss(dt, game, player) {
+        const left = this.platform.x + 8;
+        const right = this.platform.x + this.platform.width - this.width - 8;
+        const groundY = this.platform.y - this.height;
+        this.y = groundY;
+
+        if (this.mammothTelegraphTimer > 0) {
+            this.mammothTelegraphTimer -= dt;
+            this.vx = 0;
+            if (player) this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            if (this.mammothTelegraphTimer <= 0) {
+                if (this.mammothTelegraphType === 'charge') {
+                    this.mammothState = 'CHARGE';
+                    this.mammothChargeDir = this.facingRight ? 1 : -1;
+                    this.mammothChargeTimer = 0.42 + this.phase * 0.1;
+                    this.mammothChargeFxTimer = 0;
+                } else if (this.mammothTelegraphType === 'frost_fan') {
+                    this.mammothFrostShots = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 2);
+                    this.mammothFrostTimer = 0;
+                } else {
+                    this.mammothRainWaves = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 2);
+                    this.mammothRainTimer = 0;
+                }
+            }
+            return;
+        }
+
+        if (this.mammothFrostShots > 0) {
+            this.vx = 0;
+            this.mammothFrostTimer -= dt;
+            if (this.mammothFrostTimer <= 0 && player) {
+                const spreads = this.phase >= 3 ? [-0.24, -0.08, 0.08, 0.24] : (this.phase >= 2 ? [-0.18, 0, 0.18] : [-0.12, 0.12]);
+                for (let i = 0; i < spreads.length; i++) {
+                    this._spawnProjectile(game, player, 'icicle', 510 + this.phase * 32, spreads[i], -16);
+                }
+                this.mammothFrostShots--;
+                this.mammothFrostTimer = 0.16;
+                if (this.mammothFrostShots <= 0) this.attackCooldown = 1.6 + Math.random() * 0.75;
+            }
+            return;
+        }
+
+        if (this.mammothRainWaves > 0) {
+            this.vx = 0;
+            this.mammothRainTimer -= dt;
+            if (this.mammothRainTimer <= 0) {
+                if (player) this.mammothRainCenterX = player.x + player.width / 2 + (Math.random() * 80 - 40);
+                this.mammothRainCenterX = Math.max(left + 40, Math.min(right + this.width - 40, this.mammothRainCenterX));
+                this._spawnMammothIcicleRain(game);
+                this.mammothRainWaves--;
+                this.mammothRainTimer = Math.max(0.17, 0.28 - this.phase * 0.03);
+                if (this.mammothRainWaves <= 0) this.attackCooldown = 1.8 + Math.random() * 0.8;
+            }
+            return;
+        }
+
+        if (this.mammothState === 'CHARGE') {
+            this.mammothChargeTimer -= dt;
+            this.vx = this.mammothChargeDir * (330 + this.phase * 34);
+            this.x += this.vx * dt;
+            this.facingRight = this.vx >= 0;
+            if (this.x <= left || this.x >= right) {
+                this.x = Math.max(left, Math.min(right, this.x));
+                this.mammothState = 'PATROL';
+                this.attackCooldown = 1.25 + Math.random() * 0.7;
+                this.mammothChargeTimer = 0;
+                return;
+            }
+            this.mammothChargeFxTimer -= dt;
+            if (this.mammothChargeFxTimer <= 0 && game && game.particles) {
+                this.mammothChargeFxTimer = 0.09;
+                game.particles.emit(this.x + this.width * 0.5, this.y + this.height * 0.88, 8, '#e6f7ff', [40, 125], [0.1, 0.25], [1.2, 2.6]);
+            }
+            if (this.mammothChargeTimer <= 0) {
+                this.mammothState = 'PATROL';
+                this.attackCooldown = 1.35 + Math.random() * 0.8;
+            }
+            return;
+        }
+
+        // PATROL
+        const patrolSpeed = 122 + this.phase * 11;
+        this.vx = this.mammothPatrolDir * patrolSpeed;
+        this.x += this.vx * dt;
+        if (this.x <= left) {
+            this.x = left;
+            this.mammothPatrolDir = 1;
+        } else if (this.x >= right) {
+            this.x = right;
+            this.mammothPatrolDir = -1;
+        }
+
+        if (player) {
+            const dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+            const dist = Math.abs(dx);
+            this.facingRight = dx >= 0;
+            if (this.attackCooldown <= 0) {
+                const roll = Math.random();
+                if (dist > 150 && dist < 500 && roll < (this.phase >= 3 ? 0.45 : 0.35)) {
+                    this.mammothTelegraphType = 'charge';
+                } else if (roll < 0.7) {
+                    this.mammothTelegraphType = 'icicle_rain';
+                } else {
+                    this.mammothTelegraphType = 'frost_fan';
+                }
+                this.mammothTelegraphTimer = this.mammothTelegraphType === 'charge'
+                    ? (this.phase >= 3 ? 0.16 : (this.phase >= 2 ? 0.22 : 0.28))
+                    : (this.mammothTelegraphType === 'frost_fan'
+                        ? (this.phase >= 3 ? 0.2 : (this.phase >= 2 ? 0.25 : 0.32))
+                        : (this.phase >= 3 ? 0.22 : (this.phase >= 2 ? 0.28 : 0.34)));
+                this.mammothRainCenterX = player.x + player.width / 2;
+                this.vx = 0;
+            }
+        } else {
+            this.facingRight = this.mammothPatrolDir > 0;
+        }
+    }
+
+    _spawnTrexRoarWave(game) {
+        if (!game) return;
+        const dir = this.facingRight ? 1 : -1;
+        const mouthX = this.x + this.width / 2 + dir * (this.width * 0.2);
+        const baseY = this.y + this.height * 0.46;
+        const lanes = this.phase >= 3 ? 4 : 3;
+        for (let i = 0; i < lanes; i++) {
+            const lane = i - (lanes - 1) / 2;
+            const y = baseY + lane * 22;
+            const speed = 430 + this.phase * 36 + Math.abs(lane) * 26;
+            game.enemyProjectiles.push(new BossProjectile(mouthX, y, dir * speed, lane * 10, 'roar'));
+        }
+    }
+
+    _spawnTrexImpactBurst(game) {
+        if (!game) return;
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height * 0.72;
+        const count = this.phase >= 3 ? 6 : (this.phase >= 2 ? 5 : 4);
+        for (let i = 0; i < count; i++) {
+            const lane = i - (count - 1) / 2;
+            const dir = lane === 0 ? (Math.random() > 0.5 ? 1 : -1) : Math.sign(lane);
+            const vx = dir * (250 + this.phase * 22 + Math.abs(lane) * 34 + Math.random() * 24);
+            const vy = -220 - Math.abs(lane) * 18 - Math.random() * 40;
+            game.enemyProjectiles.push(new BossProjectile(cx, cy, vx, vy, 'stone'));
+        }
+    }
+
+    _updateTrexBoss(dt, game, player) {
+        const left = this.platform.x + 8;
+        const right = this.platform.x + this.platform.width - this.width - 8;
+        const groundY = this.platform.y - this.height;
+        this.y = groundY;
+
+        if (this.trexTelegraphTimer > 0) {
+            this.trexTelegraphTimer -= dt;
+            this.vx = 0;
+            if (player) this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            if (this.trexTelegraphTimer <= 0) {
+                if (this.trexTelegraphType === 'roar') {
+                    this.trexRoarWaves = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 2);
+                    this.trexRoarTimer = 0;
+                } else if (this.trexTelegraphType === 'fossil') {
+                    this.trexFossilShots = this.phase >= 3 ? 5 : (this.phase >= 2 ? 4 : 3);
+                    this.trexFossilTimer = 0;
+                } else {
+                    this.trexState = 'LUNGE';
+                    this.trexLungeDir = this.facingRight ? 1 : -1;
+                    this.trexLungeTimer = 0.36 + this.phase * 0.08;
+                    this.trexLungeFxTimer = 0;
+                }
+            }
+            return;
+        }
+
+        if (this.trexRoarWaves > 0) {
+            this.vx = 0;
+            this.trexRoarTimer -= dt;
+            if (this.trexRoarTimer <= 0) {
+                this._spawnTrexRoarWave(game);
+                this.trexRoarWaves--;
+                this.trexRoarTimer = Math.max(0.12, 0.2 - this.phase * 0.02);
+                if (this.trexRoarWaves <= 0) this.attackCooldown = 1.45 + Math.random() * 0.75;
+            }
+            return;
+        }
+
+        if (this.trexFossilShots > 0) {
+            this.vx = 0;
+            this.trexFossilTimer -= dt;
+            if (this.trexFossilTimer <= 0 && player) {
+                const total = this.phase >= 3 ? 5 : (this.phase >= 2 ? 4 : 3);
+                const shotIndex = total - this.trexFossilShots;
+                const spreads = total === 5 ? [-0.22, -0.1, 0, 0.1, 0.22] : (total === 4 ? [-0.18, -0.06, 0.06, 0.18] : [-0.12, 0, 0.12]);
+                const spread = spreads[Math.max(0, Math.min(shotIndex, spreads.length - 1))];
+                this._spawnProjectile(game, player, 'fossil', 520 + this.phase * 35, spread, -75);
+                this.trexFossilShots--;
+                this.trexFossilTimer = 0.12;
+                if (this.trexFossilShots <= 0) this.attackCooldown = 1.55 + Math.random() * 0.8;
+            }
+            return;
+        }
+
+        if (this.trexState === 'LUNGE') {
+            this.trexLungeTimer -= dt;
+            this.vx = this.trexLungeDir * (360 + this.phase * 40);
+            this.x += this.vx * dt;
+            this.facingRight = this.vx >= 0;
+            if (this.x <= left || this.x >= right) {
+                this.x = Math.max(left, Math.min(right, this.x));
+                this.trexState = 'PATROL';
+                this._spawnTrexImpactBurst(game);
+                this.attackCooldown = 1.25 + Math.random() * 0.65;
+                return;
+            }
+            this.trexLungeFxTimer -= dt;
+            if (this.trexLungeFxTimer <= 0 && game && game.particles) {
+                this.trexLungeFxTimer = 0.08;
+                game.particles.emit(this.x + this.width * 0.5, this.y + this.height * 0.88, 8, '#ffdcb5', [45, 125], [0.11, 0.28], [1.2, 2.7]);
+            }
+            if (this.trexLungeTimer <= 0) {
+                this.trexState = 'PATROL';
+                this._spawnTrexImpactBurst(game);
+                this.attackCooldown = 1.35 + Math.random() * 0.7;
+            }
+            return;
+        }
+
+        // PATROL
+        const patrolSpeed = 130 + this.phase * 13;
+        this.vx = this.trexPatrolDir * patrolSpeed;
+        this.x += this.vx * dt;
+        if (this.x <= left) {
+            this.x = left;
+            this.trexPatrolDir = 1;
+        } else if (this.x >= right) {
+            this.x = right;
+            this.trexPatrolDir = -1;
+        }
+
+        if (player) {
+            const dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+            const dist = Math.abs(dx);
+            this.facingRight = dx >= 0;
+            if (this.attackCooldown <= 0) {
+                const roll = Math.random();
+                if (dist > 140 && dist < 470 && roll < (this.phase >= 3 ? 0.44 : 0.34)) {
+                    this.trexTelegraphType = 'lunge';
+                } else if (roll < 0.68) {
+                    this.trexTelegraphType = 'roar';
+                } else {
+                    this.trexTelegraphType = 'fossil';
+                }
+                this.trexTelegraphTimer = this.trexTelegraphType === 'lunge'
+                    ? (this.phase >= 3 ? 0.14 : (this.phase >= 2 ? 0.2 : 0.26))
+                    : (this.trexTelegraphType === 'roar'
+                        ? (this.phase >= 3 ? 0.18 : (this.phase >= 2 ? 0.24 : 0.3))
+                        : (this.phase >= 3 ? 0.2 : (this.phase >= 2 ? 0.26 : 0.33)));
+                this.vx = 0;
+            }
+        } else {
+            this.facingRight = this.trexPatrolDir > 0;
+        }
+    }
+
+    _updateMosquitoBoss(dt, game, player) {
+        const left = this.platform.x + 8;
+        const right = this.platform.x + this.platform.width - this.width - 8;
+        const top = this.platform.y - this.height - 360;
+        const bottom = this.platform.y - this.height - 24;
+        const centerY = this.mosquitoHoverCenterY;
+
+        if (this.mosquitoTelegraphTimer > 0) {
+            this.mosquitoTelegraphTimer -= dt;
+            this.vx = 0;
+            this.vy = 0;
+            if (player) this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            if (this.mosquitoTelegraphTimer <= 0) {
+                if (this.mosquitoTelegraphType === 'needle_fan') {
+                    this.mosquitoNeedleShots = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 2);
+                    this.mosquitoNeedleTimer = 0;
+                } else if (this.mosquitoTelegraphType === 'swarm') {
+                    this.mosquitoState = 'DASH';
+                    this.mosquitoSwarmBursts = this.phase >= 3 ? 5 : (this.phase >= 2 ? 4 : 3);
+                    this.mosquitoSwarmTimer = 0;
+                    this.mosquitoDashTimer = 0;
+                } else {
+                    this.mosquitoState = 'DRAIN';
+                    this.mosquitoDrainTimer = 0.56 + this.phase * 0.08;
+                    this.mosquitoDrainTrailTimer = 0;
+                    const px = player ? (player.x + player.width / 2) : (this.x + (this.facingRight ? 140 : -140));
+                    const py = player ? (player.y + player.height / 2 - 20) : (this.y + 20);
+                    const dx = px - (this.x + this.width / 2);
+                    const dy = py - (this.y + this.height / 2);
+                    const dist = Math.hypot(dx, dy) || 1;
+                    const speed = 540 + this.phase * 38;
+                    this.mosquitoDashVx = (dx / dist) * speed;
+                    this.mosquitoDashVy = (dy / dist) * speed;
+                }
+            }
+            return;
+        }
+
+        if (this.mosquitoNeedleShots > 0) {
+            this.vx = 0;
+            this.vy = 0;
+            this.y = Math.max(top, Math.min(bottom, centerY + Math.sin(this.timeAlive * 9) * 24));
+            this.mosquitoNeedleTimer -= dt;
+            if (this.mosquitoNeedleTimer <= 0 && player) {
+                const spreads = this.phase >= 3 ? [-0.2, 0, 0.2] : (this.phase >= 2 ? [-0.14, 0.14] : [-0.1, 0.1]);
+                for (let i = 0; i < spreads.length; i++) {
+                    this._spawnProjectile(game, player, 'needle', 600 + this.phase * 35, spreads[i], 0);
+                }
+                this.mosquitoNeedleShots--;
+                this.mosquitoNeedleTimer = 0.16;
+                if (this.mosquitoNeedleShots <= 0) {
+                    this.attackCooldown = 1.45 + Math.random() * 0.7;
+                }
+            }
+            return;
+        }
+
+        if (this.mosquitoState === 'DASH') {
+            if (this.mosquitoDashTimer > 0) {
+                this.mosquitoDashTimer -= dt;
+                this.x += this.mosquitoDashVx * dt;
+                this.y += this.mosquitoDashVy * dt;
+                this.vx = this.mosquitoDashVx;
+                this.vy = this.mosquitoDashVy;
+                this.facingRight = this.vx >= 0;
+                if (this.x <= left || this.x >= right || this.y <= top || this.y >= bottom) {
+                    this.x = Math.max(left, Math.min(right, this.x));
+                    this.y = Math.max(top, Math.min(bottom, this.y));
+                    this.mosquitoDashTimer = 0;
+                }
+            } else {
+                this.mosquitoSwarmTimer -= dt;
+                if (this.mosquitoSwarmTimer <= 0 && this.mosquitoSwarmBursts > 0) {
+                    const px = player ? (player.x + player.width / 2 + (Math.random() * 140 - 70)) : (this.x + this.mosquitoPatrolDir * 120);
+                    const py = player ? (player.y + player.height / 2 - 20 + (Math.random() * 90 - 45)) : centerY;
+                    const tx = Math.max(left, Math.min(right, px - this.width / 2));
+                    const ty = Math.max(top, Math.min(bottom, py - this.height / 2));
+                    const dx = tx - this.x;
+                    const dy = ty - this.y;
+                    const dist = Math.hypot(dx, dy) || 1;
+                    const speed = 700 + this.phase * 50;
+                    this.mosquitoDashVx = (dx / dist) * speed;
+                    this.mosquitoDashVy = (dy / dist) * speed;
+                    this.mosquitoDashTimer = 0.18;
+                    this.mosquitoSwarmBursts--;
+                    this.mosquitoSwarmTimer = 0.1;
+                }
+            }
+            if (this.mosquitoSwarmBursts <= 0 && this.mosquitoDashTimer <= 0) {
+                this.mosquitoState = 'HOVER';
+                this.attackCooldown = 1.3 + Math.random() * 0.7;
+            }
+            return;
+        }
+
+        if (this.mosquitoState === 'DRAIN') {
+            this.mosquitoDrainTimer -= dt;
+            this.x += this.mosquitoDashVx * dt;
+            this.y += this.mosquitoDashVy * dt;
+            this.vx = this.mosquitoDashVx;
+            this.vy = this.mosquitoDashVy;
+            this.facingRight = this.vx >= 0;
+
+            if (this.x <= left || this.x >= right) {
+                this.x = Math.max(left, Math.min(right, this.x));
+                this.mosquitoDashVx *= -1;
+            }
+            if (this.y <= top || this.y >= bottom) {
+                this.y = Math.max(top, Math.min(bottom, this.y));
+                this.mosquitoDashVy *= -1;
+            }
+
+            this.mosquitoDrainTrailTimer -= dt;
+            if (this.mosquitoDrainTrailTimer <= 0) {
+                this.mosquitoDrainTrailTimer = 0.08;
+                const driftX = (Math.random() * 120 - 60);
+                const vx = driftX;
+                const vy = 260 + this.phase * 18;
+                game.enemyProjectiles.push(new BossProjectile(this.x + this.width / 2, this.y + this.height * 0.5, vx, vy, 'venom'));
+            }
+
+            if (this.mosquitoDrainTimer <= 0) {
+                this.mosquitoState = 'HOVER';
+                this.attackCooldown = 1.45 + Math.random() * 0.7;
+            }
+            return;
+        }
+
+        // HOVER patrol.
+        const patrolSpeed = 220 + this.phase * 18;
+        this.vx = this.mosquitoPatrolDir * patrolSpeed;
+        this.x += this.vx * dt;
+        if (this.x <= left) {
+            this.x = left;
+            this.mosquitoPatrolDir = 1;
+        } else if (this.x >= right) {
+            this.x = right;
+            this.mosquitoPatrolDir = -1;
+        }
+        this.y = centerY + Math.sin(this.timeAlive * 7.4) * (52 + this.phase * 4) + Math.cos(this.timeAlive * 3.2) * 18;
+        this.y = Math.max(top, Math.min(bottom, this.y));
+
+        if (player) {
+            const dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+            const dist = Math.abs(dx);
+            this.facingRight = dx >= 0;
+            if (this.attackCooldown <= 0) {
+                const roll = Math.random();
+                if (dist > 120 && dist < 460 && roll < (this.phase >= 3 ? 0.42 : 0.33)) {
+                    this.mosquitoTelegraphType = 'drain';
+                } else if (roll < 0.7) {
+                    this.mosquitoTelegraphType = 'swarm';
+                } else {
+                    this.mosquitoTelegraphType = 'needle_fan';
+                }
+                this.mosquitoTelegraphTimer = this.mosquitoTelegraphType === 'drain'
+                    ? (this.phase >= 3 ? 0.14 : (this.phase >= 2 ? 0.2 : 0.26))
+                    : (this.mosquitoTelegraphType === 'swarm'
+                        ? (this.phase >= 3 ? 0.16 : (this.phase >= 2 ? 0.22 : 0.3))
+                        : (this.phase >= 3 ? 0.2 : (this.phase >= 2 ? 0.26 : 0.33)));
+                this.vx = 0;
+                this.vy = 0;
+            }
+        } else {
+            this.facingRight = this.mosquitoPatrolDir > 0;
+        }
+    }
+
+    _spawnBeetleEmergeBurst(game) {
+        if (!game) return;
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height * 0.74;
+        const count = this.phase >= 3 ? 7 : (this.phase >= 2 ? 6 : 5);
+        for (let i = 0; i < count; i++) {
+            const lane = i - (count - 1) / 2;
+            const dir = lane === 0 ? (Math.random() > 0.5 ? 1 : -1) : Math.sign(lane);
+            const vx = dir * (230 + this.phase * 20 + Math.abs(lane) * 30 + Math.random() * 22);
+            const vy = -220 - Math.abs(lane) * 16 - Math.random() * 36;
+            game.enemyProjectiles.push(new BossProjectile(cx, cy, vx, vy, 'scarab'));
+        }
+    }
+
+    _updateBeetleBoss(dt, game, player) {
+        const left = this.platform.x + 8;
+        const right = this.platform.x + this.platform.width - this.width - 8;
+        const groundY = this.platform.y - this.height;
+
+        if (this.beetleTelegraphTimer > 0) {
+            this.beetleTelegraphTimer -= dt;
+            this.vx = 0;
+            this.y = groundY;
+            if (player) this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            if (this.beetleTelegraphTimer <= 0) {
+                if (this.beetleTelegraphType === 'roll') {
+                    this.beetleState = 'ROLL';
+                    this.beetleRollDir = this.facingRight ? 1 : -1;
+                    this.beetleRollTimer = 0.48 + this.phase * 0.11;
+                    this.beetleRollFxTimer = 0;
+                } else if (this.beetleTelegraphType === 'scarab_spray') {
+                    this.beetleSprayShots = this.phase >= 3 ? 5 : (this.phase >= 2 ? 4 : 3);
+                    this.beetleSprayTimer = 0;
+                } else {
+                    this.beetleState = 'BURROW';
+                    this.beetleBurrowTimer = 0.58 + this.phase * 0.08;
+                    const target = player ? (player.x + player.width / 2 - this.width / 2 + (Math.random() * 90 - 45)) : (this.x + this.beetlePatrolDir * 180);
+                    this.beetleBurrowTargetX = Math.max(left, Math.min(right, target));
+                }
+            }
+            return;
+        }
+
+        if (this.beetleSprayShots > 0) {
+            this.vx = 0;
+            this.y = groundY;
+            this.beetleSprayTimer -= dt;
+            if (this.beetleSprayTimer <= 0 && player) {
+                const total = this.phase >= 3 ? 5 : (this.phase >= 2 ? 4 : 3);
+                const shotIndex = total - this.beetleSprayShots;
+                const spreads = total === 5 ? [-0.24, -0.1, 0, 0.1, 0.24] : (total === 4 ? [-0.18, -0.06, 0.06, 0.18] : [-0.12, 0, 0.12]);
+                const spread = spreads[Math.max(0, Math.min(shotIndex, spreads.length - 1))];
+                this._spawnProjectile(game, player, 'scarab', 470 + this.phase * 34, spread, -66);
+                this.beetleSprayShots--;
+                this.beetleSprayTimer = 0.13;
+                if (this.beetleSprayShots <= 0) {
+                    this.attackCooldown = 1.52 + Math.random() * 0.72;
+                }
+            }
+            return;
+        }
+
+        if (this.beetleState === 'ROLL') {
+            this.beetleRollTimer -= dt;
+            this.vx = this.beetleRollDir * (350 + this.phase * 38);
+            this.x += this.vx * dt;
+            this.y = groundY;
+            this.facingRight = this.vx >= 0;
+            if (this.x <= left || this.x >= right) {
+                this.x = Math.max(left, Math.min(right, this.x));
+                this.beetleRollDir *= -1;
+                this.beetleRollTimer *= 0.6;
+            }
+            this.beetleRollFxTimer -= dt;
+            if (this.beetleRollFxTimer <= 0 && game && game.particles) {
+                this.beetleRollFxTimer = 0.08;
+                game.particles.emit(this.x + this.width * 0.5, this.y + this.height * 0.9, 8, '#d6c2a3', [40, 120], [0.1, 0.26], [1.2, 2.5]);
+            }
+            if (this.beetleRollTimer <= 0) {
+                this.beetleState = 'PATROL';
+                this.attackCooldown = 1.3 + Math.random() * 0.68;
+            }
+            return;
+        }
+
+        if (this.beetleState === 'BURROW') {
+            this.beetleBurrowTimer -= dt;
+            const toTarget = this.beetleBurrowTargetX - this.x;
+            const move = Math.sign(toTarget) * Math.min(Math.abs(toTarget), (290 + this.phase * 24) * dt);
+            this.x += move;
+            this.y = groundY + 16 + Math.sin((this.beetleBurrowTimer * 20) + this.x * 0.02) * 4;
+            this.vx = 0;
+            if (this.beetleBurrowTimer <= 0) {
+                this.y = groundY;
+                this.beetleState = 'PATROL';
+                this._spawnBeetleEmergeBurst(game);
+                if (game && game.particles) {
+                    game.particles.emit(this.x + this.width / 2, this.y + this.height * 0.9, 12, '#e2c594', [50, 150], [0.12, 0.32], [1.2, 2.9]);
+                }
+                this.attackCooldown = 1.42 + Math.random() * 0.74;
+            }
+            return;
+        }
+
+        // PATROL
+        const patrolSpeed = 126 + this.phase * 12;
+        this.vx = this.beetlePatrolDir * patrolSpeed;
+        this.x += this.vx * dt;
+        this.y = groundY;
+        if (this.x <= left) {
+            this.x = left;
+            this.beetlePatrolDir = 1;
+        } else if (this.x >= right) {
+            this.x = right;
+            this.beetlePatrolDir = -1;
+        }
+
+        if (player) {
+            const dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+            const dist = Math.abs(dx);
+            this.facingRight = dx >= 0;
+            if (this.attackCooldown <= 0) {
+                const rollChance = dist > 130 && dist < 470 && Math.random() < (this.phase >= 3 ? 0.45 : 0.35);
+                if (rollChance) {
+                    this.beetleTelegraphType = 'roll';
+                } else if (Math.random() < 0.58) {
+                    this.beetleTelegraphType = 'burrow';
+                } else {
+                    this.beetleTelegraphType = 'scarab_spray';
+                }
+                this.beetleTelegraphTimer = this.beetleTelegraphType === 'roll'
+                    ? (this.phase >= 3 ? 0.15 : (this.phase >= 2 ? 0.21 : 0.28))
+                    : (this.beetleTelegraphType === 'burrow'
+                        ? (this.phase >= 3 ? 0.18 : (this.phase >= 2 ? 0.24 : 0.31))
+                        : (this.phase >= 3 ? 0.2 : (this.phase >= 2 ? 0.26 : 0.34)));
+                this.vx = 0;
+            }
+        } else {
+            this.facingRight = this.beetlePatrolDir > 0;
+        }
+    }
+
     update(dt, game) {
         if (this.damageFlashTimer > 0) this.damageFlashTimer -= dt;
         this.spawnFadeTimer += dt;
@@ -2123,6 +3160,18 @@ export class Boss extends Entity {
             this._updateRobotBoss(dt, game, player);
         } else if (this.bossType === 'boss_lobster') {
             this._updateLobsterBoss(dt, game, player);
+        } else if (this.bossType === 'boss_kangaroo') {
+            this._updateKangarooBoss(dt, game, player);
+        } else if (this.bossType === 'boss_monkey') {
+            this._updateMonkeyBoss(dt, game, player);
+        } else if (this.bossType === 'boss_mammoth') {
+            this._updateMammothBoss(dt, game, player);
+        } else if (this.bossType === 'boss_trex') {
+            this._updateTrexBoss(dt, game, player);
+        } else if (this.bossType === 'boss_mosquito') {
+            this._updateMosquitoBoss(dt, game, player);
+        } else if (this.bossType === 'boss_beetle') {
+            this._updateBeetleBoss(dt, game, player);
         } else {
             this._updateAerialBoss(dt, game, player);
         }
@@ -2147,7 +3196,31 @@ export class Boss extends Entity {
             || this.robotState === 'GRAB'
             || this.lobsterTelegraphTimer > 0
             || this.lobsterDashTimer > 0
-            || this.lobsterShrimpShots > 0;
+            || this.lobsterShrimpShots > 0
+            || this.kangarooTelegraphTimer > 0
+            || this.kangarooBoomerangShots > 0
+            || this.kangarooState === 'LEAP'
+            || this.monkeyTelegraphTimer > 0
+            || this.monkeyCoconutShots > 0
+            || this.monkeyState === 'CANOPY'
+            || this.monkeyState === 'DIVE'
+            || this.mammothTelegraphTimer > 0
+            || this.mammothFrostShots > 0
+            || this.mammothRainWaves > 0
+            || this.mammothState === 'CHARGE'
+            || this.trexTelegraphTimer > 0
+            || this.trexRoarWaves > 0
+            || this.trexFossilShots > 0
+            || this.trexState === 'LUNGE'
+            || this.mosquitoTelegraphTimer > 0
+            || this.mosquitoNeedleShots > 0
+            || this.mosquitoSwarmBursts > 0
+            || this.mosquitoDashTimer > 0
+            || this.mosquitoState === 'DRAIN'
+            || this.beetleTelegraphTimer > 0
+            || this.beetleSprayShots > 0
+            || this.beetleState === 'ROLL'
+            || this.beetleState === 'BURROW';
         if (game && player && player.invulnerableTimer <= 0 && !inFairWindow) {
             if (Physics.checkAABB(this, player.getHitbox())) {
                 player.takeDamage(game);
@@ -2173,7 +3246,8 @@ export class Boss extends Entity {
         const cx = this.x + this.width / 2;
         const cy = this.y + this.height / 2;
         ctx.translate(cx, cy);
-        const shouldFlipSprite = this.bossType === 'boss_dragon' ? this.facingRight : !this.facingRight;
+        const useDirectFacing = this.bossType === 'boss_dragon' || this.bossType === 'boss_kangaroo';
+        const shouldFlipSprite = useDirectFacing ? this.facingRight : !this.facingRight;
         if (shouldFlipSprite) ctx.scale(-1, 1);
 
         if (this.attackTelegraphTimer > 0) {
@@ -2189,7 +3263,7 @@ export class Boss extends Entity {
         // Cosmetic wingmen for all bosses; visual flair only (no collision/damage).
         if (!this._bossMinionCache) this._bossMinionCache = getEmojiCanvas(this.minionEmoji, 24);
         const minionCount = 5;
-        const orbitBase = (this.bossType === 'boss_spider' || this.bossType === 'boss_robot' || this.bossType === 'boss_lobster')
+        const orbitBase = (this.bossType === 'boss_spider' || this.bossType === 'boss_robot' || this.bossType === 'boss_lobster' || this.bossType === 'boss_kangaroo' || this.bossType === 'boss_monkey' || this.bossType === 'boss_mammoth' || this.bossType === 'boss_trex' || this.bossType === 'boss_beetle')
             ? (this.width * 0.38 + Math.sin(this.timeAlive * 2.3) * 6)
             : (this.aerialMinionRadius + Math.sin(this.timeAlive * 2.1) * 8);
         for (let i = 0; i < minionCount; i++) {
@@ -2264,7 +3338,13 @@ export class Boss extends Entity {
             || this.webTelegraphTimer > 0
             || this.spiderPounceTelegraph > 0
             || this.dragonFireTelegraphTimer > 0
-            || this.lobsterTelegraphTimer > 0;
+            || this.lobsterTelegraphTimer > 0
+            || this.kangarooTelegraphTimer > 0
+            || this.monkeyTelegraphTimer > 0
+            || this.mammothTelegraphTimer > 0
+            || this.trexTelegraphTimer > 0
+            || this.mosquitoTelegraphTimer > 0
+            || this.beetleTelegraphTimer > 0;
         if (isTelegraphing) {
             const pulse = 0.55 + Math.sin(this.timeAlive * 24) * 0.45;
             if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
@@ -2322,6 +3402,252 @@ export class Boss extends Entity {
             ctx.lineTo(-forward * 52, 6);
             ctx.moveTo(-forward * 12, -10);
             ctx.lineTo(-forward * 44, -10);
+            ctx.stroke();
+        }
+
+        if (this.bossType === 'boss_kangaroo' && this.kangarooTelegraphTimer > 0) {
+            const pulse = 0.58 + Math.sin(this.timeAlive * 24) * 0.34;
+            if (this.kangarooTelegraphType === 'boomerang') {
+                if (!this._boomerangTellCache) this._boomerangTellCache = getEmojiCanvas(String.fromCodePoint(0x1FA83), 26);
+                for (let i = -1; i <= 1; i++) {
+                    ctx.globalAlpha = alpha * (0.38 + pulse * 0.42);
+                    ctx.drawImage(this._boomerangTellCache.canvas, i * 26 - this._boomerangTellCache.width / 2, -this.height / 2 - 44 - Math.abs(i) * 5);
+                }
+            } else {
+                if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+                const markerX = (this.kangarooLeapTargetX + this.width / 2) - (this.x + this.width / 2);
+                ctx.globalAlpha = alpha * (0.44 + pulse * 0.4);
+                ctx.drawImage(this._warnCache.canvas, markerX - this._warnCache.width / 2, this.height * 0.22);
+                ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2, -this.height / 2 - 48);
+            }
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_kangaroo' && this.kangarooState === 'LEAP') {
+            ctx.strokeStyle = `rgba(255, 210, 120, ${0.4 + Math.sin(this.timeAlive * 30) * 0.18})`;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            const dir = this.facingRight ? 1 : -1;
+            ctx.beginPath();
+            ctx.moveTo(-dir * 14, 8);
+            ctx.lineTo(-dir * 44, 2);
+            ctx.moveTo(-dir * 10, -6);
+            ctx.lineTo(-dir * 38, -16);
+            ctx.stroke();
+        }
+
+        if (this.bossType === 'boss_monkey' && this.monkeyTelegraphTimer > 0) {
+            const pulse = 0.58 + Math.sin(this.timeAlive * 24) * 0.34;
+            if (this.monkeyTelegraphType === 'banana_rain') {
+                if (!this._bananaTellCache) this._bananaTellCache = getEmojiCanvas(String.fromCodePoint(0x1F34C), 26);
+                for (let i = -1; i <= 1; i++) {
+                    ctx.globalAlpha = alpha * (0.4 + pulse * 0.42);
+                    ctx.drawImage(this._bananaTellCache.canvas, i * 24 - this._bananaTellCache.width / 2, -this.height / 2 - 45 - Math.abs(i) * 6);
+                }
+            } else if (this.monkeyTelegraphType === 'coconut_burst') {
+                if (!this._coconutTellCache) this._coconutTellCache = getEmojiCanvas(String.fromCodePoint(0x1F965), 26);
+                const spread = 24;
+                for (let i = -1; i <= 1; i++) {
+                    ctx.globalAlpha = alpha * (0.42 + pulse * 0.4);
+                    ctx.drawImage(this._coconutTellCache.canvas, i * spread - this._coconutTellCache.width / 2, -this.height / 2 - 44);
+                }
+            } else {
+                if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+                const markerX = (this.monkeyDiveTargetX + this.width / 2) - (this.x + this.width / 2);
+                ctx.globalAlpha = alpha * (0.44 + pulse * 0.42);
+                ctx.drawImage(this._warnCache.canvas, markerX - this._warnCache.width / 2, this.height * 0.22);
+                ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2, -this.height / 2 - 48);
+            }
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_monkey' && this.monkeyState === 'CANOPY') {
+            ctx.strokeStyle = `rgba(181, 255, 179, ${0.26 + Math.sin(this.timeAlive * 10) * 0.12})`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-14, -this.height / 2 - 8);
+            ctx.lineTo(-14, -this.height / 2 - 48);
+            ctx.moveTo(12, -this.height / 2 - 6);
+            ctx.lineTo(12, -this.height / 2 - 44);
+            ctx.stroke();
+        }
+
+        if (this.bossType === 'boss_monkey' && this.monkeyState === 'DIVE') {
+            const dir = this.facingRight ? 1 : -1;
+            ctx.strokeStyle = `rgba(255, 230, 150, ${0.4 + Math.sin(this.timeAlive * 28) * 0.16})`;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-dir * 12, 4);
+            ctx.lineTo(-dir * 44, -10);
+            ctx.moveTo(-dir * 4, 16);
+            ctx.lineTo(-dir * 34, 4);
+            ctx.stroke();
+        }
+
+        if (this.bossType === 'boss_mammoth' && this.mammothTelegraphTimer > 0) {
+            const pulse = 0.58 + Math.sin(this.timeAlive * 24) * 0.34;
+            if (this.mammothTelegraphType === 'charge') {
+                if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+                ctx.globalAlpha = alpha * (0.45 + pulse * 0.42);
+                ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2 - 18, -this.height / 2 - 45);
+                ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2 + 18, -this.height / 2 - 45);
+            } else if (this.mammothTelegraphType === 'frost_fan') {
+                if (!this._iceTellCache) this._iceTellCache = getEmojiCanvas(String.fromCodePoint(0x1F9CA), 26);
+                for (let i = -1; i <= 1; i++) {
+                    ctx.globalAlpha = alpha * (0.4 + pulse * 0.42);
+                    ctx.drawImage(this._iceTellCache.canvas, i * 24 - this._iceTellCache.width / 2, -this.height / 2 - 45 - Math.abs(i) * 6);
+                }
+            } else {
+                if (!this._snowTellCache) this._snowTellCache = getEmojiCanvas(String.fromCodePoint(0x2744) + '\uFE0F', 24);
+                const markerX = this.mammothRainCenterX - (this.x + this.width / 2);
+                for (let i = -1; i <= 1; i++) {
+                    ctx.globalAlpha = alpha * (0.42 + pulse * 0.4);
+                    ctx.drawImage(this._snowTellCache.canvas, markerX + i * 26 - this._snowTellCache.width / 2, this.height * 0.16 + Math.abs(i) * 6);
+                }
+            }
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_mammoth' && this.mammothState === 'CHARGE') {
+            const dir = this.facingRight ? 1 : -1;
+            ctx.strokeStyle = `rgba(210, 245, 255, ${0.42 + Math.sin(this.timeAlive * 28) * 0.16})`;
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-dir * 16, -6);
+            ctx.lineTo(-dir * 56, -14);
+            ctx.moveTo(-dir * 18, 10);
+            ctx.lineTo(-dir * 62, 14);
+            ctx.stroke();
+        }
+
+        if (this.bossType === 'boss_trex' && this.trexTelegraphTimer > 0) {
+            const pulse = 0.6 + Math.sin(this.timeAlive * 24) * 0.34;
+            if (this.trexTelegraphType === 'roar') {
+                if (!this._roarTellCache) this._roarTellCache = getEmojiCanvas(String.fromCodePoint(0x1F50A), 26);
+                for (let i = 0; i < 3; i++) {
+                    ctx.globalAlpha = alpha * (0.42 + pulse * 0.4);
+                    ctx.drawImage(this._roarTellCache.canvas, i * 22 - this._roarTellCache.width / 2 - 22, -this.height / 2 - 46 - i * 4);
+                }
+            } else if (this.trexTelegraphType === 'fossil') {
+                if (!this._fossilTellCache) this._fossilTellCache = getEmojiCanvas(String.fromCodePoint(0x1F9B4), 26);
+                for (let i = -1; i <= 1; i++) {
+                    ctx.globalAlpha = alpha * (0.42 + pulse * 0.4);
+                    ctx.drawImage(this._fossilTellCache.canvas, i * 24 - this._fossilTellCache.width / 2, -this.height / 2 - 44 - Math.abs(i) * 6);
+                }
+            } else {
+                if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+                ctx.globalAlpha = alpha * (0.46 + pulse * 0.4);
+                ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2 - 18, -this.height / 2 - 46);
+                ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2 + 18, -this.height / 2 - 46);
+            }
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_trex' && this.trexState === 'LUNGE') {
+            const dir = this.facingRight ? 1 : -1;
+            ctx.strokeStyle = `rgba(255, 220, 170, ${0.4 + Math.sin(this.timeAlive * 28) * 0.16})`;
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-dir * 18, -4);
+            ctx.lineTo(-dir * 64, -16);
+            ctx.moveTo(-dir * 10, 10);
+            ctx.lineTo(-dir * 52, 14);
+            ctx.stroke();
+        }
+
+        if (this.bossType === 'boss_mosquito' && this.mosquitoTelegraphTimer > 0) {
+            const pulse = 0.6 + Math.sin(this.timeAlive * 24) * 0.32;
+            if (this.mosquitoTelegraphType === 'needle_fan') {
+                if (!this._needleTellCache) this._needleTellCache = getEmojiCanvas(String.fromCodePoint(0x1FAA1), 25);
+                for (let i = -1; i <= 1; i++) {
+                    ctx.globalAlpha = alpha * (0.42 + pulse * 0.4);
+                    ctx.drawImage(this._needleTellCache.canvas, i * 22 - this._needleTellCache.width / 2, -this.height / 2 - 44 - Math.abs(i) * 6);
+                }
+            } else if (this.mosquitoTelegraphType === 'swarm') {
+                if (!this._windTellCache) this._windTellCache = getEmojiCanvas(String.fromCodePoint(0x1F4A8), 25);
+                for (let i = 0; i < 3; i++) {
+                    ctx.globalAlpha = alpha * (0.4 + pulse * 0.42);
+                    ctx.drawImage(this._windTellCache.canvas, i * 20 - this._windTellCache.width / 2 - 20, -this.height / 2 - 44 - i * 4);
+                }
+            } else {
+                if (!this._bloodTellCache) this._bloodTellCache = getEmojiCanvas(String.fromCodePoint(0x1FA78), 25);
+                if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+                ctx.globalAlpha = alpha * (0.44 + pulse * 0.4);
+                ctx.drawImage(this._bloodTellCache.canvas, -this._bloodTellCache.width / 2, -this.height / 2 - 46);
+                ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2, -this.height / 2 - 70);
+            }
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_mosquito' && this.mosquitoState === 'DASH') {
+            const dir = this.facingRight ? 1 : -1;
+            ctx.strokeStyle = `rgba(214, 255, 190, ${0.38 + Math.sin(this.timeAlive * 30) * 0.16})`;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-dir * 10, 0);
+            ctx.lineTo(-dir * 38, -10);
+            ctx.moveTo(-dir * 4, 12);
+            ctx.lineTo(-dir * 30, 8);
+            ctx.stroke();
+        }
+
+        if (this.bossType === 'boss_mosquito' && this.mosquitoState === 'DRAIN') {
+            ctx.strokeStyle = `rgba(255, 110, 90, ${0.32 + Math.sin(this.timeAlive * 28) * 0.14})`;
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(0, -2);
+            ctx.lineTo(-18, 16);
+            ctx.moveTo(6, 2);
+            ctx.lineTo(20, 20);
+            ctx.stroke();
+        }
+
+        if (this.bossType === 'boss_beetle' && this.beetleTelegraphTimer > 0) {
+            const pulse = 0.58 + Math.sin(this.timeAlive * 24) * 0.34;
+            if (this.beetleTelegraphType === 'roll') {
+                if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+                ctx.globalAlpha = alpha * (0.44 + pulse * 0.4);
+                ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2 - 18, -this.height / 2 - 44);
+                ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2 + 18, -this.height / 2 - 44);
+            } else if (this.beetleTelegraphType === 'scarab_spray') {
+                if (!this._scarabTellCache) this._scarabTellCache = getEmojiCanvas(String.fromCodePoint(0x1FAB2), 24);
+                for (let i = -1; i <= 1; i++) {
+                    ctx.globalAlpha = alpha * (0.4 + pulse * 0.42);
+                    ctx.drawImage(this._scarabTellCache.canvas, i * 22 - this._scarabTellCache.width / 2, -this.height / 2 - 44 - Math.abs(i) * 6);
+                }
+            } else {
+                if (!this._dirtTellCache) this._dirtTellCache = getEmojiCanvas(String.fromCodePoint(0x1FAA8), 24);
+                ctx.globalAlpha = alpha * (0.42 + pulse * 0.4);
+                ctx.drawImage(this._dirtTellCache.canvas, -this._dirtTellCache.width / 2, this.height * 0.22);
+                ctx.drawImage(this._dirtTellCache.canvas, -this._dirtTellCache.width / 2 - 22, this.height * 0.24);
+                ctx.drawImage(this._dirtTellCache.canvas, -this._dirtTellCache.width / 2 + 22, this.height * 0.24);
+            }
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_beetle' && this.beetleState === 'ROLL') {
+            const dir = this.facingRight ? 1 : -1;
+            ctx.strokeStyle = `rgba(221, 191, 141, ${0.4 + Math.sin(this.timeAlive * 28) * 0.16})`;
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-dir * 12, 4);
+            ctx.lineTo(-dir * 48, 2);
+            ctx.moveTo(-dir * 8, -8);
+            ctx.lineTo(-dir * 42, -14);
+            ctx.stroke();
+        }
+
+        if (this.bossType === 'boss_beetle' && this.beetleState === 'BURROW') {
+            ctx.strokeStyle = `rgba(196, 166, 120, ${0.32 + Math.sin(this.timeAlive * 18) * 0.12})`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.ellipse(0, this.height * 0.44, this.width * 0.22, 8, 0, 0, Math.PI * 2);
             ctx.stroke();
         }
 
