@@ -14,6 +14,7 @@ export class Rock extends Entity {
         this.rotation = 0;
         this.damage = options.damage || 1;
         this.phaseThroughSurfaces = !!options.phaseThroughSurfaces;
+        this.reflectedByEnemy = false;
         this._cachedEmoji = getEmojiCanvas('\u{1FAA8}', Math.round(24 * sizeMultiplier));
     }
 
@@ -22,27 +23,52 @@ export class Rock extends Entity {
         this.rotation += (this.vx > 0 ? 10 : -10) * dt;
 
         // Check if Rock hits an enemy
-        game.enemies.forEach(enemy => {
-            if (!enemy.markedForDeletion && !this.markedForDeletion && Physics.checkAABB(this, enemy)) {
+        const enemies = game.enemies;
+        for (let i = 0; i < enemies.length; i++) {
+            const enemy = enemies[i];
+            if (enemy.markedForDeletion || this.markedForDeletion || !Physics.checkAABB(this, enemy)) continue;
+
+            if (enemy.shouldReflectRock && enemy.shouldReflectRock(this, game)) {
+                const playerCenterX = game.player.x + game.player.width / 2;
+                const rockCenterX = this.x + this.width / 2;
+                const toPlayer = Math.sign(playerCenterX - rockCenterX);
+                const reflectDir = toPlayer || (this.vx >= 0 ? -1 : 1);
+                const reflectedSpeed = Math.max(this.speed, Math.abs(this.vx));
+                this.reflectedByEnemy = true;
+                this.vx = reflectDir * reflectedSpeed;
+                this.facingRight = this.vx >= 0;
+                this.x = reflectDir > 0 ? (enemy.x + enemy.width + 2) : (enemy.x - this.width - 2);
+                break;
+            }
+
+            this.markedForDeletion = true;
+            if (game.particles) game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
+            if (game.audio) game.audio.playHit();
+
+            if (enemy.takeDamage) {
+                const isTurtle = enemy.type === 'patrol' && enemy.emoji === '🐢';
+                if (isTurtle && typeof enemy.stomp === 'function') {
+                    enemy.stomp(game);
+                } else {
+                    enemy.takeDamage(this.damage, game);
+                }
+            } else {
+                enemy.markedForDeletion = true;
+                game.player.score += 50;
+                game.audio.playHit();
+                game.particles.emitHit(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+            }
+            break;
+        }
+
+        if (this.reflectedByEnemy && !this.markedForDeletion && game.player && game.player.invulnerableTimer <= 0) {
+            if (Physics.checkAABB(this, game.player.getHitbox())) {
                 this.markedForDeletion = true;
+                game.player.takeDamage(game);
                 if (game.particles) game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
                 if (game.audio) game.audio.playHit();
-
-                if (enemy.takeDamage) {
-                    const isTurtle = enemy.type === 'patrol' && enemy.emoji === '🐢';
-                    if (isTurtle && typeof enemy.stomp === 'function') {
-                        enemy.stomp(game);
-                    } else {
-                        enemy.takeDamage(this.damage, game);
-                    }
-                } else {
-                    enemy.markedForDeletion = true;
-                    game.player.score += 50;
-                    game.audio.playHit();
-                    game.particles.emitHit(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
-                }
             }
-        });
+        }
 
         // Check if Rock hits platforms (mostly walls or ground)
         if (!this.markedForDeletion && !this.phaseThroughSurfaces) {

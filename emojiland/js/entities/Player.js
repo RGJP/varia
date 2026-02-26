@@ -52,6 +52,9 @@ export class Player extends Entity {
         this.letterCelebrationSpawnInterval = 0.16;
         this.letterCelebrationVisibleCount = 0;
         this.letterCelebrationMax = 6;
+        this.letterPickupPopupTimer = 0;
+        this.letterPickupPopupDuration = 0.62;
+        this.letterPickupPopupLetter = '';
         this.rotation = 0;
         this.isSpinning = false;
         this.spinDirection = 1;
@@ -64,6 +67,14 @@ export class Player extends Entity {
         this.firePowerUpTimer = 0;
         this.firePowerUpDuration = 8.0;
         this.firePowerUpRotation = 0;
+        this.frostPowerUpTimer = 0;
+        this.frostPowerUpDuration = this.firePowerUpDuration;
+        this.frostBlastRadius = this.width * 3.6; // 7.2x player sprite size diameter.
+        this.frostBlastDamage = 3;
+        this.frostBlastTimer = 0;
+        this.frostBlastDuration = 0.32;
+        this.frostBlastX = 0;
+        this.frostBlastY = 0;
         this.flightTimer = 0;
         this.flightPowerUpDuration = 7.0;
         this.flightSpeed = 480;
@@ -83,9 +94,12 @@ export class Player extends Entity {
             "🧑‍🦯‍➡️",
             "🧎‍➡️",
             "🧎‍♀️‍➡️",
-            "🧎‍♂️‍➡️"
+            "🧎‍♂️‍➡️",
+            "🐧",
+            "🏇"
         ];
         this.emoji = icons[Math.floor(Math.random() * icons.length)];
+        this._emojiFacesLeft = this.emoji === "🏇";
         // Pre-cache the emoji
         this._cachedEmoji = getEmojiCanvas(this.emoji, 64);
 
@@ -152,7 +166,7 @@ export class Player extends Entity {
             this.diamondPowerUpTimer -= dt;
             this.diamondShootTimer -= dt;
             this.powerVisualTimer -= dt;
-            if (this.diamondShootTimer <= 0) {
+            if (this.frostPowerUpTimer <= 0 && this.diamondShootTimer <= 0) {
                 this.diamondShootTimer = 0.08; // Fast auto fire
                 const throwX = this.facingRight ? this.x + this.width : this.x - 20;
                 const rock = new Rock(throwX, this.y + this.height / 2 - 10, this.facingRight);
@@ -190,6 +204,26 @@ export class Player extends Entity {
                 );
             }
         }
+        if (this.frostPowerUpTimer > 0) {
+            this.frostPowerUpTimer -= dt;
+            this.powerVisualTimer -= dt;
+            if (this.powerVisualTimer <= 0 && game && game.particles) {
+                this.powerVisualTimer = 0.09;
+                game.particles.emit(
+                    this.x + this.width / 2 + (Math.random() - 0.5) * 18,
+                    this.y + this.height / 2 + (Math.random() - 0.5) * 18,
+                    8,
+                    '#9edcff',
+                    [40, 120],
+                    [0.16, 0.34],
+                    [1.8, 3.6]
+                );
+            }
+        }
+        if (this.frostBlastTimer > 0) {
+            this.frostBlastTimer -= dt;
+            if (this.frostBlastTimer <= 0) this.frostBlastTimer = 0;
+        }
 
         this.pulseTimer += dt;
         this.catProtectorBob += dt;
@@ -211,6 +245,13 @@ export class Player extends Entity {
                 this.letterCelebrationVisibleCount = 0;
             }
         }
+        if (this.letterPickupPopupTimer > 0) {
+            this.letterPickupPopupTimer -= dt;
+            if (this.letterPickupPopupTimer <= 0) {
+                this.letterPickupPopupTimer = 0;
+                this.letterPickupPopupLetter = '';
+            }
+        }
 
         // Input
         // Drop Bomb
@@ -230,6 +271,14 @@ export class Player extends Entity {
         if (!canChargeAttack) {
             this.attackChargeTimer = 0;
             this.isChargingAttack = false;
+        } else if (this.frostPowerUpTimer > 0) {
+            this.attackChargeTimer = 0;
+            this.isChargingAttack = false;
+            if (input.isJustPressed('KeyD')) {
+                this.isAttacking = true;
+                this.attackTimer = this.attackDuration;
+                this._triggerFrostBlast(game);
+            }
         } else {
             if (input.isDown('KeyD')) {
                 this.isChargingAttack = true;
@@ -514,12 +563,12 @@ export class Player extends Entity {
                 this.vx = 0;
             }
 
-            this.resolveCollision(platforms, 'x');
+            this.resolveCollision(platforms, 'x', game);
 
             // Y Collision
             this.y += this.vy * dt;
             this.grounded = false;
-            this.resolveCollision(platforms, 'y');
+            this.resolveCollision(platforms, 'y', game);
         }
 
         // Enemy Collision logic
@@ -633,50 +682,68 @@ export class Player extends Entity {
                 if (collectible.type === 'health') {
                     this.health = Math.min(this.health + 1, this.maxHealth);
                     this.hasCatProtector = true;
-                    game.audio.playCollect();
+                    game.audio.playCollect('powerup');
                     game.particles.emit(centerX, centerY, 15, '#FF0000', [50, 150], [0.2, 0.5], [2, 4]);
                 } else if (collectible.type === 'bomb') {
                     this.bombs += 1;
-                    if (game.audio) game.audio.playCollect();
+                    if (game.audio) game.audio.playCollect('powerup');
                     game.particles.emit(centerX, centerY, 15, '#444444', [50, 150], [0.2, 0.5], [2, 4]);
                 } else if (collectible.type === 'diamond_powerup') {
                     this.diamondPowerUpTimer = this.diamondPowerUpDuration;
-                    if (game.audio) game.audio.playCollect();
+                    if (game.audio) game.audio.playCollect('powerup');
                     game.particles.emit(centerX, centerY, 20, '#888888', [50, 200], [0.2, 0.5], [3, 5]);
                 } else if (collectible.type === 'full_health') {
                     this.health = this.maxHealth;
                     this.hasCatProtector = true;
-                    if (game.audio) game.audio.playCollect();
+                    if (game.audio) game.audio.playCollect('powerup');
                     game.particles.emit(centerX, centerY, 30, '#FF69B4', [50, 250], [0.2, 0.6], [3, 6]);
                 } else if (collectible.type === 'fire_powerup') {
                     this.firePowerUpTimer = this.firePowerUpDuration;
-                    if (game.audio) game.audio.playCollect();
+                    if (game.audio) game.audio.playCollect('powerup');
                     game.particles.emit(centerX, centerY, 20, '#FF4500', [50, 200], [0.2, 0.5], [3, 5]);
+                } else if (collectible.type === 'frost_powerup') {
+                    this.frostPowerUpTimer = this.frostPowerUpDuration;
+                    if (game.audio) game.audio.playCollect('powerup');
+                    game.particles.emit(centerX, centerY, 22, '#9edcff', [50, 210], [0.2, 0.55], [2, 5]);
                 } else if (collectible.type === 'wing_powerup') {
                     this.flightTimer = this.flightPowerUpDuration;
                     this.isClimbing = false;
                     this.currentVine = null;
                     this.vx = 0;
                     this.vy = 0;
-                    if (game.audio) game.audio.playCollect();
+                    if (game.audio) game.audio.playCollect('powerup');
                     game.particles.emit(centerX, centerY, 24, '#9ad9ff', [70, 220], [0.2, 0.6], [2, 5]);
                 } else if (collectible.type === 'letter') {
                     const letter = collectible.letter;
                     const hadAllLettersBeforePickup = Object.values(this.collectedLetters).every(Boolean);
+                    let addedNewLetter = false;
                     if (letter && Object.prototype.hasOwnProperty.call(this.collectedLetters, letter)) {
+                        addedNewLetter = !this.collectedLetters[letter];
                         this.collectedLetters[letter] = true;
+                    }
+                    if (addedNewLetter && letter) {
+                        this.letterPickupPopupLetter = letter;
+                        this.letterPickupPopupTimer = this.letterPickupPopupDuration;
+                        if (game.audio && typeof game.audio.playLetterCollectChime === 'function') {
+                            const letterOrder = ['E', 'M', 'O', 'J', 'I'];
+                            const letterIndex = letterOrder.indexOf(letter);
+                            game.audio.playLetterCollectChime(letterIndex >= 0 ? letterIndex : 0);
+                        } else if (game.audio) {
+                            game.audio.playCollect('powerup');
+                        }
+                    } else if (game.audio) {
+                        game.audio.playCollect('powerup');
                     }
                     const hasAllLettersAfterPickup = Object.values(this.collectedLetters).every(Boolean);
                     if (!hadAllLettersBeforePickup && hasAllLettersAfterPickup) {
                         this._startLetterCelebration(game);
                     }
                     this.score += 75;
-                    if (game.audio) game.audio.playCollect();
                     game.particles.emit(centerX, centerY, 16, '#ffd54f', [80, 180], [0.2, 0.45], [2, 5]);
                 } else {
                     this.score += 10;
                     game.coinsCollected++;
-                    game.audio.playCollect();
+                    game.audio.playCollect('coin');
                     game.particles.emit(centerX, centerY, 10, '#FFFF00', [50, 150], [0.2, 0.5], [2, 4]);
                 }
             }
@@ -695,7 +762,7 @@ export class Player extends Entity {
         });
     }
 
-    resolveCollision(platforms, axis) {
+    resolveCollision(platforms, axis, game) {
         for (let platform of platforms) {
             if (Physics.checkAABB(this, platform)) {
                 const overlapX = Math.min(this.x + this.width, platform.x + platform.width) - Math.max(this.x, platform.x);
@@ -746,6 +813,7 @@ export class Player extends Entity {
                             this.isSpinning = true;
                             this.spinDirection = this.facingRight ? 1 : -1;
                             this.spinBaseRotation = this.rotation;
+                            if (game && game.audio) game.audio.playJump();
                             return;
                         }
                         this.grounded = true;
@@ -791,9 +859,55 @@ export class Player extends Entity {
     clearActivePowerUps() {
         this.diamondPowerUpTimer = 0;
         this.firePowerUpTimer = 0;
+        this.frostPowerUpTimer = 0;
+        this.frostBlastTimer = 0;
         this.flightTimer = 0;
         this.isChargingAttack = false;
         this.attackChargeTimer = 0;
+    }
+
+    _triggerFrostBlast(game) {
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
+        this.frostBlastX = cx;
+        this.frostBlastY = cy;
+        this.frostBlastTimer = this.frostBlastDuration;
+
+        if (game && game.audio && typeof game.audio.playFrostBlast === 'function') {
+            game.audio.playFrostBlast();
+        } else if (game && game.audio) {
+            game.audio.playThrow();
+        }
+        if (game && game.particles) {
+            game.particles.emit(cx, cy, 34, '#8fd8ff', [55, 240], [0.22, 0.46], [4, 9]);
+            game.particles.emit(cx, cy, 24, '#d9f3ff', [45, 180], [0.18, 0.38], [2, 5]);
+            game.particles.emit(cx, cy, 20, 'rgba(180, 225, 255, 0.55)', [30, 150], [0.26, 0.5], [8, 16]);
+        }
+
+        const enemies = game && game.enemies ? game.enemies : [];
+        for (let i = 0; i < enemies.length; i++) {
+            const enemy = enemies[i];
+            if (!enemy || enemy.markedForDeletion) continue;
+            const ex = enemy.x + enemy.width / 2;
+            const ey = enemy.y + enemy.height / 2;
+            const dist = Math.hypot(ex - cx, ey - cy);
+            const hitRadius = this.frostBlastRadius + Math.max(enemy.width, enemy.height) * 0.3;
+            if (dist > hitRadius) continue;
+
+            if (enemy.type === 'jellyfish' && typeof enemy.stomp === 'function') {
+                enemy.stomp(game);
+            } else if (enemy.takeDamage) {
+                enemy.takeDamage(this.frostBlastDamage, game);
+            } else {
+                enemy.markedForDeletion = true;
+                this.score += 50;
+                if (game) game.enemiesDefeated++;
+            }
+
+            if (game && game.particles) {
+                game.particles.emit(ex, ey, 12, '#c8ecff', [40, 170], [0.16, 0.34], [2, 5]);
+            }
+        }
     }
 
     _startLetterCelebration(game) {
@@ -815,6 +929,14 @@ export class Player extends Entity {
             return;
         }
         this.health -= 1;
+        if (this.health <= 0) {
+            this.health = 0;
+            this.invulnerableTimer = 0;
+            this.damageGlowTimer = 0;
+            this.knockbackTimer = 0;
+            return;
+        }
+
         this.invulnerableTimer = 1.0;
         this.damageGlowTimer = this.damageGlowDuration;
         this.knockbackTimer = 0.2; // brief loss of control for noticeable knockback
@@ -858,7 +980,8 @@ export class Player extends Entity {
             ctx.rotate(this.rotation);
         }
 
-        if (!this.facingRight && (!game || !game.gameOverTriggered)) {
+        const shouldMirrorForFacing = (!game || !game.gameOverTriggered) && (this._emojiFacesLeft ? this.facingRight : !this.facingRight);
+        if (shouldMirrorForFacing) {
             ctx.scale(-1, 1);
         }
 
@@ -879,7 +1002,7 @@ export class Player extends Entity {
                     dirX = lx;
                     dirY = ly;
                 }
-                if (!this.facingRight) {
+                if (shouldMirrorForFacing) {
                     dirX *= -1;
                 }
 
@@ -937,6 +1060,14 @@ export class Player extends Entity {
 
         let cached = this._cachedEmoji;
         let yOffset = 5;
+        let locomotionOffsetX = 0;
+        let locomotionOffsetY = 0;
+        let locomotionTilt = 0;
+        let locomotionScaleX = 1;
+        let locomotionScaleY = 1;
+        let flightRumbleX = 0;
+        let flightRumbleY = 0;
+        let flightRumbleTilt = 0;
 
         if (game && game.gameOverTriggered) {
             if (!this._deathTombstoneCache) {
@@ -944,20 +1075,131 @@ export class Player extends Entity {
             }
             cached = this._deathTombstoneCache;
             yOffset = 0;
+            ctx.shadowBlur = 0; // Explicitly disable any lingering damage/low-health glows
 
             // Visual feedback for "turning" into a tombstone
             const progress = Math.max(0, Math.min(1, (1.0 - game.gameOverTimer) / 1.0));
             ctx.scale(1 + progress * 0.1, 1 + progress * 0.1);
+        } else {
+            // Procedural "South Park-like" locomotion for static emoji sprites.
+            const absVx = Math.abs(this.vx);
+            const speedRatio = Math.max(0, Math.min(1, absVx / Math.max(1, this.speed)));
+            const isGroundMotion = this.grounded && !this.isClimbing && this.rotation === 0 && this.flightTimer <= 0;
+            if (isGroundMotion && speedRatio > 0.05) {
+                const stepRate = 8.8 + speedRatio * 6.2;
+                const stepPhase = this.pulseTimer * stepRate;
+                const facingDir = this.facingRight ? 1 : -1;
+
+                locomotionOffsetY = Math.abs(Math.sin(stepPhase)) * (2.8 + speedRatio * 4.4);
+                locomotionOffsetX = Math.sin(stepPhase * 0.5) * (1.2 + speedRatio * 2.3) * facingDir;
+                locomotionTilt = Math.sin(stepPhase) * (0.03 + speedRatio * 0.055);
+                const squash = Math.sin(stepPhase + Math.PI / 2) * (0.022 + speedRatio * 0.048);
+                locomotionScaleX = 1 + squash;
+                locomotionScaleY = 1 - squash * 0.85;
+            }
+
+            // Wind rumble while flying to avoid the "perfectly stable hover" look.
+            if (this.flightTimer > 0) {
+                const flightSpeed = Math.hypot(this.vx, this.vy);
+                const flightRatio = Math.max(0.22, Math.min(1, flightSpeed / Math.max(1, this.flightSpeed)));
+                const shakePhaseA = this.pulseTimer * 44;
+                const shakePhaseB = this.pulseTimer * 61 + 1.4;
+                const shakePhaseC = this.pulseTimer * 52 + 0.7;
+                flightRumbleX = Math.sin(shakePhaseA) * (0.7 + flightRatio * 1.2) + Math.sin(shakePhaseB) * 0.45;
+                flightRumbleY = Math.cos(shakePhaseC) * (0.6 + flightRatio * 0.95);
+                flightRumbleTilt = Math.sin(this.pulseTimer * 38 + 0.2) * (0.008 + flightRatio * 0.018);
+            }
         }
 
+        ctx.save();
+        if (locomotionOffsetX !== 0 || locomotionOffsetY !== 0 || flightRumbleX !== 0 || flightRumbleY !== 0) {
+            ctx.translate(locomotionOffsetX + flightRumbleX, locomotionOffsetY + flightRumbleY);
+        }
+        if (locomotionTilt !== 0 || flightRumbleTilt !== 0) {
+            ctx.rotate(locomotionTilt + flightRumbleTilt);
+        }
+        if (locomotionScaleX !== 1 || locomotionScaleY !== 1) {
+            ctx.scale(locomotionScaleX, locomotionScaleY);
+        }
         ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2 + yOffset);
+
+        if (game?.gameOverTriggered) {
+            const wobble = Math.sin(this.pulseTimer * 9) * 1.6;
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 28px "Outfit", sans-serif';
+            ctx.fillStyle = '#f7f7f7';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.lineWidth = 4;
+            ctx.strokeText('×_×', 0, -cached.height / 2 - 20 + wobble);
+            ctx.fillText('×_×', 0, -cached.height / 2 - 20 + wobble);
+            ctx.restore();
+        }
+
+        if (!game?.gameOverTriggered && this.letterPickupPopupTimer > 0 && this.letterPickupPopupLetter) {
+            const t = this.letterPickupPopupTimer / this.letterPickupPopupDuration;
+            const rise = (1 - t) * 22;
+            const alpha = t < 0.25 ? (t / 0.25) : (t > 0.8 ? (1 - t) / 0.2 : 1);
+            const pulse = 0.8 + Math.sin(this.pulseTimer * 12) * 0.2;
+            const tileSize = 42 + pulse * 2;
+            const radius = 8;
+            const tileX = -tileSize / 2;
+            const tileY = -this.height / 2 - 62 - rise;
+
+            ctx.save();
+            if (shouldMirrorForFacing) ctx.scale(-1, 1);
+            if (this.rotation !== 0) ctx.rotate(-this.rotation);
+            ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+
+            const glow = ctx.createRadialGradient(0, tileY + tileSize / 2, 6, 0, tileY + tileSize / 2, tileSize * 0.95);
+            glow.addColorStop(0, 'rgba(255, 240, 130, 0.45)');
+            glow.addColorStop(1, 'rgba(255, 220, 90, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(0, tileY + tileSize / 2, tileSize * 0.95, 0, Math.PI * 2);
+            ctx.fill();
+
+            const tileGrad = ctx.createLinearGradient(tileX, tileY, tileX, tileY + tileSize);
+            tileGrad.addColorStop(0, '#ffe082');
+            tileGrad.addColorStop(1, '#ffb300');
+            ctx.fillStyle = tileGrad;
+            if (ctx.roundRect) {
+                ctx.beginPath();
+                ctx.roundRect(tileX, tileY, tileSize, tileSize, radius);
+                ctx.fill();
+            } else {
+                ctx.fillRect(tileX, tileY, tileSize, tileSize);
+            }
+            ctx.strokeStyle = '#8a5200';
+            ctx.lineWidth = 3;
+            if (ctx.roundRect) {
+                ctx.beginPath();
+                ctx.roundRect(tileX, tileY, tileSize, tileSize, radius);
+                ctx.stroke();
+            } else {
+                ctx.strokeRect(tileX, tileY, tileSize, tileSize);
+            }
+
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 28px "Outfit", sans-serif';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = '#3a2300';
+            ctx.strokeText(this.letterPickupPopupLetter, 0, tileY + tileSize / 2 + 1);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(this.letterPickupPopupLetter, 0, tileY + tileSize / 2 + 1);
+            ctx.restore();
+        }
+        ctx.restore();
 
         if (this.stunTimer > 0 && (!game || !game.gameOverTriggered)) {
             if (!this._stunEmoji) {
                 this._stunEmoji = getEmojiCanvas('😵‍💫', 40);
             }
             ctx.save();
-            if (!this.facingRight) ctx.scale(-1, 1);
+            if (shouldMirrorForFacing) ctx.scale(-1, 1);
             if (this.rotation !== 0) ctx.rotate(-this.rotation);
             const shakeX = (Math.random() - 0.5) * 8;
             const shakeY = (Math.random() - 0.5) * 8;
@@ -976,7 +1218,7 @@ export class Player extends Entity {
             }
             const radius = 50;
             // Un-flip if we flipped for player facing direction so fireballs spin normally
-            if (!this.facingRight) {
+            if (shouldMirrorForFacing) {
                 ctx.scale(-1, 1);
             }
             if (this.rotation !== 0) {
@@ -1003,8 +1245,66 @@ export class Player extends Entity {
                 ctx.drawImage(this._fireEmoji.canvas, ox, oy);
             }
         }
+        if (this.frostPowerUpTimer > 0) {
+            if (!this._frostEmoji) {
+                this._frostEmoji = getEmojiCanvas('\u2744\uFE0F', 30);
+            }
+            const baseY = this.height / 2 + 12 + Math.sin(this.pulseTimer * 6) * 1.5;
+            if (shouldMirrorForFacing) {
+                ctx.scale(-1, 1);
+            }
+            if (this.rotation !== 0) {
+                ctx.rotate(-this.rotation);
+            }
+            const rowY = baseY + 4;
+            const spacing = 24;
+            const startX = -spacing * 1.5;
+            for (let i = 0; i < 4; i++) {
+                const x = startX + i * spacing;
+                const ox = x - this._frostEmoji.width / 2;
+                const oy = rowY - this._frostEmoji.height / 2 + Math.sin(this.pulseTimer * 8 + i * 0.9) * 2.5;
+                ctx.drawImage(this._frostEmoji.canvas, ox, oy);
+            }
+        }
 
         ctx.restore();
+
+        if (!game?.gameOverTriggered && this.frostBlastTimer > 0) {
+            const t = Math.max(0, Math.min(1, this.frostBlastTimer / this.frostBlastDuration));
+            const growth = 1 - t;
+            const radius = this.frostBlastRadius * (0.65 + growth * 0.35);
+            const alpha = 0.45 * t;
+            const cx = this.frostBlastX;
+            const cy = this.frostBlastY;
+
+            ctx.save();
+            const grad = ctx.createRadialGradient(cx, cy, radius * 0.15, cx, cy, radius);
+            grad.addColorStop(0, `rgba(230, 248, 255, ${alpha})`);
+            grad.addColorStop(0.55, `rgba(150, 215, 255, ${alpha * 0.68})`);
+            grad.addColorStop(1, 'rgba(120, 190, 255, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = `rgba(190, 236, 255, ${alpha * 0.82})`;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 0.88, 0, Math.PI * 2);
+            ctx.stroke();
+
+            if (!this._frostBlastEmoji) this._frostBlastEmoji = getEmojiCanvas('\u2744\uFE0F', 22);
+            const flakes = 10;
+            for (let i = 0; i < flakes; i++) {
+                const a = this.pulseTimer * 7 + (i / flakes) * Math.PI * 2;
+                const fr = radius * (0.2 + (i % 4) * 0.16);
+                const fx = cx + Math.cos(a) * fr - this._frostBlastEmoji.width / 2;
+                const fy = cy + Math.sin(a * 1.1) * fr - this._frostBlastEmoji.height / 2;
+                ctx.globalAlpha = alpha * (0.6 + (i % 3) * 0.12);
+                ctx.drawImage(this._frostBlastEmoji.canvas, fx, fy);
+            }
+            ctx.restore();
+        }
 
         if (!game?.gameOverTriggered) {
             const activeBars = [];
@@ -1018,6 +1318,12 @@ export class Player extends Entity {
                 activeBars.push({
                     ratio: Math.max(0, Math.min(1, this.firePowerUpTimer / this.firePowerUpDuration)),
                     color: '#ff9800'
+                });
+            }
+            if (this.frostPowerUpTimer > 0) {
+                activeBars.push({
+                    ratio: Math.max(0, Math.min(1, this.frostPowerUpTimer / this.frostPowerUpDuration)),
+                    color: '#7dd3fc'
                 });
             }
             if (this.flightTimer > 0) {
@@ -1064,7 +1370,7 @@ export class Player extends Entity {
             ctx.drawImage(this._catProtectorEmoji.canvas, catX, catY);
         }
 
-        if (!game?.gameOverTriggered && this.isChargingAttack && this.attackChargeTimer > this.chargeIndicatorDelay) {
+        if (!game?.gameOverTriggered && this.frostPowerUpTimer <= 0 && this.isChargingAttack && this.attackChargeTimer > this.chargeIndicatorDelay) {
             const chargeRatio = Math.max(0, Math.min(1, this.attackChargeTimer / this.maxAttackChargeTime));
             const dir = this.facingRight ? 1 : -1;
             const handX = this.x + this.width / 2 + dir * (this.width * 0.42 + 12 + chargeRatio * 8);

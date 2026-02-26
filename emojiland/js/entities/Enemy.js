@@ -37,6 +37,7 @@ const TYPE_SPIDER = 'spider'; // 🕷️
 const TYPE_MINI_SPIDER = 'mini_spider'; // 🕷️
 const TYPE_JELLYFISH = 'jellyfish'; // 🪼
 const TYPE_LOBSTER_MINION = 'lobster_minion'; // 🦞
+const TYPE_PEACOCK = 'peacock'; // 🦚
 const SHOOTER_OPACITY_SPEED = 1.6;
 
 export class Enemy extends Entity {
@@ -64,6 +65,7 @@ export class Enemy extends Entity {
             { type: TYPE_ALIEN, width: 45, height: 45, emoji: '🛸', baseSpeed: 80, health: 4 },
             { type: TYPE_APE, width: 60, height: 60, emoji: '🦍', baseSpeed: 0, health: 5 },
             { type: TYPE_SPIDER, width: 70, height: 70, emoji: '🕷️', baseSpeed: 100, health: 4 },
+            { type: TYPE_PEACOCK, width: 52, height: 52, emoji: '🦚', baseSpeed: 70, health: 3 },
         ];
 
         const pick = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
@@ -162,10 +164,30 @@ export class Enemy extends Entity {
             this.state = 'PATROL';
             this.stateTimer = 1.0 + Math.random() * 1.0; // Jump timer
         }
+        if (this.type === TYPE_PEACOCK) {
+            this.state = 'PATROL';
+            this.stateTimer = 0.6 + Math.random() * 0.8;
+        }
 
         // Pre-cache emoji
         this._cachedEmoji = getEmojiCanvas(this.emoji, this.height);
         this._tongueRect = { x: 0, y: 0, width: 0, height: 0 };
+    }
+
+    isFacingWorldX(worldX) {
+        const centerX = this.x + this.width / 2;
+        return this.facingRight ? worldX >= centerX : worldX <= centerX;
+    }
+
+    shouldReflectRock(rock, game) {
+        if (this.type !== TYPE_PEACOCK || !rock || rock.reflectedByEnemy) return false;
+        const rockCenterX = rock.x + rock.width / 2;
+        if (!this.isFacingWorldX(rockCenterX)) return false;
+
+        this.damageFlashTimer = Math.max(this.damageFlashTimer, 0.08);
+        if (game?.particles) game.particles.emitHit(rockCenterX, rock.y + rock.height / 2);
+        if (game?.audio) game.audio.playHit();
+        return true;
     }
 
     takeDamage(amount, game) {
@@ -294,6 +316,7 @@ export class Enemy extends Entity {
             case TYPE_MINI_SPIDER: this.updateSpider(dt, player, distToPlayer, game); break;
             case TYPE_JELLYFISH: this.updateJellyfish(dt, player); break;
             case TYPE_LOBSTER_MINION: this.updateLobsterMinion(dt); break;
+            case TYPE_PEACOCK: this.updatePatrol(dt); break;
         }
 
         if (this.type === TYPE_TROLL && game) {

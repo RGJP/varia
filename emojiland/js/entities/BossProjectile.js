@@ -20,7 +20,7 @@ export class BossProjectile extends Entity {
                 this.canBounceOnPlatforms = true;
                 break;
             case 'stone':
-                this.emoji = String.fromCodePoint(0x1F94C);
+                this.emoji = String.fromCodePoint(0x1F335);
                 this.maxBounces = 2;
                 this.canBounceOnPlatforms = true;
                 break;

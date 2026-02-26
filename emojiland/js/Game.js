@@ -333,6 +333,9 @@ export class Game {
                 if (!this.gameOverTriggered) {
                     this.gameOverTriggered = true;
                     this.gameOverTimer = 2.0;
+                    if (this.audio && typeof this.audio.playDeathTune === 'function') {
+                        this.audio.playDeathTune();
+                    }
                     this.audio.fadeOutMusic(1000);
                 }
             }
@@ -866,7 +869,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('Music from Pixabay - version 1.08', 0, cardY + cardHeight + 100);
+            this.ctx.fillText('Music from Pixabay - version 1.10', 0, cardY + cardHeight + 100);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';

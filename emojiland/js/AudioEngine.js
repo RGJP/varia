@@ -9,16 +9,28 @@ export class AudioEngine {
         this.fadeInterval = null;
 
         this.totalSongs = 39;
+        this.recentHistorySize = Math.max(0, Math.min(5, this.totalSongs - 1));
         this.musicPool = [];
+        this.recentSongHistory = [];
         this.unlocked = false;
         this.isMusicMuted = false;
+        this._lastJumpVariant = -1;
+        this._lastHitVariant = -1;
+        this._lastThrowVariant = -1;
+        this._lastCollectVariant = {
+            default: -1,
+            coin: -1,
+            powerup: -1
+        };
+
+        this._loadSettings();
     }
 
     _ensureContext() {
         if (!this.ctx) {
             this.ctx = new (window.AudioContext || window.webkitAudioContext)();
             this.masterGain = this.ctx.createGain();
-            this.masterGain.gain.value = 0.3;
+            this.masterGain.gain.value = 0.58;
             this.masterGain.connect(this.ctx.destination);
         }
     }
@@ -31,15 +43,91 @@ export class AudioEngine {
                 const j = Math.floor(Math.random() * (i + 1));
                 [this.musicPool[i], this.musicPool[j]] = [this.musicPool[j], this.musicPool[i]];
             }
+        }
 
-            // If the first song in new pool is same as last song played, swap it
-            if (this.musicPool[0] === this.lastSongNumber && this.musicPool.length > 1) {
-                const swapIdx = Math.floor(Math.random() * (this.musicPool.length - 1)) + 1;
-                [this.musicPool[0], this.musicPool[swapIdx]] = [this.musicPool[swapIdx], this.musicPool[0]];
+        let pickIdx = this.musicPool.length - 1;
+        if (this.recentHistorySize > 0 && this.musicPool.length > 1 && this.recentSongHistory.length > 0) {
+            const recent = new Set(this.recentSongHistory);
+            const allowedIdx = [];
+            for (let i = 0; i < this.musicPool.length; i++) {
+                if (!recent.has(this.musicPool[i])) {
+                    allowedIdx.push(i);
+                }
+            }
+            if (allowedIdx.length > 0) {
+                pickIdx = allowedIdx[Math.floor(Math.random() * allowedIdx.length)];
             }
         }
-        this.lastSongNumber = this.musicPool.pop();
+
+        const selected = this.musicPool.splice(pickIdx, 1)[0];
+        this.lastSongNumber = (typeof selected === 'number') ? selected : 0;
+
+        if (this.recentHistorySize > 0) {
+            this.recentSongHistory.push(this.lastSongNumber);
+            while (this.recentSongHistory.length > this.recentHistorySize) {
+                this.recentSongHistory.shift();
+            }
+        }
+        this._saveSettings();
         return this.lastSongNumber;
+    }
+
+    _loadSettings() {
+        try {
+            const saved = localStorage.getItem('emojiland_audio_settings');
+            if (saved) {
+                const data = JSON.parse(saved);
+                const cleanPool = [];
+                const poolSeen = new Set();
+                if (Array.isArray(data.pool)) {
+                    for (let i = 0; i < data.pool.length; i++) {
+                        const n = data.pool[i];
+                        if (Number.isInteger(n) && n >= 0 && n < this.totalSongs && !poolSeen.has(n)) {
+                            poolSeen.add(n);
+                            cleanPool.push(n);
+                        }
+                    }
+                }
+                this.musicPool = cleanPool;
+                this.lastSongNumber = (typeof data.last === 'number') ? data.last : -1;
+                this.isMusicMuted = !!data.muted;
+
+                const cleanHistory = [];
+                const historySeen = new Set();
+                if (Array.isArray(data.history)) {
+                    for (let i = 0; i < data.history.length; i++) {
+                        const n = data.history[i];
+                        if (Number.isInteger(n) && n >= 0 && n < this.totalSongs && !historySeen.has(n)) {
+                            historySeen.add(n);
+                            cleanHistory.push(n);
+                        }
+                    }
+                } else if (Number.isInteger(this.lastSongNumber) && this.lastSongNumber >= 0 && this.lastSongNumber < this.totalSongs) {
+                    cleanHistory.push(this.lastSongNumber);
+                }
+
+                if (this.recentHistorySize > 0 && cleanHistory.length > this.recentHistorySize) {
+                    this.recentSongHistory = cleanHistory.slice(cleanHistory.length - this.recentHistorySize);
+                } else {
+                    this.recentSongHistory = cleanHistory;
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load audio settings:", e);
+        }
+    }
+
+    _saveSettings() {
+        try {
+            localStorage.setItem('emojiland_audio_settings', JSON.stringify({
+                pool: this.musicPool,
+                history: this.recentSongHistory,
+                last: this.lastSongNumber,
+                muted: this.isMusicMuted
+            }));
+        } catch (e) {
+            console.error("Failed to save audio settings:", e);
+        }
     }
 
     unlock() {
@@ -178,7 +266,7 @@ export class AudioEngine {
             let playPromise = this.currentMusicAudio.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
-                    this.fadeMusic(0, 0.4, 3000); // Fade in to 0.4 volume over 3 seconds
+                    this.fadeMusic(0, 0.22, 3000); // Slightly louder music while SFX remain forward.
                 }).catch(e => console.error("Audio playback failed:", e));
             }
         };
@@ -230,6 +318,7 @@ export class AudioEngine {
         if (this.currentMusicAudio) {
             this.currentMusicAudio.muted = this.isMusicMuted;
         }
+        this._saveSettings();
     }
 
     fadeMusic(startVol, endVol, duration, callback) {
@@ -272,35 +361,133 @@ export class AudioEngine {
         }
     }
 
+    _pickVariant(length, lastIndex) {
+        if (length <= 1) return 0;
+        let idx = Math.floor(Math.random() * length);
+        if (idx === lastIndex) idx = (idx + 1 + Math.floor(Math.random() * (length - 1))) % length;
+        return idx;
+    }
+
+    _jitter(freq, amount = 0.03) {
+        const delta = (Math.random() * 2 - 1) * amount;
+        return freq * (1 + delta);
+    }
+
     playJump() {
-        this.playOscillator('sine', 300, 0.3, 600);
+        const variants = [
+            { start: 290, end: 590, dur: 0.24, gain: 0.34 },
+            { start: 315, end: 640, dur: 0.22, gain: 0.36 },
+            { start: 275, end: 560, dur: 0.25, gain: 0.33 },
+            { start: 330, end: 680, dur: 0.2, gain: 0.32 }
+        ];
+        const idx = this._pickVariant(variants.length, this._lastJumpVariant);
+        this._lastJumpVariant = idx;
+        const v = variants[idx];
+        this._playTone('sine', this._jitter(v.start, 0.02), v.dur, {
+            endFreq: this._jitter(v.end, 0.02),
+            gain: v.gain,
+            attack: 0.0018
+        });
+        setTimeout(() => {
+            this._playTone('triangle', this._jitter(v.end * 1.25, 0.025), 0.08, {
+                endFreq: this._jitter(v.end * 1.05, 0.02),
+                gain: 0.16,
+                attack: 0.001
+            });
+        }, 18);
     }
 
     playHit() {
-        // Rock impact: audible mid punch with a short sparkling transient.
-        this._playTone('triangle', 330, 0.17, { endFreq: 180, gain: 0.5, attack: 0.002 });
-        this._playTone('sine', 980, 0.11, { endFreq: 420, gain: 0.26, attack: 0.0015 });
+        // Mid-punch impact with anti-fatigue variation.
+        const variants = [
+            { bodyStart: 320, bodyEnd: 170, bodyGain: 0.48, sparkStart: 940, sparkEnd: 430, sparkGain: 0.25, tailStart: 720, tailEnd: 340, tailGain: 0.19, noiseHp: 980 },
+            { bodyStart: 360, bodyEnd: 190, bodyGain: 0.46, sparkStart: 1040, sparkEnd: 470, sparkGain: 0.24, tailStart: 780, tailEnd: 360, tailGain: 0.18, noiseHp: 1060 },
+            { bodyStart: 300, bodyEnd: 165, bodyGain: 0.5, sparkStart: 900, sparkEnd: 390, sparkGain: 0.26, tailStart: 690, tailEnd: 320, tailGain: 0.2, noiseHp: 940 },
+            { bodyStart: 345, bodyEnd: 185, bodyGain: 0.47, sparkStart: 980, sparkEnd: 440, sparkGain: 0.25, tailStart: 760, tailEnd: 350, tailGain: 0.19, noiseHp: 1020 }
+        ];
+        const idx = this._pickVariant(variants.length, this._lastHitVariant);
+        this._lastHitVariant = idx;
+        const v = variants[idx];
+
+        this._playTone('triangle', this._jitter(v.bodyStart, 0.02), 0.17, {
+            endFreq: this._jitter(v.bodyEnd, 0.02),
+            gain: v.bodyGain,
+            attack: 0.002
+        });
+        this._playTone('sine', this._jitter(v.sparkStart, 0.02), 0.11, {
+            endFreq: this._jitter(v.sparkEnd, 0.02),
+            gain: v.sparkGain,
+            attack: 0.0014
+        });
         setTimeout(() => {
-            this._playTone('triangle', 760, 0.1, { endFreq: 360, gain: 0.2, attack: 0.0015 });
+            this._playTone('triangle', this._jitter(v.tailStart, 0.022), 0.1, {
+                endFreq: this._jitter(v.tailEnd, 0.02),
+                gain: v.tailGain,
+                attack: 0.0014
+            });
         }, 30);
-        this._playNoiseBurst(0.055, 0.075, 1050);
+        this._playNoiseBurst(0.055, 0.075, v.noiseHp);
     }
 
     playExplosion() {
-        // Bomb detonation: low boom + short crack for punch.
-        this._playTone('square', 95, 0.3, { endFreq: 42, gain: 0.5, attack: 0.002 });
-        this._playTone('triangle', 180, 0.24, { endFreq: 85, gain: 0.34, attack: 0.0025, detune: -5 });
-        this._playNoiseBurst(0.12, 0.12, 380);
+        // Big, longer bomb blast with a sustained rumble tail.
+        this._playTone('square', 120, 0.56, { endFreq: 64, gain: 0.52, attack: 0.002 });
+        this._playTone('triangle', 220, 0.5, { endFreq: 110, gain: 0.38, attack: 0.0022, detune: -4 });
+        this._playTone('sine', 340, 0.44, { endFreq: 150, gain: 0.22, attack: 0.0018 });
+        this._playNoiseBurst(0.18, 0.14, 320);
+
+        // Crack + bloom shortly after impact.
         setTimeout(() => {
-            this._playTone('sine', 720, 0.09, { endFreq: 260, gain: 0.16, attack: 0.0015 });
-            this._playNoiseBurst(0.05, 0.06, 1200);
-        }, 24);
+            this._playTone('triangle', 920, 0.16, { endFreq: 360, gain: 0.22, attack: 0.0013 });
+            this._playNoiseBurst(0.09, 0.08, 980);
+        }, 26);
+
+        // Long audible tail so the blast feels large.
+        setTimeout(() => {
+            this._playTone('triangle', 180, 0.72, { endFreq: 92, gain: 0.22, attack: 0.003 });
+            this._playTone('sine', 260, 0.68, { endFreq: 120, gain: 0.16, attack: 0.0025 });
+        }, 70);
     }
 
-    playCollect() {
-        // Shorter, softer sound
-        this.playOscillator('sine', 1000, 0.05, 1200);
-        setTimeout(() => this.playOscillator('sine', 1500, 0.1), 50);
+    playCollect(kind = 'default') {
+        const bucket = (kind === 'coin' || kind === 'powerup') ? kind : 'default';
+        const variantsByKind = {
+            default: [
+                { base: 920, tail: 1440, gain: 0.28 },
+                { base: 980, tail: 1520, gain: 0.3 },
+                { base: 1040, tail: 1620, gain: 0.29 }
+            ],
+            coin: [
+                { base: 1046.5, tail: 1568.0, gain: 0.34 },
+                { base: 1174.66, tail: 1760.0, gain: 0.35 },
+                { base: 987.77, tail: 1480.0, gain: 0.33 },
+                { base: 1318.51, tail: 1975.53, gain: 0.32 }
+            ],
+            powerup: [
+                { base: 740.0, tail: 1174.66, gain: 0.34 },
+                { base: 830.61, tail: 1318.51, gain: 0.35 },
+                { base: 932.33, tail: 1480.0, gain: 0.34 },
+                { base: 1046.5, tail: 1661.22, gain: 0.33 }
+            ]
+        };
+
+        const variants = variantsByKind[bucket];
+        const idx = this._pickVariant(variants.length, this._lastCollectVariant[bucket]);
+        this._lastCollectVariant[bucket] = idx;
+        const v = variants[idx];
+
+        this._playTone('triangle', this._jitter(v.base, 0.018), 0.085, {
+            endFreq: this._jitter(v.base * 1.09, 0.018),
+            gain: v.gain,
+            attack: 0.0015
+        });
+        setTimeout(() => {
+            this._playTone('sine', this._jitter(v.tail, 0.022), 0.14, {
+                endFreq: this._jitter(v.tail * 1.12, 0.02),
+                gain: v.gain * 0.72,
+                attack: 0.0012
+            });
+        }, 24);
     }
 
     playHurt() {
@@ -311,6 +498,26 @@ export class AudioEngine {
             this._playTone('sine', 760, 0.18, { endFreq: 280, gain: 0.28, attack: 0.002, detune: 5 });
         }, 38);
         this._playNoiseBurst(0.085, 0.07, 760);
+    }
+
+    playDeathTune() {
+        // Cartoon "sad trombone" style: descending, chunky "woomp" notes.
+        const beats = [
+            { delay: 0, start: 392.0, end: 293.66, dur: 0.26, gain: 0.48 },    // G4 -> D4
+            { delay: 160, start: 349.23, end: 261.63, dur: 0.28, gain: 0.52 }, // F4 -> C4
+            { delay: 330, start: 311.13, end: 233.08, dur: 0.32, gain: 0.56 }, // D#4 -> A#3
+            { delay: 540, start: 261.63, end: 174.61, dur: 0.66, gain: 0.64 }  // C4 -> F3 (long final woomp)
+        ];
+
+        for (let i = 0; i < beats.length; i++) {
+            const beat = beats[i];
+            setTimeout(() => {
+                this._playTone('triangle', beat.start, beat.dur, { endFreq: beat.end, gain: beat.gain, attack: 0.003 });
+                this._playTone('square', beat.start * 0.9, beat.dur * 0.92, { endFreq: beat.end * 0.9, gain: beat.gain * 0.42, attack: 0.004, detune: -5 });
+                this._playTone('sine', beat.start * 1.8, beat.dur * 0.72, { endFreq: beat.end * 1.55, gain: beat.gain * 0.26, attack: 0.002, detune: 4 });
+                this._playNoiseBurst(Math.min(0.09, beat.dur * 0.24), 0.03, 780);
+            }, beat.delay);
+        }
     }
 
     playWin() {
@@ -327,7 +534,44 @@ export class AudioEngine {
     }
 
     playThrow() {
-        this.playOscillator('sine', 500, 0.1, 200); // Quick descending sweeping sound 
+        // Mid-range throw variants to reduce fatigue while staying mobile-speaker friendly.
+        const variants = [
+            { start: 560, end: 330, dur: 0.09, gain: 0.24 },
+            { start: 620, end: 380, dur: 0.085, gain: 0.23 },
+            { start: 680, end: 420, dur: 0.08, gain: 0.22 },
+            { start: 600, end: 360, dur: 0.095, gain: 0.24 }
+        ];
+        const idx = this._pickVariant(variants.length, this._lastThrowVariant);
+        this._lastThrowVariant = idx;
+        const v = variants[idx];
+        this._playTone('sine', this._jitter(v.start, 0.015), v.dur, {
+            endFreq: this._jitter(v.end, 0.015),
+            gain: v.gain,
+            attack: 0.0015
+        });
+        setTimeout(() => {
+            this._playTone('triangle', this._jitter(v.start * 1.45, 0.018), 0.055, {
+                endFreq: this._jitter(v.end * 1.35, 0.018),
+                gain: v.gain * 0.46,
+                attack: 0.001
+            });
+        }, 10);
+    }
+
+    playFrostBlast() {
+        // Sharper ice-crystal burst (distinct from rock throw).
+        this._playTone('triangle', 1680, 0.15, { endFreq: 1180, gain: 0.44, attack: 0.0011 });
+        this._playTone('sine', 2480, 0.2, { endFreq: 1680, gain: 0.33, attack: 0.0009 });
+        setTimeout(() => {
+            this._playTone('triangle', 3360, 0.11, { endFreq: 2280, gain: 0.26, attack: 0.0008 });
+        }, 16);
+        setTimeout(() => {
+            this._playTone('sine', 3920, 0.085, { endFreq: 2860, gain: 0.17, attack: 0.0007 });
+        }, 10);
+        this._playNoiseBurst(0.08, 0.058, 4200);
+        setTimeout(() => {
+            this._playTone('triangle', 1480, 0.24, { endFreq: 980, gain: 0.18, attack: 0.0016 });
+        }, 36);
     }
 
     playStomp() {
@@ -364,5 +608,16 @@ export class AudioEngine {
             // Longer, brighter final ding for the check mark.
             this.playOscillator('sine', notes[stepIndex] * 1.5, 0.44);
         }
+    }
+
+    playLetterCollectChime(letterIndex = 0) {
+        // Brighter pickup "ding" so letter grabs cut through gameplay audio.
+        const notes = [523.25, 587.33, 659.25, 698.46, 783.99]; // C5 D5 E5 F5 G5
+        const idx = Math.max(0, Math.min(notes.length - 1, letterIndex | 0));
+        const base = notes[idx];
+        this._playTone('triangle', base, 0.16, { endFreq: base * 1.12, gain: 0.44, attack: 0.0018 });
+        setTimeout(() => {
+            this._playTone('sine', base * 2.0, 0.2, { endFreq: base * 2.35, gain: 0.3, attack: 0.0012 });
+        }, 28);
     }
 }

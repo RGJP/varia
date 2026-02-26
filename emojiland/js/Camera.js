@@ -23,6 +23,9 @@ export class Camera {
         this.shakeIntensity = 0;
         this.shakeOffsetX = 0;
         this.shakeOffsetY = 0;
+
+        // Vertical framing control: 0.50 = hard center (50/50 sky-ground).
+        this.verticalFocusRatio = 0.50;
     }
 
     // Cycle through mobile zoom levels and return the new label
@@ -63,7 +66,7 @@ export class Camera {
     update(player, dt) {
         // Center camera on player using effective (zoomed) viewport
         let targetX = player.x + player.width / 2 - this.effectiveWidth / 2;
-        let targetY = player.y + player.height / 2 - this.effectiveHeight / 2;
+        let targetY = player.y + player.height / 2 - this.effectiveHeight * this.verticalFocusRatio;
 
         // Smooth follow
         this.x += (targetX - this.x) * 5 * dt;
