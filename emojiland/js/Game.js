@@ -76,12 +76,14 @@ export class Game {
         this.particles = new ParticleSystem();
         this.background = new Background(this.viewportWidth, this.viewportHeight);
         this.isMobileDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 900;
+        this._lastFullscreenGestureAt = 0;
+        this._installGlobalFullscreenGestureHooks();
         const pauseBtn = document.getElementById('btn-pause');
         if (pauseBtn) {
             // Request fullscreen directly from pause button gestures on mobile.
             // `click` may fire after state already flipped back to PLAYING.
             const requestFullscreenOnPauseBtnGesture = (e) => {
-                if (!this.isMobileDevice || document.hidden) return;
+                if (!this.isMobileDevice) return;
                 if (this.state !== GameState.PAUSED && this.state !== GameState.PLAYING) return;
                 if (e && e.cancelable) e.preventDefault();
                 this._requestFullscreenBestEffort();
@@ -304,8 +306,23 @@ export class Game {
         });
     }
 
+    _installGlobalFullscreenGestureHooks() {
+        const onUserGesture = () => {
+            if (!this.isMobileDevice) return;
+            if (this.state !== GameState.PLAYING && this.state !== GameState.PAUSED) return;
+
+            const now = performance.now();
+            if (now - this._lastFullscreenGestureAt < 250) return;
+            this._lastFullscreenGestureAt = now;
+            this._requestFullscreenBestEffort();
+        };
+
+        window.addEventListener('touchstart', onUserGesture, { passive: true, capture: true });
+        window.addEventListener('pointerdown', onUserGesture, { passive: true, capture: true });
+        window.addEventListener('click', onUserGesture, { capture: true });
+    }
+
     _requestFullscreenBestEffort() {
-        if (document.hidden) return;
         try {
             if (document.fullscreenElement || document.webkitFullscreenElement) return;
             const elem = document.documentElement;
@@ -1257,7 +1274,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('Music from Pixabay - version 1.23', 0, cardY + cardHeight + 152);
+            this.ctx.fillText('Music from Pixabay - version 1.24', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
