@@ -87,6 +87,7 @@ export class Player extends Entity {
 
         const icons = [
             "🚶‍➡️",
+            "🏃‍➡️",
             "🚶‍♀️‍➡️",
             "💃",
             "🕺",
