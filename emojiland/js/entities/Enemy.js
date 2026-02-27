@@ -1631,6 +1631,24 @@ export class Boss extends Entity {
         return Math.abs(this._angleDelta(playerAngle, facingAngle)) <= this.dragonFireHalfAngle;
     }
 
+    _isBossVfxLite(game) {
+        if (!game) return false;
+        return !!(game.isMobileDevice && ((game.performanceQuality || 1) < 0.9 || (game.fpsDisplay || 60) < 58));
+    }
+
+    _emitBossFx(game, x, y, count, color, speedRange, lifeRange, sizeRange) {
+        if (!game || !game.particles) return;
+        const lite = this._isBossVfxLite(game);
+        const scaledCount = lite ? Math.max(2, Math.floor(count * 0.4)) : count;
+        const scaledSpeed = lite
+            ? [speedRange[0] * 0.8, speedRange[1] * 0.85]
+            : speedRange;
+        const scaledLife = lite
+            ? [lifeRange[0] * 0.85, lifeRange[1] * 0.85]
+            : lifeRange;
+        game.particles.emit(x, y, scaledCount, color, scaledSpeed, scaledLife, sizeRange);
+    }
+
     takeDamage(amount, game) {
         this.health -= amount;
         this.damageFlashTimer = 0.15;
@@ -1645,16 +1663,18 @@ export class Boss extends Entity {
             const cx = this.x + this.width / 2;
             const cy = this.y + this.height / 2;
             if (game && game.particles) {
-                // Cinematic boss-defeat fireworks show.
-                game.particles.emitFireworksShow(cx, cy, 1.4);
-                game.particles.emitFireworks(cx - 90, cy - 46, 1.2);
-                game.particles.emitFireworks(cx + 90, cy - 46, 1.2);
-                game.particles.emitFireworks(cx, cy - 95, 1.45);
+                const lite = this._isBossVfxLite(game);
+                // Cinematic boss-defeat fireworks show (scaled down in mobile low-VFX mode).
+                game.particles.emitFireworksShow(cx, cy, lite ? 0.75 : 1.4);
+                game.particles.emitFireworks(cx - 90, cy - 46, lite ? 0.65 : 1.2);
+                game.particles.emitFireworks(cx + 90, cy - 46, lite ? 0.65 : 1.2);
+                game.particles.emitFireworks(cx, cy - 95, lite ? 0.8 : 1.45);
                 game.particles.emitDeath(cx, cy);
                 game.particles.emitDeath(cx - 26, cy + 10);
                 game.particles.emitDeath(cx + 26, cy + 10);
-                for (let i = 0; i < 22; i++) {
-                    const a = (i / 22) * Math.PI * 2;
+                const ringBursts = lite ? 10 : 22;
+                for (let i = 0; i < ringBursts; i++) {
+                    const a = (i / ringBursts) * Math.PI * 2;
                     const r = 130 + Math.random() * 90;
                     game.particles.emitDeath(
                         cx + Math.cos(a) * r,
@@ -2165,7 +2185,7 @@ export class Boss extends Entity {
         if (game.particles) {
             const mx = mini.x + mini.width / 2;
             const my = mini.y + mini.height / 2;
-            game.particles.emit(mx, my, 8, '#ffad7a', [40, 120], [0.14, 0.35], [1.2, 2.8]);
+            this._emitBossFx(game, mx, my, 8, '#ffad7a', [40, 120], [0.14, 0.35], [1.2, 2.8]);
         }
     }
 
@@ -2272,7 +2292,7 @@ export class Boss extends Entity {
             if (game.particles) {
                 const mx = mini.x + mini.width / 2;
                 const my = mini.y + mini.height / 2;
-                game.particles.emit(mx, my, 7, '#cdb7ff', [45, 130], [0.1, 0.3], [1.2, 2.7]);
+                this._emitBossFx(game, mx, my, 7, '#cdb7ff', [45, 130], [0.1, 0.3], [1.2, 2.7]);
             }
             return;
         }
@@ -2423,8 +2443,8 @@ export class Boss extends Entity {
             }
             this.lobsterDashFxTimer -= dt;
             if (this.lobsterDashFxTimer <= 0 && game && game.particles) {
-                this.lobsterDashFxTimer = 0.08;
-                game.particles.emit(this.x + this.width / 2, this.y + this.height * 0.7, 7, '#ffd6a6', [40, 120], [0.1, 0.26], [1.2, 2.6]);
+                this.lobsterDashFxTimer = this._isBossVfxLite(game) ? 0.14 : 0.08;
+                this._emitBossFx(game, this.x + this.width / 2, this.y + this.height * 0.7, 7, '#ffd6a6', [40, 120], [0.1, 0.26], [1.2, 2.6]);
             }
             if (this.lobsterDashTimer <= 0) {
                 this.vx = 0;
@@ -2447,7 +2467,7 @@ export class Boss extends Entity {
                     const xVel = 220 + this.phase * 20 + ((shotIndex % 2 === 0) ? 28 : -18);
                     game.enemyProjectiles.push(new Shrimp(spawnX, spawnY, dir > 0, upVel, xVel));
                     if (game.particles) {
-                        game.particles.emit(spawnX, spawnY, 6, '#ffb199', [45, 140], [0.12, 0.3], [1.2, 2.8]);
+                        this._emitBossFx(game, spawnX, spawnY, 6, '#ffb199', [45, 140], [0.12, 0.3], [1.2, 2.8]);
                     }
                 }
                 this.lobsterShrimpShots--;
@@ -2572,7 +2592,7 @@ export class Boss extends Entity {
                 this.kangarooLeapLandFxTimer = 0.22;
                 this._spawnKangarooStompDebris(game);
                 if (game && game.particles) {
-                    game.particles.emit(this.x + this.width / 2, this.y + this.height * 0.9, 11, '#ffd8a8', [50, 150], [0.12, 0.32], [1.2, 2.9]);
+                    this._emitBossFx(game, this.x + this.width / 2, this.y + this.height * 0.9, 11, '#ffd8a8', [50, 150], [0.12, 0.32], [1.2, 2.9]);
                 }
                 this.attackCooldown = 1.45 + Math.random() * 0.7;
             }
@@ -2960,7 +2980,7 @@ export class Boss extends Entity {
                 this.monkeyHopCycle = Math.random() * Math.PI * 2;
                 this._spawnMonkeyLandingBurst(game);
                 if (game && game.particles) {
-                    game.particles.emit(this.x + this.width / 2, this.y + this.height * 0.92, 12, '#ffe29a', [55, 160], [0.12, 0.34], [1.2, 3.0]);
+                    this._emitBossFx(game, this.x + this.width / 2, this.y + this.height * 0.92, 12, '#ffe29a', [55, 160], [0.12, 0.34], [1.2, 3.0]);
                 }
                 this.attackCooldown = 1.3 + Math.random() * 0.65;
             }
@@ -3093,8 +3113,8 @@ export class Boss extends Entity {
             }
             this.mammothChargeFxTimer -= dt;
             if (this.mammothChargeFxTimer <= 0 && game && game.particles) {
-                this.mammothChargeFxTimer = 0.09;
-                game.particles.emit(this.x + this.width * 0.5, this.y + this.height * 0.88, 8, '#e6f7ff', [40, 125], [0.1, 0.25], [1.2, 2.6]);
+                this.mammothChargeFxTimer = this._isBossVfxLite(game) ? 0.14 : 0.09;
+                this._emitBossFx(game, this.x + this.width * 0.5, this.y + this.height * 0.88, 8, '#e6f7ff', [40, 125], [0.1, 0.25], [1.2, 2.6]);
             }
             if (this.mammothChargeTimer <= 0) {
                 this.mammothState = 'PATROL';
@@ -3238,8 +3258,8 @@ export class Boss extends Entity {
             }
             this.trexLungeFxTimer -= dt;
             if (this.trexLungeFxTimer <= 0 && game && game.particles) {
-                this.trexLungeFxTimer = 0.08;
-                game.particles.emit(this.x + this.width * 0.5, this.y + this.height * 0.88, 8, '#ffdcb5', [45, 125], [0.11, 0.28], [1.2, 2.7]);
+                this.trexLungeFxTimer = this._isBossVfxLite(game) ? 0.14 : 0.08;
+                this._emitBossFx(game, this.x + this.width * 0.5, this.y + this.height * 0.88, 8, '#ffdcb5', [45, 125], [0.11, 0.28], [1.2, 2.7]);
             }
             if (this.trexLungeTimer <= 0) {
                 this.trexState = 'PATROL';
@@ -3529,8 +3549,8 @@ export class Boss extends Entity {
             }
             this.beetleRollFxTimer -= dt;
             if (this.beetleRollFxTimer <= 0 && game && game.particles) {
-                this.beetleRollFxTimer = 0.08;
-                game.particles.emit(this.x + this.width * 0.5, this.y + this.height * 0.9, 8, '#d6c2a3', [40, 120], [0.1, 0.26], [1.2, 2.5]);
+                this.beetleRollFxTimer = this._isBossVfxLite(game) ? 0.14 : 0.08;
+                this._emitBossFx(game, this.x + this.width * 0.5, this.y + this.height * 0.9, 8, '#d6c2a3', [40, 120], [0.1, 0.26], [1.2, 2.5]);
             }
             if (this.beetleRollTimer <= 0) {
                 this.beetleState = 'PATROL';
@@ -3551,7 +3571,7 @@ export class Boss extends Entity {
                 this.beetleState = 'PATROL';
                 this._spawnBeetleEmergeBurst(game);
                 if (game && game.particles) {
-                    game.particles.emit(this.x + this.width / 2, this.y + this.height * 0.9, 12, '#e2c594', [50, 150], [0.12, 0.32], [1.2, 2.9]);
+                    this._emitBossFx(game, this.x + this.width / 2, this.y + this.height * 0.9, 12, '#e2c594', [50, 150], [0.12, 0.32], [1.2, 2.9]);
                 }
                 this.attackCooldown = 1.42 + Math.random() * 0.74;
             }
@@ -3597,6 +3617,7 @@ export class Boss extends Entity {
     }
 
     update(dt, game) {
+        this._lastGameRef = game || null;
         if (this.damageFlashTimer > 0) this.damageFlashTimer -= dt;
         this.spawnFadeTimer += dt;
         if (game && game.player && !this.activated) {
@@ -3700,6 +3721,7 @@ export class Boss extends Entity {
     }
 
     draw(ctx) {
+        const lowVfx = this._isBossVfxLite(this._lastGameRef);
         const damageAlpha = this.damageFlashTimer > 0
             ? (0.5 + Math.sin(this.damageFlashTimer * 40) * 0.5)
             : 1.0;
@@ -3709,7 +3731,7 @@ export class Boss extends Entity {
         ctx.save();
         ctx.globalAlpha = alpha;
 
-        if (this.bossType !== 'boss_spider' && this.bossType !== 'boss_dragon') {
+        if (!lowVfx && this.bossType !== 'boss_spider' && this.bossType !== 'boss_dragon') {
             ctx.shadowColor = 'rgba(255, 80, 0, 0.6)';
             ctx.shadowBlur = 20;
         }
@@ -3740,7 +3762,7 @@ export class Boss extends Entity {
 
         // Cosmetic wingmen for all bosses; visual flair only (no collision/damage).
         if (!this._bossMinionCache) this._bossMinionCache = getEmojiCanvas(this.minionEmoji, 24);
-        const minionCount = 5;
+        const minionCount = lowVfx ? 2 : 5;
         const orbitBase = (this.bossType === 'boss_spider' || this.bossType === 'boss_manliftingweights' || this.bossType === 'boss_lobster' || this.bossType === 'boss_kangaroo' || this.bossType === 'boss_monkey' || this.bossType === 'boss_mammoth' || this.bossType === 'boss_trex' || this.bossType === 'boss_beetle')
             ? (this.width * 0.38 + Math.sin(this.timeAlive * 2.3) * 6)
             : (this.aerialMinionRadius + Math.sin(this.timeAlive * 2.1) * 8);
@@ -3762,13 +3784,17 @@ export class Boss extends Entity {
             if (this.dragonAttackPattern === 'cone' && (this.dragonFireTelegraphTimer > 0 || this.dragonFireActiveTimer > 0)) {
                 const half = this.dragonFireHalfAngle;
                 const fireRange = this.dragonFireRange;
-                const rows = this.dragonFireTelegraphTimer > 0 ? 4 : 6;
+                const rows = lowVfx
+                    ? (this.dragonFireTelegraphTimer > 0 ? 2 : 3)
+                    : (this.dragonFireTelegraphTimer > 0 ? 4 : 6);
                 const telePulse = 0.45 + Math.sin(this.timeAlive * 20) * 0.3;
                 for (let r = 1; r <= rows; r++) {
                     const t = r / (rows + 0.7);
                     const radius = fireRange * t * (0.84 + Math.sin(this.timeAlive * 5 + r) * 0.08);
                     const rowHalf = half * t;
-                    const embers = Math.max(2, Math.floor(2 + r * 1.8));
+                    const embers = lowVfx
+                        ? Math.max(1, Math.floor(1 + r * 1.1))
+                        : Math.max(2, Math.floor(2 + r * 1.8));
                     for (let i = 0; i < embers; i++) {
                         const blend = embers <= 1 ? 0.5 : i / (embers - 1);
                         const a = (-rowHalf + blend * rowHalf * 2) + this.dragonConeAimOffset * (0.7 + 0.3 * t);
