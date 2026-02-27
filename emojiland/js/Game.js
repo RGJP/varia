@@ -98,6 +98,7 @@ export class Game {
         this.gameOverTimer = 0;
         this._autoPausedByVisibility = false;
         this._lastCameraBtnLeft = null;
+        this.startMenuTrackNumber = 21;
 
         // Pre-cache UI emojis
         this._heartCache = getEmojiCanvas('\u2764\uFE0F', 24);
@@ -183,6 +184,9 @@ export class Game {
                 if (e && e.cancelable) e.preventDefault();
                 return;
             }
+            if (this.state === GameState.START_MENU) {
+                this._ensureStartMenuMusicFromGesture();
+            }
 
             const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientX : 0));
             const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : (e.changedTouches && e.changedTouches[0] ? e.changedTouches[0].clientY : 0));
@@ -243,6 +247,7 @@ export class Game {
                 ) {
                     this.selectedDifficultyId = null;
                     this.state = GameState.START_MENU;
+                    this._ensureStartMenuMusicFromGesture();
                     if (e && e.cancelable) e.preventDefault();
                     return;
                 }
@@ -289,6 +294,26 @@ export class Game {
                 }
             }
         });
+    }
+
+    _ensureStartMenuMusicFromGesture() {
+        if (!this.audio || this.state !== GameState.START_MENU) return;
+        const warning = document.getElementById('orientation-warning');
+        if (warning) {
+            const styles = window.getComputedStyle(warning);
+            const warningVisible = styles.display !== 'none' && styles.visibility !== 'hidden' && styles.opacity !== '0';
+            if (warningVisible) return;
+        }
+        if (typeof this.audio.unlock === 'function') {
+            this.audio.unlock();
+        }
+
+        const hasLiveTrack = !!(this.audio.currentMusicAudio && !this.audio.currentMusicAudio.paused);
+        if (hasLiveTrack && this.audio.lastSongNumber === this.startMenuTrackNumber) return;
+
+        if (typeof this.audio.playBackgroundMusicTrack === 'function') {
+            this.audio.playBackgroundMusicTrack(this.startMenuTrackNumber);
+        }
     }
 
     initLevel() {
@@ -1200,7 +1225,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('Music from Pixabay - version 1.16', 0, cardY + cardHeight + 152);
+            this.ctx.fillText('Music from Pixabay - version 1.17', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';

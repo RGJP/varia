@@ -1268,7 +1268,7 @@ export class Boss extends Entity {
             ? 'boss_tengu'
             : (bossType === 'boss_robot' ? 'boss_manliftingweights' : bossType);
         const resolvedBossType = normalizedBossType || BOSS_TYPES[Math.floor(Math.random() * BOSS_TYPES.length)];
-        const size = resolvedBossType === 'boss_spider' ? 92 : (resolvedBossType === 'boss_dragon' ? 170 : (resolvedBossType === 'boss_manliftingweights' ? 156 : (resolvedBossType === 'boss_lobster' ? 150 : (resolvedBossType === 'boss_kangaroo' ? 154 : (resolvedBossType === 'boss_monkey' ? 150 : (resolvedBossType === 'boss_mammoth' ? 168 : (resolvedBossType === 'boss_trex' ? 166 : (resolvedBossType === 'boss_mosquito' ? 144 : (resolvedBossType === 'boss_beetle' ? 158 : 160)))))))));
+        const size = resolvedBossType === 'boss_spider' ? 122 : (resolvedBossType === 'boss_dragon' ? 170 : (resolvedBossType === 'boss_manliftingweights' ? 156 : (resolvedBossType === 'boss_lobster' ? 150 : (resolvedBossType === 'boss_kangaroo' ? 154 : (resolvedBossType === 'boss_monkey' ? 150 : (resolvedBossType === 'boss_mammoth' ? 168 : (resolvedBossType === 'boss_trex' ? 166 : (resolvedBossType === 'boss_mosquito' ? 144 : (resolvedBossType === 'boss_beetle' ? 158 : 160)))))))));
         super(x, y - size, size, size);
 
         this.bossType = resolvedBossType;
@@ -1346,6 +1346,8 @@ export class Boss extends Entity {
         this.spiderWebBurstInterval = 0.13;
         this.spiderWebBurstSpreads = [];
         this.spiderVenomCooldown = 1.8 + Math.random() * 1.0;
+        this.spiderVenomTelegraphTimer = 0;
+        this.spiderVenomDir = 0;
         this.spiderPounceCooldown = 2.2;
         this.spiderPounceTelegraph = 0;
         this.spiderPounceTimer = 0;
@@ -1885,11 +1887,12 @@ export class Boss extends Entity {
             return;
         }
 
-        if (this.attackCooldown <= 0 && player) {
-            const venomChance = this.phase >= 3 ? 0.33 : (this.phase >= 2 ? 0.27 : 0.20);
-            if (this.spiderVenomCooldown <= 0 && Math.random() < venomChance) {
-                const toPlayer = (player.x + player.width / 2) - (this.x + this.width / 2);
-                const dir = Math.sign(toPlayer) || (this.facingRight ? 1 : -1);
+        if (this.spiderVenomTelegraphTimer > 0) {
+            this.spiderVenomTelegraphTimer -= dt;
+            this.vx = 0;
+            this.spiderState = 'TELEGRAPH';
+            if (this.spiderVenomTelegraphTimer <= 0) {
+                const dir = this.spiderVenomDir || (this.facingRight ? 1 : -1);
                 const spawnX = this.x + this.width / 2 + dir * (this.width * 0.26);
                 const spawnY = this.y + this.height * 0.2;
                 const baseVx = 320 + this.phase * 34;
@@ -1906,6 +1909,18 @@ export class Boss extends Entity {
                 this.spiderVenomCooldown = 2.3 + Math.random() * 1.7;
                 this.spiderState = 'PAUSE';
                 this.spiderStateTimer = 0.25 + Math.random() * 0.2;
+                this.vx = 0;
+            }
+            return;
+        }
+
+        if (this.attackCooldown <= 0 && player) {
+            const venomChance = this.phase >= 3 ? 0.33 : (this.phase >= 2 ? 0.27 : 0.20);
+            if (this.spiderVenomCooldown <= 0 && Math.random() < venomChance) {
+                const toPlayer = (player.x + player.width / 2) - (this.x + this.width / 2);
+                this.spiderVenomDir = Math.sign(toPlayer) || (this.facingRight ? 1 : -1);
+                this.spiderVenomTelegraphTimer = this.phase >= 3 ? 0.34 : (this.phase >= 2 ? 0.42 : 0.5);
+                this.spiderState = 'TELEGRAPH';
                 this.vx = 0;
                 return;
             }
@@ -2148,40 +2163,99 @@ export class Boss extends Entity {
         }
         if (candidates.length === 0) return;
 
-        const spawnPlatform = candidates[Math.floor(Math.random() * candidates.length)];
         const pad = 20;
         const miniSize = 42;
-        const left = spawnPlatform.x + pad;
-        const right = spawnPlatform.x + spawnPlatform.width - miniSize - pad;
-        if (right <= left) return;
+        const player = game.player || null;
+        const playerSafePadding = 72;
 
-        const spawnX = left + Math.random() * (right - left);
-        const mini = new Enemy(spawnX, spawnPlatform.y - miniSize, spawnPlatform);
-        mini.type = TYPE_MINI_SPIDER;
-        mini.emoji = String.fromCodePoint(0x1F577) + '\uFE0F';
-        mini.width = miniSize;
-        mini.height = miniSize;
-        mini.x = spawnX;
-        mini.y = spawnPlatform.y - mini.height;
-        mini.startX = mini.x;
-        mini.startY = mini.y;
-        mini.baseSpeed = 115 + this.phase * 10;
-        mini.speed = mini.baseSpeed;
-        mini.health = 1;
-        mini.maxHealth = 1;
-        mini.state = 'PATROL';
-        mini.stateTimer = 0.5 + Math.random() * 0.8;
-        mini.facingRight = Math.random() > 0.5;
-        mini.vx = mini.facingRight ? mini.speed : -mini.speed;
-        mini.vy = -90 - Math.random() * 80;
-        mini._cachedEmoji = getEmojiCanvas(mini.emoji, mini.height);
-        game.enemies.push(mini);
-        game.totalEnemies++;
+        for (let platformTry = 0; platformTry < candidates.length; platformTry++) {
+            const spawnPlatform = candidates[Math.floor(Math.random() * candidates.length)];
+            const left = spawnPlatform.x + pad;
+            const right = spawnPlatform.x + spawnPlatform.width - miniSize - pad;
+            if (right <= left) continue;
 
-        if (game.particles) {
-            const mx = mini.x + mini.width / 2;
-            const my = mini.y + mini.height / 2;
-            game.particles.emit(mx, my, 7, '#cdb7ff', [45, 130], [0.1, 0.3], [1.2, 2.7]);
+            let spawnX = null;
+            let spawnY = null;
+            for (let posTry = 0; posTry < 8; posTry++) {
+                const candidateX = left + Math.random() * (right - left);
+                const candidateY = spawnPlatform.y - miniSize;
+                let overlapsPlayer = false;
+                if (player) {
+                    const spawnLeft = candidateX - playerSafePadding;
+                    const spawnRight = candidateX + miniSize + playerSafePadding;
+                    const spawnTop = candidateY - playerSafePadding;
+                    const spawnBottom = candidateY + miniSize + playerSafePadding;
+                    const playerLeft = player.x;
+                    const playerRight = player.x + player.width;
+                    const playerTop = player.y;
+                    const playerBottom = player.y + player.height;
+                    overlapsPlayer = (
+                        spawnRight > playerLeft &&
+                        spawnLeft < playerRight &&
+                        spawnBottom > playerTop &&
+                        spawnTop < playerBottom
+                    );
+                }
+                if (!overlapsPlayer) {
+                    spawnX = candidateX;
+                    spawnY = candidateY;
+                    break;
+                }
+            }
+
+            if (spawnX === null || spawnY === null) continue;
+
+            const spawnCenterX = this.x + this.width / 2;
+            const spawnCenterY = this.y + this.height / 2;
+            const mini = new Enemy(spawnCenterX - miniSize / 2, spawnCenterY - miniSize / 2, this.platform);
+            mini.type = TYPE_MINI_SPIDER;
+            mini.emoji = String.fromCodePoint(0x1F577) + '\uFE0F';
+            mini.width = miniSize;
+            mini.height = miniSize;
+            mini.x = spawnCenterX - mini.width / 2;
+            mini.y = spawnCenterY - mini.height / 2;
+            mini.startX = mini.x;
+            mini.startY = mini.y;
+            mini.baseSpeed = 115 + this.phase * 10;
+            mini.speed = mini.baseSpeed;
+            mini.health = 1;
+            mini.maxHealth = 1;
+            mini.state = 'JUMP';
+            mini.stateTimer = 0;
+
+            // Spawn from boss center and arc into the selected platform position.
+            const startFootX = mini.x + mini.width / 2;
+            const startFootY = mini.y + mini.height;
+            const targetX = spawnX + mini.width / 2;
+            const targetY = spawnY + mini.height;
+            const dx = targetX - startFootX;
+            const dy = targetY - startFootY;
+            const apex = Math.min(startFootY - 120, targetY - 60);
+            const arcHeight = Math.max(40, startFootY - apex);
+            mini.vy = -Math.sqrt(2 * Physics.GRAVITY * arcHeight);
+
+            const a = 0.5 * Physics.GRAVITY;
+            const b = mini.vy;
+            const c = -dy;
+            const discriminant = b * b - 4 * a * c;
+            if (discriminant >= 0) {
+                const t = Math.max(0.12, (-b + Math.sqrt(discriminant)) / (2 * a));
+                mini.vx = dx / t;
+            } else {
+                mini.vx = dx >= 0 ? 200 : -200;
+                mini.vy = -320;
+            }
+            mini.facingRight = mini.vx > 0;
+            mini._cachedEmoji = getEmojiCanvas(mini.emoji, mini.height);
+            game.enemies.push(mini);
+            game.totalEnemies++;
+
+            if (game.particles) {
+                const mx = mini.x + mini.width / 2;
+                const my = mini.y + mini.height / 2;
+                game.particles.emit(mx, my, 7, '#cdb7ff', [45, 130], [0.1, 0.3], [1.2, 2.7]);
+            }
+            return;
         }
     }
 
@@ -3507,6 +3581,7 @@ export class Boss extends Entity {
         // Contact damage is slightly forgiving while telegraphing/charging.
         const inFairWindow = this.attackTelegraphTimer > 0
             || this.webTelegraphTimer > 0
+            || this.spiderVenomTelegraphTimer > 0
             || this.spiderPounceTelegraph > 0
             || this.moaiTelegraphTimer > 0
             || this.moaiState === 'GAZE'
@@ -3582,6 +3657,9 @@ export class Boss extends Entity {
         }
         if (this.spiderPounceTelegraph > 0) {
             ctx.scale(1.1, 0.9);
+        }
+        if (this.spiderVenomTelegraphTimer > 0) {
+            ctx.scale(1.04, 1.04);
         }
 
         const cached = this._cachedEmoji;
@@ -3663,6 +3741,7 @@ export class Boss extends Entity {
 
         const isTelegraphing = this.attackTelegraphTimer > 0
             || this.webTelegraphTimer > 0
+            || this.spiderVenomTelegraphTimer > 0
             || this.spiderPounceTelegraph > 0
             || this.dragonFireTelegraphTimer > 0
             || this.lobsterTelegraphTimer > 0
@@ -3683,6 +3762,13 @@ export class Boss extends Entity {
         if (this.bossType === 'boss_spider' && this.webTelegraphTimer > 0) {
             if (!this._webTellCache) this._webTellCache = getEmojiCanvas(String.fromCodePoint(0x1F578) + '\uFE0F', 28);
             ctx.drawImage(this._webTellCache.canvas, -this._webTellCache.width / 2, -this.height / 2 - 56);
+        }
+        if (this.bossType === 'boss_spider' && this.spiderVenomTelegraphTimer > 0) {
+            if (!this._venomTellCache) this._venomTellCache = getEmojiCanvas(String.fromCodePoint(0x1F9EA), 28);
+            const pulse = 0.62 + Math.sin(this.timeAlive * 24) * 0.32;
+            ctx.globalAlpha = alpha * (0.45 + pulse * 0.45);
+            ctx.drawImage(this._venomTellCache.canvas, -this._venomTellCache.width / 2, -this.height / 2 - 86);
+            ctx.globalAlpha = alpha;
         }
 
         if (this.bossType === 'boss_manliftingweights' && this.robotWrenchTelegraphTimer > 0) {
