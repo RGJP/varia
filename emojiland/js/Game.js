@@ -55,7 +55,7 @@ export class Game {
         this.state = GameState.START_MENU;
         this.lastTime = 0;
         this.difficultyOptions = [
-            { id: 'easy', label: '😊 Easy (20 HP)', hearts: 20 },
+            { id: 'easy', label: '🧒 Easy (20 HP)', hearts: 20 },
             { id: 'normal', label: '😎 Normal (5 HP)', hearts: 5 },
             { id: 'heroic', label: '😵‍💫 Hard (3 HP)', hearts: 3 }
         ];
