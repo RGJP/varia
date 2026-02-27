@@ -88,7 +88,7 @@ export class Game {
                 if (e && e.cancelable) e.preventDefault();
                 this._requestFullscreenBestEffort();
             };
-            pauseBtn.addEventListener('touchstart', requestFullscreenOnPauseBtnGesture, { passive: false });
+            pauseBtn.addEventListener('touchend', requestFullscreenOnPauseBtnGesture, { passive: false });
             pauseBtn.addEventListener('click', requestFullscreenOnPauseBtnGesture);
         }
 
@@ -121,6 +121,7 @@ export class Game {
         this.gameOverTriggered = false;
         this.gameOverTimer = 0;
         this._autoPausedByVisibility = false;
+        this._bossMusicEngaged = false;
         this._lastCameraBtnLeft = null;
         this.startMenuTrackNumber = 21;
 
@@ -310,21 +311,25 @@ export class Game {
         const onUserGesture = () => {
             if (!this.isMobileDevice) return;
             if (this.state !== GameState.PLAYING && this.state !== GameState.PAUSED) return;
-
-            const now = performance.now();
-            if (now - this._lastFullscreenGestureAt < 250) return;
-            this._lastFullscreenGestureAt = now;
             this._requestFullscreenBestEffort();
         };
 
-        window.addEventListener('touchstart', onUserGesture, { passive: true, capture: true });
-        window.addEventListener('pointerdown', onUserGesture, { passive: true, capture: true });
+        window.addEventListener('touchend', onUserGesture, { passive: true, capture: true });
+        window.addEventListener('pointerup', onUserGesture, { passive: true, capture: true });
         window.addEventListener('click', onUserGesture, { capture: true });
     }
 
     _requestFullscreenBestEffort() {
         try {
+            const now = performance.now();
+            if (now - this._lastFullscreenGestureAt < 250) return;
+
+            // Avoid calling fullscreen API when browser doesn't report active user gesture.
+            const userActivation = navigator.userActivation;
+            if (userActivation && !userActivation.isActive) return;
+
             if (document.fullscreenElement || document.webkitFullscreenElement) return;
+            this._lastFullscreenGestureAt = now;
             const elem = document.documentElement;
             if (elem.requestFullscreen) {
                 elem.requestFullscreen().catch(() => { });
@@ -360,6 +365,7 @@ export class Game {
 
     initLevel() {
         clearEmojiCache();
+        this._bossMusicEngaged = false;
         const levelData = loadLevel();
         this.platforms = levelData.platforms;
         this.enemies = levelData.enemies;
@@ -629,6 +635,12 @@ export class Game {
             this.collectibles = filterInPlace(this.collectibles);
             this.rocks = filterInPlace(this.rocks);
             this.enemyProjectiles = filterInPlace(this.enemyProjectiles);
+            if (this._bossMusicEngaged && !this.hasAliveBoss()) {
+                this._bossMusicEngaged = false;
+                if (this.audio && typeof this.audio.exitBossMusicToPrevious === 'function') {
+                    this.audio.exitBossMusicToPrevious({ fadeOutMs: 220, fadeInMs: 260 });
+                }
+            }
 
             this.camera.update(this.player, dt);
             this.particles.update(dt);
@@ -681,10 +693,13 @@ export class Game {
             }
         }
         this.pendingBossSpawns.length = writeIdx;
-        if (spawnedBoss && this.audio && this.audio.playBackgroundMusicTrack) {
-            const bossTracks = [6, 16, 28];
-            const chosenTrack = bossTracks[Math.floor(Math.random() * bossTracks.length)];
-            this.audio.playBackgroundMusicTrack(chosenTrack);
+        if (spawnedBoss && this.audio) {
+            this._bossMusicEngaged = true;
+            if (typeof this.audio.enterBossMusic === 'function') {
+                this.audio.enterBossMusic(28, { startAt: 10, fadeInMs: 120 });
+            } else if (this.audio.playBackgroundMusicTrack) {
+                this.audio.playBackgroundMusicTrack(28, { startAt: 10, fadeInMs: 120 });
+            }
         }
     }
 

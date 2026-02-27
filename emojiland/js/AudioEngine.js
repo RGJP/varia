@@ -7,6 +7,10 @@ export class AudioEngine {
         this.currentMusicAudio = null;
         this.lastSongNumber = -1;
         this.fadeInterval = null;
+        this._pendingMusicSeekTimeout = null;
+        this._musicRequestId = 0;
+        this._bossMusicActive = false;
+        this._preBossMusicSnapshot = null;
 
         this.totalSongs = 39;
         this.recentHistorySize = Math.max(0, Math.min(5, this.totalSongs - 1));
@@ -152,6 +156,13 @@ export class AudioEngine {
         }
     }
 
+    _clearPendingMusicSeek() {
+        if (this._pendingMusicSeekTimeout) {
+            clearTimeout(this._pendingMusicSeekTimeout);
+            this._pendingMusicSeekTimeout = null;
+        }
+    }
+
     playOscillator(type, freq, duration, slideFreq = null) {
         this._ensureContext();
         if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => { });
@@ -245,6 +256,8 @@ export class AudioEngine {
         const startMusic = () => {
             this._ensureContext();
             if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => { });
+            this._clearPendingMusicSeek();
+            const requestId = ++this._musicRequestId;
 
             const songNumber = this.getNextSongNumber();
             console.log(`Playing music track: ${songNumber}`);
@@ -259,6 +272,7 @@ export class AudioEngine {
             this.currentMusicAudio.muted = this.isMusicMuted;
 
             this.currentMusicAudio.onended = () => {
+                if (requestId !== this._musicRequestId) return;
                 console.log("Music track ended, playing next...");
                 this.playBackgroundMusic(true);
             };
@@ -291,41 +305,149 @@ export class AudioEngine {
         }
     }
 
-    playBackgroundMusicTrack(songNumber) {
+    playBackgroundMusicTrack(songNumber, options = {}) {
         const normalizedSong = Number.isInteger(songNumber)
             ? ((songNumber % this.totalSongs) + this.totalSongs) % this.totalSongs
             : 0;
+        const startAt = Math.max(0, Number(options.startAt) || 0);
+        const fadeInMs = Math.max(0, Number(options.fadeInMs) || 300);
 
         const startMusic = () => {
             this._ensureContext();
             if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => { });
+            this._clearPendingMusicSeek();
+            const requestId = ++this._musicRequestId;
 
             this.lastSongNumber = normalizedSong;
             this._saveSettings();
             console.log(`Playing music track: ${normalizedSong}`);
 
-            if (!this.currentMusicAudio) {
-                this.currentMusicAudio = new Audio();
-            }
-
-            this.currentMusicAudio.src = `js/music/${String(normalizedSong).padStart(2, '0')}.mp3`;
-            this.currentMusicAudio.loop = false;
-            this.currentMusicAudio.volume = 0;
-            this.currentMusicAudio.muted = this.isMusicMuted;
-            this.currentMusicAudio.onended = () => {
+            const musicAudio = new Audio();
+            const baseSrc = `js/music/${String(normalizedSong).padStart(2, '0')}.mp3`;
+            musicAudio.src = baseSrc;
+            musicAudio.loop = false;
+            musicAudio.volume = 0;
+            musicAudio.muted = this.isMusicMuted;
+            musicAudio.preload = 'auto';
+            musicAudio.onended = () => {
+                if (requestId !== this._musicRequestId) return;
                 console.log("Music track ended, playing next...");
                 this.playBackgroundMusic(true);
             };
+            this.currentMusicAudio = musicAudio;
 
-            const playPromise = this.currentMusicAudio.play();
+            const isCurrentRequest = () => requestId === this._musicRequestId && this.currentMusicAudio === musicAudio;
+            const fadeInCurrent = () => {
+                if (!isCurrentRequest()) return;
+                this.fadeMusic(0, 0.22, fadeInMs);
+            };
+
+            const seekThenFade = () => {
+                if (!isCurrentRequest() || startAt <= 0) {
+                    fadeInCurrent();
+                    return;
+                }
+
+                const normalRate = musicAudio.playbackRate || 1;
+                const seekWindowMs = 180;
+                const seekStartTs = Date.now();
+
+                const getSafeStart = () => {
+                    const duration = musicAudio.duration;
+                    return Number.isFinite(duration)
+                        ? Math.min(startAt, Math.max(0, duration - 0.1))
+                        : startAt;
+                };
+
+                const applySeek = () => {
+                    const safeStart = getSafeStart();
+                    try {
+                        if (typeof musicAudio.fastSeek === 'function') {
+                            musicAudio.fastSeek(safeStart);
+                        }
+                    } catch (e) {
+                        // Fall back to currentTime assignment.
+                    }
+                    try {
+                        musicAudio.currentTime = safeStart;
+                    } catch (e) {
+                        // Seek may fail before enough media data is available.
+                    }
+                    const nowTime = musicAudio.currentTime || 0;
+                    return nowTime >= (safeStart - 0.25);
+                };
+
+                const beginFastForwardFallback = () => {
+                    if (!isCurrentRequest()) return;
+                    let fastRate = null;
+                    const candidateRates = [16, 8, 4, 2];
+                    for (let i = 0; i < candidateRates.length; i++) {
+                        try {
+                            musicAudio.playbackRate = candidateRates[i];
+                            fastRate = candidateRates[i];
+                            break;
+                        } catch (e) {
+                            // Try a lower fallback playback rate.
+                        }
+                    }
+                    if (!fastRate || fastRate <= normalRate) {
+                        // Fail-safe: never leave boss music silent if rate change is unsupported.
+                        fadeInCurrent();
+                        return;
+                    }
+                    const tick = () => {
+                        if (!isCurrentRequest()) return;
+                        const safeStart = getSafeStart();
+                        if ((musicAudio.currentTime || 0) >= (safeStart - 0.05)) {
+                            this._pendingMusicSeekTimeout = null;
+                            try {
+                                musicAudio.playbackRate = normalRate;
+                            } catch (e) {
+                                // Keep current supported rate if restoring fails.
+                            }
+                            fadeInCurrent();
+                            return;
+                        }
+                        this._pendingMusicSeekTimeout = setTimeout(tick, 10);
+                    };
+                    tick();
+                };
+
+                const attemptDirectSeek = () => {
+                    if (!isCurrentRequest()) return;
+                    if (applySeek()) {
+                        this._pendingMusicSeekTimeout = null;
+                        musicAudio.playbackRate = normalRate;
+                        fadeInCurrent();
+                        return;
+                    }
+
+                    if (Date.now() - seekStartTs >= seekWindowMs) {
+                        beginFastForwardFallback();
+                        return;
+                    }
+                    this._pendingMusicSeekTimeout = setTimeout(attemptDirectSeek, 20);
+                };
+
+                if (musicAudio.readyState >= 1) {
+                    attemptDirectSeek();
+                } else {
+                    musicAudio.addEventListener('loadedmetadata', attemptDirectSeek, { once: true });
+                }
+            };
+
+            const playPromise = musicAudio.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
-                    this.fadeMusic(0, 0.22, 300);
+                    seekThenFade();
                 }).catch(e => console.error("Audio playback failed:", e));
+            } else {
+                seekThenFade();
             }
         };
 
         if (this.currentMusicAudio) {
+            this._clearPendingMusicSeek();
             this.fadeMusic(this.currentMusicAudio.volume, 0, 300, () => {
                 if (this.currentMusicAudio) {
                     this.currentMusicAudio.pause();
@@ -338,7 +460,90 @@ export class AudioEngine {
         }
     }
 
+    _captureCurrentMusicSnapshot() {
+        if (!this.currentMusicAudio) return null;
+        const src = this.currentMusicAudio.currentSrc || this.currentMusicAudio.src;
+        if (!src) return null;
+        return {
+            src,
+            time: Math.max(0, this.currentMusicAudio.currentTime || 0),
+            lastSongNumber: this.lastSongNumber
+        };
+    }
+
+    enterBossMusic(songNumber = 28, options = {}) {
+        if (!this._bossMusicActive) {
+            this._preBossMusicSnapshot = this._captureCurrentMusicSnapshot();
+        }
+        this._bossMusicActive = true;
+        this.playBackgroundMusicTrack(songNumber, options);
+    }
+
+    exitBossMusicToPrevious(options = {}) {
+        if (!this._bossMusicActive) return;
+        this._bossMusicActive = false;
+        const snapshot = this._preBossMusicSnapshot;
+        this._preBossMusicSnapshot = null;
+        if (!snapshot) return;
+
+        const fadeOutMs = Math.max(0, Number(options.fadeOutMs) || 220);
+        const fadeInMs = Math.max(0, Number(options.fadeInMs) || 260);
+
+        const restore = () => {
+            this._ensureContext();
+            if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => { });
+            this._clearPendingMusicSeek();
+            const requestId = ++this._musicRequestId;
+
+            if (!this.currentMusicAudio) {
+                this.currentMusicAudio = new Audio();
+            }
+            this.currentMusicAudio.src = snapshot.src;
+            this.currentMusicAudio.loop = false;
+            this.currentMusicAudio.volume = 0;
+            this.currentMusicAudio.muted = this.isMusicMuted;
+            this.currentMusicAudio.preload = 'auto';
+            this.currentMusicAudio.onended = () => {
+                if (requestId !== this._musicRequestId) return;
+                console.log("Music track ended, playing next...");
+                this.playBackgroundMusic(true);
+            };
+
+            this.lastSongNumber = Number.isInteger(snapshot.lastSongNumber) ? snapshot.lastSongNumber : this.lastSongNumber;
+            this._saveSettings();
+
+            const playPromise = this.currentMusicAudio.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    const duration = this.currentMusicAudio.duration;
+                    const safeTime = Number.isFinite(duration)
+                        ? Math.min(snapshot.time, Math.max(0, duration - 0.1))
+                        : snapshot.time;
+                    if (safeTime > 0) this.currentMusicAudio.currentTime = safeTime;
+                    this.fadeMusic(0, 0.22, fadeInMs);
+                }).catch(e => console.error("Audio playback failed:", e));
+            }
+        };
+
+        if (this.currentMusicAudio) {
+            this._clearPendingMusicSeek();
+            this.fadeMusic(this.currentMusicAudio.volume, 0, fadeOutMs, () => {
+                if (this.currentMusicAudio) {
+                    this.currentMusicAudio.pause();
+                    this.currentMusicAudio.onended = null;
+                }
+                restore();
+            });
+        } else {
+            restore();
+        }
+    }
+
     fadeOutMusic(duration = 1000) {
+        this._clearPendingMusicSeek();
+        this._musicRequestId++;
+        this._bossMusicActive = false;
+        this._preBossMusicSnapshot = null;
         if (!this.currentMusicAudio) return;
         this.fadeMusic(this.currentMusicAudio.volume, 0, duration, () => {
             if (this.currentMusicAudio) {
