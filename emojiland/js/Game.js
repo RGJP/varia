@@ -1385,10 +1385,10 @@ export class Game {
         const panelPad = 10;
         if (ctx.roundRect) {
             ctx.beginPath();
-            ctx.roundRect(barX - panelPad - 50, barY - panelPad, barW + panelPad * 2 + 50, barH + panelPad * 2 + 26, 10);
+            ctx.roundRect(barX - panelPad, barY - panelPad, barW + panelPad * 2, barH + panelPad * 2 + 26, 10);
             ctx.fill();
         } else {
-            ctx.fillRect(barX - panelPad - 50, barY - panelPad, barW + panelPad * 2 + 50, barH + panelPad * 2 + 26);
+            ctx.fillRect(barX - panelPad, barY - panelPad, barW + panelPad * 2, barH + panelPad * 2 + 26);
         }
 
         // Boss label
