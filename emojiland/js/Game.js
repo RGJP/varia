@@ -57,7 +57,7 @@ export class Game {
         this.difficultyOptions = [
             { id: 'easy', label: '😊 Easy (20 HP)', hearts: 20 },
             { id: 'normal', label: '😎 Normal (5 HP)', hearts: 5 },
-            { id: 'heroic', label: '🤯 Heroic (3 HP)', hearts: 3 }
+            { id: 'heroic', label: '😵‍💫 Hard (3 HP)', hearts: 3 }
         ];
         this.selectedDifficultyId = null;
 
@@ -571,7 +571,6 @@ export class Game {
         this.state = GameState.VICTORY;
         this.canRestart = false;
         setTimeout(() => { this.canRestart = true; }, 1000);
-        this.audio.playWin();
         this.audio.fadeOutMusic(1000);
     }
 

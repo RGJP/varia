@@ -1350,6 +1350,7 @@ export class Boss extends Entity {
         this.spiderPounceTelegraph = 0;
         this.spiderPounceTimer = 0;
         this.spiderPounceDir = 0;
+        this.spiderMinionCooldown = 2.9 + Math.random() * 1.1;
 
         // Dragon (boss_dragon) grounded fire-cone state
         this.dragonPatrolDir = Math.random() > 0.5 ? 1 : -1;
@@ -1816,6 +1817,12 @@ export class Boss extends Entity {
         if (this.x < left) this.x = left;
         if (this.x > right) this.x = right;
 
+        if (this.spiderMinionCooldown > 0) this.spiderMinionCooldown -= dt;
+        if (this.spiderMinionCooldown <= 0) {
+            this._spawnSpiderMinion(game);
+            this.spiderMinionCooldown = (this.phase >= 3 ? 2.4 : (this.phase >= 2 ? 2.9 : 3.4)) + Math.random() * 1.0;
+        }
+
         if (this.spiderPounceCooldown > 0) this.spiderPounceCooldown -= dt;
         if (this.spiderVenomCooldown > 0) this.spiderVenomCooldown -= dt;
 
@@ -2067,6 +2074,18 @@ export class Boss extends Entity {
         return count;
     }
 
+    _countActiveSpiderMinions(game) {
+        if (!game || !game.enemies) return 0;
+        let count = 0;
+        for (let i = 0; i < game.enemies.length; i++) {
+            const enemy = game.enemies[i];
+            if (!enemy.markedForDeletion && enemy.type === TYPE_MINI_SPIDER) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     _countActiveShrimpProjectiles(game) {
         if (!game || !game.enemyProjectiles) return 0;
         let count = 0;
@@ -2113,6 +2132,56 @@ export class Boss extends Entity {
             const mx = mini.x + mini.width / 2;
             const my = mini.y + mini.height / 2;
             game.particles.emit(mx, my, 8, '#ffad7a', [40, 120], [0.14, 0.35], [1.2, 2.8]);
+        }
+    }
+
+    _spawnSpiderMinion(game) {
+        if (!game || !Array.isArray(game.platforms) || game.platforms.length === 0) return;
+        const minionLimit = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 2);
+        if (this._countActiveSpiderMinions(game) >= minionLimit) return;
+
+        const candidates = [];
+        for (let i = 0; i < game.platforms.length; i++) {
+            const p = game.platforms[i];
+            if (!p || p.isVictory || p.width < 120) continue;
+            candidates.push(p);
+        }
+        if (candidates.length === 0) return;
+
+        const spawnPlatform = candidates[Math.floor(Math.random() * candidates.length)];
+        const pad = 20;
+        const miniSize = 42;
+        const left = spawnPlatform.x + pad;
+        const right = spawnPlatform.x + spawnPlatform.width - miniSize - pad;
+        if (right <= left) return;
+
+        const spawnX = left + Math.random() * (right - left);
+        const mini = new Enemy(spawnX, spawnPlatform.y - miniSize, spawnPlatform);
+        mini.type = TYPE_MINI_SPIDER;
+        mini.emoji = String.fromCodePoint(0x1F577) + '\uFE0F';
+        mini.width = miniSize;
+        mini.height = miniSize;
+        mini.x = spawnX;
+        mini.y = spawnPlatform.y - mini.height;
+        mini.startX = mini.x;
+        mini.startY = mini.y;
+        mini.baseSpeed = 115 + this.phase * 10;
+        mini.speed = mini.baseSpeed;
+        mini.health = 1;
+        mini.maxHealth = 1;
+        mini.state = 'PATROL';
+        mini.stateTimer = 0.5 + Math.random() * 0.8;
+        mini.facingRight = Math.random() > 0.5;
+        mini.vx = mini.facingRight ? mini.speed : -mini.speed;
+        mini.vy = -90 - Math.random() * 80;
+        mini._cachedEmoji = getEmojiCanvas(mini.emoji, mini.height);
+        game.enemies.push(mini);
+        game.totalEnemies++;
+
+        if (game.particles) {
+            const mx = mini.x + mini.width / 2;
+            const my = mini.y + mini.height / 2;
+            game.particles.emit(mx, my, 7, '#cdb7ff', [45, 130], [0.1, 0.3], [1.2, 2.7]);
         }
     }
 
