@@ -57,6 +57,7 @@ export class Rock extends Entity {
                 game.player.score += 50;
                 game.audio.playHit();
                 game.particles.emitHit(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+                if (typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(enemy);
             }
             break;
         }

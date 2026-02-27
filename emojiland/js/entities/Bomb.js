@@ -85,6 +85,7 @@ export class Bomb extends Entity {
                     game.player.score += 50;
                     if (game.audio) game.audio.playHit();
                     if (game.particles) game.particles.emitHit(enemyCenterX, enemyCenterY);
+                    if (typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(enemy);
                 }
             }
         });

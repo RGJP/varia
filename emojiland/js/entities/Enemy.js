@@ -118,6 +118,7 @@ export class Enemy extends Entity {
         this.turtleRecoverTimer = 0;
         this.turtleRecoverDuration = 0.32;
         this.shellHitCooldownTimer = 0;
+        this.countsForCompletionObjective = true;
 
         if (this.type === TYPE_PATROL) this.state = 'PATROL';
         if (this.type === TYPE_CHASER) this.state = 'PATROL';
@@ -246,7 +247,7 @@ export class Enemy extends Entity {
                     }
                 }
                 if (game && game.player) game.player.score += 50;
-                if (game) game.enemiesDefeated++;
+                if (game && typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(this);
 
                 // Spider split logic
                 if (this.type === TYPE_SPIDER && game) {
@@ -265,6 +266,7 @@ export class Enemy extends Entity {
                         mini.speed = mini.baseSpeed;
                         mini.health = 1;
                         mini.maxHealth = 1;
+                        mini.countsForCompletionObjective = false;
                         mini.state = 'PATROL';
                         mini.stateTimer = 0.5 + Math.random() * 1.0;
                         mini.vy = -300 - Math.random() * 200; // Popping out
@@ -518,7 +520,7 @@ export class Enemy extends Entity {
             this.markedForDeletion = true;
             if (game && game.particles) game.particles.emitDeath(this.x + this.width / 2, this.y + this.height / 2);
             if (game && game.player) game.player.score += 50;
-            if (game) game.enemiesDefeated++;
+            if (game && typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(this);
             return;
         }
 
@@ -1179,8 +1181,8 @@ export class Enemy extends Entity {
         }
 
         if (this.type === TYPE_SHOOTER) {
-            // Full fade in/out — 0% to 100% opacity
-            alpha = 0.5 + Math.sin(this.timeAlive * SHOOTER_OPACITY_SPEED) * 0.5;
+            // Keep genie visible at all times: 10% to 100% opacity.
+            alpha = 0.55 + Math.sin(this.timeAlive * SHOOTER_OPACITY_SPEED) * 0.45;
         }
 
 
@@ -1647,8 +1649,9 @@ export class Boss extends Entity {
     }
 
     _isBossVfxLite(game) {
-        if (!game) return false;
-        return !!(game.isMobileDevice && ((game.performanceQuality || 1) < 0.9 || (game.fpsDisplay || 60) < 58));
+        // Force-lite boss VFX for consistent frame pacing across devices.
+        // This only affects visual density (particles/telegraph richness), not gameplay logic.
+        return true;
     }
 
     _emitBossFx(game, x, y, count, color, speedRange, lifeRange, sizeRange) {
@@ -1703,7 +1706,7 @@ export class Boss extends Entity {
             if (game && game.player) {
                 game.player.score += 700;
             }
-            if (game) game.enemiesDefeated++;
+            if (game && typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(this);
         }
     }
 
@@ -2188,6 +2191,7 @@ export class Boss extends Entity {
         mini.speed = mini.baseSpeed;
         mini.health = 1;
         mini.maxHealth = 1;
+        mini.countsForCompletionObjective = false;
         mini.state = 'SCUTTLE';
         mini.stateTimer = 0.35 + Math.random() * 0.7;
         mini.facingRight = sideBias > 0;
@@ -2205,111 +2209,43 @@ export class Boss extends Entity {
     }
 
     _spawnSpiderMinion(game) {
-        if (!game || !Array.isArray(game.platforms) || game.platforms.length === 0) return;
+        if (!game || !this.platform) return;
         const minionLimit = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 2);
         if (this._countActiveSpiderMinions(game) >= minionLimit) return;
-
-        const candidates = [];
-        for (let i = 0; i < game.platforms.length; i++) {
-            const p = game.platforms[i];
-            if (!p || p.isVictory || p.width < 120) continue;
-            candidates.push(p);
-        }
-        if (candidates.length === 0) return;
-
-        const pad = 20;
         const miniSize = 42;
-        const player = game.player || null;
-        const playerSafePadding = 72;
 
-        for (let platformTry = 0; platformTry < candidates.length; platformTry++) {
-            const spawnPlatform = candidates[Math.floor(Math.random() * candidates.length)];
-            const left = spawnPlatform.x + pad;
-            const right = spawnPlatform.x + spawnPlatform.width - miniSize - pad;
-            if (right <= left) continue;
+        // Spawn from boss core, then let the mini settle onto and patrol the boss platform.
+        const spawnCenterX = this.x + this.width / 2;
+        const spawnCenterY = this.y + this.height * 0.52;
+        const mini = new Enemy(spawnCenterX - miniSize / 2, spawnCenterY - miniSize / 2, this.platform);
+        mini.type = TYPE_MINI_SPIDER;
+        mini.emoji = String.fromCodePoint(0x1F577) + '\uFE0F';
+        mini.width = miniSize;
+        mini.height = miniSize;
+        mini.x = spawnCenterX - mini.width / 2;
+        mini.y = spawnCenterY - mini.height / 2;
+        mini.startX = mini.x;
+        mini.startY = mini.y;
+        mini.platform = this.platform;
+        mini.baseSpeed = 115 + this.phase * 10;
+        mini.speed = mini.baseSpeed;
+        mini.health = 1;
+        mini.maxHealth = 1;
+        mini.countsForCompletionObjective = false;
+        mini.state = 'PATROL';
+        mini.stateTimer = 0.8 + Math.random() * 1.2;
+        mini.facingRight = Math.random() > 0.5;
+        mini.vx = mini.facingRight ? mini.speed : -mini.speed;
+        mini.vy = -(180 + Math.random() * 70); // short emergence hop from the core
+        mini._cachedEmoji = getEmojiCanvas(mini.emoji, mini.height);
 
-            let spawnX = null;
-            let spawnY = null;
-            for (let posTry = 0; posTry < 8; posTry++) {
-                const candidateX = left + Math.random() * (right - left);
-                const candidateY = spawnPlatform.y - miniSize;
-                let overlapsPlayer = false;
-                if (player) {
-                    const spawnLeft = candidateX - playerSafePadding;
-                    const spawnRight = candidateX + miniSize + playerSafePadding;
-                    const spawnTop = candidateY - playerSafePadding;
-                    const spawnBottom = candidateY + miniSize + playerSafePadding;
-                    const playerLeft = player.x;
-                    const playerRight = player.x + player.width;
-                    const playerTop = player.y;
-                    const playerBottom = player.y + player.height;
-                    overlapsPlayer = (
-                        spawnRight > playerLeft &&
-                        spawnLeft < playerRight &&
-                        spawnBottom > playerTop &&
-                        spawnTop < playerBottom
-                    );
-                }
-                if (!overlapsPlayer) {
-                    spawnX = candidateX;
-                    spawnY = candidateY;
-                    break;
-                }
-            }
+        game.enemies.push(mini);
+        game.totalEnemies++;
 
-            if (spawnX === null || spawnY === null) continue;
-
-            const spawnCenterX = this.x + this.width / 2;
-            const spawnCenterY = this.y + this.height / 2;
-            const mini = new Enemy(spawnCenterX - miniSize / 2, spawnCenterY - miniSize / 2, this.platform);
-            mini.type = TYPE_MINI_SPIDER;
-            mini.emoji = String.fromCodePoint(0x1F577) + '\uFE0F';
-            mini.width = miniSize;
-            mini.height = miniSize;
-            mini.x = spawnCenterX - mini.width / 2;
-            mini.y = spawnCenterY - mini.height / 2;
-            mini.startX = mini.x;
-            mini.startY = mini.y;
-            mini.baseSpeed = 115 + this.phase * 10;
-            mini.speed = mini.baseSpeed;
-            mini.health = 1;
-            mini.maxHealth = 1;
-            mini.state = 'JUMP';
-            mini.stateTimer = 0;
-
-            // Spawn from boss center and arc into the selected platform position.
-            const startFootX = mini.x + mini.width / 2;
-            const startFootY = mini.y + mini.height;
-            const targetX = spawnX + mini.width / 2;
-            const targetY = spawnY + mini.height;
-            const dx = targetX - startFootX;
-            const dy = targetY - startFootY;
-            const apex = Math.min(startFootY - 120, targetY - 60);
-            const arcHeight = Math.max(40, startFootY - apex);
-            mini.vy = -Math.sqrt(2 * Physics.GRAVITY * arcHeight);
-
-            const a = 0.5 * Physics.GRAVITY;
-            const b = mini.vy;
-            const c = -dy;
-            const discriminant = b * b - 4 * a * c;
-            if (discriminant >= 0) {
-                const t = Math.max(0.12, (-b + Math.sqrt(discriminant)) / (2 * a));
-                mini.vx = dx / t;
-            } else {
-                mini.vx = dx >= 0 ? 200 : -200;
-                mini.vy = -320;
-            }
-            mini.facingRight = mini.vx > 0;
-            mini._cachedEmoji = getEmojiCanvas(mini.emoji, mini.height);
-            game.enemies.push(mini);
-            game.totalEnemies++;
-
-            if (game.particles) {
-                const mx = mini.x + mini.width / 2;
-                const my = mini.y + mini.height / 2;
-                this._emitBossFx(game, mx, my, 7, '#cdb7ff', [45, 130], [0.1, 0.3], [1.2, 2.7]);
-            }
-            return;
+        if (game.particles) {
+            const mx = mini.x + mini.width / 2;
+            const my = mini.y + mini.height / 2;
+            this._emitBossFx(game, mx, my, 7, '#cdb7ff', [45, 130], [0.1, 0.3], [1.2, 2.7]);
         }
     }
 
@@ -3746,10 +3682,8 @@ export class Boss extends Entity {
         ctx.save();
         ctx.globalAlpha = alpha;
 
-        if (!lowVfx && this.bossType !== 'boss_spider' && this.bossType !== 'boss_dragon') {
-            ctx.shadowColor = 'rgba(255, 80, 0, 0.6)';
-            ctx.shadowBlur = 20;
-        }
+        // Removed boss glow blur to avoid expensive per-frame shadow rendering.
+        ctx.shadowBlur = 0;
 
         const cx = this.x + this.width / 2;
         const cy = this.y + this.height / 2;
@@ -3777,7 +3711,7 @@ export class Boss extends Entity {
 
         // Cosmetic wingmen for all bosses; visual flair only (no collision/damage).
         if (!this._bossMinionCache) this._bossMinionCache = getEmojiCanvas(this.minionEmoji, 24);
-        const minionCount = lowVfx ? 2 : 5;
+        const minionCount = lowVfx ? 1 : 3;
         const orbitBase = (this.bossType === 'boss_spider' || this.bossType === 'boss_manliftingweights' || this.bossType === 'boss_lobster' || this.bossType === 'boss_kangaroo' || this.bossType === 'boss_monkey' || this.bossType === 'boss_mammoth' || this.bossType === 'boss_trex' || this.bossType === 'boss_beetle')
             ? (this.width * 0.38 + Math.sin(this.timeAlive * 2.3) * 6)
             : (this.aerialMinionRadius + Math.sin(this.timeAlive * 2.1) * 8);

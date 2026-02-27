@@ -223,6 +223,9 @@ export class Player extends Entity {
         if (this.frostBlastTimer > 0) {
             this.frostBlastTimer -= dt;
             if (this.frostBlastTimer <= 0) this.frostBlastTimer = 0;
+            // Keep blast VFX anchored to the player while active.
+            this.frostBlastX = this.x + this.width / 2;
+            this.frostBlastY = this.y + this.height / 2;
         }
 
         this.pulseTimer += dt;
@@ -615,6 +618,7 @@ export class Player extends Entity {
                         enemy.markedForDeletion = true;
                         if (game.audio) game.audio.playHit();
                         if (game.particles) game.particles.emitHit(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, '#FF4500');
+                        if (game && typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(enemy);
                     }
                 } else if (!isFlying && Physics.checkAABB(hitbox, enemy)) {
                     const isTurtleEnemy = enemy.type === 'patrol' && enemy.emoji === '🐢';
@@ -906,7 +910,7 @@ export class Player extends Entity {
             } else {
                 enemy.markedForDeletion = true;
                 this.score += 50;
-                if (game) game.enemiesDefeated++;
+                if (game && typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(enemy);
             }
 
             if (game && game.particles) {
@@ -1337,7 +1341,7 @@ export class Player extends Entity {
             if (this.flightTimer > 0) {
                 activeBars.push({
                     ratio: Math.max(0, Math.min(1, this.flightTimer / this.flightPowerUpDuration)),
-                    color: '#3b82f6'
+                    color: '#22c55e'
                 });
             }
 
@@ -1396,7 +1400,7 @@ export class Player extends Entity {
 
             // Small rock that grows to the exact full-charge projectile size.
             ctx.translate(handX, handY);
-            ctx.rotate((this.pulseTimer * (1.8 + chargeRatio * 1.6)) * dir);
+            ctx.rotate((this.pulseTimer * (0.45 + chargeRatio * 0.35)) * dir);
             ctx.scale(scale, scale);
             ctx.globalAlpha = 0.8 + chargeRatio * 0.2;
             ctx.drawImage(preview.canvas, -preview.width / 2, -preview.height / 2);
@@ -1406,6 +1410,7 @@ export class Player extends Entity {
             const barH = 8;
             const barX = this.x + this.width / 2 - barW / 2;
             const barY = this.y - 16;
+            ctx.save();
             ctx.globalAlpha = 0.9;
             ctx.fillStyle = 'rgba(0,0,0,0.45)';
             ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);

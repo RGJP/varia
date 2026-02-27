@@ -87,6 +87,7 @@ export class Game {
         this.coinsCollected = 0;
         this.totalEnemies = 0;
         this.totalCompletionEnemies = 0;
+        this.completionEnemiesDefeated = 0;
         this.enemiesDefeated = 0;
         this.totalCompletionCoins = 0;
         this.lastVictoryEmojiBonus = 0;
@@ -341,7 +342,14 @@ export class Game {
         this.totalCoins = this.collectibles.length;
         this.coinsCollected = 0;
         this.totalEnemies = this.enemies.length + this.pendingBossSpawns.length;
-        this.totalCompletionEnemies = this.totalEnemies;
+        this.totalCompletionEnemies = 0;
+        for (let i = 0; i < this.enemies.length; i++) {
+            const enemy = this.enemies[i];
+            if (enemy && !enemy.bossType && enemy.countsForCompletionObjective !== false) {
+                this.totalCompletionEnemies++;
+            }
+        }
+        this.completionEnemiesDefeated = 0;
         this.enemiesDefeated = 0;
         this.totalCompletionCoins = 0;
         for (let i = 0; i < this.collectibles.length; i++) {
@@ -1338,16 +1346,7 @@ export class Game {
 
             this.ctx.font = 'bold 44px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText(`${totalScore}`, 0, topY + 184);
-
-            this.ctx.font = '30px "Outfit", sans-serif';
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.92)';
-            this.ctx.fillText('\u2B50', -150, topY + 184);
-            this.ctx.fillText('\u2B50', 150, topY + 184);
-
-            this.ctx.font = 'bold 24px "Outfit", sans-serif';
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-            this.ctx.fillText(`${completionPercent}%`, 0, topY + 226);
+            this.ctx.fillText(`\u2B50 ${totalScore} \u2022 ${completionPercent}% \u2B50`, 0, topY + 184);
 
             // Separation Line
             this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
@@ -1424,6 +1423,13 @@ export class Game {
         ctx.restore();
     }
 
+    registerEnemyDefeat(enemy) {
+        this.enemiesDefeated++;
+        if (enemy && !enemy.bossType && enemy.countsForCompletionObjective !== false) {
+            this.completionEnemiesDefeated++;
+        }
+    }
+
     getLevelCompletionPercent() {
         const letterKeys = ['E', 'M', 'O', 'J', 'I'];
         const collected = (this.player && this.player.collectedLetters) ? this.player.collectedLetters : {};
@@ -1437,14 +1443,12 @@ export class Game {
         if (totalObjectives <= 0) return 100;
 
         const completedCoins = Math.min(Math.max(0, this.coinsCollected), Math.max(0, this.totalCompletionCoins));
-        const completedEnemies = Math.min(Math.max(0, this.enemiesDefeated), completionEnemyTotal);
+        const completedEnemies = Math.min(Math.max(0, this.completionEnemiesDefeated), completionEnemyTotal);
         const completedLetters = Math.min(Math.max(0, lettersCollected), letterKeys.length);
         const completedObjectives = completedCoins + completedEnemies + completedLetters;
 
         if (completedObjectives >= totalObjectives) return 100;
-        const percent = Math.floor((completedObjectives * 100) / totalObjectives);
-        if (percent > 95 && this.pendingBossSpawns.length === 0 && !this.hasAliveBoss()) return 100;
-        return percent;
+        return Math.floor((completedObjectives * 100) / totalObjectives);
     }
 }
 
