@@ -1368,7 +1368,7 @@ export class Boss extends Entity {
         this.dragonAttackPattern = 'cone'; // 'cone' | 'volley'
         this.dragonVolleyShots = 0;
         this.dragonVolleyTimer = 0;
-        this.dragonVolleyLaneY = this.y + this.height * 0.52;
+        this.dragonVolleyLaneY = this.y + this.height * 0.3;
 
         // Moai (boss_moai): grounded sentinel pressure with gaze beams, meteor rain, and quake bursts.
         this.moaiState = 'PATROL'; // 'PATROL' | 'GAZE' | 'METEOR' | 'QUAKE'
@@ -1600,14 +1600,30 @@ export class Boss extends Entity {
         return d;
     }
 
+    _getDragonMouthOffset() {
+        return {
+            x: this.width * 0.36,
+            y: -this.height * 0.25
+        };
+    }
+
+    _getDragonMouthPosition() {
+        const centerX = this.x + this.width / 2;
+        const centerY = this.y + this.height / 2;
+        const mouthOffset = this._getDragonMouthOffset();
+        return {
+            x: centerX + (this.facingRight ? mouthOffset.x : -mouthOffset.x),
+            y: centerY + mouthOffset.y
+        };
+    }
+
     _isPlayerInDragonFireCone(player) {
         if (!player || this.bossType !== 'boss_dragon') return false;
-        const cx = this.x + this.width / 2;
-        const cy = this.y + this.height / 2;
+        const mouth = this._getDragonMouthPosition();
         const px = player.x + player.width / 2;
         const py = player.y + player.height / 2;
-        const dx = px - cx;
-        const dy = py - cy;
+        const dx = px - mouth.x;
+        const dy = py - mouth.y;
         const dist = Math.hypot(dx, dy);
         if (dist > this.dragonFireRange) return false;
         const facingAngle = (this.facingRight ? 0 : Math.PI) + this.dragonConeAimOffset;
@@ -2006,7 +2022,7 @@ export class Boss extends Entity {
                 if (this.dragonAttackPattern === 'volley') {
                     this.dragonVolleyShots = this.phase >= 3 ? 6 : (this.phase >= 2 ? 5 : 4);
                     this.dragonVolleyTimer = 0;
-                    this.dragonVolleyLaneY = this.platform.y - this.height * 0.48;
+                    this.dragonVolleyLaneY = this._getDragonMouthPosition().y;
                 } else {
                     this.dragonFireActiveTimer = this.dragonFireDuration;
                     this.dragonFireHitTimer = 0;
@@ -2037,11 +2053,10 @@ export class Boss extends Entity {
             this.dragonConeAimOffset = 0;
             this.dragonVolleyTimer -= dt;
             if (this.dragonVolleyTimer <= 0 && player) {
+                const mouth = this._getDragonMouthPosition();
                 const dir = this.facingRight ? 1 : -1;
-                const spawnX = this.x + this.width / 2 + dir * (this.width * 0.22);
-                const spawnY = this.dragonVolleyLaneY;
                 const speed = 400 + this.phase * 24;
-                game.enemyProjectiles.push(new BossProjectile(spawnX, spawnY, dir * speed, 0, 'flame'));
+                game.enemyProjectiles.push(new BossProjectile(mouth.x, this.dragonVolleyLaneY, dir * speed, 0, 'flame'));
                 this.dragonVolleyShots--;
                 this.dragonVolleyTimer = 0.17;
                 if (this.dragonVolleyShots <= 0) {
@@ -3740,7 +3755,9 @@ export class Boss extends Entity {
 
         if (this.bossType === 'boss_dragon') {
             if (!this._fireTellCache) this._fireTellCache = getEmojiCanvas(String.fromCodePoint(0x1F525), 28);
-            const mouthX = -this.width * 0.22;
+            const mouthOffset = this._getDragonMouthOffset();
+            const mouthX = -mouthOffset.x;
+            const mouthY = mouthOffset.y;
 
             if (this.dragonAttackPattern === 'cone' && (this.dragonFireTelegraphTimer > 0 || this.dragonFireActiveTimer > 0)) {
                 const half = this.dragonFireHalfAngle;
@@ -3756,7 +3773,7 @@ export class Boss extends Entity {
                         const blend = embers <= 1 ? 0.5 : i / (embers - 1);
                         const a = (-rowHalf + blend * rowHalf * 2) + this.dragonConeAimOffset * (0.7 + 0.3 * t);
                         const fx = mouthX + Math.cos(a) * radius * -1;
-                        const fy = Math.sin(a) * radius * 0.9;
+                        const fy = mouthY + Math.sin(a) * radius * 0.9;
                         const flicker = 0.75 + Math.sin(this.timeAlive * 11 + r * 0.8 + i) * 0.25;
                         const alphaMul = this.dragonFireTelegraphTimer > 0 ? (0.14 + telePulse * 0.3) : Math.min(1, 0.94 + 0.06 * flicker);
                         ctx.globalAlpha = this.dragonFireActiveTimer > 0 ? 1 : (alpha * alphaMul);
@@ -3764,7 +3781,7 @@ export class Boss extends Entity {
                     }
                 }
                 ctx.globalAlpha = this.dragonFireActiveTimer > 0 ? 1 : alpha;
-                ctx.drawImage(this._fireTellCache.canvas, mouthX - this._fireTellCache.width * 0.35, -this._fireTellCache.height / 2);
+                ctx.drawImage(this._fireTellCache.canvas, mouthX - this._fireTellCache.width * 0.35, mouthY - this._fireTellCache.height / 2);
             } else if (this.dragonAttackPattern === 'volley' && this.dragonFireTelegraphTimer > 0) {
                 const pulse = 0.6 + Math.sin(this.timeAlive * 24) * 0.4;
                 const lineLen = this.dragonFireRange * 0.82;
@@ -3792,7 +3809,7 @@ export class Boss extends Entity {
             } else if (this.dragonVolleyShots > 0) {
                 const pulse = 0.55 + Math.sin(this.timeAlive * 18) * 0.35;
                 ctx.globalAlpha = alpha * (0.35 + pulse * 0.35);
-                ctx.drawImage(this._fireTellCache.canvas, mouthX - this._fireTellCache.width * 0.35, -this._fireTellCache.height / 2);
+                ctx.drawImage(this._fireTellCache.canvas, mouthX - this._fireTellCache.width * 0.35, mouthY - this._fireTellCache.height / 2);
                 ctx.globalAlpha = alpha;
             }
         }
