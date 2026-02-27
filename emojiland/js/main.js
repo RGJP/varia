@@ -5,7 +5,7 @@ window.addEventListener('load', () => {
     let game = null;
     const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 900;
     const maxDpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
-    let adaptiveDpr = isMobile ? Math.min(1.5, maxDpr) : maxDpr;
+    let adaptiveDpr = isMobile ? 1 : maxDpr;
 
     const getSafeViewportSize = () => {
         const innerWidth = Math.max(1, Math.floor(window.innerWidth || 1));
@@ -52,7 +52,7 @@ window.addEventListener('load', () => {
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
             // Mobile browsers can report transient bad viewport sizes right after resume.
-            adaptiveDpr = isMobile ? Math.min(1.5, maxDpr) : maxDpr;
+            adaptiveDpr = isMobile ? 1 : maxDpr;
             updateSize();
             setTimeout(updateSize, 80);
             setTimeout(updateSize, 240);
@@ -64,15 +64,15 @@ window.addEventListener('load', () => {
         if (!game || !isMobile || document.hidden) return;
 
         const fps = game.fpsDisplay || 0;
-        const prev = adaptiveDpr;
         const minDpr = 1;
-        if (fps > 0 && fps < 58) {
-            adaptiveDpr = Math.max(minDpr, adaptiveDpr - 0.1);
-        } else if (fps > 61.5 && adaptiveDpr < maxDpr) {
-            adaptiveDpr = Math.min(maxDpr, adaptiveDpr + 0.05);
+        if (adaptiveDpr <= minDpr + 0.001) return;
+
+        const prev = adaptiveDpr;
+        if (fps > 0 && fps < 59.2) {
+            adaptiveDpr = Math.max(minDpr, adaptiveDpr - 0.12);
         }
 
-        if (Math.abs(prev - adaptiveDpr) >= 0.045) {
+        if (Math.abs(prev - adaptiveDpr) >= 0.03) {
             updateSize();
         }
     }, 500);

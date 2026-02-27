@@ -142,10 +142,30 @@ export class Background {
     }
 
     resize(width, height) {
-        this.width = Math.max(1, Math.floor(width || 1));
-        this.height = Math.max(1, Math.floor(height || 1));
+        const prevHeight = this.height || 1;
+        const nextWidth = Math.max(1, Math.floor(width || 1));
+        const nextHeight = Math.max(1, Math.floor(height || 1));
+
+        // Preserve the level's generated background layout across runtime resizes
+        // (e.g. adaptive DPR changes) so visuals never "re-roll" mid-level.
+        if (Array.isArray(this.layers) && this.layers.length > 0) {
+            const yScale = nextHeight / prevHeight;
+            const geometricScale = Math.sqrt(yScale);
+            for (let li = 0; li < this.layers.length; li++) {
+                const layer = this.layers[li];
+                if (!layer || !Array.isArray(layer.shapes)) continue;
+                for (let si = 0; si < layer.shapes.length; si++) {
+                    const shape = layer.shapes[si];
+                    shape.y *= yScale;
+                    shape.size *= geometricScale;
+                    shape.width *= geometricScale;
+                }
+            }
+        }
+
+        this.width = nextWidth;
+        this.height = nextHeight;
         this._skyCache = null;
-        this.initLayers();
     }
 
     createLayer(parallaxFactor, count, color, shapeType, yOffset = 0) {

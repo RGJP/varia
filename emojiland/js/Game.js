@@ -75,6 +75,7 @@ export class Game {
         this.audio = new AudioEngine();
         this.particles = new ParticleSystem();
         this.background = new Background(this.viewportWidth, this.viewportHeight);
+        this.isMobileDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 900;
 
         this._visiblePlatforms = [];
         this._visibleVines = [];
@@ -92,7 +93,14 @@ export class Game {
         this.fpsDisplay = 60;
         this.performanceQuality = 1;
         this._performanceAdjustTimer = 0;
+        this._qualityRecoveryHold = 0;
         this.targetFrameRate = 60;
+        if (this.particles && typeof this.particles.setMobileMode === 'function') {
+            this.particles.setMobileMode(this.isMobileDevice);
+        }
+        if (this.particles && typeof this.particles.setQuality === 'function') {
+            this.particles.setQuality(this.performanceQuality);
+        }
 
         this.gameOverTriggered = false;
         this.gameOverTimer = 0;
@@ -400,10 +408,24 @@ export class Game {
             this.fpsDisplay = this.fpsDisplay * 0.9 + instantFps * 0.1;
             this._performanceAdjustTimer += dt;
             if (this._performanceAdjustTimer >= 0.25) {
-                const lowThreshold = this.targetFrameRate * 0.94;
-                const recoverThreshold = this.targetFrameRate * 0.985;
+                const elapsed = this._performanceAdjustTimer;
+                const lowThreshold = this.isMobileDevice ? this.targetFrameRate * 0.96 : this.targetFrameRate * 0.94;
+                const recoverThreshold = this.isMobileDevice ? this.targetFrameRate * 1.01 : this.targetFrameRate * 0.985;
                 if (this.fpsDisplay < lowThreshold) {
-                    this.performanceQuality = Math.max(0.62, this.performanceQuality - 0.06);
+                    const floor = this.isMobileDevice ? 0.45 : 0.62;
+                    const dropStep = this.isMobileDevice ? 0.1 : 0.06;
+                    this.performanceQuality = Math.max(floor, this.performanceQuality - dropStep);
+                    if (this.isMobileDevice && this.fpsDisplay < this.targetFrameRate * 0.88) {
+                        this.performanceQuality = Math.max(floor, this.performanceQuality - 0.05);
+                    }
+                    if (this.isMobileDevice) {
+                        this._qualityRecoveryHold = 8;
+                    }
+                } else if (this.isMobileDevice) {
+                    this._qualityRecoveryHold = Math.max(0, this._qualityRecoveryHold - elapsed);
+                    if (this._qualityRecoveryHold <= 0 && this.fpsDisplay > recoverThreshold) {
+                        this.performanceQuality = Math.min(1, this.performanceQuality + 0.01);
+                    }
                 } else if (this.fpsDisplay > recoverThreshold) {
                     this.performanceQuality = Math.min(1, this.performanceQuality + 0.03);
                 }
@@ -1225,7 +1247,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('Music from Pixabay - version 1.18', 0, cardY + cardHeight + 152);
+            this.ctx.fillText('Music from Pixabay - version 1.19', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';

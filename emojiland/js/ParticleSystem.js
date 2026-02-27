@@ -36,6 +36,7 @@ export class ParticleSystem {
         this.baseMaxParticles = 850;
         this.maxParticles = this.baseMaxParticles;
         this.quality = 1;
+        this.mobileMode = false;
         this.pool = [];
         for (let i = 0; i < this.baseMaxParticles; i++) {
             this.pool.push(new Particle());
@@ -43,13 +44,23 @@ export class ParticleSystem {
         this._byColor = new Map();
     }
 
+    setMobileMode(enabled) {
+        this.mobileMode = !!enabled;
+        this.setQuality(this.quality);
+    }
+
     setQuality(quality) {
-        this.quality = Math.max(0.62, Math.min(1, quality));
-        this.maxParticles = Math.max(320, Math.floor(this.baseMaxParticles * this.quality));
+        const minQuality = this.mobileMode ? 0.45 : 0.62;
+        this.quality = Math.max(minQuality, Math.min(1, quality));
+        const scaledMax = this.mobileMode
+            ? this.baseMaxParticles * (0.55 + this.quality * 0.45)
+            : this.baseMaxParticles * this.quality;
+        this.maxParticles = Math.max(this.mobileMode ? 180 : 320, Math.floor(scaledMax));
     }
 
     _scaledCount(baseCount, minCount = 1) {
-        return Math.max(minCount, Math.floor(baseCount * this.quality));
+        const scale = this.mobileMode ? Math.max(0.2, this.quality * this.quality) : this.quality;
+        return Math.max(minCount, Math.floor(baseCount * scale));
     }
 
     _getParticle() {
