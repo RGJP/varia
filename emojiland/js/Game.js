@@ -51,6 +51,12 @@ export class Game {
 
         this.state = GameState.START_MENU;
         this.lastTime = 0;
+        this.difficultyOptions = [
+            { id: 'easy', label: '😊 Easy (20 HP)', hearts: 20 },
+            { id: 'normal', label: '😎 Normal (5 HP)', hearts: 5 },
+            { id: 'heroic', label: '🤯 Heroic (3 HP)', hearts: 3 }
+        ];
+        this.selectedDifficultyId = null;
 
         this.player = null;
         this.platforms = [];
@@ -88,6 +94,7 @@ export class Game {
         this.gameOverTriggered = false;
         this.gameOverTimer = 0;
         this._autoPausedByVisibility = false;
+        this._lastCameraBtnLeft = null;
 
         // Pre-cache UI emojis
         this._heartCache = getEmojiCanvas('\u2764\uFE0F', 24);
@@ -95,9 +102,15 @@ export class Game {
         this._muteCache = getEmojiCanvas('\u{1F507}', 24);
         this._unmuteCache = getEmojiCanvas('\u{1F50A}', 24);
         this._bombUICache = getEmojiCanvas('\u{1F4A3}', 24);
+        this._deathGearCache = getEmojiCanvas('\u{1F525}', 26);
 
         const startGameHandler = (e) => {
             if (this.state === GameState.START_MENU || ((this.state === GameState.GAME_OVER || this.state === GameState.VICTORY) && this.canRestart !== false)) {
+                if (this.state === GameState.START_MENU && !this.selectedDifficultyId) {
+                    if (e && e.preventDefault && e.cancelable) e.preventDefault();
+                    return;
+                }
+
                 // IMPORTANT: Unlock audio FIRST, synchronously during the user gesture.
                 // This must happen before fullscreen or anything else to satisfy
                 // mobile browser autoplay policies.
@@ -178,6 +191,66 @@ export class Game {
                 if (e.cancelable) e.preventDefault();
                 return;
             }
+
+            if (this.state === GameState.START_MENU) {
+                const layout = this._getStartMenuLayout();
+                if (layout) {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const scaleX = this.canvas.width / rect.width;
+                    const scaleY = this.canvas.height / rect.height;
+                    const canvasX = (clientX - rect.left) * scaleX;
+                    const canvasY = (clientY - rect.top) * scaleY;
+                    const x = (canvasX - layout.centerX) / layout.scale;
+                    const y = (canvasY - layout.centerY) / layout.scale;
+                    for (let i = 0; i < layout.buttons.length; i++) {
+                        const btn = layout.buttons[i];
+                        if (
+                            x >= btn.x &&
+                            x <= btn.x + btn.width &&
+                            y >= btn.y &&
+                            y <= btn.y + btn.height
+                        ) {
+                            this.selectedDifficultyId = btn.id;
+                            if (e && e.cancelable) e.preventDefault();
+                            return;
+                        }
+                    }
+                }
+            } else if (this.state === GameState.GAME_OVER) {
+                const scale = this._getMenuOverlayScale(GameState.GAME_OVER);
+                const rect = this.canvas.getBoundingClientRect();
+                const scaleX = this.canvas.width / rect.width;
+                const scaleY = this.canvas.height / rect.height;
+                const canvasX = (clientX - rect.left) * scaleX;
+                const canvasY = (clientY - rect.top) * scaleY;
+                const x = (canvasX - this.canvas.width / 2) / scale;
+                const y = (canvasY - this.canvas.height / 2) / scale;
+                const keepBtn = this._getGameOverKeepPlayingButton();
+                if (
+                    x >= keepBtn.x &&
+                    x <= keepBtn.x + keepBtn.width &&
+                    y >= keepBtn.y &&
+                    y <= keepBtn.y + keepBtn.height
+                ) {
+                    startGameHandler(e);
+                    return;
+                }
+
+                const changeBtn = this._getGameOverChangeDifficultyButton();
+                if (
+                    x >= changeBtn.x &&
+                    x <= changeBtn.x + changeBtn.width &&
+                    y >= changeBtn.y &&
+                    y <= changeBtn.y + changeBtn.height
+                ) {
+                    this.selectedDifficultyId = null;
+                    this.state = GameState.START_MENU;
+                    if (e && e.cancelable) e.preventDefault();
+                    return;
+                }
+                if (e && e.cancelable) e.preventDefault();
+                return;
+            }
             startGameHandler(e);
         };
 
@@ -253,6 +326,11 @@ export class Game {
         this.lowestY = Math.max(...this.platforms.map(p => p.y + p.height)) + 200;
 
         this.player = new Player(100, 300);
+        const selectedDifficulty = this.difficultyOptions.find(d => d.id === this.selectedDifficultyId);
+        if (selectedDifficulty) {
+            this.player.maxHealth = selectedDifficulty.hearts;
+            this.player.health = selectedDifficulty.hearts;
+        }
         this.camera.x = 0;
         this.audio.playBackgroundMusic();
 
@@ -372,7 +450,7 @@ export class Game {
         }
 
         if (this.state === GameState.PLAYING) {
-            if (this.player.health <= 0 || this.player.y > this.lowestY) {
+            if (this.player.health <= 0 || (this.player.y + this.player.height) > this.lowestY) {
                 if (!this.gameOverTriggered) {
                     this.gameOverTriggered = true;
                     this.gameOverTimer = 2.0;
@@ -564,6 +642,135 @@ export class Game {
         );
     }
 
+    _getMenuOverlayScale(state = this.state) {
+        let baseWidth = 850;
+        let baseHeight = 650;
+        if (state === GameState.START_MENU) {
+            baseWidth = 920;
+            baseHeight = 560;
+        } else if (state === GameState.GAME_OVER) {
+            baseWidth = 760;
+            baseHeight = 260;
+        } else if (state === GameState.VICTORY) {
+            baseWidth = 680;
+            baseHeight = 420;
+        }
+        const edgePadding = 20;
+        const availableWidth = Math.max(1, this.canvas.width - edgePadding * 2);
+        const availableHeight = Math.max(1, this.canvas.height - edgePadding * 2);
+        return Math.min(availableWidth / baseWidth, availableHeight / baseHeight);
+    }
+
+    _getStartMenuCardLayout() {
+        const cardWidth = 780;
+        const cardHeight = 220;
+        const cardX = -cardWidth / 2;
+        const cardY = -102;
+        return { cardWidth, cardHeight, cardX, cardY };
+    }
+
+    _getStartMenuDifficultyButtons() {
+        const { cardY, cardHeight } = this._getStartMenuCardLayout();
+        const buttons = [];
+        const buttonY = cardY + cardHeight + 22;
+        const buttonWidth = 216;
+        const buttonHeight = 44;
+        const buttonGap = 14;
+        const rowWidth = this.difficultyOptions.length * buttonWidth + (this.difficultyOptions.length - 1) * buttonGap;
+        const buttonX = -rowWidth / 2;
+        for (let i = 0; i < this.difficultyOptions.length; i++) {
+            const option = this.difficultyOptions[i];
+            buttons.push({
+                id: option.id,
+                label: option.label,
+                x: buttonX + i * (buttonWidth + buttonGap),
+                y: buttonY,
+                width: buttonWidth,
+                height: buttonHeight
+            });
+        }
+        return {
+            buttons
+        };
+    }
+
+    _getStartMenuLayout() {
+        if (this.state !== GameState.START_MENU) return null;
+        const scale = this._getMenuOverlayScale(GameState.START_MENU);
+        const card = this._getStartMenuCardLayout();
+        const difficulty = this._getStartMenuDifficultyButtons();
+        return {
+            scale,
+            centerX: this.canvas.width / 2,
+            centerY: this.canvas.height / 2,
+            ...card
+            ,
+            buttons: difficulty.buttons
+        };
+    }
+
+    _getGameOverChangeDifficultyButton() {
+        return {
+            x: -180,
+            y: 76,
+            width: 360,
+            height: 52
+        };
+    }
+
+    _getGameOverKeepPlayingButton() {
+        return {
+            x: -180,
+            y: 12,
+            width: 360,
+            height: 52
+        };
+    }
+
+    _syncMobileCameraButtonPosition(heartCount) {
+        const camBtn = document.getElementById('btn-camera');
+        if (!camBtn) return;
+
+        // Keep camera toggle immediately after the final heart icon in the HUD row.
+        const startX = 24;
+        const heartSpacing = 28;
+        const heartIconWidth = 24;
+        const gapAfterHearts = 10;
+        const safeHeartCount = Math.max(1, heartCount | 0);
+        const left = Math.round(startX + (safeHeartCount - 1) * heartSpacing + heartIconWidth + gapAfterHearts);
+
+        if (this._lastCameraBtnLeft !== left) {
+            camBtn.style.left = `${left}px`;
+            this._lastCameraBtnLeft = left;
+        }
+    }
+
+    _drawDeathTrapLine(ctx) {
+        if (!this._deathGearCache) return;
+
+        const trapY = this.lowestY;
+        const verticalMargin = 180;
+        const topVisible = this.camera.y - verticalMargin;
+        const bottomVisible = this.camera.y + this.camera.effectiveHeight + verticalMargin;
+        if (trapY < topVisible || trapY > bottomVisible) return;
+
+        const spacing = 22;
+        const marginX = 110;
+        const left = this.camera.x - marginX;
+        const right = this.camera.x + this.camera.effectiveWidth + marginX;
+        const startX = Math.floor(left / spacing) * spacing;
+        for (let x = startX; x <= right; x += spacing) {
+            ctx.save();
+            ctx.translate(x, trapY);
+            ctx.drawImage(
+                this._deathGearCache.canvas,
+                -this._deathGearCache.width / 2,
+                -this._deathGearCache.height / 2
+            );
+            ctx.restore();
+        }
+    }
+
     draw() {
         if (this.state === GameState.START_MENU) {
             const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
@@ -594,6 +801,7 @@ export class Game {
             for (let i = 0; i < platforms.length; i++) {
                 platforms[i].draw(this.ctx);
             }
+            this._drawDeathTrapLine(this.ctx);
 
             const collectibles = this.collectibles;
             const drawMargin = 200;
@@ -658,6 +866,7 @@ export class Game {
             for (let i = 0; i < platforms.length; i++) {
                 if (this._isVisible(platforms[i], 300)) platforms[i].draw(this.ctx);
             }
+            this._drawDeathTrapLine(this.ctx);
 
             const mps = this.movingPlatforms;
             for (let i = 0; i < mps.length; i++) {
@@ -720,11 +929,12 @@ export class Game {
             // 1. Draw Health using cached emoji
             const heartSpacing = 28;
             const heartCached = this._heartCache;
+            this._syncMobileCameraButtonPosition(this.player.maxHealth);
             for (let i = 0; i < this.player.maxHealth; i++) {
                 const x = startX + i * heartSpacing;
                 const isFull = i < this.player.health;
 
-                this.ctx.globalAlpha = isFull ? 1.0 : 0.3;
+                this.ctx.globalAlpha = isFull ? 1.0 : 0.1;
                 ctx_drawCachedEmoji(this.ctx, heartCached, x, currentY);
             }
             this.ctx.globalAlpha = 1.0;
@@ -818,27 +1028,7 @@ export class Game {
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         // 2. Calculate responsive overlay scale.
-        // We use per-state design bounds and never cap at 1.0 so menus can expand
-        // to the full visible viewport while still fitting without clipping.
-        let baseWidth = 850;
-        let baseHeight = 650;
-
-        if (this.state === GameState.START_MENU) {
-            // Bounds cover title + card + start + attribution with a tight fit.
-            baseWidth = 800;
-            baseHeight = 460;
-        } else if (this.state === GameState.GAME_OVER) {
-            baseWidth = 760;
-            baseHeight = 260;
-        } else if (this.state === GameState.VICTORY) {
-            baseWidth = 680;
-            baseHeight = 420;
-        }
-
-        const edgePadding = 20;
-        const availableWidth = Math.max(1, this.canvas.width - edgePadding * 2);
-        const availableHeight = Math.max(1, this.canvas.height - edgePadding * 2);
-        const scale = Math.min(availableWidth / baseWidth, availableHeight / baseHeight);
+        const scale = this._getMenuOverlayScale(this.state);
 
         // 3. Move context to center and apply scale for all menu elements
         this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
@@ -850,6 +1040,8 @@ export class Game {
         if (this.state === GameState.START_MENU) {
             const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
             const time = Date.now() / 1000;
+            const { cardWidth, cardHeight, cardX, cardY } = this._getStartMenuCardLayout();
+            const { buttons } = this._getStartMenuDifficultyButtons();
 
             // Title with Premium Gradient
             this.ctx.textAlign = 'center';
@@ -864,11 +1056,7 @@ export class Game {
             this.ctx.shadowBlur = 25;
             this.ctx.fillText('⭐EmojiLand⭐', 0, -150);
 
-            // Controls & Info Card
-            const cardWidth = 760;
-            const cardHeight = 230;
-            const cardX = -cardWidth / 2;
-            const cardY = -90;
+            // Controls & Objectives Card
 
             // Glassmorphism effect for card
             this.ctx.fillStyle = 'rgba(20, 60, 20, 0.7)';
@@ -927,6 +1115,28 @@ export class Game {
             this.ctx.fillText('🎲 Levels are always unique', 40, ry); ry += yStep;
             this.ctx.fillText('😎 Embrace the Chaos!', 40, ry);
 
+            for (let i = 0; i < buttons.length; i++) {
+                const btn = buttons[i];
+                const isSelected = this.selectedDifficultyId === btn.id;
+                this.ctx.fillStyle = isSelected ? 'rgba(255, 213, 79, 0.35)' : 'rgba(255, 255, 255, 0.1)';
+                this.ctx.strokeStyle = isSelected ? 'rgba(255, 238, 156, 0.95)' : 'rgba(255, 255, 255, 0.28)';
+                this.ctx.lineWidth = isSelected ? 3 : 2;
+                this.ctx.beginPath();
+                if (this.ctx.roundRect) {
+                    this.ctx.roundRect(btn.x, btn.y, btn.width, btn.height, 16);
+                } else {
+                    this.ctx.rect(btn.x, btn.y, btn.width, btn.height);
+                }
+                this.ctx.fill();
+                this.ctx.stroke();
+
+                this.ctx.font = 'bold 20px "Outfit", sans-serif';
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(btn.label, btn.x + btn.width / 2, btn.y + btn.height / 2 + 1);
+            }
+
             // Pulsing 'Start' Text
             const alpha = 0.6 + 0.4 * Math.sin(time * 3);
             this.ctx.font = 'bold 32px "Outfit", sans-serif';
@@ -934,13 +1144,17 @@ export class Game {
             this.ctx.textAlign = 'center';
             this.ctx.shadowColor = `rgba(255, 255, 255, ${alpha * 0.5})`;
             this.ctx.shadowBlur = 10;
-            this.ctx.fillText(isMobile ? 'TOUCH TO START' : 'PRESS ENTER TO START', 0, cardY + cardHeight + 50);
+            if (this.selectedDifficultyId) {
+                this.ctx.fillText(isMobile ? 'TOUCH TO START' : 'PRESS ENTER TO START', 0, cardY + cardHeight + 108);
+            } else {
+                this.ctx.fillText('SELECT DIFFICULTY TO START', 0, cardY + cardHeight + 108);
+            }
 
             // Subtle Music Attribution
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('Music from Pixabay - version 1.12', 0, cardY + cardHeight + 100);
+            this.ctx.fillText('Music from Pixabay - version 1.14', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
@@ -949,10 +1163,39 @@ export class Game {
             this.ctx.fillStyle = '#ff5252';
             this.ctx.fillText('Game Over', 0, -40);
 
-            this.ctx.font = 'bold 28px "Outfit", sans-serif';
-            this.ctx.fillStyle = 'white';
-            const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            this.ctx.fillText(isMobile ? 'Touch to Play Again' : 'Press ENTER to Play Again', 0, 40);
+            const keepBtn = this._getGameOverKeepPlayingButton();
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.34)';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            if (this.ctx.roundRect) {
+                this.ctx.roundRect(keepBtn.x, keepBtn.y, keepBtn.width, keepBtn.height, 14);
+            } else {
+                this.ctx.rect(keepBtn.x, keepBtn.y, keepBtn.width, keepBtn.height);
+            }
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            this.ctx.font = 'bold 24px "Outfit", sans-serif';
+            this.ctx.fillStyle = '#ffd54f';
+            this.ctx.fillText('Keep Playing ▶️', keepBtn.x + keepBtn.width / 2, keepBtn.y + keepBtn.height / 2 + 1);
+
+            const changeBtn = this._getGameOverChangeDifficultyButton();
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.34)';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            if (this.ctx.roundRect) {
+                this.ctx.roundRect(changeBtn.x, changeBtn.y, changeBtn.width, changeBtn.height, 14);
+            } else {
+                this.ctx.rect(changeBtn.x, changeBtn.y, changeBtn.width, changeBtn.height);
+            }
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            this.ctx.font = 'bold 24px "Outfit", sans-serif';
+            this.ctx.fillStyle = '#ffd54f';
+            this.ctx.fillText('Change Difficulty ⚙️', changeBtn.x + changeBtn.width / 2, changeBtn.y + changeBtn.height / 2 + 1);
         } else if (this.state === GameState.VICTORY) {
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';

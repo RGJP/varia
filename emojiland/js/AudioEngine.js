@@ -606,19 +606,17 @@ export class AudioEngine {
     }
 
     playFrostBlast() {
-        // Sharper ice-crystal burst (distinct from rock throw).
-        this._playTone('triangle', 1680, 0.15, { endFreq: 1180, gain: 0.44, attack: 0.0011 });
-        this._playTone('sine', 2480, 0.2, { endFreq: 1680, gain: 0.33, attack: 0.0009 });
+        // Glassy ice-crystal ping: keep it bright/airy, avoid rapid "chatty" formants.
+        this._playTone('sine', 2520, 0.145, { endFreq: 1880, gain: 0.37, attack: 0.0007 });
+        this._playTone('triangle', 3460, 0.078, { endFreq: 2660, gain: 0.24, attack: 0.0006 });
+        this._playNoiseBurst(0.036, 0.045, 6200);
         setTimeout(() => {
-            this._playTone('triangle', 3360, 0.11, { endFreq: 2280, gain: 0.26, attack: 0.0008 });
-        }, 16);
+            this._playTone('sine', 4780, 0.06, { endFreq: 3820, gain: 0.17, attack: 0.00055 });
+            this._playNoiseBurst(0.022, 0.024, 7600);
+        }, 20);
         setTimeout(() => {
-            this._playTone('sine', 3920, 0.085, { endFreq: 2860, gain: 0.17, attack: 0.0007 });
-        }, 10);
-        this._playNoiseBurst(0.08, 0.058, 4200);
-        setTimeout(() => {
-            this._playTone('triangle', 1480, 0.24, { endFreq: 980, gain: 0.18, attack: 0.0016 });
-        }, 36);
+            this._playTone('triangle', 1960, 0.115, { endFreq: 1460, gain: 0.16, attack: 0.0009 });
+        }, 30);
     }
 
     playStomp() {
