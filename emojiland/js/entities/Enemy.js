@@ -59,7 +59,7 @@ export class Enemy extends Entity {
             { type: TYPE_DINO, width: 70, height: 70, emoji: '🦕', baseSpeed: 60, health: 5 },
             { type: TYPE_SQUID, width: 45, height: 45, emoji: '🦑', baseSpeed: 90, health: 2 },
             { type: TYPE_LIZARD, width: 40, height: 40, emoji: '🦗', baseSpeed: 40, health: 2 },
-            { type: TYPE_CRAB, width: 42, height: 42, emoji: '🦀', baseSpeed: 220, health: 2 },
+            { type: TYPE_CRAB, width: 56, height: 56, emoji: '🦀', baseSpeed: 220, health: 2 },
             { type: TYPE_SQUIRREL, width: 44, height: 44, emoji: '🐿️', baseSpeed: 160, health: 2 },
             { type: TYPE_TROLL, width: 60, height: 60, emoji: '🧌', baseSpeed: 40, health: 6 },
             { type: TYPE_ALIEN, width: 45, height: 45, emoji: '🛸', baseSpeed: 80, health: 4 },
@@ -194,6 +194,21 @@ export class Enemy extends Entity {
         // Jellyfish are stomp-only enemies.
         if (this.type === TYPE_JELLYFISH) {
             if (game && game.particles) game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
+            return;
+        }
+
+        const isTurtle = this.type === TYPE_PATROL && this.emoji === '🐢';
+        const isFlippedShell = isTurtle && this.turtleFlipped && Math.abs(this.vx) <= 1;
+        if (isFlippedShell) {
+            // Flipped turtle now transitions into shell-slide on next damage instead of dying.
+            let kickDir = this.facingRight ? 1 : -1;
+            if (game && game.player) {
+                const turtleCenterX = this.x + this.width / 2;
+                const playerCenterX = game.player.x + game.player.width / 2;
+                // Kick away from the player's side for readable, controllable behavior.
+                kickDir = turtleCenterX >= playerCenterX ? 1 : -1;
+            }
+            this.kickShell(kickDir, game);
             return;
         }
 
@@ -515,7 +530,7 @@ export class Enemy extends Entity {
 
         // Mario-style shell behavior:
         // first stomp flips the turtle on its back (still alive),
-        // second stomp finishes it.
+        // next hit while flipped launches shell-slide.
         if (!this.turtleFlipped) {
             this.turtleFlipped = true;
             this.turtleFlipTimer = 2.0;

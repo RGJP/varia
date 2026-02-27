@@ -72,7 +72,7 @@ export class Player extends Entity {
         this.frostBlastRadius = this.width * 3.6; // 7.2x player sprite size diameter.
         this.frostBlastDamage = 3;
         this.frostBlastTimer = 0;
-        this.frostBlastDuration = 0.32;
+        this.frostBlastDuration = 0.48;
         this.frostBlastX = 0;
         this.frostBlastY = 0;
         this.flightTimer = 0;
@@ -571,8 +571,9 @@ export class Player extends Entity {
             this.resolveCollision(platforms, 'y', game);
         }
 
-        // Enemy Collision logic
-        if (this.invulnerableTimer <= 0 && !isFlying) {
+        // Enemy collision + fire aura logic.
+        // Fire must keep damaging enemies even while flight is active.
+        if ((this.invulnerableTimer <= 0 && !isFlying) || this.firePowerUpTimer > 0) {
             const hitbox = this._hitbox;
 
             const fireboxes = this._fireboxes;
@@ -615,7 +616,7 @@ export class Player extends Entity {
                         if (game.audio) game.audio.playHit();
                         if (game.particles) game.particles.emitHit(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, '#FF4500');
                     }
-                } else if (Physics.checkAABB(hitbox, enemy)) {
+                } else if (!isFlying && Physics.checkAABB(hitbox, enemy)) {
                     const isTurtleEnemy = enemy.type === 'patrol' && enemy.emoji === '🐢';
                     const isTurtleShell = enemy.type === 'patrol' && enemy.emoji === '🐢' && enemy.turtleFlipped;
                     const prevBottom = hitbox.y + hitbox.height - (this.vy * dt);
@@ -676,6 +677,10 @@ export class Player extends Entity {
         // Collectibles
         game.collectibles.forEach(collectible => {
             if (!collectible.markedForDeletion && Physics.checkAABB(this, collectible)) {
+                // Frost mode owns attack input; ignore fast-rock pickup while active.
+                if (collectible.type === 'diamond_powerup' && this.frostPowerUpTimer > 0) {
+                    return;
+                }
                 collectible.markedForDeletion = true;
                 const centerX = collectible.x + collectible.width / 2;
                 const centerY = collectible.y + collectible.height / 2;
