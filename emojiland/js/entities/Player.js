@@ -1250,28 +1250,6 @@ export class Player extends Entity {
                 ctx.drawImage(this._fireEmoji.canvas, ox, oy);
             }
         }
-        if (this.frostPowerUpTimer > 0) {
-            if (!this._frostEmoji) {
-                this._frostEmoji = getEmojiCanvas('\u2744\uFE0F', 30);
-            }
-            const baseY = this.height / 2 + 12 + Math.sin(this.pulseTimer * 6) * 1.5;
-            if (shouldMirrorForFacing) {
-                ctx.scale(-1, 1);
-            }
-            if (this.rotation !== 0) {
-                ctx.rotate(-this.rotation);
-            }
-            const rowY = baseY + 4;
-            const spacing = 24;
-            const startX = -spacing * 1.5;
-            for (let i = 0; i < 4; i++) {
-                const x = startX + i * spacing;
-                const ox = x - this._frostEmoji.width / 2;
-                const oy = rowY - this._frostEmoji.height / 2 + Math.sin(this.pulseTimer * 8 + i * 0.9) * 2.5;
-                ctx.drawImage(this._frostEmoji.canvas, ox, oy);
-            }
-        }
-
         ctx.restore();
 
         if (!game?.gameOverTriggered && this.frostBlastTimer > 0) {

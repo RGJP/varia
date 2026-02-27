@@ -3694,6 +3694,10 @@ export class Boss extends Entity {
         if (emojiFacingInvertedBosses.has(this.bossType)) {
             shouldFlipSprite = !shouldFlipSprite;
         }
+        // Mobile-only visual fix: beetle emoji appears mirrored relative to movement.
+        if (this.bossType === 'boss_beetle' && this._lastGameRef && this._lastGameRef.isMobileDevice) {
+            shouldFlipSprite = !shouldFlipSprite;
+        }
         if (shouldFlipSprite) ctx.scale(-1, 1);
 
         if (this.attackTelegraphTimer > 0) {
