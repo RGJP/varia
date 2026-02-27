@@ -295,12 +295,9 @@ export class Game {
                     }
                 }
             } else if (this._autoPausedByVisibility && this.state === GameState.PAUSED) {
-                this.state = GameState.PLAYING;
+                // Do not auto-resume after app/tab return; require explicit user unpause.
                 this._autoPausedByVisibility = false;
                 this.lastTime = 0;
-                if (this.audio && this.audio.resumeBackgroundMusic) {
-                    this.audio.resumeBackgroundMusic();
-                }
             }
         });
     }
@@ -1252,7 +1249,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('Music from Pixabay - version 1.21', 0, cardY + cardHeight + 152);
+            this.ctx.fillText('Music from Pixabay - version 1.22', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
