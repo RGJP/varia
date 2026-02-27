@@ -92,7 +92,7 @@ export class Game {
         this.fpsDisplay = 60;
         this.performanceQuality = 1;
         this._performanceAdjustTimer = 0;
-        this.targetFrameRate = 90;
+        this.targetFrameRate = 60;
 
         this.gameOverTriggered = false;
         this.gameOverTimer = 0;
@@ -839,7 +839,7 @@ export class Game {
             this.ctx.fillStyle = gradient;
             this.ctx.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
         } else {
-            this.background.draw(this.ctx, this.camera.x, this.camera.y);
+            this.background.draw(this.ctx, this.camera.x, this.camera.y, this.performanceQuality);
         }
 
         if (this.state === GameState.PLAYING) {
@@ -1225,7 +1225,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('Music from Pixabay - version 1.17', 0, cardY + cardHeight + 152);
+            this.ctx.fillText('Music from Pixabay - version 1.18', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';

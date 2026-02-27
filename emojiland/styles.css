@@ -228,6 +228,13 @@ canvas {
         top: 0;
         right: 28px;
     }
+
+    .ui-btn,
+    .joystick-zone {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        box-shadow: none;
+    }
 }
 
 #btn-pause {

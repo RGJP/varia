@@ -2,7 +2,7 @@ import { Entity } from './Entity.js';
 import { Physics } from '../Physics.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
-// projectileType: 'drumstick' | 'stone' | 'skewer' | 'web' | 'wrench' | 'venom' | 'flame' | 'boomerang' | 'banana' | 'icicle' | 'roar' | 'fossil' | 'needle' | 'scarab'
+// projectileType: 'drumstick' | 'stone' | 'skewer' | 'web' | 'wrench' | 'venom' | 'flame' | 'boomerang' | 'banana' | 'coconut' | 'icicle' | 'roar' | 'fossil' | 'needle' | 'scarab'
 export class BossProjectile extends Entity {
     constructor(x, y, vx, vy, projectileType) {
         super(x, y, 40, 40);
@@ -72,6 +72,12 @@ export class BossProjectile extends Entity {
                 this.canBounceOnPlatforms = true;
                 this.bananaLifetime = 2.6;
                 break;
+            case 'coconut':
+                this.emoji = String.fromCodePoint(0x1F965);
+                this.maxBounces = 0;
+                this.canBounceOnPlatforms = false;
+                this.projectileLifetime = 2.8;
+                break;
             case 'icicle':
                 this.emoji = String.fromCodePoint(0x1F9CA);
                 this.maxBounces = 0;
@@ -130,7 +136,7 @@ export class BossProjectile extends Entity {
         const prevY = this.y;
         this.x += this.vx * dt;
         this.y += this.vy * dt;
-        const spinSpeed = this.projectileType === 'banana' ? 8 : 6;
+        const spinSpeed = (this.projectileType === 'banana' || this.projectileType === 'coconut') ? 8 : 6;
         this.rotation += (this.vx > 0 ? spinSpeed : -spinSpeed) * dt;
         if (this.ignorePlatformTimer > 0) this.ignorePlatformTimer -= dt;
         if (this.projectileType === 'banana' && this.bananaLifetime !== undefined) this.bananaLifetime -= dt;
@@ -159,6 +165,10 @@ export class BossProjectile extends Entity {
                     // Banana peel hit: mild slip/stagger combo.
                     game.player.slowTimer = Math.max(game.player.slowTimer || 0, 0.85);
                     game.player.stunTimer = Math.max(game.player.stunTimer || 0, 0.16);
+                } else if (this.projectileType === 'coconut') {
+                    // Coconut hit: heavier impact than banana.
+                    game.player.slowTimer = Math.max(game.player.slowTimer || 0, 1.0);
+                    game.player.stunTimer = Math.max(game.player.stunTimer || 0, 0.22);
                 } else if (this.projectileType === 'icicle') {
                     // Cold hit: stronger brief slow.
                     game.player.slowTimer = Math.max(game.player.slowTimer || 0, 1.15);

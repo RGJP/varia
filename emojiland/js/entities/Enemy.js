@@ -1425,7 +1425,7 @@ export class Boss extends Entity {
         this.kangarooLeapLandFxTimer = 0;
 
         // Monkey (boss_monkey): trickster canopy cycles + coconut juggles + dive-bombs.
-        this.monkeyState = 'PATROL'; // 'PATROL' | 'CANOPY' | 'DIVE'
+        this.monkeyState = 'PATROL'; // 'PATROL' | 'CANOPY_ASCEND' | 'CANOPY' | 'ASCEND' | 'DIVE'
         this.monkeyPatrolDir = Math.random() > 0.5 ? 1 : -1;
         this.monkeyHopCycle = Math.random() * Math.PI * 2;
         this.monkeyTelegraphTimer = 0;
@@ -1435,10 +1435,14 @@ export class Boss extends Entity {
         this.monkeyCanopyTimer = 0;
         this.monkeyCanopyDir = 1;
         this.monkeyCanopyY = this.platform.y - this.height - 240;
+        this.monkeyCanopyTargetX = this.x;
+        this.monkeyCanopyTargetY = this.y;
         this.monkeyBananaDropTimer = 0;
         this.monkeyDiveTargetX = this.x;
         this.monkeyDiveVx = 0;
         this.monkeyDiveVy = 0;
+        this.monkeyAscendTargetY = this.y;
+        this.monkeyAscendTimer = 0;
 
         // Mammoth (boss_mammoth): heavy charge lanes + frost fan + icicle rain.
         this.mammothState = 'PATROL'; // 'PATROL' | 'CHARGE'
@@ -2777,6 +2781,8 @@ export class Boss extends Entity {
             this.monkeyCoconutShots = 0;
             this.monkeyDiveVx = 0;
             this.monkeyDiveVy = 0;
+            this.monkeyAscendTimer = 0;
+            this.monkeyAscendTargetY = canopyY;
         }
 
         if (this.monkeyTelegraphTimer > 0) {
@@ -2789,30 +2795,57 @@ export class Boss extends Entity {
                     this.monkeyCoconutShots = this.phase >= 3 ? 5 : (this.phase >= 2 ? 4 : 3);
                     this.monkeyCoconutTimer = 0;
                 } else if (this.monkeyTelegraphType === 'banana_rain') {
-                    this.monkeyState = 'CANOPY';
-                    this.monkeyCanopyTimer = 1.25 + this.phase * 0.22;
-                    this.monkeyBananaDropTimer = 0;
+                    this.monkeyState = 'CANOPY_ASCEND';
                     if (player) {
                         const playerMid = player.x + player.width / 2;
                         if (playerMid > this.platform.x + this.platform.width / 2) {
-                            this.x = left + 24;
+                            this.monkeyCanopyTargetX = left + 24;
                             this.monkeyCanopyDir = 1;
                         } else {
-                            this.x = right - 24;
+                            this.monkeyCanopyTargetX = right - 24;
                             this.monkeyCanopyDir = -1;
                         }
                     } else {
+                        this.monkeyCanopyTargetX = Math.max(left, Math.min(right, this.x + this.monkeyPatrolDir * 140));
                         this.monkeyCanopyDir = this.monkeyPatrolDir;
                     }
-                    this.y = canopyY;
+                    this.monkeyCanopyTargetY = canopyY;
+                    this.monkeyCanopyTimer = 0;
+                    this.monkeyBananaDropTimer = 0;
                 } else {
-                    this.monkeyState = 'DIVE';
+                    this.monkeyState = 'ASCEND';
                     const diveWindow = Math.max(0.42, 0.62 - this.phase * 0.05);
                     const target = player ? (player.x + player.width / 2 - this.width / 2 + (Math.random() * 60 - 30)) : (this.x + this.monkeyPatrolDir * 190);
                     this.monkeyDiveTargetX = Math.max(left, Math.min(right, target));
                     this.monkeyDiveVx = (this.monkeyDiveTargetX - this.x) / diveWindow;
-                    this.monkeyDiveVy = -(560 + this.phase * 35);
+                    this.monkeyDiveVy = 0;
+                    this.monkeyAscendTargetY = Math.max(canopyY + 12, groundY - (176 + this.phase * 20));
+                    this.monkeyAscendTimer = Math.max(0.22, 0.34 - this.phase * 0.025);
                 }
+            }
+            return;
+        }
+
+        if (this.monkeyState === 'CANOPY_ASCEND') {
+            const dx = this.monkeyCanopyTargetX - this.x;
+            const dy = this.monkeyCanopyTargetY - this.y;
+            const moveSpeedX = 520 + this.phase * 45;
+            const moveSpeedY = 600 + this.phase * 35;
+            const stepX = Math.min(Math.abs(dx), moveSpeedX * dt) * Math.sign(dx || 0);
+            const stepY = Math.min(Math.abs(dy), moveSpeedY * dt) * Math.sign(dy || 0);
+
+            this.x += stepX;
+            this.y += stepY;
+            this.vx = dt > 0 ? (stepX / dt) : 0;
+            if (Math.abs(this.vx) > 1) this.facingRight = this.vx > 0;
+
+            const arrived = Math.abs(dx) <= 2.5 && Math.abs(dy) <= 2.5;
+            if (arrived) {
+                this.x = this.monkeyCanopyTargetX;
+                this.y = this.monkeyCanopyTargetY;
+                this.monkeyState = 'CANOPY';
+                this.monkeyCanopyTimer = 1.25 + this.phase * 0.22;
+                this.monkeyBananaDropTimer = 0.04;
             }
             return;
         }
@@ -2826,12 +2859,34 @@ export class Boss extends Entity {
                 const shotIndex = total - this.monkeyCoconutShots;
                 const spreads = total === 5 ? [-0.24, -0.11, 0, 0.11, 0.24] : (total === 4 ? [-0.2, -0.07, 0.07, 0.2] : [-0.12, 0, 0.12]);
                 const spread = spreads[Math.max(0, Math.min(shotIndex, spreads.length - 1))];
-                this._spawnProjectile(game, player, 'banana', 500 + this.phase * 28, spread, -95);
+                this._spawnProjectile(game, player, 'coconut', 500 + this.phase * 28, spread, -95);
                 this.monkeyCoconutShots--;
                 this.monkeyCoconutTimer = 0.11;
                 if (this.monkeyCoconutShots <= 0) {
                     this.attackCooldown = 1.5 + Math.random() * 0.75;
                 }
+            }
+            return;
+        }
+
+        if (this.monkeyState === 'ASCEND') {
+            this.monkeyAscendTimer -= dt;
+            const targetY = this.monkeyAscendTargetY;
+            const riseSpeed = 560 + this.phase * 40;
+            const riseStep = riseSpeed * dt;
+            this.y = Math.max(targetY, this.y - riseStep);
+
+            const steering = Math.max(-360, Math.min(360, (this.monkeyDiveTargetX - this.x) * 4.8));
+            this.vx = steering;
+            this.x += this.vx * dt;
+            this.x = Math.max(left, Math.min(right, this.x));
+            this.facingRight = this.vx >= 0;
+
+            if (this.y <= targetY + 0.5 || this.monkeyAscendTimer <= 0) {
+                this.monkeyState = 'DIVE';
+                const diveWindow = Math.max(0.36, 0.52 - this.phase * 0.04);
+                this.monkeyDiveVx = (this.monkeyDiveTargetX - this.x) / diveWindow;
+                this.monkeyDiveVy = 180 + this.phase * 28;
             }
             return;
         }
@@ -2886,6 +2941,7 @@ export class Boss extends Entity {
                 this.monkeyState = 'PATROL';
                 this.monkeyDiveVx = 0;
                 this.monkeyDiveVy = 0;
+                this.monkeyAscendTimer = 0;
                 this.monkeyHopCycle = Math.random() * Math.PI * 2;
                 this._spawnMonkeyLandingBurst(game);
                 if (game && game.particles) {
@@ -3600,6 +3656,8 @@ export class Boss extends Entity {
             || this.kangarooState === 'LEAP'
             || this.monkeyTelegraphTimer > 0
             || this.monkeyCoconutShots > 0
+            || this.monkeyState === 'CANOPY_ASCEND'
+            || this.monkeyState === 'ASCEND'
             || this.monkeyState === 'CANOPY'
             || this.monkeyState === 'DIVE'
             || this.mammothTelegraphTimer > 0

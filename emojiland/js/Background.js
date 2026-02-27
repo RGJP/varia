@@ -319,7 +319,31 @@ export class Background {
         this._skyCache = canvas;
     }
 
-    draw(ctx, cameraX, cameraY) {
+    _drawLiteBackground(ctx, cameraX, cameraY, quality) {
+        const maxLayers = Math.min(2, this.layers.length);
+        const step = quality < 0.72 ? 3 : 2;
+
+        for (let li = 0; li < maxLayers; li++) {
+            const layer = this.layers[li];
+            const depthAlpha = 0.2 + li * 0.2;
+            const offsetX = cameraX * layer.parallaxFactor * 0.35;
+            const offsetY = cameraY * layer.parallaxFactor * 0.14;
+            ctx.fillStyle = alphaFromColor(layer.color, depthAlpha);
+
+            for (let si = 0; si < layer.shapes.length; si += step) {
+                const shape = layer.shapes[si];
+                let x = ((shape.x - offsetX) % 5000 + 5000) % 5000 - 1000;
+                const y = shape.y - offsetY;
+                if (x + shape.width < -220 || x - shape.width > this.width + 220) continue;
+
+                ctx.beginPath();
+                this.drawShape(ctx, layer.shapeType, x, y, shape);
+                ctx.fill();
+            }
+        }
+    }
+
+    draw(ctx, cameraX, cameraY, quality = 1) {
         if (!this._skyCache) this._buildSkyCache();
         ctx.drawImage(this._skyCache, 0, 0, this.width, this.height);
 
@@ -328,6 +352,11 @@ export class Background {
         horizon.addColorStop(1, 'rgba(0, 0, 0, 0.14)');
         ctx.fillStyle = horizon;
         ctx.fillRect(0, 0, this.width, this.height);
+
+        if (quality < 0.82) {
+            this._drawLiteBackground(ctx, cameraX, cameraY, quality);
+            return;
+        }
 
         // Motion-comfort reduction: keep parallax movement much calmer.
         const motionScaleX = 0.45;
