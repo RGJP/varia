@@ -840,15 +840,12 @@ export class Game {
         const left = this.camera.x - marginX;
         const right = this.camera.x + this.camera.effectiveWidth + marginX;
         const startX = Math.floor(left / spacing) * spacing;
+        const halfW = this._deathGearCache.width / 2;
+        const halfH = this._deathGearCache.height / 2;
+        const drawY = trapY - halfH;
+        const gearCanvas = this._deathGearCache.canvas;
         for (let x = startX; x <= right; x += spacing) {
-            ctx.save();
-            ctx.translate(x, trapY);
-            ctx.drawImage(
-                this._deathGearCache.canvas,
-                -this._deathGearCache.width / 2,
-                -this._deathGearCache.height / 2
-            );
-            ctx.restore();
+            ctx.drawImage(gearCanvas, x - halfW, drawY);
         }
     }
 
