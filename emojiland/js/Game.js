@@ -218,13 +218,14 @@ export class Game {
                 }
             } else if (this.state === GameState.GAME_OVER) {
                 const scale = this._getMenuOverlayScale(GameState.GAME_OVER);
+                const center = this._getGameOverOverlayCenter(scale);
                 const rect = this.canvas.getBoundingClientRect();
                 const scaleX = this.canvas.width / rect.width;
                 const scaleY = this.canvas.height / rect.height;
                 const canvasX = (clientX - rect.left) * scaleX;
                 const canvasY = (clientY - rect.top) * scaleY;
-                const x = (canvasX - this.canvas.width / 2) / scale;
-                const y = (canvasY - this.canvas.height / 2) / scale;
+                const x = (canvasX - center.x) / scale;
+                const y = (canvasY - center.y) / scale;
                 const keepBtn = this._getGameOverKeepPlayingButton();
                 if (
                     x >= keepBtn.x &&
@@ -699,13 +700,36 @@ export class Game {
         const scale = this._getMenuOverlayScale(GameState.START_MENU);
         const card = this._getStartMenuCardLayout();
         const difficulty = this._getStartMenuDifficultyButtons();
+        const startCenter = this._getStartMenuOverlayCenter(scale);
         return {
             scale,
-            centerX: this.canvas.width / 2,
-            centerY: this.canvas.height / 2,
+            centerX: startCenter.x,
+            centerY: startCenter.y,
             ...card
             ,
             buttons: difficulty.buttons
+        };
+    }
+
+    _getStartMenuOverlayCenter(scale) {
+        // Vertically center the full start-menu composition (title to attribution line).
+        const localTop = -192;
+        const localBottom = 278;
+        const localMid = (localTop + localBottom) / 2;
+        return {
+            x: this.canvas.width / 2,
+            y: this.canvas.height / 2 - localMid * scale
+        };
+    }
+
+    _getGameOverOverlayCenter(scale) {
+        // Recenter game-over stack (title + two buttons).
+        const localTop = -94;
+        const localBottom = 128;
+        const localMid = (localTop + localBottom) / 2;
+        return {
+            x: this.canvas.width / 2,
+            y: this.canvas.height / 2 - localMid * scale
         };
     }
 
@@ -1031,7 +1055,18 @@ export class Game {
         const scale = this._getMenuOverlayScale(this.state);
 
         // 3. Move context to center and apply scale for all menu elements
-        this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+        let menuCenterX = this.canvas.width / 2;
+        let menuCenterY = this.canvas.height / 2;
+        if (this.state === GameState.START_MENU) {
+            const startCenter = this._getStartMenuOverlayCenter(scale);
+            menuCenterX = startCenter.x;
+            menuCenterY = startCenter.y;
+        } else if (this.state === GameState.GAME_OVER) {
+            const overCenter = this._getGameOverOverlayCenter(scale);
+            menuCenterX = overCenter.x;
+            menuCenterY = overCenter.y;
+        }
+        this.ctx.translate(menuCenterX, menuCenterY);
         this.ctx.scale(scale, scale);
 
         this.ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
@@ -1154,7 +1189,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('Music from Pixabay - version 1.14', 0, cardY + cardHeight + 152);
+            this.ctx.fillText('Music from Pixabay - version 1.15', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
