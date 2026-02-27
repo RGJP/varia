@@ -33,8 +33,11 @@ export class Game {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d', { alpha: false });
+        this.pixelRatio = 1;
+        this.viewportWidth = Math.max(1, Math.floor(canvas.clientWidth || canvas.width || 1));
+        this.viewportHeight = Math.max(1, Math.floor(canvas.clientHeight || canvas.height || 1));
         this.input = new InputHandler();
-        this.camera = new Camera(canvas.width, canvas.height);
+        this.camera = new Camera(this.viewportWidth, this.viewportHeight);
 
         // Wire up the camera zoom toggle button (mobile only)
         setTimeout(() => {
@@ -71,7 +74,7 @@ export class Game {
 
         this.audio = new AudioEngine();
         this.particles = new ParticleSystem();
-        this.background = new Background(canvas.width, canvas.height);
+        this.background = new Background(this.viewportWidth, this.viewportHeight);
 
         this._visiblePlatforms = [];
         this._visibleVines = [];
@@ -147,11 +150,9 @@ export class Game {
 
         const handleMusicClick = (clientX, clientY) => {
             if (this.state !== GameState.PLAYING && this.state !== GameState.PAUSED) return false;
-            const rect = this.canvas.getBoundingClientRect();
-            const scaleX = this.canvas.width / rect.width;
-            const scaleY = this.canvas.height / rect.height;
-            const x = (clientX - rect.left) * scaleX;
-            const y = (clientY - rect.top) * scaleY;
+            const point = this._clientToViewportPoint(clientX, clientY);
+            const x = point.x;
+            const y = point.y;
 
             // Health is at y=36
             // Bombs is at y=72
@@ -195,11 +196,9 @@ export class Game {
             if (this.state === GameState.START_MENU) {
                 const layout = this._getStartMenuLayout();
                 if (layout) {
-                    const rect = this.canvas.getBoundingClientRect();
-                    const scaleX = this.canvas.width / rect.width;
-                    const scaleY = this.canvas.height / rect.height;
-                    const canvasX = (clientX - rect.left) * scaleX;
-                    const canvasY = (clientY - rect.top) * scaleY;
+                    const point = this._clientToViewportPoint(clientX, clientY);
+                    const canvasX = point.x;
+                    const canvasY = point.y;
                     const x = (canvasX - layout.centerX) / layout.scale;
                     const y = (canvasY - layout.centerY) / layout.scale;
                     for (let i = 0; i < layout.buttons.length; i++) {
@@ -219,11 +218,9 @@ export class Game {
             } else if (this.state === GameState.GAME_OVER) {
                 const scale = this._getMenuOverlayScale(GameState.GAME_OVER);
                 const center = this._getGameOverOverlayCenter(scale);
-                const rect = this.canvas.getBoundingClientRect();
-                const scaleX = this.canvas.width / rect.width;
-                const scaleY = this.canvas.height / rect.height;
-                const canvasX = (clientX - rect.left) * scaleX;
-                const canvasY = (clientY - rect.top) * scaleY;
+                const point = this._clientToViewportPoint(clientX, clientY);
+                const canvasX = point.x;
+                const canvasY = point.y;
                 const x = (canvasX - center.x) / scale;
                 const y = (canvasY - center.y) / scale;
                 const keepBtn = this._getGameOverKeepPlayingButton();
@@ -347,11 +344,25 @@ export class Game {
         requestAnimationFrame((time) => this.loop(time));
     }
 
-    resize(width, height) {
+    resize(width, height, pixelRatio = 1) {
         const safeWidth = Math.max(1, Math.floor(width || 1));
         const safeHeight = Math.max(1, Math.floor(height || 1));
+        const safePixelRatio = Math.max(1, Number.isFinite(pixelRatio) ? pixelRatio : 1);
+        this.viewportWidth = safeWidth;
+        this.viewportHeight = safeHeight;
+        this.pixelRatio = safePixelRatio;
         if (this.camera) this.camera.resize(safeWidth, safeHeight);
         if (this.background) this.background.resize(safeWidth, safeHeight);
+    }
+
+    _clientToViewportPoint(clientX, clientY) {
+        const rect = this.canvas.getBoundingClientRect();
+        const normalizedX = rect.width > 0 ? (clientX - rect.left) / rect.width : 0;
+        const normalizedY = rect.height > 0 ? (clientY - rect.top) / rect.height : 0;
+        return {
+            x: normalizedX * this.viewportWidth,
+            y: normalizedY * this.viewportHeight
+        };
     }
 
     loop(time) {
@@ -657,8 +668,8 @@ export class Game {
             baseHeight = 420;
         }
         const edgePadding = 20;
-        const availableWidth = Math.max(1, this.canvas.width - edgePadding * 2);
-        const availableHeight = Math.max(1, this.canvas.height - edgePadding * 2);
+        const availableWidth = Math.max(1, this.viewportWidth - edgePadding * 2);
+        const availableHeight = Math.max(1, this.viewportHeight - edgePadding * 2);
         return Math.min(availableWidth / baseWidth, availableHeight / baseHeight);
     }
 
@@ -717,8 +728,8 @@ export class Game {
         const localBottom = 278;
         const localMid = (localTop + localBottom) / 2;
         return {
-            x: this.canvas.width / 2,
-            y: this.canvas.height / 2 - localMid * scale
+            x: this.viewportWidth / 2,
+            y: this.viewportHeight / 2 - localMid * scale
         };
     }
 
@@ -728,8 +739,8 @@ export class Game {
         const localBottom = 128;
         const localMid = (localTop + localBottom) / 2;
         return {
-            x: this.canvas.width / 2,
-            y: this.canvas.height / 2 - localMid * scale
+            x: this.viewportWidth / 2,
+            y: this.viewportHeight / 2 - localMid * scale
         };
     }
 
@@ -796,12 +807,13 @@ export class Game {
     }
 
     draw() {
+        this.ctx.setTransform(this.pixelRatio, 0, 0, this.pixelRatio, 0, 0);
         if (this.state === GameState.START_MENU) {
-            const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+            const gradient = this.ctx.createLinearGradient(0, 0, 0, this.viewportHeight);
             gradient.addColorStop(0, '#43a047'); // Green
             gradient.addColorStop(1, '#1b5e20'); // Dark Green
             this.ctx.fillStyle = gradient;
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
         } else {
             this.background.draw(this.ctx, this.camera.x, this.camera.y);
         }
@@ -935,7 +947,7 @@ export class Game {
         this.ctx.textBaseline = 'bottom';
         this.ctx.font = '12px "Outfit", sans-serif';
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
-        this.ctx.fillText(`${Math.round(this.fpsDisplay)}`, this.canvas.width / 2, this.canvas.height - 8);
+        this.ctx.fillText(`${Math.round(this.fpsDisplay)}`, this.viewportWidth / 2, this.viewportHeight - 8);
         this.ctx.restore();
     }
 
@@ -1049,14 +1061,14 @@ export class Game {
 
         // 1. Universal background overlay (non-scaled)
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
 
         // 2. Calculate responsive overlay scale.
         const scale = this._getMenuOverlayScale(this.state);
 
         // 3. Move context to center and apply scale for all menu elements
-        let menuCenterX = this.canvas.width / 2;
-        let menuCenterY = this.canvas.height / 2;
+        let menuCenterX = this.viewportWidth / 2;
+        let menuCenterY = this.viewportHeight / 2;
         if (this.state === GameState.START_MENU) {
             const startCenter = this._getStartMenuOverlayCenter(scale);
             menuCenterX = startCenter.x;
@@ -1189,7 +1201,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('Music from Pixabay - version 1.15', 0, cardY + cardHeight + 152);
+            this.ctx.fillText('Music from Pixabay - version 1.16', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
@@ -1325,7 +1337,7 @@ export class Game {
 
         const barW = 320;
         const barH = 20;
-        const barX = (this.canvas.width - barW) / 2;
+        const barX = (this.viewportWidth - barW) / 2;
         const barY = 14;
         const fillRatio = Math.max(0, boss.health / boss.maxHealth);
 
@@ -1346,7 +1358,7 @@ export class Game {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
         const bossName = boss.displayName || 'BOSS';
-        ctx.fillText(`${boss.emoji}  ${bossName}`, this.canvas.width / 2, barY);
+        ctx.fillText(`${boss.emoji}  ${bossName}`, this.viewportWidth / 2, barY);
 
         // Bar background
         ctx.fillStyle = 'rgba(255,255,255,0.15)';

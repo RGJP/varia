@@ -21,12 +21,13 @@ window.addEventListener('load', () => {
 
     const updateSize = () => {
         const { width: vpWidth, height: vpHeight } = getSafeViewportSize();
+        const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
 
-        canvas.width = vpWidth;
-        canvas.height = vpHeight;
+        canvas.width = Math.max(1, Math.floor(vpWidth * dpr));
+        canvas.height = Math.max(1, Math.floor(vpHeight * dpr));
         canvas.style.width = `${vpWidth}px`;
         canvas.style.height = `${vpHeight}px`;
-        if (game) game.resize(vpWidth, vpHeight);
+        if (game) game.resize(vpWidth, vpHeight, dpr);
     };
 
     game = new Game(canvas);
