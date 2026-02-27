@@ -896,21 +896,18 @@ export function loadLevel() {
     // Final safety pass: remove any mover whose entire path is too close to static geometry.
     pruneOverlappingMovingPlatforms();
 
-    // Coins hovering over the victory platform to replace the gap trail
-    for (let i = 0; i < 4; i++) {
-        potentialCoinLocations.push({
-            x: victoryPlatform.x + 50 + (i * 60),
-            y: victoryPlatform.y - (40 + Math.random() * 80)
-        });
-    }
-
     // --- COIN POPULATION LOGIC ---
     // Target count between 20 and 60 as requested
     const targetCoinCount = Math.floor(Math.random() * (60 - 20 + 1)) + 20;
 
-    // Filter out any coin locations that are past the victory platform
-    // to ensure they are always reachable before finishing the level.
-    const safeCoinLocations = potentialCoinLocations.filter(loc => loc.x <= victoryPlatform.x + victoryPlatform.width - 50);
+    // Filter out any coin locations that are past the victory platform and any
+    // location that sits over the victory platform footprint.
+    const victoryMinX = victoryPlatform.x - 24;
+    const victoryMaxX = victoryPlatform.x + victoryPlatform.width + 24;
+    const safeCoinLocations = potentialCoinLocations.filter(loc => (
+        loc.x <= victoryPlatform.x + victoryPlatform.width - 50 &&
+        (loc.x < victoryMinX || loc.x > victoryMaxX)
+    ));
 
     const hasSupportBelow = (x, y) => {
         const maxDrop = 240;

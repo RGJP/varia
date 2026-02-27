@@ -1,11 +1,13 @@
-import { Game } from './Game.js';
+import { Game, GameState } from './Game.js';
 
 window.addEventListener('load', () => {
     const canvas = document.getElementById('gameCanvas');
     let game = null;
     const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 900;
     const maxDpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
-    let adaptiveDpr = isMobile ? 1 : maxDpr;
+    const menuDpr = maxDpr;
+    const gameplayDpr = isMobile ? 1 : maxDpr;
+    let adaptiveDpr = menuDpr;
 
     const getSafeViewportSize = () => {
         const innerWidth = Math.max(1, Math.floor(window.innerWidth || 1));
@@ -22,8 +24,18 @@ window.addEventListener('load', () => {
         return { width: Math.max(1, vvWidth), height: Math.max(1, vvHeight) };
     };
 
+    const getTargetDpr = () => {
+        if (!isMobile) return maxDpr;
+        if (!game) return menuDpr;
+        return game.state === GameState.START_MENU ? menuDpr : gameplayDpr;
+    };
+
     const updateSize = () => {
         const { width: vpWidth, height: vpHeight } = getSafeViewportSize();
+        const targetDpr = getTargetDpr();
+        if (Math.abs(targetDpr - adaptiveDpr) >= 0.01) {
+            adaptiveDpr = targetDpr;
+        }
         const dpr = adaptiveDpr;
 
         canvas.width = Math.max(1, Math.floor(vpWidth * dpr));
@@ -52,30 +64,22 @@ window.addEventListener('load', () => {
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden) {
             // Mobile browsers can report transient bad viewport sizes right after resume.
-            adaptiveDpr = isMobile ? 1 : maxDpr;
+            adaptiveDpr = getTargetDpr();
             updateSize();
             setTimeout(updateSize, 80);
             setTimeout(updateSize, 240);
         }
     });
 
-    // Keep frame pacing stable by adapting render resolution on mobile devices.
+    // Keep DPR aligned with current game state (menu vs gameplay).
     setInterval(() => {
-        if (!game || !isMobile || document.hidden) return;
-
-        const fps = game.fpsDisplay || 0;
-        const minDpr = 1;
-        if (adaptiveDpr <= minDpr + 0.001) return;
-
-        const prev = adaptiveDpr;
-        if (fps > 0 && fps < 59.2) {
-            adaptiveDpr = Math.max(minDpr, adaptiveDpr - 0.12);
-        }
-
-        if (Math.abs(prev - adaptiveDpr) >= 0.03) {
+        if (!game || document.hidden) return;
+        const targetDpr = getTargetDpr();
+        if (Math.abs(adaptiveDpr - targetDpr) >= 0.03) {
+            adaptiveDpr = targetDpr;
             updateSize();
         }
-    }, 500);
+    }, 200);
 
     game.start();
 
