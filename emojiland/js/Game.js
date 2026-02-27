@@ -1113,7 +1113,7 @@ export class Game {
             this.ctx.fillText('⚔️ Defeat All Enemies', 40, ry); ry += yStep;
             this.ctx.fillText('🏁 Reach the end with the best score', 40, ry); ry += yStep;
             this.ctx.fillText('🎲 Levels are always unique', 40, ry); ry += yStep;
-            this.ctx.fillText('😎 Embrace the Chaos!', 40, ry);
+            this.ctx.fillText('🎰 Embrace the Chaos!', 40, ry);
 
             for (let i = 0; i < buttons.length; i++) {
                 const btn = buttons[i];
