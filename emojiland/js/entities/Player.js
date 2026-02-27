@@ -166,7 +166,7 @@ export class Player extends Entity {
             this.diamondPowerUpTimer -= dt;
             this.diamondShootTimer -= dt;
             this.powerVisualTimer -= dt;
-            if (this.frostPowerUpTimer <= 0 && this.diamondShootTimer <= 0) {
+            if (this.diamondShootTimer <= 0) {
                 this.diamondShootTimer = 0.08; // Fast auto fire
                 const throwX = this.facingRight ? this.x + this.width : this.x - 20;
                 const rock = new Rock(throwX, this.y + this.height / 2 - 10, this.facingRight);
@@ -274,15 +274,12 @@ export class Player extends Entity {
         if (!canChargeAttack) {
             this.attackChargeTimer = 0;
             this.isChargingAttack = false;
-        } else if (this.frostPowerUpTimer > 0) {
-            this.attackChargeTimer = 0;
-            this.isChargingAttack = false;
-            if (input.isJustPressed('KeyD')) {
+        } else {
+            if (this.frostPowerUpTimer > 0 && input.isJustPressed('KeyD')) {
                 this.isAttacking = true;
                 this.attackTimer = this.attackDuration;
                 this._triggerFrostBlast(game);
             }
-        } else {
             if (input.isDown('KeyD')) {
                 this.isChargingAttack = true;
                 this.attackChargeTimer = Math.min(this.maxAttackChargeTime, this.attackChargeTimer + dt);
@@ -681,10 +678,6 @@ export class Player extends Entity {
         // Collectibles
         game.collectibles.forEach(collectible => {
             if (!collectible.markedForDeletion && Physics.checkAABB(this, collectible)) {
-                // Frost mode owns attack input; ignore fast-rock pickup while active.
-                if (collectible.type === 'diamond_powerup' && this.frostPowerUpTimer > 0) {
-                    return;
-                }
                 collectible.markedForDeletion = true;
                 const centerX = collectible.x + collectible.width / 2;
                 const centerY = collectible.y + collectible.height / 2;
@@ -1382,7 +1375,7 @@ export class Player extends Entity {
             ctx.drawImage(this._catProtectorEmoji.canvas, catX, catY);
         }
 
-        if (!game?.gameOverTriggered && this.frostPowerUpTimer <= 0 && this.isChargingAttack && this.attackChargeTimer > this.chargeIndicatorDelay) {
+        if (!game?.gameOverTriggered && this.isChargingAttack && this.attackChargeTimer > this.chargeIndicatorDelay) {
             const chargeRatio = Math.max(0, Math.min(1, this.attackChargeTimer / this.maxAttackChargeTime));
             const dir = this.facingRight ? 1 : -1;
             const scale = 1 + chargeRatio * 2; // matches throw sizeMultiplier: 1 -> 3
