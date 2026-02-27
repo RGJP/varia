@@ -1081,10 +1081,6 @@ export class Player extends Entity {
             cached = this._deathTombstoneCache;
             yOffset = 0;
             ctx.shadowBlur = 0; // Explicitly disable any lingering damage/low-health glows
-
-            // Visual feedback for "turning" into a tombstone
-            const progress = Math.max(0, Math.min(1, (1.0 - game.gameOverTimer) / 1.0));
-            ctx.scale(1 + progress * 0.1, 1 + progress * 0.1);
         } else {
             // Procedural "South Park-like" locomotion for static emoji sprites.
             const absVx = Math.abs(this.vx);

@@ -76,6 +76,17 @@ export class Game {
         this.particles = new ParticleSystem();
         this.background = new Background(this.viewportWidth, this.viewportHeight);
         this.isMobileDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 900;
+        const pauseBtn = document.getElementById('btn-pause');
+        if (pauseBtn) {
+            // Re-enter fullscreen from the direct unpause tap gesture on mobile.
+            const requestFullscreenOnUnpauseTap = (e) => {
+                if (!this.isMobileDevice || this.state !== GameState.PAUSED || document.hidden) return;
+                if (e && e.cancelable) e.preventDefault();
+                this._requestFullscreenBestEffort();
+            };
+            pauseBtn.addEventListener('touchstart', requestFullscreenOnUnpauseTap, { passive: false });
+            pauseBtn.addEventListener('click', requestFullscreenOnUnpauseTap);
+        }
 
         this._visiblePlatforms = [];
         this._visibleVines = [];
@@ -132,18 +143,7 @@ export class Game {
                 }
 
                 // Request fullscreen (non-blocking, won't consume gesture on most browsers)
-                try {
-                    const elem = document.documentElement;
-                    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                        if (elem.requestFullscreen) {
-                            elem.requestFullscreen().catch(() => { });
-                        } else if (elem.webkitRequestFullscreen) {
-                            elem.webkitRequestFullscreen();
-                        }
-                    }
-                } catch (err) {
-                    // Fullscreen not supported or failed; continue anyway
-                }
+                this._requestFullscreenBestEffort();
 
                 this.initLevel();
                 this.state = GameState.PLAYING;
@@ -300,6 +300,23 @@ export class Game {
                 this.lastTime = 0;
             }
         });
+    }
+
+    _requestFullscreenBestEffort() {
+        if (document.hidden) return;
+        try {
+            if (document.fullscreenElement || document.webkitFullscreenElement) return;
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(() => { });
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+        } catch (err) {
+            // Continue even if fullscreen is unsupported or denied.
+        }
     }
 
     _ensureStartMenuMusicFromGesture() {
@@ -466,17 +483,7 @@ export class Game {
             } else if (this.state === GameState.PAUSED) {
                 this.state = GameState.PLAYING;
                 this.audio.resumeBackgroundMusic && this.audio.resumeBackgroundMusic();
-
-                try {
-                    const elem = document.documentElement;
-                    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                        if (elem.requestFullscreen) {
-                            elem.requestFullscreen().catch(() => { });
-                        } else if (elem.webkitRequestFullscreen) {
-                            elem.webkitRequestFullscreen();
-                        }
-                    }
-                } catch (err) { }
+                this._requestFullscreenBestEffort();
             }
         }
 
