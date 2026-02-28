@@ -741,10 +741,11 @@ export class Player extends Entity {
                         }
                         continue;
                     }
-                    const stompableEmojis = ['🐢', '🐸', '🐦', '🦅', '🦉', '🐦‍⬛', '🧟‍♂️', '🦑', '🦗', '🐿️', '🕷️', '🪼', '😡'];
+                    const stompableEmojis = ['🐢', '🐸', '🐦', '🦅', '🦉', '🐦‍⬛', '🧟‍♂️', '🦑', '🦗', '🐿️', '🕷️', '🪼', '😡', '🛸'];
                     const canStompEnemy = enemy.bossType !== 'boss_spider' && stompableEmojis.includes(enemy.emoji);
                     if (canStompEnemy && isTopStomp) {
                         const isEnragedEnemy = enemy.type === 'enraged' || enemy.emoji === '😡';
+                        const isAlienEnemy = enemy.type === 'alien' || enemy.emoji === '🛸';
                         if (typeof enemy.stomp === 'function') enemy.stomp(game);
                         else enemy.takeDamage(enemy.health, game);
                         this.vy = this.jumpForce;
@@ -758,6 +759,10 @@ export class Player extends Entity {
                         this.isSpinning = true;
                         this.spinDirection = this.facingRight ? 1 : -1;
                         this.spinBaseRotation = this.rotation;
+                        if (isAlienEnemy) {
+                            // Prevent immediate re-contact damage while chaining saucer stomps.
+                            this.invulnerableTimer = Math.max(this.invulnerableTimer, 0.42);
+                        }
                         if (isEnragedEnemy) {
                             // Enraged stays alive after stomp; brief grace avoids unfair contact damage.
                             this.invulnerableTimer = Math.max(this.invulnerableTimer, 0.3);
@@ -769,6 +774,9 @@ export class Player extends Entity {
                         }
                         // Special case: man lifting weights boss grab/rush shouldn't damage the player directly
                         if (enemy.bossType === 'boss_manliftingweights' && (enemy.robotState === 'RUSH' || enemy.robotState === 'GRAB')) {
+                            continue;
+                        }
+                        if (this.invulnerableTimer > 0) {
                             continue;
                         }
                         this.takeDamage(game);

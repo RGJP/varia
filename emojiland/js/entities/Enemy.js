@@ -120,6 +120,7 @@ export class Enemy extends Entity {
         this.turtleRecoverTimer = 0;
         this.turtleRecoverDuration = 0.32;
         this.shellHitCooldownTimer = 0;
+        this.alienStompCount = 0;
         this.countsForCompletionObjective = true;
 
         if (this.type === TYPE_PATROL) this.state = 'PATROL';
@@ -426,6 +427,11 @@ export class Enemy extends Entity {
                 }
             }
 
+            // Only allow fallback "home platform" snap when crossing the top plane.
+            // This prevents shells from being teleported back to platform tops from side/bottom contacts.
+            const homeLandingTolerance = 14;
+            const crossedHomeTop = this.platform && (prevY + this.height <= this.platform.y + homeLandingTolerance);
+
             // Spiders can land on ANY platform, not just their home platform
             if (this.vy > 0 && ((this.type === TYPE_SPIDER || this.type === TYPE_MINI_SPIDER) || isJumperJumping || isEnragedJumping) && game) {
                 const allPlats = game.platforms;
@@ -482,7 +488,9 @@ export class Enemy extends Entity {
                     }
                 }
             } else if (
+                !isSlidingShell &&
                 this.vy > 0 &&
+                crossedHomeTop &&
                 this.y + this.height >= this.platform.y &&
                 this.x + this.width > this.platform.x &&
                 this.x < this.platform.x + this.platform.width
@@ -662,6 +670,13 @@ export class Enemy extends Entity {
             if (game && game.particles) game.particles.emitDeath(this.x + this.width / 2, this.y + this.height / 2);
             if (game && game.player) game.player.score += 50;
             if (game && typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(this);
+            return;
+        }
+
+        if (this.type === TYPE_ALIEN) {
+            this.alienStompCount += 1;
+            if (this.alienStompCount >= 3) this.takeDamage(this.health, game);
+            else this.takeDamage(1, game);
             return;
         }
 
