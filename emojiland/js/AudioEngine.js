@@ -12,13 +12,14 @@ export class AudioEngine {
         this._bossMusicActive = false;
         this._preBossMusicSnapshot = null;
 
-        this.totalSongs = 39;
+        this.totalSongs = 46;
         this.recentHistorySize = Math.max(0, Math.min(5, this.totalSongs - 1));
         this.musicPool = [];
         this.recentSongHistory = [];
         this.unlocked = false;
         this.isMusicMuted = false;
         this._lastJumpVariant = -1;
+        this._lastBlastOffVariant = -1;
         this._lastHitVariant = -1;
         this._lastThrowVariant = -1;
         this._lastCollectVariant = {
@@ -114,6 +115,25 @@ export class AudioEngine {
                     this.recentSongHistory = cleanHistory.slice(cleanHistory.length - this.recentHistorySize);
                 } else {
                     this.recentSongHistory = cleanHistory;
+                }
+
+                // If the library grows (new highest track numbers), ensure they enter
+                // the live pool immediately even when an older pool was cached.
+                let maxSeenTrack = -1;
+                for (let i = 0; i < cleanPool.length; i++) {
+                    if (cleanPool[i] > maxSeenTrack) maxSeenTrack = cleanPool[i];
+                }
+                for (let i = 0; i < cleanHistory.length; i++) {
+                    if (cleanHistory[i] > maxSeenTrack) maxSeenTrack = cleanHistory[i];
+                }
+                if (Number.isInteger(this.lastSongNumber) && this.lastSongNumber > maxSeenTrack) {
+                    maxSeenTrack = this.lastSongNumber;
+                }
+                for (let n = maxSeenTrack + 1; n < this.totalSongs; n++) {
+                    if (!poolSeen.has(n)) {
+                        poolSeen.add(n);
+                        this.musicPool.push(n);
+                    }
                 }
             }
         } catch (e) {
@@ -646,6 +666,31 @@ export class AudioEngine {
                 gain: 0.16,
                 attack: 0.001
             });
+        }, 18);
+    }
+
+    playBlastOff() {
+        const variants = [
+            { lowStart: 150, lowEnd: 320, lowDur: 0.24, lowGain: 0.32, riseStart: 420, riseEnd: 1150, riseDur: 0.2, riseGain: 0.24, hissHp: 720 },
+            { lowStart: 165, lowEnd: 340, lowDur: 0.22, lowGain: 0.31, riseStart: 460, riseEnd: 1240, riseDur: 0.19, riseGain: 0.25, hissHp: 780 },
+            { lowStart: 145, lowEnd: 305, lowDur: 0.25, lowGain: 0.33, riseStart: 410, riseEnd: 1080, riseDur: 0.21, riseGain: 0.23, hissHp: 680 }
+        ];
+        const idx = this._pickVariant(variants.length, this._lastBlastOffVariant);
+        this._lastBlastOffVariant = idx;
+        const v = variants[idx];
+
+        this._playTone('triangle', this._jitter(v.lowStart, 0.02), v.lowDur, {
+            endFreq: this._jitter(v.lowEnd, 0.02),
+            gain: v.lowGain,
+            attack: 0.0022
+        });
+        setTimeout(() => {
+            this._playTone('sawtooth', this._jitter(v.riseStart, 0.03), v.riseDur, {
+                endFreq: this._jitter(v.riseEnd, 0.03),
+                gain: v.riseGain,
+                attack: 0.0014
+            });
+            this._playNoiseBurst(0.08, 0.05, v.hissHp);
         }, 18);
     }
 

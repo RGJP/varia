@@ -439,7 +439,8 @@ export class Player extends Entity {
                 this.spinBaseRotation = this.rotation;
                 this.jumpBufferTimer = 0;
                 this.coyoteTimer = 0;
-                if (game.audio) game.audio.playJump();
+                if (game.audio && typeof game.audio.playBlastOff === 'function') game.audio.playBlastOff();
+                else if (game.audio) game.audio.playJump();
                 if (game.particles) {
                     const smokeX = launchedFromZone.centerX;
                     const smokeY = launchedFromZone.centerY - launchedFromZone.height * 0.46;
