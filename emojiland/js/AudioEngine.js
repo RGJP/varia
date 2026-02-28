@@ -24,6 +24,21 @@ export class AudioEngine {
         this.recentSongHistory = [];
         this.unlocked = false;
         this.isMusicMuted = false;
+        this.defaultMusicLevel = 0.22;
+        this._musicUserVolume = 0;
+        this.musicNodeChain = null;
+        this._musicLoudnessInterval = null;
+        this._musicLoudnessState = null;
+        this.musicNormalization = {
+            targetDb: -22,
+            silenceDb: -56,
+            minGainDb: -10,
+            maxGainDb: 10,
+            settleSamples: 24,
+            saveEverySamples: 80
+        };
+        this.musicNormalizationCache = {};
+        this._musicNormalizationCacheDirty = false;
         this._lastJumpVariant = -1;
         this._lastBlastOffVariant = -1;
         this._lastHitVariant = -1;
@@ -159,6 +174,19 @@ export class AudioEngine {
                 this.musicPool = cleanPool;
                 this.lastSongNumber = (typeof data.last === 'number') ? data.last : -1;
                 this.isMusicMuted = !!data.muted;
+                this.musicNormalizationCache = {};
+                if (data.musicNormCache && typeof data.musicNormCache === 'object') {
+                    const entries = Object.entries(data.musicNormCache);
+                    for (let i = 0; i < entries.length; i++) {
+                        const [key, value] = entries[i];
+                        if (typeof key !== 'string') continue;
+                        if (typeof value !== 'number' || !Number.isFinite(value)) continue;
+                        this.musicNormalizationCache[key] = Math.max(
+                            this.musicNormalization.minGainDb,
+                            Math.min(this.musicNormalization.maxGainDb, value)
+                        );
+                    }
+                }
 
                 const cleanHistory = [];
                 const historySeen = new Set();
@@ -210,7 +238,8 @@ export class AudioEngine {
                 pool: this.musicPool,
                 history: this.recentSongHistory,
                 last: this.lastSongNumber,
-                muted: this.isMusicMuted
+                muted: this.isMusicMuted,
+                musicNormCache: this.musicNormalizationCache
             }));
         } catch (e) {
             console.error("Failed to save audio settings:", e);
@@ -244,6 +273,191 @@ export class AudioEngine {
             clearTimeout(this._pendingMusicSeekTimeout);
             this._pendingMusicSeekTimeout = null;
         }
+    }
+
+    _clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    _musicTrackCacheKey(src) {
+        const raw = String(src || '').replace(/\\/g, '/');
+        const match = raw.match(/js\/music\/([^?#]+)/i);
+        if (match && match[1]) {
+            return `js/music/${match[1].toLowerCase()}`;
+        }
+        return raw.toLowerCase();
+    }
+
+    _setMusicUserVolume(vol) {
+        const safeVol = this._clamp(Number(vol) || 0, 0, 1);
+        this._musicUserVolume = safeVol;
+        const hasMusicChain = this.musicNodeChain &&
+            this.musicNodeChain.userGain &&
+            this.musicNodeChain.audioElement === this.currentMusicAudio &&
+            this.ctx;
+        if (hasMusicChain) {
+            this.musicNodeChain.userGain.gain.setValueAtTime(safeVol, this.ctx.currentTime);
+        }
+        if (this.currentMusicAudio) {
+            this.currentMusicAudio.volume = hasMusicChain ? 1 : safeVol;
+        }
+    }
+
+    _persistNormalizationSample(force = false) {
+        const state = this._musicLoudnessState;
+        if (!state || !state.trackKey || state.sampleCount <= 0) return;
+        if (!force && state.sampleCount < this.musicNormalization.settleSamples) return;
+
+        const avgGainDb = this._clamp(
+            state.sumDesiredGainDb / state.sampleCount,
+            this.musicNormalization.minGainDb,
+            this.musicNormalization.maxGainDb
+        );
+        const prev = this.musicNormalizationCache[state.trackKey];
+        if (!Number.isFinite(prev) || Math.abs(prev - avgGainDb) > 0.5) {
+            this.musicNormalizationCache[state.trackKey] = avgGainDb;
+            this._musicNormalizationCacheDirty = true;
+        }
+        if (this._musicNormalizationCacheDirty && (force || state.sampleCount % this.musicNormalization.saveEverySamples === 0)) {
+            this._musicNormalizationCacheDirty = false;
+            this._saveSettings();
+        }
+    }
+
+    _stopMusicLoudnessMonitor() {
+        if (this._musicLoudnessInterval) {
+            clearInterval(this._musicLoudnessInterval);
+            this._musicLoudnessInterval = null;
+        }
+        this._persistNormalizationSample(true);
+        this._musicLoudnessState = null;
+    }
+
+    _applyCachedTrackNormalization(trackKey) {
+        if (!this.musicNodeChain || !this.musicNodeChain.normalizerGain || !this.ctx) return;
+        const cachedGainDb = this.musicNormalizationCache[trackKey];
+        const gainLinear = Number.isFinite(cachedGainDb) ? Math.pow(10, cachedGainDb / 20) : 1;
+        this.musicNodeChain.normalizerGain.gain.setValueAtTime(gainLinear, this.ctx.currentTime);
+    }
+
+    _startMusicLoudnessMonitor(trackKey) {
+        if (!this.musicNodeChain || !this.musicNodeChain.analyser || !this.musicNodeChain.normalizerGain || !this.ctx) return;
+        this._stopMusicLoudnessMonitor();
+
+        const analyser = this.musicNodeChain.analyser;
+        const normalizerGain = this.musicNodeChain.normalizerGain;
+        const sampleBuffer = new Float32Array(analyser.fftSize);
+        let loudnessEmaDb = null;
+
+        this._musicLoudnessState = {
+            trackKey,
+            sampleCount: 0,
+            sumDesiredGainDb: 0
+        };
+
+        this._musicLoudnessInterval = setInterval(() => {
+            if (!this.currentMusicAudio || this.currentMusicAudio.paused || this.currentMusicAudio.ended) return;
+            if (!this.musicNodeChain || this.musicNodeChain.normalizerGain !== normalizerGain) return;
+
+            analyser.getFloatTimeDomainData(sampleBuffer);
+            let sumSquares = 0;
+            for (let i = 0; i < sampleBuffer.length; i++) {
+                const s = sampleBuffer[i];
+                sumSquares += s * s;
+            }
+            const rms = Math.sqrt(sumSquares / sampleBuffer.length);
+            const rmsDb = 20 * Math.log10(Math.max(1e-5, rms));
+            if (!Number.isFinite(rmsDb) || rmsDb < this.musicNormalization.silenceDb) return;
+
+            loudnessEmaDb = loudnessEmaDb === null ? rmsDb : (loudnessEmaDb * 0.8) + (rmsDb * 0.2);
+            const desiredGainDb = this._clamp(
+                this.musicNormalization.targetDb - loudnessEmaDb,
+                this.musicNormalization.minGainDb,
+                this.musicNormalization.maxGainDb
+            );
+            const desiredGainLinear = Math.pow(10, desiredGainDb / 20);
+            const currentGain = normalizerGain.gain.value;
+            const timeConstant = desiredGainLinear < currentGain ? 0.08 : 0.45;
+            normalizerGain.gain.setTargetAtTime(desiredGainLinear, this.ctx.currentTime, timeConstant);
+
+            this._musicLoudnessState.sampleCount++;
+            this._musicLoudnessState.sumDesiredGainDb += desiredGainDb;
+            this._persistNormalizationSample(false);
+        }, 125);
+    }
+
+    _teardownMusicProcessing() {
+        this._stopMusicLoudnessMonitor();
+        if (!this.musicNodeChain) return;
+        const chain = this.musicNodeChain;
+        try { chain.source.disconnect(); } catch (e) { }
+        try { chain.analyser.disconnect(); } catch (e) { }
+        try { chain.normalizerGain.disconnect(); } catch (e) { }
+        try { chain.compressor.disconnect(); } catch (e) { }
+        try { chain.limiter.disconnect(); } catch (e) { }
+        try { chain.userGain.disconnect(); } catch (e) { }
+        this.musicNodeChain = null;
+    }
+
+    _setupMusicProcessingForElement(audioElement, trackSrc = '') {
+        if (!audioElement) return;
+        this._ensureContext();
+        if (!this.masterGain || !this.ctx) return;
+
+        if (this.musicNodeChain && this.musicNodeChain.audioElement !== audioElement) {
+            this._teardownMusicProcessing();
+        }
+
+        if (!this.musicNodeChain) {
+            const source = this.ctx.createMediaElementSource(audioElement);
+            const analyser = this.ctx.createAnalyser();
+            analyser.fftSize = 2048;
+            analyser.smoothingTimeConstant = 0.82;
+
+            const normalizerGain = this.ctx.createGain();
+            normalizerGain.gain.value = 1;
+
+            const compressor = this.ctx.createDynamicsCompressor();
+            compressor.threshold.setValueAtTime(-20, this.ctx.currentTime);
+            compressor.knee.setValueAtTime(18, this.ctx.currentTime);
+            compressor.ratio.setValueAtTime(2.2, this.ctx.currentTime);
+            compressor.attack.setValueAtTime(0.015, this.ctx.currentTime);
+            compressor.release.setValueAtTime(0.2, this.ctx.currentTime);
+
+            const limiter = this.ctx.createDynamicsCompressor();
+            limiter.threshold.setValueAtTime(-2, this.ctx.currentTime);
+            limiter.knee.setValueAtTime(0, this.ctx.currentTime);
+            limiter.ratio.setValueAtTime(20, this.ctx.currentTime);
+            limiter.attack.setValueAtTime(0.003, this.ctx.currentTime);
+            limiter.release.setValueAtTime(0.09, this.ctx.currentTime);
+
+            const userGain = this.ctx.createGain();
+            userGain.gain.value = this._musicUserVolume;
+
+            source.connect(analyser);
+            analyser.connect(normalizerGain);
+            normalizerGain.connect(compressor);
+            compressor.connect(limiter);
+            limiter.connect(userGain);
+            userGain.connect(this.masterGain);
+
+            this.musicNodeChain = {
+                audioElement,
+                source,
+                analyser,
+                normalizerGain,
+                compressor,
+                limiter,
+                userGain,
+                trackKey: ''
+            };
+        }
+
+        const trackKey = this._musicTrackCacheKey(trackSrc || audioElement.currentSrc || audioElement.src);
+        this.musicNodeChain.trackKey = trackKey;
+        this._applyCachedTrackNormalization(trackKey);
+        this._setMusicUserVolume(this._musicUserVolume);
+        this._startMusicLoudnessMonitor(trackKey);
     }
 
     playOscillator(type, freq, duration, slideFreq = null) {
@@ -351,8 +565,10 @@ export class AudioEngine {
 
             this.currentMusicAudio.src = `js/music/${String(songNumber).padStart(2, '0')}.mp3`;
             this.currentMusicAudio.loop = false; // Never loop
-            this.currentMusicAudio.volume = 0;
+            this.currentMusicAudio.volume = 1;
             this.currentMusicAudio.muted = this.isMusicMuted;
+            this._setMusicUserVolume(0);
+            this._setupMusicProcessingForElement(this.currentMusicAudio, this.currentMusicAudio.src);
 
             this.currentMusicAudio.onended = () => {
                 if (requestId !== this._musicRequestId) return;
@@ -363,7 +579,7 @@ export class AudioEngine {
             let playPromise = this.currentMusicAudio.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
-                    this.fadeMusic(0, 0.22, 3000); // Slightly louder music while SFX remain forward.
+                    this.fadeMusic(0, this.defaultMusicLevel, 3000); // Slightly louder music while SFX remain forward.
                 }).catch(e => console.error("Audio playback failed:", e));
             }
         };
@@ -371,7 +587,7 @@ export class AudioEngine {
         if (this.currentMusicAudio && !isAutoNext) {
             // If changing manually mid-track, fade out the current one
             const fadeTime = 1000;
-            this.fadeMusic(this.currentMusicAudio.volume, 0, fadeTime, () => {
+            this.fadeMusic(this._musicUserVolume, 0, fadeTime, () => {
                 if (this.currentMusicAudio) {
                     this.currentMusicAudio.pause();
                     this.currentMusicAudio.onended = null;
@@ -384,6 +600,7 @@ export class AudioEngine {
                 this.currentMusicAudio.pause();
                 this.currentMusicAudio.onended = null;
             }
+            this._setMusicUserVolume(0);
             startMusic();
         }
     }
@@ -409,7 +626,7 @@ export class AudioEngine {
             const baseSrc = resolvedTrack.src;
             musicAudio.src = baseSrc;
             musicAudio.loop = false;
-            musicAudio.volume = 0;
+            musicAudio.volume = 1;
             musicAudio.muted = this.isMusicMuted;
             musicAudio.preload = 'auto';
             musicAudio.onended = () => {
@@ -418,11 +635,13 @@ export class AudioEngine {
                 this.playBackgroundMusic(true);
             };
             this.currentMusicAudio = musicAudio;
+            this._setMusicUserVolume(0);
+            this._setupMusicProcessingForElement(musicAudio, baseSrc);
 
             const isCurrentRequest = () => requestId === this._musicRequestId && this.currentMusicAudio === musicAudio;
             const fadeInCurrent = () => {
                 if (!isCurrentRequest()) return;
-                this.fadeMusic(0, 0.22, fadeInMs);
+                this.fadeMusic(0, this.defaultMusicLevel, fadeInMs);
             };
 
             const seekThenFade = () => {
@@ -531,7 +750,7 @@ export class AudioEngine {
 
         if (this.currentMusicAudio) {
             this._clearPendingMusicSeek();
-            this.fadeMusic(this.currentMusicAudio.volume, 0, 300, () => {
+            this.fadeMusic(this._musicUserVolume, 0, 300, () => {
                 if (this.currentMusicAudio) {
                     this.currentMusicAudio.pause();
                     this.currentMusicAudio.onended = null;
@@ -592,9 +811,11 @@ export class AudioEngine {
             }
             this.currentMusicAudio.src = snapshot.src;
             this.currentMusicAudio.loop = false;
-            this.currentMusicAudio.volume = 0;
+            this.currentMusicAudio.volume = 1;
             this.currentMusicAudio.muted = this.isMusicMuted;
             this.currentMusicAudio.preload = 'auto';
+            this._setMusicUserVolume(0);
+            this._setupMusicProcessingForElement(this.currentMusicAudio, snapshot.src);
             this.currentMusicAudio.onended = () => {
                 if (requestId !== this._musicRequestId) return;
                 console.log("Music track ended, playing next...");
@@ -612,14 +833,14 @@ export class AudioEngine {
                         ? Math.min(snapshot.time, Math.max(0, duration - 0.1))
                         : snapshot.time;
                     if (safeTime > 0) this.currentMusicAudio.currentTime = safeTime;
-                    this.fadeMusic(0, 0.22, fadeInMs);
+                    this.fadeMusic(0, this.defaultMusicLevel, fadeInMs);
                 }).catch(e => console.error("Audio playback failed:", e));
             }
         };
 
         if (this.currentMusicAudio) {
             this._clearPendingMusicSeek();
-            this.fadeMusic(this.currentMusicAudio.volume, 0, fadeOutMs, () => {
+            this.fadeMusic(this._musicUserVolume, 0, fadeOutMs, () => {
                 if (this.currentMusicAudio) {
                     this.currentMusicAudio.pause();
                     this.currentMusicAudio.onended = null;
@@ -636,11 +857,15 @@ export class AudioEngine {
         this._musicRequestId++;
         this._bossMusicActive = false;
         this._preBossMusicSnapshot = null;
-        if (!this.currentMusicAudio) return;
-        this.fadeMusic(this.currentMusicAudio.volume, 0, duration, () => {
+        if (!this.currentMusicAudio) {
+            this._teardownMusicProcessing();
+            return;
+        }
+        this.fadeMusic(this._musicUserVolume, 0, duration, () => {
             if (this.currentMusicAudio) {
                 this.currentMusicAudio.pause();
                 this.currentMusicAudio = null;
+                this._teardownMusicProcessing();
             }
         });
     }
@@ -668,28 +893,34 @@ export class AudioEngine {
     fadeMusic(startVol, endVol, duration, callback) {
         this.stopMusicFade();
 
+        const start = this._clamp(Number(startVol) || 0, 0, 1);
+        const end = this._clamp(Number(endVol) || 0, 0, 1);
+        const safeDuration = Math.max(0, Number(duration) || 0);
+        if (safeDuration <= 0) {
+            this._setMusicUserVolume(end);
+            if (callback) callback();
+            return;
+        }
+
         const steps = 60; // Smooth 60 steps
-        const stepTime = duration / steps;
-        const volumeStep = (endVol - startVol) / steps;
+        const stepTime = Math.max(1, safeDuration / steps);
+        const volumeStep = (end - start) / steps;
         let currentStep = 0;
 
-        if (this.currentMusicAudio) {
-            this.currentMusicAudio.volume = startVol;
-        }
+        this._setMusicUserVolume(start);
 
         this.fadeInterval = setInterval(() => {
             currentStep++;
-            let newVol = startVol + (volumeStep * currentStep);
+            let newVol = start + (volumeStep * currentStep);
 
             if (newVol < 0) newVol = 0;
             if (newVol > 1) newVol = 1;
 
-            if (this.currentMusicAudio) {
-                this.currentMusicAudio.volume = newVol;
-            } else {
+            if (!this.currentMusicAudio) {
                 this.stopMusicFade();
                 return;
             }
+            this._setMusicUserVolume(newVol);
 
             if (currentStep >= steps) {
                 this.stopMusicFade();

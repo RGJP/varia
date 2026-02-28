@@ -751,12 +751,15 @@ export class Enemy extends Entity {
             const prevLeft = prevX;
             const prevTop = prevY;
             const prevBottom = prevY + this.height;
-            const skin = 10;
+            const sideSkin = 6;
+            const verticalSkin = 1.25;
 
-            const cameFromLeft = prevRight <= p.x + skin;
-            const cameFromRight = prevLeft >= p.x + p.width - skin;
-            const cameFromAbove = prevBottom <= p.y + skin;
-            const cameFromBelow = prevTop >= p.y + p.height - skin;
+            const cameFromLeft = prevRight <= p.x + sideSkin;
+            const cameFromRight = prevLeft >= p.x + p.width - sideSkin;
+            // Keep top/bottom crossing strict to avoid side corner contacts being
+            // misread as "from above/below" and snapping shells back onto ledges.
+            const cameFromAbove = prevBottom <= p.y + verticalSkin;
+            const cameFromBelow = prevTop >= p.y + p.height - verticalSkin;
 
             // Shells are primarily horizontal movers; prefer side resolution unless
             // we clearly crossed the top/bottom plane this frame.
