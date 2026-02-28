@@ -518,6 +518,19 @@ export class Enemy extends Entity {
                     this.vy = 0;
                 }
             }
+
+            if (game && this.y > game.lowestY + 120) {
+                if (!this.markedForDeletion) {
+                    this.markedForDeletion = true;
+                    if (game.particles) {
+                        game.particles.emitDeath(this.x + this.width / 2, game.lowestY - 10);
+                    }
+                    if (typeof game.registerEnemyDefeat === 'function') {
+                        game.registerEnemyDefeat(this);
+                    }
+                }
+                return;
+            }
         } else {
             this.x += this.vx * dt;
             this.y += this.vy * dt;
@@ -736,18 +749,46 @@ export class Enemy extends Entity {
 
             const prevRight = prevX + this.width;
             const prevLeft = prevX;
+            const prevTop = prevY;
             const prevBottom = prevY + this.height;
+            const skin = 10;
 
-            if (overlapX < overlapY) {
-                if (prevRight <= p.x + 2) {
+            const cameFromLeft = prevRight <= p.x + skin;
+            const cameFromRight = prevLeft >= p.x + p.width - skin;
+            const cameFromAbove = prevBottom <= p.y + skin;
+            const cameFromBelow = prevTop >= p.y + p.height - skin;
+
+            // Shells are primarily horizontal movers; prefer side resolution unless
+            // we clearly crossed the top/bottom plane this frame.
+            const preferHorizontal = Math.abs(this.vx) >= Math.abs(this.vy);
+
+            if ((cameFromLeft || cameFromRight) && (overlapX <= overlapY + 2 || preferHorizontal)) {
+                if (cameFromLeft) {
                     this.x = p.x - this.width - 0.01;
                     this.vx = -Math.abs(this.vx);
                     this.facingRight = false;
-                } else if (prevLeft >= p.x + p.width - 2) {
+                } else {
                     this.x = p.x + p.width + 0.01;
                     this.vx = Math.abs(this.vx);
                     this.facingRight = true;
-                } else if (this.x + this.width / 2 < p.x + p.width / 2) {
+                }
+                continue;
+            }
+
+            if ((cameFromAbove || cameFromBelow) && overlapY <= overlapX + 2) {
+                if (cameFromAbove && this.vy >= 0) {
+                    this.y = p.y - this.height;
+                    this.vy = 0;
+                    this.platform = p;
+                } else if (cameFromBelow && this.vy <= 0) {
+                    this.y = p.y + p.height + 0.01;
+                    if (this.vy < 0) this.vy = 0;
+                }
+                continue;
+            }
+
+            if (overlapX < overlapY || preferHorizontal) {
+                if (this.x + this.width / 2 < p.x + p.width / 2) {
                     this.x = p.x - this.width - 0.01;
                     this.vx = -Math.abs(this.vx);
                     this.facingRight = false;
@@ -757,20 +798,24 @@ export class Enemy extends Entity {
                     this.facingRight = true;
                 }
             } else {
-                if (prevBottom <= p.y + 2) {
+                if (cameFromAbove && this.vy >= 0) {
                     this.y = p.y - this.height;
                     this.vy = 0;
                     this.platform = p;
-                } else if (prevY >= p.y + p.height - 2) {
+                } else if (cameFromBelow && this.vy <= 0) {
                     this.y = p.y + p.height + 0.01;
                     if (this.vy < 0) this.vy = 0;
-                } else if (this.y + this.height / 2 < p.y + p.height / 2) {
-                    this.y = p.y - this.height;
-                    this.vy = 0;
-                    this.platform = p;
                 } else {
-                    this.y = p.y + p.height + 0.01;
-                    if (this.vy < 0) this.vy = 0;
+                    // Ambiguous corner contact: resolve sideways to avoid popping up to platform tops.
+                    if (this.x + this.width / 2 < p.x + p.width / 2) {
+                        this.x = p.x - this.width - 0.01;
+                        this.vx = -Math.abs(this.vx);
+                        this.facingRight = false;
+                    } else {
+                        this.x = p.x + p.width + 0.01;
+                        this.vx = Math.abs(this.vx);
+                        this.facingRight = true;
+                    }
                 }
             }
         }
@@ -890,11 +935,12 @@ export class Enemy extends Entity {
         // Smooth genie movement: perfect circular orbit whose center drifts gently.
         const t = this.timeAlive;
         const phase = this.startX * 0.013 + this.startY * 0.004;
-        const centerX = this.startX + Math.sin(t * 0.34 + phase * 0.8) * 78;
-        const centerY = this.startY + Math.cos(t * 0.27 + phase * 1.1) * 38;
+        const geniePathSpeed = 1.4;
+        const centerX = this.startX + Math.sin(t * 0.34 * geniePathSpeed + phase * 0.8) * 78;
+        const centerY = this.startY + Math.cos(t * 0.27 * geniePathSpeed + phase * 1.1) * 38;
         const orbitRadiusX = 112;
         const orbitRadiusY = 112;
-        const orbitAngle = t * 1.38 + phase;
+        const orbitAngle = t * 1.38 * geniePathSpeed + phase;
 
         this.x = centerX + Math.cos(orbitAngle) * orbitRadiusX;
         this.y = centerY + Math.sin(orbitAngle) * orbitRadiusY;
@@ -3471,14 +3517,14 @@ export class Boss extends Entity {
     _spawnMammothIcicleRain(game) {
         if (!game) return;
         const wavesLeft = this.mammothRainWaves;
-        const lanes = this.phase >= 3 ? 5 : (this.phase >= 2 ? 4 : 3);
-        const spacing = 76;
+        const lanes = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 3);
+        const spacing = 62;
         for (let i = 0; i < lanes; i++) {
             const lane = i - (lanes - 1) / 2;
-            const x = this.mammothRainCenterX + lane * spacing + (Math.random() * 34 - 17);
+            const x = this.mammothRainCenterX + lane * spacing + (Math.random() * 20 - 10);
             const y = this.platform.y - this.height - 330 - Math.random() * 110 - (wavesLeft * 12);
             const vy = 470 + this.phase * 36 + Math.random() * 30;
-            const vx = lane * 8;
+            const vx = lane * 6;
             game.enemyProjectiles.push(new BossProjectile(x, y, vx, vy, 'icicle'));
         }
     }
@@ -3503,7 +3549,7 @@ export class Boss extends Entity {
                     this.mammothFrostShots = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 2);
                     this.mammothFrostTimer = 0;
                 } else {
-                    this.mammothRainWaves = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 2);
+                    this.mammothRainWaves = this.phase >= 3 ? 3 : (this.phase >= 2 ? 3 : 2);
                     this.mammothRainTimer = 0;
                 }
             }
@@ -3515,9 +3561,23 @@ export class Boss extends Entity {
             this.mammothFrostTimer -= dt;
             if (this.mammothFrostTimer <= 0 && player) {
                 const spreads = this.phase >= 3 ? [-0.24, -0.08, 0.08, 0.24] : (this.phase >= 2 ? [-0.18, 0, 0.18] : [-0.12, 0.12]);
+                const cx = this.x + this.width / 2;
+                const cy = this.y + this.height / 2;
+                const dx = (player.x + player.width / 2) - cx;
+                const dy = (player.y + player.height / 2) - cy;
+                const baseAngle = Math.atan2(dy, dx);
+                const shotSpeed = 510 + this.phase * 32;
                 for (let i = 0; i < spreads.length; i++) {
-                    this._spawnProjectile(game, player, 'icicle', 510 + this.phase * 32, spreads[i], -16);
+                    const a = baseAngle + spreads[i];
+                    const vx = Math.cos(a) * shotSpeed;
+                    const vy = Math.sin(a) * shotSpeed - 16;
+                    const shard = new BossProjectile(cx, cy, vx, vy, 'icicle');
+                    shard.rollOnLand = true;
+                    shard.icicleRollSpeed = 210 + this.phase * 18;
+                    shard.projectileLifetime = 3.4;
+                    game.enemyProjectiles.push(shard);
                 }
+                this.facingRight = dx >= 0;
                 this.mammothFrostShots--;
                 this.mammothFrostTimer = 0.16;
                 if (this.mammothFrostShots <= 0) this.attackCooldown = 1.6 + Math.random() * 0.75;
@@ -3529,11 +3589,12 @@ export class Boss extends Entity {
             this.vx = 0;
             this.mammothRainTimer -= dt;
             if (this.mammothRainTimer <= 0) {
-                if (player) this.mammothRainCenterX = player.x + player.width / 2 + (Math.random() * 80 - 40);
-                this.mammothRainCenterX = Math.max(left + 40, Math.min(right + this.width - 40, this.mammothRainCenterX));
+                // Keep rain around the telegraphed center; only slight drift per wave.
+                this.mammothRainCenterX += (Math.random() * 44 - 22);
+                this.mammothRainCenterX = Math.max(left + 78, Math.min(right + this.width - 78, this.mammothRainCenterX));
                 this._spawnMammothIcicleRain(game);
                 this.mammothRainWaves--;
-                this.mammothRainTimer = Math.max(0.17, 0.28 - this.phase * 0.03);
+                this.mammothRainTimer = Math.max(0.24, 0.38 - this.phase * 0.03);
                 if (this.mammothRainWaves <= 0) this.attackCooldown = 1.8 + Math.random() * 0.8;
             }
             return;
@@ -3592,8 +3653,8 @@ export class Boss extends Entity {
                     ? (this.phase >= 3 ? 0.16 : (this.phase >= 2 ? 0.22 : 0.28))
                     : (this.mammothTelegraphType === 'frost_fan'
                         ? (this.phase >= 3 ? 0.2 : (this.phase >= 2 ? 0.25 : 0.32))
-                        : (this.phase >= 3 ? 0.22 : (this.phase >= 2 ? 0.28 : 0.34)));
-                this.mammothRainCenterX = player.x + player.width / 2;
+                        : (this.phase >= 3 ? 0.48 : (this.phase >= 2 ? 0.56 : 0.66)));
+                this.mammothRainCenterX = Math.max(left + 78, Math.min(right + this.width - 78, player.x + player.width / 2));
                 this.vx = 0;
             }
         } else {
@@ -4533,10 +4594,37 @@ export class Boss extends Entity {
             } else {
                 if (!this._snowTellCache) this._snowTellCache = getEmojiCanvas(String.fromCodePoint(0x2744) + '\uFE0F', 24);
                 const markerX = this.mammothRainCenterX - (this.x + this.width / 2);
+                const headMarkerX = Math.max(-110, Math.min(110, markerX * 0.42));
+                const lanes = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 3);
+                const spacing = 62;
+                const halfWidth = ((lanes - 1) * spacing) * 0.5 + 22;
+                const zoneY = -this.height / 2 - 66;
+                const zoneH = 22;
+
+                ctx.fillStyle = `rgba(184, 226, 255, ${0.12 + pulse * 0.12})`;
+                ctx.fillRect(headMarkerX - halfWidth, zoneY, halfWidth * 2, zoneH);
+                ctx.strokeStyle = `rgba(214, 244, 255, ${0.3 + pulse * 0.22})`;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(headMarkerX - halfWidth, zoneY, halfWidth * 2, zoneH);
+
+                for (let i = -2; i <= 2; i++) {
+                    const tx = headMarkerX + i * (halfWidth * 0.45);
+                    ctx.strokeStyle = `rgba(190, 236, 255, ${0.2 + pulse * 0.18})`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(tx, zoneY - 12);
+                    ctx.lineTo(tx, zoneY);
+                    ctx.stroke();
+                }
+
                 for (let i = -1; i <= 1; i++) {
                     ctx.globalAlpha = alpha * (0.42 + pulse * 0.4);
-                    ctx.drawImage(this._snowTellCache.canvas, markerX + i * 26 - this._snowTellCache.width / 2, this.height * 0.16 + Math.abs(i) * 6);
+                    ctx.drawImage(this._snowTellCache.canvas, headMarkerX + i * 26 - this._snowTellCache.width / 2, zoneY - 18 - Math.abs(i) * 3);
                 }
+                if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+                ctx.globalAlpha = alpha * (0.42 + pulse * 0.35);
+                ctx.drawImage(this._warnCache.canvas, headMarkerX - halfWidth - this._warnCache.width * 0.5, zoneY - 6);
+                ctx.drawImage(this._warnCache.canvas, headMarkerX + halfWidth - this._warnCache.width * 0.5, zoneY - 6);
             }
             ctx.globalAlpha = alpha;
         }

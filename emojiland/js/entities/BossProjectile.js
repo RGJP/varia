@@ -12,6 +12,9 @@ export class BossProjectile extends Entity {
         this.rotation = 0;
         this.bounceCount = 0;
         this.canBounceOnPlatforms = false;
+        this.rollOnLand = false;
+        this.icicleRolling = false;
+        this.icicleRollSpeed = 220;
 
         switch (projectileType) {
             case 'drumstick':
@@ -224,6 +227,21 @@ export class BossProjectile extends Entity {
                 this.y = p.y - this.height;
                 this.vy = 0;
                 if (Math.abs(this.vx) < 110) this.vx = this.vx >= 0 ? 110 : -110;
+                break;
+            } else if (this.projectileType === 'icicle' && this.rollOnLand && crossedTop) {
+                // Mammoth frost shards should land, slide, and naturally fall off edges.
+                const wasRolling = this.icicleRolling;
+                this.y = p.y - this.height;
+                this.vy = 0;
+                if (!wasRolling) {
+                    this.icicleRolling = true;
+                    const dir = this.vx >= 0 ? 1 : -1;
+                    this.vx = dir * this.icicleRollSpeed;
+                    game.particles.emitHit(this.x + this.width / 2, p.y);
+                } else if (Math.abs(this.vx) < this.icicleRollSpeed * 0.7) {
+                    const dir = this.vx >= 0 ? 1 : -1;
+                    this.vx = dir * this.icicleRollSpeed * 0.7;
+                }
                 break;
             } else if (this.canBounceOnPlatforms && crossedTop && this.bounceCount < this.maxBounces) {
                 // Top-crossing bounce prevents high-speed tunneling through platform tops.

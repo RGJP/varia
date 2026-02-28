@@ -1217,6 +1217,12 @@ export class Background {
         }
 
         if (type === 'dead-tree-gnarled') {
+            // The gnarled tree art was authored upside-down; flip vertically in place.
+            ctx.save();
+            const flipPivotY = y + h * 0.58;
+            ctx.translate(0, flipPivotY * 2);
+            ctx.scale(1, -1);
+
             const trunkTop = y + h * 0.2;
             const trunkBase = y + h * 0.94;
 
@@ -1245,6 +1251,7 @@ export class Background {
             ctx.moveTo(x + w * 0.04, trunkBase - 2);
             ctx.lineTo(x + w * 0.1, y + h * 1.16);
             ctx.stroke();
+            ctx.restore();
             return;
         }
 

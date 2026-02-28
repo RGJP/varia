@@ -117,6 +117,7 @@ export class Game {
         this.totalCompletionCoins = 0;
         this.lastVictoryEmojiBonus = 0;
         this.fpsDisplay = 60;
+        this.layoutVariantLabel = 'V:N/A';
         this.performanceQuality = 1;
         this._performanceAdjustTimer = 0;
         this._qualityRecoveryHold = 0;
@@ -386,6 +387,7 @@ export class Game {
         this.swingingVines = levelData.swingingVines || [];
         this.movingPlatforms = levelData.movingPlatforms || [];
         this.currentTheme = levelData.theme;
+        this.layoutVariantLabel = levelData.layoutVariantLabel || 'V:N/A';
         this.rocks = [];
         this.enemyProjectiles = [];
 
@@ -719,7 +721,9 @@ export class Game {
         this.pendingBossSpawns.length = writeIdx;
         if (spawnedBoss && this.audio) {
             this._bossMusicEngaged = true;
-            if (typeof this.audio.enterBossMusic === 'function') {
+            if (typeof this.audio.enterRandomBossMusic === 'function') {
+                this.audio.enterRandomBossMusic({ fadeInMs: 120 });
+            } else if (typeof this.audio.enterBossMusic === 'function') {
                 this.audio.enterBossMusic(28, { startAt: 10, fadeInMs: 120 });
             } else if (this.audio.playBackgroundMusicTrack) {
                 this.audio.playBackgroundMusicTrack(28, { startAt: 10, fadeInMs: 120 });
@@ -1144,7 +1148,7 @@ export class Game {
         this.ctx.textBaseline = 'bottom';
         this.ctx.font = '12px "Outfit", sans-serif';
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
-        this.ctx.fillText(`${Math.round(this.fpsDisplay)}`, this.viewportWidth / 2, this.viewportHeight - 8);
+        this.ctx.fillText(`${Math.round(this.fpsDisplay)} ${this.layoutVariantLabel}`, this.viewportWidth / 2, this.viewportHeight - 8);
         this.ctx.restore();
     }
 
@@ -1421,7 +1425,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('🎵 Pixabay • Suno • Game Version 1.26', 0, cardY + cardHeight + 152);
+            this.ctx.fillText('🎵 Music from Pixabay & Suno • Game Version 1.27', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';

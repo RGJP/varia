@@ -11,6 +11,12 @@ export class AudioEngine {
         this._musicRequestId = 0;
         this._bossMusicActive = false;
         this._preBossMusicSnapshot = null;
+        this.bossTrackRotation = [
+            { track: 28, startAt: 10 },
+            { track: 'boss2.mp3', startAt: 0 },
+            { track: 'boss3.mp3', startAt: 0 }
+        ];
+        this.bossTrackPool = [];
 
         this.totalSongs = 46;
         this.recentHistorySize = Math.max(0, Math.min(5, this.totalSongs - 1));
@@ -75,6 +81,63 @@ export class AudioEngine {
         }
         this._saveSettings();
         return this.lastSongNumber;
+    }
+
+    _buildShuffledIndexPool(size) {
+        const pool = Array.from({ length: size }, (_, i) => i);
+        for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [pool[i], pool[j]] = [pool[j], pool[i]];
+        }
+        return pool;
+    }
+
+    getNextBossTrackSelection() {
+        if (!Array.isArray(this.bossTrackRotation) || this.bossTrackRotation.length === 0) {
+            return { track: 28, startAt: 10 };
+        }
+        if (this.bossTrackPool.length === 0) {
+            this.bossTrackPool = this._buildShuffledIndexPool(this.bossTrackRotation.length);
+        }
+        const selectedIdx = this.bossTrackPool.pop();
+        const selected = this.bossTrackRotation[selectedIdx];
+        if (!selected) {
+            return { track: 28, startAt: 10 };
+        }
+        return {
+            track: selected.track,
+            startAt: Math.max(0, Number(selected.startAt) || 0)
+        };
+    }
+
+    _resolveMusicTrack(trackRef) {
+        if (Number.isInteger(trackRef)) {
+            const normalizedSong = ((trackRef % this.totalSongs) + this.totalSongs) % this.totalSongs;
+            return {
+                src: `js/music/${String(normalizedSong).padStart(2, '0')}.mp3`,
+                songNumber: normalizedSong,
+                label: String(normalizedSong).padStart(2, '0')
+            };
+        }
+
+        if (typeof trackRef === 'string') {
+            const trimmed = trackRef.trim();
+            if (trimmed.length > 0) {
+                const fileNameOnly = trimmed.replace(/\\/g, '/').split('/').pop();
+                if (fileNameOnly && /^[A-Za-z0-9_-]+(\.mp3)?$/.test(fileNameOnly)) {
+                    const fileName = fileNameOnly.toLowerCase().endsWith('.mp3')
+                        ? fileNameOnly
+                        : `${fileNameOnly}.mp3`;
+                    return {
+                        src: `js/music/${fileName}`,
+                        songNumber: null,
+                        label: fileName
+                    };
+                }
+            }
+        }
+
+        return this._resolveMusicTrack(0);
     }
 
     _loadSettings() {
@@ -325,10 +388,8 @@ export class AudioEngine {
         }
     }
 
-    playBackgroundMusicTrack(songNumber, options = {}) {
-        const normalizedSong = Number.isInteger(songNumber)
-            ? ((songNumber % this.totalSongs) + this.totalSongs) % this.totalSongs
-            : 0;
+    playBackgroundMusicTrack(songRef, options = {}) {
+        const resolvedTrack = this._resolveMusicTrack(songRef);
         const startAt = Math.max(0, Number(options.startAt) || 0);
         const fadeInMs = Math.max(0, Number(options.fadeInMs) || 300);
 
@@ -338,12 +399,14 @@ export class AudioEngine {
             this._clearPendingMusicSeek();
             const requestId = ++this._musicRequestId;
 
-            this.lastSongNumber = normalizedSong;
-            this._saveSettings();
-            console.log(`Playing music track: ${normalizedSong}`);
+            if (Number.isInteger(resolvedTrack.songNumber)) {
+                this.lastSongNumber = resolvedTrack.songNumber;
+                this._saveSettings();
+            }
+            console.log(`Playing music track: ${resolvedTrack.label}`);
 
             const musicAudio = new Audio();
-            const baseSrc = `js/music/${String(normalizedSong).padStart(2, '0')}.mp3`;
+            const baseSrc = resolvedTrack.src;
             musicAudio.src = baseSrc;
             musicAudio.loop = false;
             musicAudio.volume = 0;
@@ -489,6 +552,15 @@ export class AudioEngine {
             time: Math.max(0, this.currentMusicAudio.currentTime || 0),
             lastSongNumber: this.lastSongNumber
         };
+    }
+
+    enterRandomBossMusic(options = {}) {
+        const selection = this.getNextBossTrackSelection();
+        const mergedOptions = { ...options };
+        if (typeof mergedOptions.startAt === 'undefined') {
+            mergedOptions.startAt = selection.startAt;
+        }
+        this.enterBossMusic(selection.track, mergedOptions);
     }
 
     enterBossMusic(songNumber = 28, options = {}) {
@@ -671,27 +743,34 @@ export class AudioEngine {
 
     playBlastOff() {
         const variants = [
-            { lowStart: 150, lowEnd: 320, lowDur: 0.24, lowGain: 0.32, riseStart: 420, riseEnd: 1150, riseDur: 0.2, riseGain: 0.24, hissHp: 720 },
-            { lowStart: 165, lowEnd: 340, lowDur: 0.22, lowGain: 0.31, riseStart: 460, riseEnd: 1240, riseDur: 0.19, riseGain: 0.25, hissHp: 780 },
-            { lowStart: 145, lowEnd: 305, lowDur: 0.25, lowGain: 0.33, riseStart: 410, riseEnd: 1080, riseDur: 0.21, riseGain: 0.23, hissHp: 680 }
+            { boomStart: 108, boomEnd: 86, boomGain: 0.46, crackStart: 780, crackEnd: 420, crackGain: 0.22, whistleStart: 620, whistleEnd: 1380, whistleGain: 0.2, ventHp: 760 },
+            { boomStart: 116, boomEnd: 92, boomGain: 0.44, crackStart: 860, crackEnd: 470, crackGain: 0.21, whistleStart: 680, whistleEnd: 1480, whistleGain: 0.19, ventHp: 840 },
+            { boomStart: 102, boomEnd: 82, boomGain: 0.48, crackStart: 740, crackEnd: 390, crackGain: 0.23, whistleStart: 600, whistleEnd: 1320, whistleGain: 0.21, ventHp: 700 }
         ];
         const idx = this._pickVariant(variants.length, this._lastBlastOffVariant);
         this._lastBlastOffVariant = idx;
         const v = variants[idx];
 
-        this._playTone('triangle', this._jitter(v.lowStart, 0.02), v.lowDur, {
-            endFreq: this._jitter(v.lowEnd, 0.02),
-            gain: v.lowGain,
-            attack: 0.0022
+        // Cannon-like launch: compact low boom + bright crack + quick pressure whistle.
+        this._playTone('square', this._jitter(v.boomStart, 0.02), 0.2, {
+            endFreq: this._jitter(v.boomEnd, 0.018),
+            gain: v.boomGain,
+            attack: 0.0016
         });
+        this._playTone('triangle', this._jitter(v.crackStart, 0.025), 0.11, {
+            endFreq: this._jitter(v.crackEnd, 0.025),
+            gain: v.crackGain,
+            attack: 0.0011
+        });
+        this._playNoiseBurst(0.11, 0.08, 340);
         setTimeout(() => {
-            this._playTone('sawtooth', this._jitter(v.riseStart, 0.03), v.riseDur, {
-                endFreq: this._jitter(v.riseEnd, 0.03),
-                gain: v.riseGain,
+            this._playTone('sawtooth', this._jitter(v.whistleStart, 0.028), 0.17, {
+                endFreq: this._jitter(v.whistleEnd, 0.028),
+                gain: v.whistleGain,
                 attack: 0.0014
             });
-            this._playNoiseBurst(0.08, 0.05, v.hissHp);
-        }, 18);
+            this._playNoiseBurst(0.075, 0.05, v.ventHp);
+        }, 20);
     }
 
     playHit() {

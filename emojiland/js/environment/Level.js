@@ -247,6 +247,7 @@ export function loadLevel() {
     const safeZones = [];
     const vines = [];
     const swingingVines = [];
+    const layoutVariantsUsed = new Set();
     const potentialCoinLocations = [];
     const JELLY_EMOJI = '🪼';
 
@@ -541,8 +542,9 @@ export function loadLevel() {
     // Generate up to 10000 X
     while (currentX < 10000) {
         // Different generation modes for diverse platforming
-        const segmentTypes = ['SKY_ISLANDS', 'SOLID_GROUND', 'STAIRS_UP', 'STAIRS_DOWN', 'TWO_TIER', 'PILLARS'];
+        const segmentTypes = ['SKY_ISLANDS', 'SOLID_GROUND', 'STAIRS_UP', 'STAIRS_DOWN', 'TWO_TIER', 'THREE_TIER', 'FOUR_TIER', 'PILLARS'];
         const segmentType = segmentTypes[Math.floor(Math.random() * segmentTypes.length)];
+        layoutVariantsUsed.add(segmentType);
         const segmentLength = 1000 + Math.random() * 2000;
         const segmentEndX = Math.min(10000, currentX + segmentLength);
 
@@ -610,6 +612,84 @@ export function loadLevel() {
                             height: 40
                         });
                         upperX += upWidth + 60 + Math.random() * 100;
+                    }
+                    break;
+
+                case 'THREE_TIER':
+                    platWidth = 440 + Math.random() * 540;
+                    gap = 90 + Math.random() * 120;
+                    // Push base lower and spread tiers close to the double-jump ceiling.
+                    platY = 640 + Math.random() * 95;
+                    height = 180;
+
+                    const tier3Band1Y = clamp(platY - (225 + Math.random() * 34), 280, 760);
+                    const tier3Band2Y = clamp(
+                        Math.min(platY - (450 + Math.random() * 62), tier3Band1Y - 208),
+                        80,
+                        760
+                    );
+                    const tier3Bands = [
+                        { y: tier3Band1Y, minW: 175, maxW: 250, minGap: 75, maxGap: 120, shift: -20 },
+                        { y: tier3Band2Y, minW: 140, maxW: 210, minGap: 85, maxGap: 135, shift: 35 }
+                    ];
+
+                    for (let tier = 0; tier < tier3Bands.length; tier++) {
+                        const band = tier3Bands[tier];
+                        let bandX = currentX + gap + 55 + band.shift + (Math.random() * 70 - 35);
+                        const bandEndX = currentX + gap + platWidth - 135;
+
+                        while (bandX < bandEndX) {
+                            const bandWidth = band.minW + Math.random() * (band.maxW - band.minW);
+                            floatingPlatforms.push({
+                                x: bandX,
+                                y: band.y + (Math.random() * 8 - 4),
+                                width: bandWidth,
+                                height: 34
+                            });
+                            bandX += bandWidth + band.minGap + Math.random() * (band.maxGap - band.minGap);
+                        }
+                    }
+                    break;
+
+                case 'FOUR_TIER':
+                    platWidth = 470 + Math.random() * 560;
+                    gap = 95 + Math.random() * 120;
+                    // Much taller vertical spread, but keep each step reachable with full double jump.
+                    platY = 665 + Math.random() * 95;
+                    height = 175;
+
+                    const tier4Band1Y = clamp(platY - (210 + Math.random() * 32), 300, 760);
+                    const tier4Band2Y = clamp(
+                        Math.min(platY - (418 + Math.random() * 58), tier4Band1Y - 198),
+                        120,
+                        760
+                    );
+                    const tier4Band3Y = clamp(
+                        Math.min(platY - (610 + Math.random() * 72), tier4Band2Y - 188),
+                        36,
+                        760
+                    );
+                    const tier4Bands = [
+                        { y: tier4Band1Y, minW: 170, maxW: 245, minGap: 78, maxGap: 120, shift: -28 },
+                        { y: tier4Band2Y, minW: 140, maxW: 205, minGap: 88, maxGap: 132, shift: 24 },
+                        { y: tier4Band3Y, minW: 115, maxW: 175, minGap: 92, maxGap: 140, shift: -8 }
+                    ];
+
+                    for (let tier = 0; tier < tier4Bands.length; tier++) {
+                        const band = tier4Bands[tier];
+                        let bandX = currentX + gap + 52 + band.shift + (Math.random() * 80 - 40);
+                        const bandEndX = currentX + gap + platWidth - 128;
+
+                        while (bandX < bandEndX) {
+                            const bandWidth = band.minW + Math.random() * (band.maxW - band.minW);
+                            floatingPlatforms.push({
+                                x: bandX,
+                                y: band.y + (Math.random() * 8 - 4),
+                                width: bandWidth,
+                                height: 32
+                            });
+                            bandX += bandWidth + band.minGap + Math.random() * (band.maxGap - band.minGap);
+                        }
                     }
                     break;
 
@@ -951,6 +1031,27 @@ export function loadLevel() {
         return false;
     };
 
+    const hasBarrelLaunchHeadroom = (x, y) => {
+        // Match Player barrel launch: centerY = y + 16, initial top around centerY - 78.
+        const centerY = y + 16;
+        const launchTopY = centerY - 78;
+        const requiredHeadroom = 190;
+        const clearanceRect = {
+            x: x - 46,
+            y: launchTopY - requiredHeadroom,
+            width: 92,
+            height: (centerY + 8) - (launchTopY - requiredHeadroom)
+        };
+
+        for (let i = 0; i < platforms.length; i++) {
+            if (overlapsRect(clearanceRect, platforms[i], 0, 0)) return false;
+        }
+        for (let i = 0; i < movingPlatforms.length; i++) {
+            if (overlapsRect(clearanceRect, getSweptRect(movingPlatforms[i]), 0, 0)) return false;
+        }
+        return true;
+    };
+
     if (safeCoinLocations.length > 0) {
         // Sort by X to ensure we can spread them out across the level progress
         safeCoinLocations.sort((a, b) => a.x - b.x);
@@ -1069,6 +1170,7 @@ export function loadLevel() {
                 loc.drop !== null &&
                 loc.drop >= 100 &&
                 loc.drop <= 300 &&
+                hasBarrelLaunchHeadroom(loc.x, loc.y) &&
                 !hasEnemyTooClose(loc.x, loc.y, 360)
             )
             .sort((a, b) => a.x - b.x);
@@ -1080,6 +1182,7 @@ export function loadLevel() {
                 const cy = clamp(y, 120, 620);
                 const drop = getSupportDrop(x, cy, 360);
                 if (drop === null || drop < 90 || drop > 330) return;
+                if (!hasBarrelLaunchHeadroom(x, cy)) return;
                 if (hasEnemyTooClose(x, cy, enemyRadius)) return;
                 for (let i = 0; i < barrelCandidates.length; i++) {
                     if (Math.abs(barrelCandidates[i].x - x) < 180) return;
@@ -1183,16 +1286,18 @@ export function loadLevel() {
                     const consider = (p) => {
                         if (!p || p.isVictory) return;
                         if (x < p.x - 30 || x > p.x + p.width + 30) return;
+                        const candidateY = clamp(p.y - 150, 120, 620);
+                        if (!hasBarrelLaunchHeadroom(x, candidateY)) return;
                         const px = p.x + p.width * 0.5;
                         const dx = Math.abs(px - x);
                         if (dx < bestDx) {
                             bestDx = dx;
-                            bestY = p.y - 150;
+                            bestY = candidateY;
                         }
                     };
                     for (let i = 0; i < platforms.length; i++) consider(platforms[i]);
                     for (let i = 0; i < movingPlatforms.length; i++) consider(movingPlatforms[i]);
-                    return clamp((bestY ?? 420), 120, 620);
+                    return bestY;
                 };
 
                 const requiredSlots = 3;
@@ -1207,13 +1312,16 @@ export function loadLevel() {
                         }
                     }
                     if (tooClose) continue;
-                    selected.push({ x, y: inferBarrelYAtX(x), drop: 150 });
+                    const inferredY = inferBarrelYAtX(x);
+                    if (inferredY === null) continue;
+                    selected.push({ x, y: inferredY, drop: 150 });
                 }
             }
 
             for (let i = 0; i < selected.length; i++) {
                 const candidate = selected[i];
                 if (!candidate) continue;
+                if (!hasBarrelLaunchHeadroom(candidate.x, candidate.y)) continue;
                 const centerY = candidate.y + 16;
                 safeZones.push(new SafeBubble(candidate.x, centerY, 100));
             }
@@ -1235,5 +1343,33 @@ export function loadLevel() {
     // Remove any vines that ended up with zero or negative height
     const validVines = vines.filter(v => v.height > 10);
 
-    return { platforms, movingPlatforms, enemies, bossSpawns, collectibles, safeZones, vines: validVines, swingingVines, theme };
+    const variantOrder = ['SOLID_GROUND', 'SKY_ISLANDS', 'STAIRS_UP', 'STAIRS_DOWN', 'TWO_TIER', 'THREE_TIER', 'FOUR_TIER', 'PILLARS'];
+    const variantCode = {
+        SOLID_GROUND: 'GND',
+        SKY_ISLANDS: 'SKY',
+        STAIRS_UP: 'UP',
+        STAIRS_DOWN: 'DOWN',
+        TWO_TIER: '2T',
+        THREE_TIER: '3T',
+        FOUR_TIER: '4T',
+        PILLARS: 'PIL'
+    };
+    const usedVariants = variantOrder.filter(v => layoutVariantsUsed.has(v));
+    const layoutVariantLabel = usedVariants.length > 0
+        ? `V:${usedVariants.map(v => variantCode[v] || v).join('+')}`
+        : 'V:N/A';
+
+    return {
+        platforms,
+        movingPlatforms,
+        enemies,
+        bossSpawns,
+        collectibles,
+        safeZones,
+        vines: validVines,
+        swingingVines,
+        theme,
+        layoutVariantsUsed: usedVariants,
+        layoutVariantLabel
+    };
 }
