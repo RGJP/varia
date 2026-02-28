@@ -24,7 +24,7 @@ export class AudioEngine {
         this.recentSongHistory = [];
         this.unlocked = false;
         this.isMusicMuted = false;
-        this.defaultMusicLevel = 0.22;
+        this.defaultMusicLevel = 0.26;
         this._musicUserVolume = 0;
         this.musicNodeChain = null;
         this._musicLoudnessInterval = null;
@@ -963,13 +963,6 @@ export class AudioEngine {
             gain: v.gain,
             attack: 0.0018
         });
-        setTimeout(() => {
-            this._playTone('triangle', this._jitter(v.end * 1.25, 0.025), 0.08, {
-                endFreq: this._jitter(v.end * 1.05, 0.02),
-                gain: 0.16,
-                attack: 0.001
-            });
-        }, 18);
     }
 
     playBlastOff() {

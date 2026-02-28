@@ -3831,6 +3831,34 @@ export class Boss extends Entity {
         const top = this.platform.y - this.height - 360;
         const bottom = this.platform.y - this.height - 24;
         const centerY = this.mosquitoHoverCenterY;
+        const personalSpaceRadius = 212;
+        const playerCenterX = player ? (player.x + player.width / 2) : null;
+        const playerCenterY = player ? (player.y + player.height / 2) : null;
+        const clampCenterX = (value) => Math.max(left + this.width / 2, Math.min(right + this.width / 2, value));
+        const clampCenterY = (value) => Math.max(top + this.height / 2, Math.min(bottom + this.height / 2, value));
+        const enforceStandOff = (targetCenterX, targetCenterY, minDistance) => {
+            let cx = clampCenterX(targetCenterX);
+            let cy = clampCenterY(targetCenterY);
+            if (playerCenterX == null || playerCenterY == null || minDistance <= 0) {
+                return { x: cx, y: cy };
+            }
+            let dx = cx - playerCenterX;
+            let dy = cy - playerCenterY;
+            let dist = Math.hypot(dx, dy);
+            if (dist < minDistance) {
+                if (dist < 0.001) {
+                    dx = this.facingRight ? 1 : -1;
+                    dy = -0.4;
+                    dist = Math.hypot(dx, dy);
+                }
+                const push = minDistance - dist;
+                cx += (dx / dist) * push;
+                cy += (dy / dist) * push;
+                cx = clampCenterX(cx);
+                cy = clampCenterY(cy);
+            }
+            return { x: cx, y: cy };
+        };
 
         if (this.mosquitoTelegraphTimer > 0) {
             this.mosquitoTelegraphTimer -= dt;
@@ -3850,12 +3878,22 @@ export class Boss extends Entity {
                     this.mosquitoState = 'DRAIN';
                     this.mosquitoDrainTimer = 0.56 + this.phase * 0.08;
                     this.mosquitoDrainTrailTimer = 0;
-                    const px = player ? (player.x + player.width / 2) : (this.x + (this.facingRight ? 140 : -140));
-                    const py = player ? (player.y + player.height / 2 - 20) : (this.y + 20);
-                    const dx = px - (this.x + this.width / 2);
-                    const dy = py - (this.y + this.height / 2);
+                    const selfCenterX = this.x + this.width / 2;
+                    const selfCenterY = this.y + this.height / 2;
+                    const baseTargetX = playerCenterX != null ? playerCenterX : (selfCenterX + (this.facingRight ? 140 : -140));
+                    const baseTargetY = playerCenterY != null ? (playerCenterY - 20) : (selfCenterY + 20);
+                    const sideSign = selfCenterX <= baseTargetX ? -1 : 1;
+                    const leadX = sideSign * (118 + this.phase * 14);
+                    const leadY = -26 + Math.sin(this.timeAlive * 4.8) * 22;
+                    const drainTarget = enforceStandOff(
+                        baseTargetX + leadX,
+                        baseTargetY + leadY,
+                        personalSpaceRadius + 10 + this.phase * 6
+                    );
+                    const dx = drainTarget.x - selfCenterX;
+                    const dy = drainTarget.y - selfCenterY;
                     const dist = Math.hypot(dx, dy) || 1;
-                    const speed = 540 + this.phase * 38;
+                    const speed = Math.min(620 + this.phase * 26, 430 + this.phase * 28 + dist * 0.36);
                     this.mosquitoDashVx = (dx / dist) * speed;
                     this.mosquitoDashVy = (dy / dist) * speed;
                 }
@@ -3898,19 +3936,25 @@ export class Boss extends Entity {
             } else {
                 this.mosquitoSwarmTimer -= dt;
                 if (this.mosquitoSwarmTimer <= 0 && this.mosquitoSwarmBursts > 0) {
-                    const px = player ? (player.x + player.width / 2 + (Math.random() * 140 - 70)) : (this.x + this.mosquitoPatrolDir * 120);
-                    const py = player ? (player.y + player.height / 2 - 20 + (Math.random() * 90 - 45)) : centerY;
-                    const tx = Math.max(left, Math.min(right, px - this.width / 2));
-                    const ty = Math.max(top, Math.min(bottom, py - this.height / 2));
-                    const dx = tx - this.x;
-                    const dy = ty - this.y;
+                    const selfCenterX = this.x + this.width / 2;
+                    const selfCenterY = this.y + this.height / 2;
+                    const flankDir = Math.random() < 0.5 ? -1 : 1;
+                    const px = playerCenterX != null
+                        ? (playerCenterX + flankDir * (120 + this.phase * 10 + Math.random() * 36))
+                        : (selfCenterX + this.mosquitoPatrolDir * 120);
+                    const py = playerCenterY != null
+                        ? (playerCenterY - 24 + (Math.random() * 100 - 50))
+                        : (centerY + (Math.random() * 60 - 30));
+                    const target = enforceStandOff(px, py, playerCenterX != null ? (personalSpaceRadius + this.phase * 4) : 0);
+                    const dx = target.x - selfCenterX;
+                    const dy = target.y - selfCenterY;
                     const dist = Math.hypot(dx, dy) || 1;
-                    const speed = 700 + this.phase * 50;
+                    const speed = Math.min(650 + this.phase * 24, 420 + this.phase * 30 + dist * 0.42);
                     this.mosquitoDashVx = (dx / dist) * speed;
                     this.mosquitoDashVy = (dy / dist) * speed;
-                    this.mosquitoDashTimer = 0.18;
+                    this.mosquitoDashTimer = Math.max(0.18, Math.min(0.3, dist / Math.max(1, speed)));
                     this.mosquitoSwarmBursts--;
-                    this.mosquitoSwarmTimer = 0.1;
+                    this.mosquitoSwarmTimer = 0.14;
                 }
             }
             if (this.mosquitoSwarmBursts <= 0 && this.mosquitoDashTimer <= 0) {
@@ -3954,7 +3998,7 @@ export class Boss extends Entity {
         }
 
         // HOVER patrol.
-        const patrolSpeed = 220 + this.phase * 18;
+        const patrolSpeed = 198 + this.phase * 14;
         this.vx = this.mosquitoPatrolDir * patrolSpeed;
         this.x += this.vx * dt;
         if (this.x <= left) {
@@ -3964,26 +4008,42 @@ export class Boss extends Entity {
             this.x = right;
             this.mosquitoPatrolDir = -1;
         }
-        this.y = centerY + Math.sin(this.timeAlive * 7.4) * (52 + this.phase * 4) + Math.cos(this.timeAlive * 3.2) * 18;
+        this.y = centerY + Math.sin(this.timeAlive * 6.6) * (46 + this.phase * 3) + Math.cos(this.timeAlive * 2.8) * 15;
         this.y = Math.max(top, Math.min(bottom, this.y));
 
+        if (playerCenterX != null && playerCenterY != null) {
+            const selfCenterX = this.x + this.width / 2;
+            const selfCenterY = this.y + this.height / 2;
+            const closeDist = Math.hypot(selfCenterX - playerCenterX, (selfCenterY - playerCenterY) * 0.78);
+            if (closeDist < personalSpaceRadius) {
+                const awayDir = selfCenterX >= playerCenterX ? 1 : -1;
+                this.mosquitoPatrolDir = awayDir;
+                const urgency = (personalSpaceRadius - closeDist) / personalSpaceRadius;
+                this.x += awayDir * (120 + urgency * 130) * dt;
+                this.x = Math.max(left, Math.min(right, this.x));
+                this.y -= (22 + urgency * 28) * dt;
+                this.y = Math.max(top, Math.min(bottom, this.y));
+            }
+        }
+
         if (player) {
-            const dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+            const dx = (playerCenterX) - (this.x + this.width / 2);
             const dist = Math.abs(dx);
             this.facingRight = dx >= 0;
             if (this.attackCooldown <= 0) {
                 const roll = Math.random();
-                if (dist > 120 && dist < 460 && roll < (this.phase >= 3 ? 0.42 : 0.33)) {
+                const tooCloseForDive = dist < (personalSpaceRadius + 18);
+                if (dist > personalSpaceRadius && dist < 460 && roll < (this.phase >= 3 ? 0.38 : 0.3)) {
                     this.mosquitoTelegraphType = 'drain';
-                } else if (roll < 0.7) {
+                } else if (!tooCloseForDive && roll < 0.68) {
                     this.mosquitoTelegraphType = 'swarm';
                 } else {
                     this.mosquitoTelegraphType = 'needle_fan';
                 }
                 this.mosquitoTelegraphTimer = this.mosquitoTelegraphType === 'drain'
-                    ? (this.phase >= 3 ? 0.14 : (this.phase >= 2 ? 0.2 : 0.26))
+                    ? (this.phase >= 3 ? 0.2 : (this.phase >= 2 ? 0.28 : 0.34))
                     : (this.mosquitoTelegraphType === 'swarm'
-                        ? (this.phase >= 3 ? 0.16 : (this.phase >= 2 ? 0.22 : 0.3))
+                        ? (this.phase >= 3 ? 0.22 : (this.phase >= 2 ? 0.3 : 0.38))
                         : (this.phase >= 3 ? 0.2 : (this.phase >= 2 ? 0.26 : 0.33)));
                 this.vx = 0;
                 this.vy = 0;
