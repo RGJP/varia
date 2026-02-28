@@ -3,6 +3,47 @@ import { Physics } from '../Physics.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 import { ExplosionParticle } from './ExplosionParticle.js';
 
+export function triggerBombExplosionAt(game, centerX, centerY, ignoredEnemy = null) {
+    if (!game) return;
+    const explosionRadius = 120;
+
+    // Spawn one central explosion particle
+    game.rocks.push(new ExplosionParticle(centerX - 20, centerY - 20));
+
+    // Spawn 3 more around it for variety
+    for (let i = 0; i < 3; i++) {
+        const angle = (i / 3) * Math.PI * 2 + Math.random();
+        const dist = 30 + Math.random() * 30; // 30-60 pixels away
+        const spawnX = centerX + Math.cos(angle) * dist - 20;
+        const spawnY = centerY + Math.sin(angle) * dist - 20;
+        game.rocks.push(new ExplosionParticle(spawnX, spawnY));
+    }
+
+    if (game.audio && typeof game.audio.playExplosion === 'function') {
+        game.audio.playExplosion();
+    }
+
+    // Area of Effect (AOE): Damage enemies within the radius
+    game.enemies.forEach(enemy => {
+        if (!enemy || enemy === ignoredEnemy || enemy.markedForDeletion) return;
+        const enemyCenterX = enemy.x + enemy.width / 2;
+        const enemyCenterY = enemy.y + enemy.height / 2;
+        const dist = Math.hypot(enemyCenterX - centerX, enemyCenterY - centerY);
+
+        if (dist <= explosionRadius) {
+            if (enemy.takeDamage) {
+                enemy.takeDamage(enemy.health || 1, game); // Insta-kill or take normal damage
+            } else {
+                enemy.markedForDeletion = true;
+                if (game.player) game.player.score += 50;
+                if (game.audio) game.audio.playHit();
+                if (game.particles) game.particles.emitHit(enemyCenterX, enemyCenterY);
+                if (typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(enemy);
+            }
+        }
+    });
+}
+
 export class Bomb extends Entity {
     constructor(x, y) {
         super(x, y, 24, 24);
@@ -51,44 +92,7 @@ export class Bomb extends Entity {
         this.markedForDeletion = true;
         const centerX = this.x + this.width / 2;
         const centerY = this.y + this.height / 2;
-        const explosionRadius = 120;
-
-        // Spawn one central explosion particle
-        game.rocks.push(new ExplosionParticle(centerX - 20, centerY - 20));
-
-        // Spawn 3 more around it for variety
-        for (let i = 0; i < 3; i++) {
-            const angle = (i / 3) * Math.PI * 2 + Math.random();
-            const dist = 30 + Math.random() * 30; // 30-60 pixels away
-            const spawnX = centerX + Math.cos(angle) * dist - 20;
-            const spawnY = centerY + Math.sin(angle) * dist - 20;
-            game.rocks.push(new ExplosionParticle(spawnX, spawnY));
-        }
-
-        if (game.audio && typeof game.audio.playExplosion === 'function') {
-            game.audio.playExplosion();
-        }
-
-        // Area of Effect (AOE): Damage enemies within the radius
-
-        game.enemies.forEach(enemy => {
-            if (enemy.markedForDeletion) return;
-            const enemyCenterX = enemy.x + enemy.width / 2;
-            const enemyCenterY = enemy.y + enemy.height / 2;
-            const dist = Math.hypot(enemyCenterX - centerX, enemyCenterY - centerY);
-
-            if (dist <= explosionRadius) {
-                if (enemy.takeDamage) {
-                    enemy.takeDamage(enemy.health || 1, game); // Insta-kill or take normal damage
-                } else {
-                    enemy.markedForDeletion = true;
-                    game.player.score += 50;
-                    if (game.audio) game.audio.playHit();
-                    if (game.particles) game.particles.emitHit(enemyCenterX, enemyCenterY);
-                    if (typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(enemy);
-                }
-            }
-        });
+        triggerBombExplosionAt(game, centerX, centerY);
     }
 
     draw(ctx) {

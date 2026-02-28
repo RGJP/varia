@@ -5,6 +5,7 @@ import { Enemy } from '../entities/Enemy.js';
 import { Collectible } from '../entities/Collectible.js';
 import { Vine } from '../entities/Vine.js';
 import { SwingingVine } from '../entities/SwingingVine.js';
+import { SafeBubble } from '../entities/SafeBubble.js';
 import { getRandomTheme } from './ThemeManager.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
@@ -243,6 +244,7 @@ export function loadLevel() {
     const enemies = [];
     const bossSpawns = [];
     const collectibles = [];
+    const safeZones = [];
     const vines = [];
     const swingingVines = [];
     const potentialCoinLocations = [];
@@ -922,6 +924,33 @@ export function loadLevel() {
         return false;
     };
 
+    const getSupportDrop = (x, y, maxDrop = 320) => {
+        let bestDrop = Infinity;
+        const check = (p) => {
+            if (x < p.x - 18 || x > p.x + p.width + 18) return;
+            if (p.y <= y) return;
+            const drop = p.y - y;
+            if (drop <= maxDrop && drop < bestDrop) bestDrop = drop;
+        };
+        for (let i = 0; i < platforms.length; i++) check(platforms[i]);
+        for (let i = 0; i < movingPlatforms.length; i++) check(movingPlatforms[i]);
+        return Number.isFinite(bestDrop) ? bestDrop : null;
+    };
+
+    const hasEnemyTooClose = (x, y, minDistance = 260) => {
+        const minDistanceSq = minDistance * minDistance;
+        for (let i = 0; i < enemies.length; i++) {
+            const enemy = enemies[i];
+            if (!enemy || enemy.markedForDeletion) continue;
+            const ex = enemy.x + enemy.width / 2;
+            const ey = enemy.y + enemy.height / 2;
+            const dx = ex - x;
+            const dy = ey - y;
+            if ((dx * dx + dy * dy) < minDistanceSq) return true;
+        }
+        return false;
+    };
+
     if (safeCoinLocations.length > 0) {
         // Sort by X to ensure we can spread them out across the level progress
         safeCoinLocations.sort((a, b) => a.x - b.x);
@@ -1024,6 +1053,171 @@ export function loadLevel() {
                 collectibles.push(new Collectible(loc.x, loc.y, 'coin'));
             }
         }
+
+        // Spawn 3-5 reachable honey-pot launch barrels, spread across progression.
+        const barrelCandidates = safeCoinLocations
+            .map((loc) => ({
+                x: loc.x,
+                y: loc.y,
+                drop: getSupportDrop(loc.x, loc.y, 320)
+            }))
+            .filter((loc) =>
+                loc.x > 900 &&
+                loc.x < victoryPlatform.x * 0.8 &&
+                loc.y >= 120 &&
+                loc.y <= 620 &&
+                loc.drop !== null &&
+                loc.drop >= 100 &&
+                loc.drop <= 300 &&
+                !hasEnemyTooClose(loc.x, loc.y, 360)
+            )
+            .sort((a, b) => a.x - b.x);
+
+        // Fallback: derive candidates from platform tops so we still get stable barrel counts.
+        if (barrelCandidates.length < 5) {
+            const tryAddFallback = (x, y, enemyRadius = 320) => {
+                if (x <= 900 || x >= victoryPlatform.x * 0.84) return;
+                const cy = clamp(y, 120, 620);
+                const drop = getSupportDrop(x, cy, 360);
+                if (drop === null || drop < 90 || drop > 330) return;
+                if (hasEnemyTooClose(x, cy, enemyRadius)) return;
+                for (let i = 0; i < barrelCandidates.length; i++) {
+                    if (Math.abs(barrelCandidates[i].x - x) < 180) return;
+                }
+                barrelCandidates.push({ x, y: cy, drop });
+            };
+
+            for (let i = 0; i < platforms.length; i++) {
+                const p = platforms[i];
+                if (!p || p.isVictory || p.width < 140) continue;
+                const y = p.y - 150;
+                const c = p.x + p.width * 0.5;
+                tryAddFallback(c, y, 320);
+                if (p.width >= 360) {
+                    tryAddFallback(p.x + p.width * 0.3, y + 8, 300);
+                    tryAddFallback(p.x + p.width * 0.7, y + 8, 300);
+                }
+                if (barrelCandidates.length >= 18) break;
+            }
+        }
+
+        barrelCandidates.sort((a, b) => a.x - b.x);
+
+        if (barrelCandidates.length > 0) {
+            const desired = 3 + Math.floor(Math.random() * 3); // 3..5 always
+            const selected = [];
+            const minBarrelSpacing = 620;
+            const minX = 900;
+            const maxX = victoryPlatform.x * 0.84;
+
+            for (let slot = 0; slot < desired; slot++) {
+                const t = desired <= 1 ? 0.5 : slot / (desired - 1);
+                const centerX = minX + (maxX - minX) * t;
+                const bandW = Math.max(700, (maxX - minX) / Math.max(1, desired) * 1.25);
+                const bandMin = centerX - bandW * 0.5;
+                const bandMax = centerX + bandW * 0.5;
+                let best = null;
+                let bestDist = Infinity;
+
+                for (let i = 0; i < barrelCandidates.length; i++) {
+                    const c = barrelCandidates[i];
+                    if (c.x < bandMin || c.x > bandMax) continue;
+                    let tooClose = false;
+                    for (let j = 0; j < selected.length; j++) {
+                        if (Math.abs(selected[j].x - c.x) < minBarrelSpacing) {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+                    if (tooClose) continue;
+                    const dist = Math.abs(c.x - centerX);
+                    if (dist < bestDist) {
+                        best = c;
+                        bestDist = dist;
+                    }
+                }
+
+                // Fallback to any viable candidate if the local band is empty.
+                if (!best) {
+                    for (let i = 0; i < barrelCandidates.length; i++) {
+                        const c = barrelCandidates[i];
+                        let tooClose = false;
+                        for (let j = 0; j < selected.length; j++) {
+                            if (Math.abs(selected[j].x - c.x) < minBarrelSpacing) {
+                                tooClose = true;
+                                break;
+                            }
+                        }
+                        if (tooClose) continue;
+                        const dist = Math.abs(c.x - centerX);
+                        if (dist < bestDist) {
+                            best = c;
+                            bestDist = dist;
+                        }
+                    }
+                }
+
+                if (best) selected.push(best);
+            }
+
+            // Last-resort fill: relax spacing slightly to still hit 3-5.
+            if (selected.length < desired) {
+                for (let i = 0; i < barrelCandidates.length && selected.length < desired; i++) {
+                    const c = barrelCandidates[i];
+                    let tooClose = false;
+                    for (let j = 0; j < selected.length; j++) {
+                        if (Math.abs(selected[j].x - c.x) < 420) {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+                    if (!tooClose) selected.push(c);
+                }
+            }
+
+            // Hard guarantee: ensure at least 3 barrels exist even on sparse/awkward seeds.
+            if (selected.length < 3) {
+                const inferBarrelYAtX = (x) => {
+                    let bestY = null;
+                    let bestDx = Infinity;
+                    const consider = (p) => {
+                        if (!p || p.isVictory) return;
+                        if (x < p.x - 30 || x > p.x + p.width + 30) return;
+                        const px = p.x + p.width * 0.5;
+                        const dx = Math.abs(px - x);
+                        if (dx < bestDx) {
+                            bestDx = dx;
+                            bestY = p.y - 150;
+                        }
+                    };
+                    for (let i = 0; i < platforms.length; i++) consider(platforms[i]);
+                    for (let i = 0; i < movingPlatforms.length; i++) consider(movingPlatforms[i]);
+                    return clamp((bestY ?? 420), 120, 620);
+                };
+
+                const requiredSlots = 3;
+                for (let slot = 0; slot < requiredSlots && selected.length < requiredSlots; slot++) {
+                    const t = requiredSlots <= 1 ? 0.5 : slot / (requiredSlots - 1);
+                    const x = minX + (maxX - minX) * t;
+                    let tooClose = false;
+                    for (let j = 0; j < selected.length; j++) {
+                        if (Math.abs(selected[j].x - x) < 420) {
+                            tooClose = true;
+                            break;
+                        }
+                    }
+                    if (tooClose) continue;
+                    selected.push({ x, y: inferBarrelYAtX(x), drop: 150 });
+                }
+            }
+
+            for (let i = 0; i < selected.length; i++) {
+                const candidate = selected[i];
+                if (!candidate) continue;
+                const centerY = candidate.y + 16;
+                safeZones.push(new SafeBubble(candidate.x, centerY, 100));
+            }
+        }
     }
 
     // Make sure vines do not intersect platforms
@@ -1041,5 +1235,5 @@ export function loadLevel() {
     // Remove any vines that ended up with zero or negative height
     const validVines = vines.filter(v => v.height > 10);
 
-    return { platforms, movingPlatforms, enemies, bossSpawns, collectibles, vines: validVines, swingingVines, theme };
+    return { platforms, movingPlatforms, enemies, bossSpawns, collectibles, safeZones, vines: validVines, swingingVines, theme };
 }

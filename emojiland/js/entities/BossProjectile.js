@@ -2,7 +2,7 @@ import { Entity } from './Entity.js';
 import { Physics } from '../Physics.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
-// projectileType: 'drumstick' | 'stone' | 'skewer' | 'web' | 'wrench' | 'venom' | 'flame' | 'boomerang' | 'banana' | 'coconut' | 'icicle' | 'roar' | 'fossil' | 'needle' | 'scarab'
+// projectileType: 'drumstick' | 'stone' | 'skewer' | 'web' | 'wrench' | 'venom' | 'flame' | 'boomerang' | 'banana' | 'coconut' | 'egg' | 'icicle' | 'roar' | 'fossil' | 'needle' | 'scarab'
 export class BossProjectile extends Entity {
     constructor(x, y, vx, vy, projectileType) {
         super(x, y, 40, 40);
@@ -78,6 +78,12 @@ export class BossProjectile extends Entity {
                 this.canBounceOnPlatforms = false;
                 this.projectileLifetime = 2.8;
                 break;
+            case 'egg':
+                this.emoji = String.fromCodePoint(0x1F95A);
+                this.maxBounces = 0;
+                this.canBounceOnPlatforms = false;
+                this.projectileLifetime = 2.4;
+                break;
             case 'icicle':
                 this.emoji = String.fromCodePoint(0x1F9CA);
                 this.maxBounces = 0;
@@ -136,7 +142,7 @@ export class BossProjectile extends Entity {
         const prevY = this.y;
         this.x += this.vx * dt;
         this.y += this.vy * dt;
-        const spinSpeed = (this.projectileType === 'banana' || this.projectileType === 'coconut') ? 8 : 6;
+        const spinSpeed = (this.projectileType === 'banana' || this.projectileType === 'coconut' || this.projectileType === 'egg') ? 8 : 6;
         this.rotation += (this.vx > 0 ? spinSpeed : -spinSpeed) * dt;
         if (this.ignorePlatformTimer > 0) this.ignorePlatformTimer -= dt;
         if (this.projectileType === 'banana' && this.bananaLifetime !== undefined) this.bananaLifetime -= dt;
@@ -169,6 +175,10 @@ export class BossProjectile extends Entity {
                     // Coconut hit: heavier impact than banana.
                     game.player.slowTimer = Math.max(game.player.slowTimer || 0, 1.0);
                     game.player.stunTimer = Math.max(game.player.stunTimer || 0, 0.22);
+                } else if (this.projectileType === 'egg') {
+                    // Egg bonk: light stagger.
+                    game.player.slowTimer = Math.max(game.player.slowTimer || 0, 0.82);
+                    game.player.stunTimer = Math.max(game.player.stunTimer || 0, 0.14);
                 } else if (this.projectileType === 'icicle') {
                     // Cold hit: stronger brief slow.
                     game.player.slowTimer = Math.max(game.player.slowTimer || 0, 1.15);

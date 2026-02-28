@@ -15,6 +15,8 @@ function alphaFromColor(color, alpha) {
     return color;
 }
 
+const SHAPE_DENSITY_REDUCTION = 0.15;
+
 export class Background {
     constructor(width, height) {
         this.width = width;
@@ -316,6 +318,15 @@ export class Background {
                 shapes[i].width = 320 + Math.random() * 440;
                 shapes[i].y = this.height * 0.72 + Math.random() * this.height * 0.2 + yOffset;
             }
+        }
+        // Randomly thin shape population so removal is peppered and not obvious.
+        if (shapes.length > 1 && SHAPE_DENSITY_REDUCTION > 0) {
+            const kept = [];
+            for (let i = 0; i < shapes.length; i++) {
+                if (Math.random() >= SHAPE_DENSITY_REDUCTION) kept.push(shapes[i]);
+            }
+            if (kept.length === 0) kept.push(shapes[Math.floor(Math.random() * shapes.length)]);
+            return { parallaxFactor, color, shapeType, shapes: kept };
         }
         return { parallaxFactor, color, shapeType, shapes };
     }

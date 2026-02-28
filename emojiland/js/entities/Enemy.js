@@ -8,6 +8,7 @@ import { Shrimp } from './Shrimp.js';
 import { Peanut } from './Peanut.js';
 import { UfoProjectile } from './UfoProjectile.js';
 import { Barrel } from './Barrel.js';
+import { triggerBombExplosionAt } from './Bomb.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 import { BossProjectile } from './BossProjectile.js';
 
@@ -16,7 +17,7 @@ const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_tengu', 'boss_spider', 'bos
 const TYPE_PATROL = 'patrol';
 const TYPE_CHASER = 'chaser'; // 👹
 const TYPE_JUMPER = 'jumper'; // 🐸
-const TYPE_SHOOTER = 'shooter'; // 🧞
+const TYPE_SHOOTER = 'shooter'; // 🧜‍♂️
 const TYPE_FLYER = 'flyer';
 
 const TYPE_GHOST = 'ghost'; // 👻
@@ -38,6 +39,7 @@ const TYPE_MINI_SPIDER = 'mini_spider'; // 🕷️
 const TYPE_JELLYFISH = 'jellyfish'; // 🪼
 const TYPE_LOBSTER_MINION = 'lobster_minion'; // 🦞
 const TYPE_PEACOCK = 'peacock'; // 🦚
+const TYPE_ENRAGED = 'enraged'; // 😡
 const SHOOTER_OPACITY_SPEED = 1.6;
 
 export class Enemy extends Entity {
@@ -46,26 +48,26 @@ export class Enemy extends Entity {
 
         // All enemy types with equal spawn chance
         const ENEMY_POOL = [
-            { type: TYPE_PATROL, width: 46, height: 46, emoji: '🐢', baseSpeed: 50, health: 2 },
+            { type: TYPE_PATROL, width: 58, height: 58, emoji: '🐢', baseSpeed: 50, health: 2 },
             { type: TYPE_CHASER, width: 55, height: 55, emoji: '👹', baseSpeed: 100, health: 4 },
-            { type: TYPE_JUMPER, width: 35, height: 35, emoji: '🐸', baseSpeed: 80, health: 2 },
-            { type: TYPE_SHOOTER, width: 50, height: 60, emoji: '🧞', baseSpeed: 75, health: 3 },
-            { type: TYPE_BIRD, width: 30, height: 30, emoji: '🐦', baseSpeed: 140, health: 1 },
-            { type: TYPE_EAGLE, width: 40, height: 40, emoji: '🦅', baseSpeed: 90, health: 2 },
+            { type: TYPE_JUMPER, width: 52, height: 52, emoji: '🐸', baseSpeed: 64, health: 2 },
+            { type: TYPE_SHOOTER, width: 50, height: 60, emoji: '🧜‍♂️', baseSpeed: 75, health: 3 },
+            { type: TYPE_EAGLE, width: 56, height: 56, emoji: '🦅', baseSpeed: 90, health: 2 },
             { type: TYPE_OWL, width: 40, height: 40, emoji: '🦉', baseSpeed: 90, health: 2 },
-            { type: TYPE_CROW, width: 35, height: 35, emoji: '🐦‍⬛', baseSpeed: 120, health: 1 },
+            { type: TYPE_CROW, width: 48, height: 48, emoji: '🐦‍⬛', baseSpeed: 120, health: 1 },
             { type: TYPE_GHOST, width: 45, height: 45, emoji: '👻', baseSpeed: 40, health: 2 },
-            { type: TYPE_ZOMBIE, width: 40, height: 50, emoji: '🧟‍♂️', baseSpeed: 30, health: 3 },
-            { type: TYPE_DINO, width: 70, height: 70, emoji: '🦕', baseSpeed: 60, health: 5 },
-            { type: TYPE_SQUID, width: 45, height: 45, emoji: '🦑', baseSpeed: 90, health: 2 },
-            { type: TYPE_LIZARD, width: 40, height: 40, emoji: '🦗', baseSpeed: 40, health: 2 },
+            { type: TYPE_ZOMBIE, width: 54, height: 64, emoji: '🧟‍♂️', baseSpeed: 30, health: 3 },
+            { type: TYPE_DINO, width: 98, height: 98, emoji: '🦕', baseSpeed: 60, health: 5 },
+            { type: TYPE_SQUID, width: 58, height: 58, emoji: '🦑', baseSpeed: 90, health: 2 },
+            { type: TYPE_LIZARD, width: 54, height: 54, emoji: '🦗', baseSpeed: 40, health: 2 },
             { type: TYPE_CRAB, width: 56, height: 56, emoji: '🦀', baseSpeed: 220, health: 2 },
             { type: TYPE_SQUIRREL, width: 44, height: 44, emoji: '🐿️', baseSpeed: 160, health: 2 },
-            { type: TYPE_TROLL, width: 60, height: 60, emoji: '🧌', baseSpeed: 40, health: 6 },
-            { type: TYPE_ALIEN, width: 45, height: 45, emoji: '🛸', baseSpeed: 80, health: 4 },
-            { type: TYPE_APE, width: 60, height: 60, emoji: '🦍', baseSpeed: 0, health: 5 },
+            { type: TYPE_TROLL, width: 76, height: 76, emoji: '🧌', baseSpeed: 40, health: 6 },
+            { type: TYPE_ALIEN, width: 62, height: 62, emoji: '🛸', baseSpeed: 80, health: 4 },
+            { type: TYPE_APE, width: 78, height: 78, emoji: '🦍', baseSpeed: 0, health: 5 },
             { type: TYPE_SPIDER, width: 70, height: 70, emoji: '🕷️', baseSpeed: 100, health: 4 },
-            { type: TYPE_PEACOCK, width: 52, height: 52, emoji: '🦚', baseSpeed: 70, health: 3 },
+            { type: TYPE_PEACOCK, width: 66, height: 66, emoji: '🦚', baseSpeed: 70, health: 3 },
+            { type: TYPE_ENRAGED, width: 55, height: 55, emoji: '😡', baseSpeed: 95, health: 3 },
         ];
 
         const pick = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
@@ -156,7 +158,7 @@ export class Enemy extends Entity {
             this.toxicCloudPulse = Math.random() * Math.PI * 2;
             this.toxicCloudDamageCooldown = 0;
             this.toxicCloudTick = 0.6;
-            this.toxicCloudEmitTimer = 0.08;
+            this._toxicSkullCache = getEmojiCanvas('💀', 18);
         }
         if (this.type === TYPE_APE) {
             this.state = 'IDLE';
@@ -168,6 +170,14 @@ export class Enemy extends Entity {
         if (this.type === TYPE_PEACOCK) {
             this.state = 'PATROL';
             this.stateTimer = 0.6 + Math.random() * 0.8;
+            this.peacockFacingPlayer = false;
+            this._peacockMirrorCache = getEmojiCanvas('🪞', 32);
+        }
+        if (this.type === TYPE_ENRAGED) {
+            this.state = 'PATROL';
+            this.kamikazeArmed = false;
+            this.kamikazeCountdownDuration = 3.0;
+            this.kamikazeCountdown = 0;
         }
 
         // Pre-cache emoji
@@ -192,6 +202,19 @@ export class Enemy extends Entity {
     }
 
     takeDamage(amount, game) {
+        if (this.type === TYPE_ENRAGED) {
+            this.damageFlashTimer = 0.2;
+            if (game && game.particles) {
+                game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
+            }
+            if (!this.kamikazeArmed) {
+                this.kamikazeArmed = true;
+                this.kamikazeCountdown = this.kamikazeCountdownDuration;
+                if (game && game.audio) game.audio.playHit();
+            }
+            return;
+        }
+
         // Jellyfish are stomp-only enemies.
         if (this.type === TYPE_JELLYFISH) {
             if (game && game.particles) game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
@@ -301,18 +324,28 @@ export class Enemy extends Entity {
             if (this.toxicCloudDamageCooldown > 0) {
                 this.toxicCloudDamageCooldown = Math.max(0, this.toxicCloudDamageCooldown - dt);
             }
-            this.toxicCloudEmitTimer -= dt;
+        }
+        if (this.type === TYPE_ENRAGED && this.kamikazeArmed && !this.markedForDeletion) {
+            this.kamikazeCountdown = Math.max(0, this.kamikazeCountdown - dt);
+            if (this.kamikazeCountdown <= 0) {
+                this._triggerKamikazeExplosion(game);
+                return;
+            }
         }
 
         let player = game ? game.player : null;
         let distToPlayerX = player ? player.x - this.x : Infinity;
         let distToPlayerY = player ? player.y - this.y : Infinity;
         let distToPlayer = Math.hypot(distToPlayerX, distToPlayerY);
+        if (this.type === TYPE_PEACOCK) {
+            const playerCenterX = player ? (player.x + player.width / 2) : null;
+            this.peacockFacingPlayer = !!player && this.isFacingWorldX(playerCenterX);
+        }
 
         switch (this.type) {
             case TYPE_PATROL: this.updatePatrol(dt); break;
             case TYPE_CHASER: this.updateChaser(dt, game, player, distToPlayer, distToPlayerX); break;
-            case TYPE_JUMPER: this.updateJumper(dt, player, distToPlayer); break;
+            case TYPE_JUMPER: this.updateJumper(dt, player, distToPlayer, game); break;
             case TYPE_SHOOTER: this.updateShooter(dt, game, player, distToPlayer, distToPlayerX); break;
             case TYPE_FLYER: this.updateFlyer(dt, player, distToPlayer, distToPlayerX, game); break;
             case TYPE_BIRD: this.updateFlyer(dt, player, distToPlayer, distToPlayerX, game); break;
@@ -334,15 +367,10 @@ export class Enemy extends Entity {
             case TYPE_JELLYFISH: this.updateJellyfish(dt, player); break;
             case TYPE_LOBSTER_MINION: this.updateLobsterMinion(dt); break;
             case TYPE_PEACOCK: this.updatePatrol(dt); break;
+            case TYPE_ENRAGED: this.updateEnraged(dt, game); break;
         }
 
         if (this.type === TYPE_TROLL && game) {
-            // Supplemental particles; primary cloud is rendered directly in draw().
-            if (game.particles && this.toxicCloudEmitTimer <= 0) {
-                game.particles.emitGreenSmoke(this.x + this.width / 2, this.y + this.height / 2);
-                this.toxicCloudEmitTimer = 0.22;
-            }
-
             if (player && player.invulnerableTimer <= 0) {
                 const cloudRadius = this.toxicCloudBaseRadius + Math.sin(this.toxicCloudPulse) * 16 + 14;
                 const cx = this.x + this.width / 2;
@@ -357,6 +385,8 @@ export class Enemy extends Entity {
         }
 
         if (this.type !== TYPE_FLYER && this.type !== TYPE_BIRD && this.type !== TYPE_EAGLE && this.type !== TYPE_OWL && this.type !== TYPE_CROW && this.type !== TYPE_GHOST && this.type !== TYPE_SQUID && this.type !== TYPE_SHOOTER && this.type !== TYPE_ALIEN && this.type !== TYPE_JELLYFISH) {
+            const prevX = this.x;
+            const prevY = this.y;
             this.vy += Physics.GRAVITY * dt;
             if (this.vy > Physics.TERMINAL_VELOCITY) this.vy = Physics.TERMINAL_VELOCITY;
 
@@ -365,13 +395,19 @@ export class Enemy extends Entity {
 
             // Spiders in JUMP state are free to leave their platform
             const isSpiderJumping = (this.type === TYPE_SPIDER || this.type === TYPE_MINI_SPIDER) && this.state === 'JUMP';
+            const isJumperJumping = this.type === TYPE_JUMPER && this.state === 'JUMP';
+            const isEnragedJumping = this.type === TYPE_ENRAGED && this.state === 'JUMP';
             const isSlidingShell = this.type === TYPE_PATROL &&
                 this.emoji === '🐢' &&
                 this.turtleFlipped &&
                 !this.turtleRecovering &&
                 Math.abs(this.vx) > 1;
 
-            if (!isSpiderJumping && !isSlidingShell) {
+            if (isSlidingShell && game) {
+                this._resolveSlidingShellWorldCollisions(game, prevX, prevY);
+            }
+
+            if (!isSpiderJumping && !isJumperJumping && !isEnragedJumping && !isSlidingShell) {
                 let platLeft = this.platform.x;
                 let platRight = this.platform.x + this.platform.width;
 
@@ -391,7 +427,7 @@ export class Enemy extends Entity {
             }
 
             // Spiders can land on ANY platform, not just their home platform
-            if (this.vy > 0 && (this.type === TYPE_SPIDER || this.type === TYPE_MINI_SPIDER) && game) {
+            if (this.vy > 0 && ((this.type === TYPE_SPIDER || this.type === TYPE_MINI_SPIDER) || isJumperJumping || isEnragedJumping) && game) {
                 const allPlats = game.platforms;
                 let landed = false;
                 for (let pi = 0; pi < allPlats.length; pi++) {
@@ -402,8 +438,17 @@ export class Enemy extends Entity {
                         this.vy = 0;
                         this.platform = p; // adopt new home platform
                         if (this.state === 'JUMP') {
-                            this.state = 'PATROL';
-                            this.stateTimer = 1.0 + Math.random() * 2.0;
+                            if (this.type === TYPE_JUMPER) {
+                                this.state = 'IDLE';
+                                this.stateTimer = 0.1 + Math.random() * 0.2;
+                                this.vx = 0;
+                                if (game && game.particles) game.particles.emitHit(this.x + this.width / 2, this.y + this.height);
+                            } else {
+                                this.state = 'PATROL';
+                            }
+                            if (this.type === TYPE_SPIDER || this.type === TYPE_MINI_SPIDER) {
+                                this.stateTimer = 1.0 + Math.random() * 2.0;
+                            }
                         }
                         landed = true;
                         break;
@@ -419,42 +464,29 @@ export class Enemy extends Entity {
                             this.vy = 0;
                             this.platform = p;
                             if (this.state === 'JUMP') {
-                                this.state = 'PATROL';
-                                this.stateTimer = 1.0 + Math.random() * 2.0;
+                                if (this.type === TYPE_JUMPER) {
+                                    this.state = 'IDLE';
+                                    this.stateTimer = 0.1 + Math.random() * 0.2;
+                                    this.vx = 0;
+                                    if (game && game.particles) game.particles.emitHit(this.x + this.width / 2, this.y + this.height);
+                                } else {
+                                    this.state = 'PATROL';
+                                }
+                                if (this.type === TYPE_SPIDER || this.type === TYPE_MINI_SPIDER) {
+                                    this.stateTimer = 1.0 + Math.random() * 2.0;
+                                }
                             }
                             landed = true;
                             break;
                         }
                     }
                 }
-            } else if (isSlidingShell && this.vy > 0 && game) {
-                const allPlats = game.platforms;
-                let landed = false;
-                for (let pi = 0; pi < allPlats.length; pi++) {
-                    const p = allPlats[pi];
-                    if (this.y + this.height >= p.y && this.y + this.height <= p.y + 20 &&
-                        this.x + this.width > p.x && this.x < p.x + p.width) {
-                        this.y = p.y - this.height;
-                        this.vy = 0;
-                        this.platform = p;
-                        landed = true;
-                        break;
-                    }
-                }
-                if (!landed && game.movingPlatforms) {
-                    for (let pi = 0; pi < game.movingPlatforms.length; pi++) {
-                        const p = game.movingPlatforms[pi];
-                        if (this.y + this.height >= p.y && this.y + this.height <= p.y + 20 &&
-                            this.x + this.width > p.x && this.x < p.x + p.width) {
-                            this.y = p.y - this.height;
-                            this.vy = 0;
-                            this.platform = p;
-                            landed = true;
-                            break;
-                        }
-                    }
-                }
-            } else if (this.vy > 0 && this.y + this.height >= this.platform.y) {
+            } else if (
+                this.vy > 0 &&
+                this.y + this.height >= this.platform.y &&
+                this.x + this.width > this.platform.x &&
+                this.x < this.platform.x + this.platform.width
+            ) {
                 this.y = this.platform.y - this.height;
 
                 if (this.type === TYPE_JUMPER && this.state === 'JUMP') {
@@ -513,6 +545,102 @@ export class Enemy extends Entity {
             this.facingRight = !this.facingRight;
             this.stateTimer = 0.35 + Math.random() * 0.7;
         }
+    }
+
+    updateEnraged(dt, game) {
+        if (!this.kamikazeArmed || !game || !game.enemies) {
+            this.updatePatrol(dt);
+            return;
+        }
+        if (this.state === 'JUMP') return;
+
+        // During countdown, home toward the nearest enemy (prefer same platform)
+        // so the player can intentionally route the explosion into enemy packs.
+        let target = null;
+        let bestScore = Infinity;
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
+        const enemies = game.enemies;
+        for (let i = 0; i < enemies.length; i++) {
+            const other = enemies[i];
+            if (!other || other === this || other.markedForDeletion) continue;
+            const ox = other.x + other.width / 2;
+            const oy = other.y + other.height / 2;
+            const dx = ox - cx;
+            const dy = oy - cy;
+            const dist = Math.hypot(dx, dy);
+            const samePlatform = other.platform === this.platform;
+            const score = dist + (samePlatform ? 0 : 900);
+            if (score < bestScore) {
+                bestScore = score;
+                target = other;
+            }
+        }
+
+        if (!target) {
+            this.updatePatrol(dt);
+            return;
+        }
+
+        const tx = target.x + target.width / 2;
+        const dir = tx >= cx ? 1 : -1;
+        this.facingRight = dir > 0;
+        this.state = 'PATROL';
+        this.speed = Math.max(this.baseSpeed * 1.45, 165);
+        this.vx = dir * this.speed;
+
+        // If target is on another platform and we're at the edge, jump across.
+        if (target.platform && target.platform !== this.platform && Math.abs(this.vy) < 1) {
+            const edgeMargin = 18;
+            const atEdge = dir > 0
+                ? (this.x + this.width >= this.platform.x + this.platform.width - edgeMargin)
+                : (this.x <= this.platform.x + edgeMargin);
+            if (atEdge) {
+                this._startEnragedJumpToPlatform(target.platform, dir);
+            }
+        }
+    }
+
+    _startEnragedJumpToPlatform(targetPlat, fallbackDir = 1) {
+        if (!targetPlat) return;
+
+        const startY = this.y + this.height;
+        const startX = this.x + this.width / 2;
+        let targetX = targetPlat.x + targetPlat.width / 2 + (Math.random() - 0.5) * (targetPlat.width * 0.45);
+        if (targetX < targetPlat.x + 10) targetX = targetPlat.x + 10;
+        if (targetX > targetPlat.x + targetPlat.width - 10) targetX = targetPlat.x + targetPlat.width - 10;
+        const targetY = targetPlat.y;
+
+        const dy = targetY - startY;
+        const dx = targetX - startX;
+        const apex = Math.min(startY - 120, targetY - 60);
+        const h = Math.max(30, startY - apex);
+        this.vy = -Math.sqrt(2 * Physics.GRAVITY * h);
+
+        const a = 0.5 * Physics.GRAVITY;
+        const b = this.vy;
+        const c = -dy;
+        const discriminant = b * b - 4 * a * c;
+        if (discriminant >= 0) {
+            const t = (-b + Math.sqrt(discriminant)) / (2 * a);
+            this.vx = dx / Math.max(0.12, t);
+        } else {
+            this.vy = -430;
+            this.vx = (fallbackDir >= 0 ? 1 : -1) * 220;
+        }
+
+        this.facingRight = this.vx > 0;
+        this.state = 'JUMP';
+    }
+
+    _triggerKamikazeExplosion(game) {
+        if (this.markedForDeletion) return;
+        this.markedForDeletion = true;
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
+        if (game && game.player) game.player.score += 50;
+        if (game && typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(this);
+        triggerBombExplosionAt(game, cx, cy, this);
     }
 
     stomp(game) {
@@ -588,6 +716,66 @@ export class Enemy extends Entity {
         }
     }
 
+    _resolveSlidingShellWorldCollisions(game, prevX, prevY) {
+        if (!game) return;
+        const allPlats = [];
+        if (game.platforms) {
+            for (let i = 0; i < game.platforms.length; i++) allPlats.push(game.platforms[i]);
+        }
+        if (game.movingPlatforms) {
+            for (let i = 0; i < game.movingPlatforms.length; i++) allPlats.push(game.movingPlatforms[i]);
+        }
+
+        for (let i = 0; i < allPlats.length; i++) {
+            const p = allPlats[i];
+            if (!p || !Physics.checkAABB(this, p)) continue;
+
+            const overlapX = Math.min(this.x + this.width, p.x + p.width) - Math.max(this.x, p.x);
+            const overlapY = Math.min(this.y + this.height, p.y + p.height) - Math.max(this.y, p.y);
+            if (overlapX <= 0 || overlapY <= 0) continue;
+
+            const prevRight = prevX + this.width;
+            const prevLeft = prevX;
+            const prevBottom = prevY + this.height;
+
+            if (overlapX < overlapY) {
+                if (prevRight <= p.x + 2) {
+                    this.x = p.x - this.width - 0.01;
+                    this.vx = -Math.abs(this.vx);
+                    this.facingRight = false;
+                } else if (prevLeft >= p.x + p.width - 2) {
+                    this.x = p.x + p.width + 0.01;
+                    this.vx = Math.abs(this.vx);
+                    this.facingRight = true;
+                } else if (this.x + this.width / 2 < p.x + p.width / 2) {
+                    this.x = p.x - this.width - 0.01;
+                    this.vx = -Math.abs(this.vx);
+                    this.facingRight = false;
+                } else {
+                    this.x = p.x + p.width + 0.01;
+                    this.vx = Math.abs(this.vx);
+                    this.facingRight = true;
+                }
+            } else {
+                if (prevBottom <= p.y + 2) {
+                    this.y = p.y - this.height;
+                    this.vy = 0;
+                    this.platform = p;
+                } else if (prevY >= p.y + p.height - 2) {
+                    this.y = p.y + p.height + 0.01;
+                    if (this.vy < 0) this.vy = 0;
+                } else if (this.y + this.height / 2 < p.y + p.height / 2) {
+                    this.y = p.y - this.height;
+                    this.vy = 0;
+                    this.platform = p;
+                } else {
+                    this.y = p.y + p.height + 0.01;
+                    if (this.vy < 0) this.vy = 0;
+                }
+            }
+        }
+    }
+
     updateChaser(dt, game, player, dist, distX) {
         // Always patrol at full speed
         this.state = 'PATROL';
@@ -620,17 +808,77 @@ export class Enemy extends Entity {
         }
     }
 
-    updateJumper(dt, player, dist) {
+    updateJumper(dt, player, dist, game) {
         this.stateTimer -= dt;
         if (this.state === 'IDLE' && this.stateTimer <= 0) {
             this.state = 'JUMP';
-            this.vy = -(350 + Math.random() * 200);
-            if (dist < 400 && player) {
-                this.facingRight = player.x > this.x;
-            } else {
-                this.facingRight = Math.random() > 0.5;
+            const startY = this.y + this.height;
+            const startX = this.x + this.width / 2;
+            let targetPlat = null;
+
+            if (game) {
+                const allPlats = [];
+                for (let i = 0; i < game.platforms.length; i++) allPlats.push(game.platforms[i]);
+                if (game.movingPlatforms) {
+                    for (let i = 0; i < game.movingPlatforms.length; i++) allPlats.push(game.movingPlatforms[i]);
+                }
+                const valid = [];
+                for (let i = 0; i < allPlats.length; i++) {
+                    const p = allPlats[i];
+                    if (!p || p === this.platform) continue;
+                    const dy = p.y - startY;
+                    const dx = (p.x + p.width / 2) - startX;
+                    if (dy > -240 && dy < 260 && Math.abs(dx) < 520 && Math.abs(dx) > 60) {
+                        valid.push(p);
+                    }
+                }
+
+                if (valid.length > 0) {
+                    if (player && dist < 560) {
+                        for (let i = 0; i < valid.length; i++) {
+                            const p = valid[i];
+                            if (player.x + player.width > p.x && player.x < p.x + p.width &&
+                                Math.abs(player.y + player.height - p.y) < 60) {
+                                targetPlat = p;
+                                break;
+                            }
+                        }
+                    }
+                    if (!targetPlat) {
+                        targetPlat = valid[Math.floor(Math.random() * valid.length)];
+                    }
+                }
             }
-            this.vx = this.facingRight ? this.baseSpeed * 2.5 : -this.baseSpeed * 2.5;
+
+            if (targetPlat) {
+                let targetX = targetPlat.x + targetPlat.width / 2;
+                targetX += (Math.random() - 0.5) * (targetPlat.width * 0.45);
+                const targetY = targetPlat.y;
+                const dy = targetY - startY;
+                const dx = targetX - startX;
+                const apex = Math.min(startY - 92, targetY - 46);
+                const h = Math.max(28, startY - apex);
+                this.vy = -Math.sqrt(2 * Physics.GRAVITY * h);
+                const a = 0.5 * Physics.GRAVITY;
+                const b = this.vy;
+                const c = -dy;
+                const disc = b * b - 4 * a * c;
+                if (disc >= 0) {
+                    const t = (-b + Math.sqrt(disc)) / (2 * a);
+                    this.vx = dx / Math.max(0.14, t);
+                } else {
+                    this.vx = dx >= 0 ? 170 : -170;
+                }
+                this.facingRight = this.vx > 0;
+            } else {
+                this.vy = -(330 + Math.random() * 150);
+                if (dist < 400 && player) {
+                    this.facingRight = player.x > this.x;
+                } else {
+                    this.facingRight = Math.random() > 0.5;
+                }
+                this.vx = this.facingRight ? this.baseSpeed * 2.2 : -this.baseSpeed * 2.2;
+            }
         } else if (this.state === 'PATROL') {
             this.state = 'IDLE';
             this.stateTimer = 0.2;
@@ -639,21 +887,17 @@ export class Enemy extends Entity {
     }
 
     updateShooter(dt, game, player, dist, distX) {
-        // Irregular genie movement: layered waves + phase modulation for a squiggly hover path.
+        // Smooth genie movement: perfect circular orbit whose center drifts gently.
         const t = this.timeAlive;
-        const phase = this.startX * 0.01;
-        const prevX = this.x;
+        const phase = this.startX * 0.013 + this.startY * 0.004;
+        const centerX = this.startX + Math.sin(t * 0.34 + phase * 0.8) * 78;
+        const centerY = this.startY + Math.cos(t * 0.27 + phase * 1.1) * 38;
+        const orbitRadiusX = 112;
+        const orbitRadiusY = 112;
+        const orbitAngle = t * 1.38 + phase;
 
-        const baseWobbleX = Math.cos((t * 2.1) + (Math.sin(t * 0.8) * 0.9)) * 125;
-        const baseWobbleY = Math.sin((t * 2.8) + (Math.cos(t * 1.0) * 0.7)) * 68;
-        const squiggleX = Math.sin((t * 6.7) + phase) * 22 + Math.sin((t * 3.9) + phase * 1.7) * 12;
-        const squiggleY = Math.cos((t * 5.1) + phase * 1.3) * 13 + Math.sin((t * 7.4) + phase) * 8;
-
-        this.x = this.startX + baseWobbleX + squiggleX;
-        this.y = this.startY + baseWobbleY + squiggleY;
-
-        // Face where it is drifting on X so the genie feels less robotic.
-        this.facingRight = (this.x - prevX) >= 0;
+        this.x = centerX + Math.cos(orbitAngle) * orbitRadiusX;
+        this.y = centerY + Math.sin(orbitAngle) * orbitRadiusY;
 
         // Since we set x/y directly, zero out vx/vy so update()'s else branch doesn't interfere
         this.vx = 0;
@@ -783,7 +1027,8 @@ export class Enemy extends Entity {
             if (player && dist < 600 && Math.random() < 0.005) {
                 this.state = 'STOMP_JUMP';
                 this.vy = -600;
-                this.vx = this.facingRight ? this.speed * 2 : -this.speed * 2;
+                // Vertical stomp: jump straight up, then slam straight down.
+                this.vx = 0;
             }
         }
     }
@@ -1121,35 +1366,65 @@ export class Enemy extends Entity {
             const cx = this.x + this.width / 2;
             const cy = this.y + this.height * 0.55;
             const pulse = 0.5 + 0.5 * Math.sin(this.toxicCloudPulse);
-            const radiusOuter = this.toxicCloudBaseRadius + 18 + pulse * 16;
+            const radiusOuter = this.toxicCloudBaseRadius + 16 + pulse * 14;
             const radiusMid = radiusOuter * 0.72;
-            const radiusInner = radiusOuter * 0.46;
+            const radiusInner = radiusOuter * 0.48;
 
             ctx.save();
-            const outer = ctx.createRadialGradient(cx, cy, 8, cx, cy, radiusOuter);
-            outer.addColorStop(0, 'rgba(110, 255, 120, 0.14)');
-            outer.addColorStop(0.45, 'rgba(80, 200, 90, 0.11)');
-            outer.addColorStop(1, 'rgba(30, 120, 40, 0)');
-            ctx.fillStyle = outer;
+            // Lightweight AOE visualization: no dynamic gradients, just layered fills/rings.
+            ctx.fillStyle = 'rgba(58, 132, 62, 0.14)';
             ctx.beginPath();
             ctx.arc(cx, cy, radiusOuter, 0, Math.PI * 2);
             ctx.fill();
 
-            const mid = ctx.createRadialGradient(cx, cy, 2, cx, cy, radiusMid);
-            mid.addColorStop(0, 'rgba(145, 255, 125, 0.2)');
-            mid.addColorStop(1, 'rgba(35, 130, 50, 0)');
-            ctx.fillStyle = mid;
+            ctx.fillStyle = 'rgba(92, 172, 90, 0.14)';
             ctx.beginPath();
             ctx.arc(cx, cy, radiusMid, 0, Math.PI * 2);
             ctx.fill();
 
-            const inner = ctx.createRadialGradient(cx, cy, 0, cx, cy, radiusInner);
-            inner.addColorStop(0, 'rgba(170, 255, 150, 0.2)');
-            inner.addColorStop(1, 'rgba(80, 170, 80, 0)');
-            ctx.fillStyle = inner;
+            ctx.fillStyle = 'rgba(140, 224, 132, 0.13)';
             ctx.beginPath();
             ctx.arc(cx, cy, radiusInner, 0, Math.PI * 2);
             ctx.fill();
+
+            ctx.strokeStyle = 'rgba(170, 235, 160, 0.22)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radiusOuter * 0.98, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = 'rgba(208, 250, 200, 0.18)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radiusMid * 0.98, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Subtle drifting puffs to communicate toxicity at low render cost.
+            for (let i = 0; i < 4; i++) {
+                const a = this.toxicCloudPulse * 0.65 + i * (Math.PI * 0.5);
+                const pr = radiusMid + (Math.sin(this.timeAlive * 1.7 + i) * 8);
+                const px = cx + Math.cos(a) * pr;
+                const py = cy + Math.sin(a) * pr * 0.6;
+                const puffR = 9 + (i % 2) * 3;
+                ctx.fillStyle = `rgba(170, 235, 160, ${0.15 + (i % 2) * 0.05})`;
+                ctx.beginPath();
+                ctx.arc(px, py, puffR, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Clear hazard cue: 3 skulls orbiting the toxic AOE.
+            const skull = this._toxicSkullCache;
+            if (skull) {
+                const skullCount = 3;
+                const skullOrbitR = radiusOuter * 0.97;
+                for (let i = 0; i < skullCount; i++) {
+                    const a = this.timeAlive * 1.55 + i * (Math.PI * 2 / skullCount);
+                    const sx = cx + Math.cos(a) * skullOrbitR - skull.width / 2;
+                    const sy = cy + Math.sin(a) * skullOrbitR * 0.92 - skull.height / 2;
+                    ctx.globalAlpha = 0.86;
+                    ctx.drawImage(skull.canvas, sx, sy);
+                }
+                ctx.globalAlpha = 1;
+            }
             ctx.restore();
         }
 
@@ -1181,15 +1456,15 @@ export class Enemy extends Entity {
         }
 
         if (this.type === TYPE_SHOOTER) {
-            // Keep genie visible at all times: 10% to 100% opacity.
-            alpha = 0.55 + Math.sin(this.timeAlive * SHOOTER_OPACITY_SPEED) * 0.45;
+            // Keep merman clearly readable at all times.
+            alpha = 0.7 + Math.sin(this.timeAlive * SHOOTER_OPACITY_SPEED) * 0.3;
         }
 
 
 
         if (this.state === 'REVIVING' && this.type === TYPE_ZOMBIE) {
-            scaleX = 0.8; scaleY = 0.8;
-            drawY += this.height * 0.1;
+            // Keep reviving zombie at full alive-size, only rotate/flash.
+            scaleX = 1; scaleY = 1;
             alpha = (Math.floor(this.timeAlive * 10) % 2 === 0) ? 0.5 : 1.0;
         }
 
@@ -1273,6 +1548,36 @@ export class Enemy extends Entity {
         const cached = this._cachedEmoji;
         ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2 + yOffset);
         ctx.restore();
+
+        if (this.type === TYPE_PEACOCK && this.peacockFacingPlayer && this._peacockMirrorCache) {
+            const mirror = this._peacockMirrorCache;
+            const bob = Math.sin(this.timeAlive * 8) * 1.5;
+            const mx = this.facingRight
+                ? (this.x + this.width - mirror.width * 0.28)
+                : (this.x - mirror.width * 0.72);
+            const my = this.y + this.height * 0.42 - mirror.height / 2 + bob;
+            ctx.save();
+            ctx.globalAlpha = 0.96;
+            ctx.drawImage(mirror.canvas, mx, my);
+            ctx.restore();
+        }
+
+        if (this.type === TYPE_ENRAGED && this.kamikazeArmed && !this.markedForDeletion) {
+            const countdown = Math.max(1, Math.ceil(this.kamikazeCountdown));
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.font = 'bold 48px "Outfit", sans-serif';
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.75)';
+            ctx.fillStyle = '#ffd6d6';
+            const tx = this.x + this.width / 2;
+            const ty = this.y - 12;
+            const label = `🧨 ${countdown}`;
+            ctx.strokeText(label, tx, ty);
+            ctx.fillText(label, tx, ty);
+            ctx.restore();
+        }
     }
 }
 
@@ -1349,6 +1654,14 @@ export class Boss extends Entity {
         this.aerialSwoopDepth = 0;
         this.aerialMinionPhase = Math.random() * Math.PI * 2;
         this.aerialMinionRadius = 88 + Math.random() * 24;
+        this.chickMovementMode = 'LOOP'; // 'LOOP' | 'SWOOP'
+        this.chickMovementModeTimer = 2.4 + Math.random() * 1.2;
+        this.chickPanicFlapTimer = 0;
+        this.chickDiveCooldown = 1.7 + Math.random() * 0.9;
+        this.chickDiveTimer = 0;
+        this.chickDiveDir = Math.random() > 0.5 ? 1 : -1;
+        this.chickDiveTargetX = this.x;
+        this.chickDiveTargetY = this.y;
 
         // Spider-specific state
         this.spiderState = 'SCUTTLE';
@@ -1725,6 +2038,33 @@ export class Boss extends Entity {
         this.facingRight = dx >= 0;
     }
 
+    _spawnProjectileAtAngle(game, projectileType, speed, angle, arcBias = 0) {
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
+        const vx = Math.cos(angle) * speed;
+        const vy = Math.sin(angle) * speed + arcBias;
+        game.enemyProjectiles.push(new BossProjectile(cx, cy, vx, vy, projectileType));
+        this.facingRight = vx >= 0;
+    }
+
+    _spawnChickRainWave(game, player, waveIdx = 0) {
+        if (!game || !player) return;
+        const centerX = player.x + player.width / 2;
+        const topY = Math.min(this.y - 80, this.platform.y - this.height - 360);
+        const phaseSpread = 180 + this.phase * 24;
+        const lanes = this.phase >= 3 ? 5 : (this.phase >= 2 ? 4 : 3);
+        for (let i = 0; i < lanes; i++) {
+            const t = lanes <= 1 ? 0.5 : i / (lanes - 1);
+            const laneOffset = (t - 0.5) * phaseSpread;
+            const jitter = (Math.random() - 0.5) * 30;
+            const spawnX = centerX + laneOffset + jitter;
+            const fallSpeed = 360 + this.phase * 24 + Math.random() * 40;
+            const drift = (Math.random() - 0.5) * 90 + Math.sin((waveIdx + i) * 0.9) * 36;
+            const shot = new BossProjectile(spawnX, topY, drift, fallSpeed, 'egg');
+            game.enemyProjectiles.push(shot);
+        }
+    }
+
     _queueAttack(player) {
         if (!player) return;
 
@@ -1733,14 +2073,40 @@ export class Boss extends Entity {
         this.attackTelegraphTimer = this.attackTelegraphDuration;
 
         if (this.bossType === 'boss_chick') {
-            this.pendingAttack = {
-                pattern: 'fan',
-                projectile: 'drumstick',
-                speed: 350 + this.phase * 18,
-                arcBias: -70,
-                spreads: this.phase >= 3 ? [-0.2, 0, 0.2] : (this.phase >= 2 ? [-0.12, 0.12] : [0])
-            };
-            this.attackCooldown = 1.8 - (this.phase - 1) * 0.2 + Math.random() * 0.5;
+            const roll = Math.random();
+            if (roll < 0.46) {
+                this.pendingAttack = {
+                    pattern: 'fan',
+                    projectile: 'drumstick',
+                    speed: 330 + this.phase * 14,
+                    arcBias: -68,
+                    spreads: this.phase >= 3 ? [-0.2, -0.06, 0.06, 0.2] : (this.phase >= 2 ? [-0.14, 0, 0.14] : [-0.07, 0.07])
+                };
+                this.attackTelegraphDuration = (this.phase >= 2 ? 0.42 : 0.48) / phaseScale;
+            } else if (roll < 0.76) {
+                this.pendingAttack = {
+                    pattern: 'spiral',
+                    projectile: 'egg',
+                    speed: 290 + this.phase * 12,
+                    steps: this.phase >= 3 ? 7 : (this.phase >= 2 ? 6 : 5),
+                    interval: Math.max(0.16, 0.22 - this.phase * 0.015),
+                    timer: 0,
+                    angle: Math.random() * Math.PI * 2,
+                    angleStep: (Math.PI / 5) * (Math.random() > 0.5 ? 1 : -1),
+                    mirror: this.phase >= 3
+                };
+                this.attackTelegraphDuration = (this.phase >= 2 ? 0.4 : 0.46) / phaseScale;
+            } else {
+                this.pendingAttack = {
+                    pattern: 'rain',
+                    waves: this.phase >= 3 ? 3 : (this.phase >= 2 ? 3 : 2),
+                    interval: Math.max(0.26, 0.4 - this.phase * 0.02),
+                    timer: 0
+                };
+                this.attackTelegraphDuration = 0.56 / phaseScale;
+            }
+            this.attackTelegraphTimer = this.attackTelegraphDuration;
+            this.attackCooldown = 1.95 + Math.random() * 0.75 + (3 - this.phase) * 0.22;
         } else if (this.bossType === 'boss_tengu') {
             const shots = this.phase >= 3 ? 4 : (this.phase >= 2 ? 3 : 2);
             this.pendingAttack = {
@@ -1768,6 +2134,38 @@ export class Boss extends Entity {
             return;
         }
 
+        if (this.pendingAttack.pattern === 'spiral') {
+            this.pendingAttack.timer -= dt;
+            if (this.pendingAttack.timer <= 0 && this.pendingAttack.steps > 0) {
+                const angle = this.pendingAttack.angle || 0;
+                this._spawnProjectileAtAngle(game, this.pendingAttack.projectile || 'drumstick', this.pendingAttack.speed || 360, angle, this.pendingAttack.arcBias || 0);
+                if (this.pendingAttack.mirror) {
+                    this._spawnProjectileAtAngle(game, this.pendingAttack.projectile || 'drumstick', this.pendingAttack.speed || 360, angle + Math.PI, this.pendingAttack.arcBias || 0);
+                }
+                this.pendingAttack.angle = angle + (this.pendingAttack.angleStep || 0.6);
+                this.pendingAttack.steps--;
+                this.pendingAttack.timer = this.pendingAttack.interval || 0.12;
+            }
+
+            if (this.pendingAttack.steps <= 0) {
+                this.pendingAttack = null;
+            }
+            return;
+        }
+
+        if (this.pendingAttack.pattern === 'rain') {
+            this.pendingAttack.timer -= dt;
+            if (this.pendingAttack.timer <= 0 && this.pendingAttack.waves > 0) {
+                this._spawnChickRainWave(game, player, this.pendingAttack.waves);
+                this.pendingAttack.waves--;
+                this.pendingAttack.timer = this.pendingAttack.interval || 0.3;
+            }
+            if (this.pendingAttack.waves <= 0) {
+                this.pendingAttack = null;
+            }
+            return;
+        }
+
         // Burst pattern
         this.pendingAttack.burstTimer -= dt;
         if (this.pendingAttack.burstTimer <= 0 && this.pendingAttack.shots > 0) {
@@ -1779,6 +2177,97 @@ export class Boss extends Entity {
 
         if (this.pendingAttack.shots <= 0) {
             this.pendingAttack = null;
+        }
+    }
+
+    _updateChickBoss(dt, game, player) {
+        if (this.chickMovementModeTimer > 0) this.chickMovementModeTimer -= dt;
+        if (this.chickPanicFlapTimer > 0) this.chickPanicFlapTimer -= dt;
+        if (this.chickDiveCooldown > 0) this.chickDiveCooldown -= dt;
+        if (this.chickDiveTimer > 0) this.chickDiveTimer -= dt;
+
+        if (this.chickMovementModeTimer <= 0) {
+            this.chickMovementMode = this.chickMovementMode === 'LOOP' ? 'SWOOP' : 'LOOP';
+            this.chickMovementModeTimer = this.chickMovementMode === 'LOOP'
+                ? (3.1 + Math.random() * 1.3)
+                : (1.5 + Math.random() * 0.7);
+            this.chickPanicFlapTimer = 0.32 + Math.random() * 0.25;
+        }
+
+        const left = this.platform.x + 16;
+        const right = this.platform.x + this.platform.width - this.width - 16;
+        const highY = this.platform.y - this.height - 320;
+        const lowY = this.platform.y - this.height - 18;
+        const cruiseY = this.platform.y - this.height - 160;
+
+        if (this.chickDiveTimer <= 0 && this.chickDiveCooldown <= 0 && player && Math.random() < (this.phase >= 3 ? 0.015 : 0.01)) {
+            this.chickDiveTimer = this.phase >= 3 ? 1.05 : 0.95;
+            this.chickDiveCooldown = 2.9 + Math.random() * 1.3;
+            const playerCenter = player.x + player.width / 2;
+            const chickCenter = this.x + this.width / 2;
+            this.chickDiveDir = playerCenter >= chickCenter ? -1 : 1;
+            const swoopDistance = 170 + Math.random() * 70;
+            this.chickDiveTargetX = Math.max(left, Math.min(right, this.x + this.chickDiveDir * swoopDistance));
+            this.chickDiveTargetY = lowY;
+        }
+
+        if (this.chickDiveTimer > 0) {
+            const fullDiveTime = this.phase >= 3 ? 1.05 : 0.95;
+            const progress = 1 - Math.max(0, this.chickDiveTimer / fullDiveTime);
+            const downRatio = Math.min(1, progress / 0.55);
+            const upRatio = Math.max(0, (progress - 0.55) / 0.45);
+            const yTarget = progress < 0.55
+                ? (cruiseY + (this.chickDiveTargetY - cruiseY) * downRatio)
+                : (this.chickDiveTargetY + (cruiseY - this.chickDiveTargetY) * upRatio);
+            const xTarget = this.chickDiveTargetX + Math.sin(progress * Math.PI) * 28 * this.chickDiveDir;
+            this.targetX = Math.max(left, Math.min(right, xTarget));
+            this.targetY = Math.max(highY, Math.min(lowY, yTarget));
+        } else if (this.chickMovementMode === 'LOOP') {
+            this.targetX = this.anchorX + Math.sin(this.timeAlive * 0.75) * (this.platform.width * 0.25) + Math.sin(this.timeAlive * 1.4) * 14;
+            this.targetY = cruiseY + Math.cos(this.timeAlive * 0.95) * 24 + Math.sin(this.timeAlive * 1.3) * 12;
+        } else {
+            const awayDir = player
+                ? (((player.x + player.width / 2) >= (this.x + this.width / 2)) ? -1 : 1)
+                : (this.facingRight ? -1 : 1);
+            const awayX = this.x + awayDir * (125 + Math.sin(this.timeAlive * 0.8) * 35);
+            this.targetX = Math.max(left, Math.min(right, awayX));
+            this.targetY = this.platform.y - this.height - (86 + Math.sin(this.timeAlive * 1.2) * 14);
+        }
+
+        if (this.chickPanicFlapTimer > 0) {
+            this.targetY += Math.sin(this.timeAlive * 8) * 3;
+        }
+
+        this.targetX = Math.max(left, Math.min(right, this.targetX));
+        this.targetY = Math.max(highY, Math.min(lowY, this.targetY));
+
+        const toTargetX = this.targetX - this.x;
+        const toTargetY = this.targetY - this.y;
+        const dist = Math.hypot(toTargetX, toTargetY);
+        if (dist > 0) {
+            const cruiseSpeed = 175 + this.phase * 12;
+            const speedBoost = this.chickDiveTimer > 0 ? 1.18 : 1;
+            const maxStep = cruiseSpeed * speedBoost * dt;
+            const step = Math.min(dist, maxStep);
+            this.x += (toTargetX / dist) * step;
+            this.y += (toTargetY / dist) * step;
+        }
+
+        if (this.attackTelegraphTimer > 0) {
+            this.attackTelegraphTimer -= dt;
+            if (this.attackTelegraphTimer <= 0) {
+                this._executeAttackStep(game, player, dt);
+            }
+            return;
+        }
+
+        if (this.pendingAttack) {
+            this._executeAttackStep(game, player, dt);
+            return;
+        }
+
+        if (this.attackCooldown <= 0 && player) {
+            this._queueAttack(player);
         }
     }
 
@@ -3588,6 +4077,8 @@ export class Boss extends Entity {
 
         if (this.bossType === 'boss_spider') {
             this._updateSpiderBoss(dt, game, player);
+        } else if (this.bossType === 'boss_chick') {
+            this._updateChickBoss(dt, game, player);
         } else if (this.bossType === 'boss_moai') {
             this._updateMoaiBoss(dt, game, player);
         } else if (this.bossType === 'boss_dragon') {
@@ -3791,6 +4282,38 @@ export class Boss extends Entity {
                 ctx.drawImage(this._fireTellCache.canvas, mouthX - this._fireTellCache.width * 0.35, mouthY - this._fireTellCache.height / 2);
                 ctx.globalAlpha = alpha;
             }
+        }
+
+        if (this.bossType === 'boss_chick' && this.attackTelegraphTimer > 0 && this.pendingAttack) {
+            const pulse = 0.55 + Math.sin(this.timeAlive * 24) * 0.45;
+            const pattern = this.pendingAttack.pattern;
+            if (pattern === 'fan' || pattern === 'burst') {
+                if (!this._chickSnackTellCache) this._chickSnackTellCache = getEmojiCanvas(String.fromCodePoint(0x1F357), 28);
+                const count = pattern === 'burst' ? 3 : 2;
+                const spread = 24;
+                for (let i = 0; i < count; i++) {
+                    const offset = (i - (count - 1) / 2) * spread;
+                    ctx.globalAlpha = alpha * (0.42 + pulse * 0.45);
+                    ctx.drawImage(this._chickSnackTellCache.canvas, offset - this._chickSnackTellCache.width / 2, -this.height / 2 - 52 - Math.abs(offset) * 0.1);
+                }
+            } else if (pattern === 'spiral') {
+                if (!this._chickSpiralTellCache) this._chickSpiralTellCache = getEmojiCanvas(String.fromCodePoint(0x1F300), 28);
+                const radius = 22 + pulse * 6;
+                for (let i = 0; i < 2; i++) {
+                    const a = this.timeAlive * 6 + i * Math.PI;
+                    const ox = Math.cos(a) * radius;
+                    const oy = -this.height / 2 - 50 + Math.sin(a) * 7;
+                    ctx.globalAlpha = alpha * (0.45 + pulse * 0.4);
+                    ctx.drawImage(this._chickSpiralTellCache.canvas, ox - this._chickSpiralTellCache.width / 2, oy - this._chickSpiralTellCache.height / 2);
+                }
+            } else if (pattern === 'rain') {
+                if (!this._chickRainTellCache) this._chickRainTellCache = getEmojiCanvas(String.fromCodePoint(0x1F95A), 27);
+                for (let i = -1; i <= 1; i++) {
+                    ctx.globalAlpha = alpha * (0.45 + pulse * 0.4);
+                    ctx.drawImage(this._chickRainTellCache.canvas, i * 24 - this._chickRainTellCache.width / 2, -this.height / 2 - 56 + Math.abs(i) * 5);
+                }
+            }
+            ctx.globalAlpha = alpha;
         }
 
         const isTelegraphing = this.attackTelegraphTimer > 0

@@ -9,8 +9,7 @@ const DEV_TARGETS = [
     { id: 'enemy:patrol:turtle', label: 'Enemy - Turtle (🐢)', kind: 'enemy', type: 'patrol', emoji: '🐢' },
     { id: 'enemy:chaser:ogre', label: 'Enemy - Ogre (👹)', kind: 'enemy', type: 'chaser', emoji: '👹' },
     { id: 'enemy:jumper:frog', label: 'Enemy - Frog (🐸)', kind: 'enemy', type: 'jumper', emoji: '🐸' },
-    { id: 'enemy:shooter:genie', label: 'Enemy - Genie (🧞)', kind: 'enemy', type: 'shooter', emoji: '🧞' },
-    { id: 'enemy:bird', label: 'Enemy - Bird (🐦)', kind: 'enemy', type: 'bird', emoji: '🐦' },
+    { id: 'enemy:shooter:genie', label: 'Enemy - Genie (🧜‍♂️)', kind: 'enemy', type: 'shooter', emoji: '🧜‍♂️' },
     { id: 'enemy:eagle', label: 'Enemy - Eagle (🦅)', kind: 'enemy', type: 'eagle', emoji: '🦅' },
     { id: 'enemy:owl', label: 'Enemy - Owl (🦉)', kind: 'enemy', type: 'owl', emoji: '🦉' },
     { id: 'enemy:crow', label: 'Enemy - Crow (🐦‍⬛)', kind: 'enemy', type: 'crow', emoji: '🐦‍⬛' },
@@ -26,6 +25,7 @@ const DEV_TARGETS = [
     { id: 'enemy:ape', label: 'Enemy - Ape (🦍)', kind: 'enemy', type: 'ape', emoji: '🦍' },
     { id: 'enemy:spider', label: 'Enemy - Spider (🕷️)', kind: 'enemy', type: 'spider', emoji: '🕷️' },
     { id: 'enemy:peacock', label: 'Enemy - Peacock (🦚)', kind: 'enemy', type: 'peacock', emoji: '🦚' },
+    { id: 'enemy:enraged', label: 'Enemy - Enraged (😡)', kind: 'enemy', type: 'enraged', emoji: '😡' },
     { id: 'enemy:jellyfish', label: 'Enemy - Jellyfish (🪼)', kind: 'enemy_custom', type: 'jellyfish', emoji: '🪼' },
     { id: 'boss:boss_chick', label: 'Boss - Chick', kind: 'boss', bossType: 'boss_chick' },
     { id: 'boss:boss_moai', label: 'Boss - Moai', kind: 'boss', bossType: 'boss_moai' },
@@ -61,6 +61,7 @@ class DevGame extends Game {
         this.platforms = [platform];
         this.movingPlatforms = [];
         this.collectibles = [];
+        this.safeZones = [];
         this.vines = [];
         this.swingingVines = [];
         this.enemies = [];

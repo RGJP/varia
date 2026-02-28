@@ -6,7 +6,7 @@ import { getEmojiCanvas } from '../EmojiCache.js';
 
 export class Player extends Entity {
     constructor(x, y) {
-        super(x, y, 64, 64);
+        super(x, y, 72, 72);
         this.speed = 300;
         this.jumpForce = -600;
         this.facingRight = true;
@@ -84,6 +84,10 @@ export class Player extends Entity {
         this.maxAttackChargeTime = 1.5;
         this.chargeIndicatorDelay = 0.14;
         this.isChargingAttack = false;
+        this.inSafeBubble = false;
+        this.activeSafeBubble = null;
+        this.safeZoneReentryLockedZone = null;
+        this.safeZoneReentryLockTimer = 0;
 
         const icons = [
             "🚶‍➡️",
@@ -101,7 +105,7 @@ export class Player extends Entity {
         this.emoji = icons[Math.floor(Math.random() * icons.length)];
         this._emojiFacesLeft = this.emoji === "🏇";
         // Pre-cache the emoji
-        this._cachedEmoji = getEmojiCanvas(this.emoji, 64);
+        this._cachedEmoji = getEmojiCanvas(this.emoji, 72);
 
         this._hitbox = { x: 0, y: 0, width: 0, height: 0 };
         this._updateHitbox();
@@ -111,7 +115,7 @@ export class Player extends Entity {
         }
     }
 
-    update(dt, input, platforms, game) {
+    update(dt, input, platforms, game, collisionContext = null) {
         this.wasTouchingWall = this.touchingWall;
         this.touchingWall = false;
         // Timers
@@ -134,7 +138,49 @@ export class Player extends Entity {
         if (this.ignoreVineTimer > 0) {
             this.ignoreVineTimer -= dt;
         }
-        if (this.flightTimer > 0) {
+        if (this.safeZoneReentryLockTimer > 0) {
+            this.safeZoneReentryLockTimer = Math.max(0, this.safeZoneReentryLockTimer - dt);
+        }
+        if (
+            this.safeZoneReentryLockedZone &&
+            this.safeZoneReentryLockTimer <= 0 &&
+            !this.safeZoneReentryLockedZone.containsEntity(this, 2)
+        ) {
+            this.safeZoneReentryLockedZone = null;
+        }
+        const nearbySafeZones = (collisionContext && collisionContext.safeZones) ? collisionContext.safeZones : game.safeZones;
+
+        if (this.inSafeBubble) {
+            // Keep barrel occupancy stable; only drop state after clearly leaving the zone.
+            if (!this.activeSafeBubble || !this.activeSafeBubble.containsEntity(this, 20)) {
+                this.inSafeBubble = false;
+                this.activeSafeBubble = null;
+            }
+        } else if (nearbySafeZones && nearbySafeZones.length > 0) {
+            for (let i = 0; i < nearbySafeZones.length; i++) {
+                const zone = nearbySafeZones[i];
+                if (zone === this.safeZoneReentryLockedZone) continue;
+                const inEntryCatch = zone && zone.containsEntity(this);
+                const pulledFromBelow = zone && typeof zone.shouldPullInFromBelow === 'function' && zone.shouldPullInFromBelow(this);
+                if (inEntryCatch || pulledFromBelow) {
+                    this.inSafeBubble = true;
+                    this.activeSafeBubble = zone;
+                    this.isClimbing = false;
+                    this.currentVine = null;
+                    this.vx = 0;
+                    this.vy = 0;
+                    this.isChargingAttack = false;
+                    this.attackChargeTimer = 0;
+                    // Snap immediately so the player is fully "inside" this frame.
+                    this.x = zone.centerX - this.width / 2;
+                    this.y = zone.centerY - this.height / 2;
+                    break;
+                }
+            }
+        }
+
+        // Pause active power-up durations while inside a safe barrel.
+        if (this.flightTimer > 0 && !this.inSafeBubble) {
             this.flightTimer -= dt;
             if (this.flightTimer <= 0) {
                 this.flightTimer = 0;
@@ -162,7 +208,7 @@ export class Player extends Entity {
             }
         }
 
-        if (this.diamondPowerUpTimer > 0) {
+        if (!this.inSafeBubble && this.diamondPowerUpTimer > 0) {
             this.diamondPowerUpTimer -= dt;
             this.diamondShootTimer -= dt;
             this.powerVisualTimer -= dt;
@@ -187,7 +233,7 @@ export class Player extends Entity {
             }
         }
 
-        if (this.firePowerUpTimer > 0) {
+        if (!this.inSafeBubble && this.firePowerUpTimer > 0) {
             this.firePowerUpTimer -= dt;
             this.firePowerUpRotation += (Math.PI * 2.2) * dt; // Slower spin to reduce motion sickness
             this.powerVisualTimer -= dt;
@@ -204,7 +250,7 @@ export class Player extends Entity {
                 );
             }
         }
-        if (this.frostPowerUpTimer > 0) {
+        if (!this.inSafeBubble && this.frostPowerUpTimer > 0) {
             this.frostPowerUpTimer -= dt;
             this.powerVisualTimer -= dt;
             if (this.powerVisualTimer <= 0 && game && game.particles) {
@@ -220,7 +266,7 @@ export class Player extends Entity {
                 );
             }
         }
-        if (this.frostBlastTimer > 0) {
+        if (!this.inSafeBubble && this.frostBlastTimer > 0) {
             this.frostBlastTimer -= dt;
             if (this.frostBlastTimer <= 0) this.frostBlastTimer = 0;
             // Keep blast VFX anchored to the player while active.
@@ -258,7 +304,7 @@ export class Player extends Entity {
 
         // Input
         // Drop Bomb
-        if (!game.gameOverTriggered && this.stunTimer <= 0 && input.isJustPressed('KeyS')) {
+        if (!this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0 && input.isJustPressed('KeyS')) {
             if (this.bombs > 0) {
                 this.bombs--;
                 const bombX = this.x + this.width / 2 - 12; // Center bomb
@@ -270,7 +316,7 @@ export class Player extends Entity {
         }
 
         // Attack charge and release
-        const canChargeAttack = !game.gameOverTriggered && this.stunTimer <= 0;
+        const canChargeAttack = !this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0;
         if (!canChargeAttack) {
             this.attackChargeTimer = 0;
             this.isChargingAttack = false;
@@ -310,8 +356,10 @@ export class Player extends Entity {
         // Vine Collision Logic
         if (!isFlying && !this.isClimbing && this.ignoreVineTimer <= 0 && this.knockbackTimer <= 0) {
             // Check static vines
-            if (game.vines) {
-                for (let vine of game.vines) {
+            const nearbyVines = (collisionContext && collisionContext.vines) ? collisionContext.vines : game.vines;
+            if (nearbyVines) {
+                for (let i = 0; i < nearbyVines.length; i++) {
+                    const vine = nearbyVines[i];
                     if (Physics.checkAABB(this, vine)) {
                         this.isClimbing = true;
                         this.currentVine = vine;
@@ -326,8 +374,10 @@ export class Player extends Entity {
                 }
             }
             // Check swinging vines
-            if (!this.isClimbing && game.swingingVines) {
-                for (let sv of game.swingingVines) {
+            const nearbySwingingVines = (collisionContext && collisionContext.swingingVines) ? collisionContext.swingingVines : game.swingingVines;
+            if (!this.isClimbing && nearbySwingingVines) {
+                for (let i = 0; i < nearbySwingingVines.length; i++) {
+                    const sv = nearbySwingingVines[i];
                     if (sv.checkCollision(this)) {
                         this.isClimbing = true;
                         this.currentVine = sv;
@@ -353,7 +403,51 @@ export class Player extends Entity {
         }
 
         // Movement
-        if (isFlying && !game.gameOverTriggered) {
+        if (this.inSafeBubble && this.activeSafeBubble) {
+            this.grounded = false;
+            this.isClimbing = false;
+            this.currentVine = null;
+            this.vx = 0;
+            this.vy = 0;
+            this.isSpinning = false;
+            this.rotation = 0;
+
+            const targetX = this.activeSafeBubble.centerX - this.width / 2;
+            const targetY = this.activeSafeBubble.centerY - this.height / 2;
+            // Hard lock to center while inside so render/collision state never flickers.
+            this.x = targetX;
+            this.y = targetY;
+
+            // Use buffered jump intent because `isJustPressed` is consumed earlier.
+            if (this.jumpBufferTimer > 0) {
+                const launchedFromZone = this.activeSafeBubble;
+                this.inSafeBubble = false;
+                this.activeSafeBubble = null;
+                this.safeZoneReentryLockedZone = launchedFromZone;
+                this.safeZoneReentryLockTimer = 0.42;
+                this.invulnerableTimer = Math.max(this.invulnerableTimer, 0.22);
+                this.x = targetX;
+                this.y = (targetY - this.height * 0.55) - 2;
+                this.vx = 0;
+                this.vy = this.jumpForce * Math.SQRT2;
+                this.isJumping = true;
+                this.forceFullJump = true;
+                this.isSpinning = true;
+                this.spinDirection = this.facingRight ? 1 : -1;
+                this.rotation = 0;
+                this.airJumps = 1;
+                this.spinBaseRotation = this.rotation;
+                this.jumpBufferTimer = 0;
+                this.coyoteTimer = 0;
+                if (game.audio) game.audio.playJump();
+                if (game.particles) {
+                    const smokeX = launchedFromZone.centerX;
+                    const smokeY = launchedFromZone.centerY - launchedFromZone.height * 0.46;
+                    game.particles.emitStomp(smokeX, smokeY);
+                    game.particles.emit(smokeX, smokeY, 8, 'rgba(180,180,180,0.75)', [40, 120], [0.2, 0.45], [6, 14]);
+                }
+            }
+        } else if (isFlying && !game.gameOverTriggered) {
             this.vx = 0;
             this.vy = 0;
             if (input.isDown('ArrowLeft')) {
@@ -396,7 +490,7 @@ export class Player extends Entity {
         }
 
         // Jump
-        if (!isFlying && !game.gameOverTriggered && this.stunTimer <= 0 && this.jumpBufferTimer > 0 && !this.isClimbing) {
+        if (!this.inSafeBubble && !isFlying && !game.gameOverTriggered && this.stunTimer <= 0 && this.jumpBufferTimer > 0 && !this.isClimbing) {
             if (this.coyoteTimer > 0) {
                 this.vy = this.jumpForce;
                 this.grounded = false;
@@ -425,7 +519,7 @@ export class Player extends Entity {
         }
 
         // Variable Jump Height
-        if (!isFlying && !input.isDown('KeyA') && this.isJumping && this.vy < 0 && !this.isClimbing && !this.forceFullJump) {
+        if (!this.inSafeBubble && !isFlying && !input.isDown('KeyA') && this.isJumping && this.vy < 0 && !this.isClimbing && !this.forceFullJump) {
             this.vy *= 0.5; // Cut jump short
             this.isJumping = false;
         }
@@ -573,8 +667,9 @@ export class Player extends Entity {
 
         // Enemy collision + fire aura logic.
         // Fire must keep damaging enemies even while flight is active.
-        if ((this.invulnerableTimer <= 0 && !isFlying) || this.firePowerUpTimer > 0) {
+        if (!this.inSafeBubble && ((this.invulnerableTimer <= 0 && !isFlying) || this.firePowerUpTimer > 0)) {
             const hitbox = this._hitbox;
+            const nearbyEnemies = (collisionContext && collisionContext.enemies) ? collisionContext.enemies : game.enemies;
 
             const fireboxes = this._fireboxes;
             let numFireballsActive = 0;
@@ -596,8 +691,9 @@ export class Player extends Entity {
                 }
             }
 
-            game.enemies.forEach(enemy => {
-                if (enemy.markedForDeletion) return;
+            for (let ei = 0; ei < nearbyEnemies.length; ei++) {
+                const enemy = nearbyEnemies[ei];
+                if (enemy.markedForDeletion) continue;
 
                 let hitByFireball = false;
                 for (let i = 0; i < numFireballsActive; i++) {
@@ -642,11 +738,12 @@ export class Player extends Entity {
                             const kickDir = playerCenterX <= enemyCenterX ? 1 : -1;
                             enemy.kickShell(kickDir, game);
                         }
-                        return;
+                        continue;
                     }
-                    const stompableEmojis = ['🐢', '🐸', '🐦', '🦅', '🦉', '🐦‍⬛', '🧟‍♂️', '🦑', '🦗', '🐿️', '🕷️', '🪼'];
+                    const stompableEmojis = ['🐢', '🐸', '🐦', '🦅', '🦉', '🐦‍⬛', '🧟‍♂️', '🦑', '🦗', '🐿️', '🕷️', '🪼', '😡'];
                     const canStompEnemy = enemy.bossType !== 'boss_spider' && stompableEmojis.includes(enemy.emoji);
                     if (canStompEnemy && isTopStomp) {
+                        const isEnragedEnemy = enemy.type === 'enraged' || enemy.emoji === '😡';
                         if (typeof enemy.stomp === 'function') enemy.stomp(game);
                         else enemy.takeDamage(enemy.health, game);
                         this.vy = this.jumpForce;
@@ -660,23 +757,29 @@ export class Player extends Entity {
                         this.isSpinning = true;
                         this.spinDirection = this.facingRight ? 1 : -1;
                         this.spinBaseRotation = this.rotation;
+                        if (isEnragedEnemy) {
+                            // Enraged stays alive after stomp; brief grace avoids unfair contact damage.
+                            this.invulnerableTimer = Math.max(this.invulnerableTimer, 0.3);
+                        }
                         if (game.audio) game.audio.playJump();
                     } else {
                         if (isTurtleEnemy) {
-                            return;
+                            continue;
                         }
                         // Special case: man lifting weights boss grab/rush shouldn't damage the player directly
                         if (enemy.bossType === 'boss_manliftingweights' && (enemy.robotState === 'RUSH' || enemy.robotState === 'GRAB')) {
-                            return;
+                            continue;
                         }
                         this.takeDamage(game);
                     }
                 }
-            });
+            }
         }
 
         // Collectibles
-        game.collectibles.forEach(collectible => {
+        const nearbyCollectibles = (collisionContext && collisionContext.collectibles) ? collisionContext.collectibles : game.collectibles;
+        for (let ci = 0; ci < nearbyCollectibles.length; ci++) {
+            const collectible = nearbyCollectibles[ci];
             if (!collectible.markedForDeletion && Physics.checkAABB(this, collectible)) {
                 collectible.markedForDeletion = true;
                 const centerX = collectible.x + collectible.width / 2;
@@ -749,10 +852,14 @@ export class Player extends Entity {
                     game.particles.emit(centerX, centerY, 10, '#FFFF00', [50, 150], [0.2, 0.5], [2, 4]);
                 }
             }
-        });
+        }
 
         // Victory state
-        game.platforms.forEach(platform => {
+        const victoryPlatforms = (collisionContext && collisionContext.victoryPlatforms)
+            ? collisionContext.victoryPlatforms
+            : game.platforms;
+        for (let i = 0; i < victoryPlatforms.length; i++) {
+            const platform = victoryPlatforms[i];
             if (platform.isVictory) {
                 const flagBox = platform.getFlagBox();
                 if (Physics.checkAABB(this, platform) || (flagBox && Physics.checkAABB(this, flagBox))) {
@@ -761,7 +868,7 @@ export class Player extends Entity {
                     }
                 }
             }
-        });
+        }
     }
 
     resolveCollision(platforms, axis, game) {
@@ -919,6 +1026,7 @@ export class Player extends Entity {
     }
 
     takeDamage(game) {
+        if (this.inSafeBubble) return;
         if (this.flightTimer > 0) return;
         if (this.firePowerUpTimer > 0) return;
         if (this.hasCatProtector) {
@@ -953,11 +1061,13 @@ export class Player extends Entity {
     }
 
     draw(ctx, game) {
-        if (!game?.gameOverTriggered && this.invulnerableTimer > 0 && Math.floor(this.invulnerableTimer * 20) % 2 === 0) {
-            ctx.globalAlpha = 0.5;
-        }
+        if (this.inSafeBubble) return;
 
         ctx.save();
+        if (!game?.gameOverTriggered && this.invulnerableTimer > 0) {
+            // Non-flashing invulnerability readability.
+            ctx.globalAlpha = 0.62;
+        }
 
         if (!game?.gameOverTriggered && this.damageGlowTimer > 0) {
             const t = Math.max(0, this.damageGlowTimer / this.damageGlowDuration);

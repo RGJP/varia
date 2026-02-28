@@ -55,9 +55,9 @@ export class Game {
         this.state = GameState.START_MENU;
         this.lastTime = 0;
         this.difficultyOptions = [
-            { id: 'easy', label: '🧒 Easy (20 HP)', hearts: 20 },
-            { id: 'normal', label: '😎 Normal (5 HP)', hearts: 5 },
-            { id: 'heroic', label: '😵‍💫 Hard (3 HP)', hearts: 3 }
+            { id: 'easy', label: '🌱 Easy (20 HP)', hearts: 20 },
+            { id: 'normal', label: '⚖️ Normal (5 HP)', hearts: 5 },
+            { id: 'heroic', label: '🧗 Hard (3 HP)', hearts: 3 }
         ];
         this.selectedDifficultyId = null;
 
@@ -66,6 +66,7 @@ export class Game {
         this.enemies = [];
         this.pendingBossSpawns = [];
         this.collectibles = [];
+        this.safeZones = [];
         this.rocks = [];
         this.enemyProjectiles = [];
         this.vines = [];
@@ -95,6 +96,15 @@ export class Game {
         this._visiblePlatforms = [];
         this._visibleVines = [];
         this._visibleSwingingVines = [];
+        this._victoryPlatforms = [];
+        this._playerCollisionContext = {
+            enemies: [],
+            collectibles: [],
+            safeZones: [],
+            vines: [],
+            swingingVines: [],
+            victoryPlatforms: []
+        };
 
         this.lowestY = 800;
 
@@ -371,6 +381,7 @@ export class Game {
         this.enemies = levelData.enemies;
         this.pendingBossSpawns = levelData.bossSpawns || [];
         this.collectibles = levelData.collectibles;
+        this.safeZones = levelData.safeZones || [];
         this.vines = levelData.vines || [];
         this.swingingVines = levelData.swingingVines || [];
         this.movingPlatforms = levelData.movingPlatforms || [];
@@ -379,6 +390,13 @@ export class Game {
         this.enemyProjectiles = [];
 
         this.totalCoins = this.collectibles.length;
+        this._victoryPlatforms = [];
+        for (let i = 0; i < this.platforms.length; i++) {
+            const platform = this.platforms[i];
+            if (platform && platform.isVictory) {
+                this._victoryPlatforms.push(platform);
+            }
+        }
         this.coinsCollected = 0;
         this.totalEnemies = this.enemies.length + this.pendingBossSpawns.length;
         this.totalCompletionEnemies = 0;
@@ -535,6 +553,11 @@ export class Game {
             }
         }
 
+        const safeZones = this.safeZones;
+        for (let i = 0; i < safeZones.length; i++) {
+            safeZones[i].update(dt);
+        }
+
         // Update moving platforms and include in visible platforms for collision
         for (let i = 0; i < this.movingPlatforms.length; i++) {
             const mp = this.movingPlatforms[i];
@@ -567,7 +590,8 @@ export class Game {
             }
 
             this._spawnNearbyBosses();
-            this.player.update(dt, this.input, this._visiblePlatforms, this);
+            const collisionContext = this._buildPlayerCollisionContext();
+            this.player.update(dt, this.input, this._visiblePlatforms, this, collisionContext);
 
             // Update swinging vines
             const svines = this._visibleSwingingVines;
@@ -729,6 +753,73 @@ export class Game {
         const x = spawnMin + Math.random() * (spawnMax - spawnMin);
         const y = p.y - 70;
         this.collectibles.push(new Collectible(x, y, 'health'));
+    }
+
+    _buildPlayerCollisionContext() {
+        const ctx = this._playerCollisionContext;
+        ctx.enemies.length = 0;
+        ctx.collectibles.length = 0;
+        ctx.safeZones.length = 0;
+        ctx.vines.length = 0;
+        ctx.swingingVines.length = 0;
+        ctx.victoryPlatforms.length = 0;
+
+        const player = this.player;
+        if (!player) return ctx;
+
+        const marginX = 320;
+        const marginY = 260;
+        const left = player.x - marginX;
+        const right = player.x + player.width + marginX;
+        const top = player.y - marginY;
+        const bottom = player.y + player.height + marginY;
+
+        const intersects = (entity) => (
+            entity.x < right &&
+            entity.x + entity.width > left &&
+            entity.y < bottom &&
+            entity.y + entity.height > top
+        );
+
+        const enemies = this.enemies;
+        for (let i = 0; i < enemies.length; i++) {
+            const enemy = enemies[i];
+            if (!enemy || enemy.markedForDeletion) continue;
+            if (intersects(enemy)) ctx.enemies.push(enemy);
+        }
+
+        const collectibles = this.collectibles;
+        for (let i = 0; i < collectibles.length; i++) {
+            const collectible = collectibles[i];
+            if (!collectible || collectible.markedForDeletion) continue;
+            if (intersects(collectible)) ctx.collectibles.push(collectible);
+        }
+
+        const safeZones = this.safeZones;
+        for (let i = 0; i < safeZones.length; i++) {
+            const zone = safeZones[i];
+            if (intersects(zone)) ctx.safeZones.push(zone);
+        }
+
+        const vines = this.vines;
+        for (let i = 0; i < vines.length; i++) {
+            const vine = vines[i];
+            if (intersects(vine)) ctx.vines.push(vine);
+        }
+
+        const swingingVines = this.swingingVines;
+        for (let i = 0; i < swingingVines.length; i++) {
+            const sv = swingingVines[i];
+            if (intersects(sv)) ctx.swingingVines.push(sv);
+        }
+
+        const victoryPlatforms = this._victoryPlatforms;
+        for (let i = 0; i < victoryPlatforms.length; i++) {
+            const platform = victoryPlatforms[i];
+            if (intersects(platform)) ctx.victoryPlatforms.push(platform);
+        }
+
+        return ctx;
     }
 
     // Check if an entity is within the visible viewport (with margin)
@@ -945,6 +1036,19 @@ export class Game {
                 }
             }
 
+            const safeZones = this.safeZones;
+            for (let i = 0; i < safeZones.length; i++) {
+                const zone = safeZones[i];
+                if (
+                    zone.x + zone.width > drawLeft &&
+                    zone.x < drawRight &&
+                    zone.y + zone.height > drawTop &&
+                    zone.y < drawBottom
+                ) {
+                    zone.draw(this.ctx);
+                }
+            }
+
             const enemies = this.enemies;
             for (let i = 0; i < enemies.length; i++) {
                 const enemy = enemies[i];
@@ -1000,6 +1104,11 @@ export class Game {
             const collectibles = this.collectibles;
             for (let i = 0; i < collectibles.length; i++) {
                 if (this._isVisible(collectibles[i])) collectibles[i].draw(this.ctx);
+            }
+
+            const safeZones = this.safeZones;
+            for (let i = 0; i < safeZones.length; i++) {
+                if (this._isVisible(safeZones[i])) safeZones[i].draw(this.ctx);
             }
 
             const enemies = this.enemies;
@@ -1126,6 +1235,29 @@ export class Game {
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
             this.ctx.fillText(completionText, completionTextX, currentY + 2);
 
+            if (this.player && this.player.inSafeBubble) {
+                const panelX = startX;
+                const panelY = currentY + 18;
+                const panelW = 132;
+                const panelH = 26;
+                this.ctx.fillStyle = 'rgba(160, 108, 40, 0.24)';
+                this.ctx.strokeStyle = 'rgba(255, 213, 132, 0.55)';
+                this.ctx.lineWidth = 1.5;
+                this.ctx.beginPath();
+                if (this.ctx.roundRect) {
+                    this.ctx.roundRect(panelX, panelY, panelW, panelH, 12);
+                } else {
+                    this.ctx.rect(panelX, panelY, panelW, panelH);
+                }
+                this.ctx.fill();
+                this.ctx.stroke();
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.font = 'bold 14px "Outfit", sans-serif';
+                this.ctx.fillStyle = '#ffe6b3';
+                this.ctx.fillText('IN BARREL', panelX + panelW / 2, panelY + panelH / 2 + 0.5);
+            }
+
 
             this.ctx.restore();
         }
@@ -1247,8 +1379,8 @@ export class Game {
             this.ctx.fillText('🪙 Collect All Coins and Collectibles', 40, ry); ry += yStep;
             this.ctx.fillText('⚔️ Defeat All Enemies', 40, ry); ry += yStep;
             this.ctx.fillText('🏁 Reach the end with the best score', 40, ry); ry += yStep;
-            this.ctx.fillText('🎲 Levels are always unique', 40, ry); ry += yStep;
-            this.ctx.fillText('🎰 Embrace the Chaos!', 40, ry);
+            this.ctx.fillText('🎰 Experiment, Explore, Enjoy', 40, ry); ry += yStep;
+            this.ctx.fillText('🎲 Levels are always unique', 40, ry);
 
             for (let i = 0; i < buttons.length; i++) {
                 const btn = buttons[i];
@@ -1289,7 +1421,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('Music from Pixabay - version 1.24', 0, cardY + cardHeight + 152);
+            this.ctx.fillText('Music from Pixabay - version 1.25', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';

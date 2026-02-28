@@ -4,7 +4,7 @@ import { getEmojiCanvas } from '../EmojiCache.js';
 export class Collectible extends Entity {
     constructor(x, y, type = 'coin', letter = null) {
         const isSpecial = type === 'health' || type === 'bomb' || type === 'diamond_powerup' || type === 'fire_powerup' || type === 'frost_powerup' || type === 'full_health' || type === 'wing_powerup' || type === 'letter';
-        const size = isSpecial ? 50 : 30;
+        const size = type === 'full_health' ? 66 : (isSpecial ? 50 : 30);
         super(x, y, size, size);
         this.baseY = y;
         this.time = Math.random() * Math.PI * 2;
