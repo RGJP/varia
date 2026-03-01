@@ -23,6 +23,8 @@ export class Background {
         this.height = height;
         this.theme = null;
         this._skyCache = null;
+        this._qualityEma = 1;
+        this._useLiteMode = false;
         this.layers = [];
         this.initLayers();
     }
@@ -30,6 +32,8 @@ export class Background {
     setTheme(theme) {
         this.theme = theme;
         this._skyCache = null;
+        this._qualityEma = 1;
+        this._useLiteMode = false;
         this.initLayers();
     }
 
@@ -144,13 +148,17 @@ export class Background {
     }
 
     resize(width, height) {
+        const prevWidth = this.width || 1;
         const prevHeight = this.height || 1;
         const nextWidth = Math.max(1, Math.floor(width || 1));
         const nextHeight = Math.max(1, Math.floor(height || 1));
+        const widthDelta = Math.abs(nextWidth - prevWidth);
+        const heightDelta = Math.abs(nextHeight - prevHeight);
+        const shouldRescaleGeometry = heightDelta > 2;
 
         // Preserve the level's generated background layout across runtime resizes
         // (e.g. adaptive DPR changes) so visuals never "re-roll" mid-level.
-        if (Array.isArray(this.layers) && this.layers.length > 0) {
+        if (shouldRescaleGeometry && Array.isArray(this.layers) && this.layers.length > 0) {
             const yScale = nextHeight / prevHeight;
             const geometricScale = Math.sqrt(yScale);
             for (let li = 0; li < this.layers.length; li++) {
@@ -167,7 +175,9 @@ export class Background {
 
         this.width = nextWidth;
         this.height = nextHeight;
-        this._skyCache = null;
+        if (heightDelta > 0 || widthDelta > 2) {
+            this._skyCache = null;
+        }
     }
 
     createLayer(parallaxFactor, count, color, shapeType, yOffset = 0) {
@@ -384,8 +394,17 @@ export class Background {
         ctx.fillStyle = horizon;
         ctx.fillRect(0, 0, this.width, this.height);
 
-        if (quality < 0.82) {
-            this._drawLiteBackground(ctx, cameraX, cameraY, quality);
+        const clampedQuality = Math.max(0, Math.min(1, Number(quality) || 1));
+        this._qualityEma = this._qualityEma * 0.9 + clampedQuality * 0.1;
+        // Hysteresis avoids rapid full<->lite toggling that looks like background redraw flicker.
+        if (!this._useLiteMode && this._qualityEma < 0.58) {
+            this._useLiteMode = true;
+        } else if (this._useLiteMode && this._qualityEma > 0.9) {
+            this._useLiteMode = false;
+        }
+
+        if (this._useLiteMode) {
+            this._drawLiteBackground(ctx, cameraX, cameraY, this._qualityEma);
             return;
         }
 
