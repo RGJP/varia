@@ -908,6 +908,7 @@ export class Player extends Entity {
                     game.particles.emit(centerX, centerY, 16, '#ffd54f', [80, 180], [0.2, 0.45], [2, 5]);
                 } else if (collectible.type === 'boss_star') {
                     this.score += 300;
+                    game.hasBossKey = true;
                     playPowerUpPickup('boss_star');
                     game.particles.emit(centerX, centerY, 24, '#ffe066', [90, 240], [0.22, 0.6], [2, 6]);
                 } else {
@@ -917,6 +918,10 @@ export class Player extends Entity {
                     game.particles.emit(centerX, centerY, 10, '#FFFF00', [50, 150], [0.2, 0.5], [2, 4]);
                 }
             }
+        }
+
+        if (game && typeof game.tryRescuePrisoner === 'function') {
+            game.tryRescuePrisoner(this);
         }
 
         // Victory state

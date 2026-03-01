@@ -1322,6 +1322,27 @@ export class AudioEngine {
         }
     }
 
+    playVictoryJingle() {
+        // Short celebratory level-complete sting (~0.7s).
+        const notes = [659.25, 783.99, 987.77, 1318.51]; // E5 G5 B5 E6
+        const steps = [0, 120, 240, 370];
+        for (let i = 0; i < notes.length; i++) {
+            setTimeout(() => {
+                const isFinal = i === notes.length - 1;
+                this._playTone('triangle', notes[i], isFinal ? 0.24 : 0.15, {
+                    endFreq: notes[i] * (isFinal ? 1.06 : 1.03),
+                    gain: isFinal ? 0.34 : 0.26,
+                    attack: 0.0012
+                });
+                this._playTone('sine', notes[i] * 2, isFinal ? 0.18 : 0.12, {
+                    endFreq: notes[i] * 2.05,
+                    gain: isFinal ? 0.16 : 0.11,
+                    attack: 0.0009
+                });
+            }, steps[i]);
+        }
+    }
+
     playLetterVictoryStep(stepIndex) {
         // 6-step climb synchronized with E-M-O-J-I-✅ reveal.
         const notes = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5]; // C5 D5 E5 G5 A5 C6

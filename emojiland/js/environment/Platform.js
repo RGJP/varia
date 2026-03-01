@@ -988,7 +988,7 @@ export class Platform {
     }
 
     getFlagBox() {
-        if (!this.isVictory) return null;
+        if (!this.isVictory || this.flagActive === false) return null;
         return {
             x: this.x + this.width / 2 - 2,
             y: this.y - 80,
@@ -1003,7 +1003,7 @@ export class Platform {
         }
 
         // Draw flag on top for victory platform (extends above the cached area)
-        if (this.isVictory) {
+        if (this.isVictory && this.flagActive !== false) {
             // Flag pole
             ctx.fillStyle = 'white';
             ctx.fillRect(this.x + this.width / 2 - 2, this.y - 80, 4, 80);

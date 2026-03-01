@@ -968,11 +968,15 @@ export function loadLevel() {
     const bossX = arenaX + arenaW / 2 - 80; // 80 = half boss size
     bossSpawns.push({ x: bossX, y: arenaY, platform: arenaPlatform });
 
-    // Update currentX to the end of the arena so victory platform follows correctly
+    // Update currentX to the end of the arena so post-boss sequence platforms follow correctly
     currentX = arenaX + arenaW;
 
-    // Victory platform at the end
-    const victoryPlatform = new Platform(currentX + 300, 500, 300, 100, true, theme);
+    // Add a mid-size rescue platform before victory.
+    const rescuePlatform = new Platform(currentX + 360, 520, 390, 90, false, theme);
+    platforms.push(rescuePlatform);
+
+    // Move victory platform farther away to create a post-rescue run-up.
+    const victoryPlatform = new Platform(currentX + 980, 500, 300, 100, true, theme);
     platforms.push(victoryPlatform);
 
     // Final safety pass: remove any mover whose entire path is too close to static geometry.
@@ -1369,6 +1373,12 @@ export function loadLevel() {
         safeZones,
         vines: validVines,
         swingingVines,
+        prisonerRescue: {
+            platformX: rescuePlatform.x,
+            platformY: rescuePlatform.y,
+            platformWidth: rescuePlatform.width,
+            platformHeight: rescuePlatform.height
+        },
         theme,
         layoutVariantsUsed: usedVariants,
         layoutVariantLabel

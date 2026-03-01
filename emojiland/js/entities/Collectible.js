@@ -22,11 +22,12 @@ export class Collectible extends Entity {
                             type === 'lightning_powerup' ? '\u26A1' :
                         type === 'full_health' ? '\u{1F9DA}' :
                             type === 'wing_powerup' ? '\u{1FAB6}' :
-                                type === 'boss_star' ? '\u{1F31F}' :
+                                type === 'boss_star' ? '\u{1F511}' :
                                 type === 'letter' ? (this.letter || 'E') : '\u{1FA99}';
         this.isPowerUp = type === 'diamond_powerup' || type === 'fire_powerup' || type === 'frost_powerup' || type === 'lightning_powerup' || type === 'full_health' || type === 'wing_powerup';
         this.isReplenish = type === 'health' || type === 'bomb';
-        this._cachedEmoji = getEmojiCanvas(emoji, size);
+        const renderSize = type === 'boss_star' ? Math.round(size * 0.82) : size;
+        this._cachedEmoji = getEmojiCanvas(emoji, renderSize);
     }
 
     update(dt) {
@@ -109,10 +110,17 @@ export class Collectible extends Entity {
         const cached = this._cachedEmoji;
         const drawX = this.x - (cached.width - this.width) / 2;
         const drawY = this.y - (cached.height - this.height) / 2;
+        const isBossKey = this.type === 'boss_star';
         if (this.fadeInDuration > 0 && this.fadeInTimer > 0) {
             const alpha = 1 - (this.fadeInTimer / this.fadeInDuration);
             ctx.save();
             ctx.globalAlpha *= Math.max(0, Math.min(1, alpha));
+            if (isBossKey) {
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 3;
+            }
             if (this.type === 'lightning_powerup') {
                 const cx = this.x + this.width / 2;
                 const cy = this.y + this.height / 2;
@@ -124,6 +132,13 @@ export class Collectible extends Entity {
             }
             ctx.restore();
         } else {
+            if (isBossKey) {
+                ctx.save();
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+                ctx.shadowBlur = 8;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 3;
+            }
             if (this.type === 'lightning_powerup') {
                 const cx = this.x + this.width / 2;
                 const cy = this.y + this.height / 2;
@@ -134,6 +149,9 @@ export class Collectible extends Entity {
                 ctx.restore();
             } else {
                 ctx.drawImage(cached.canvas, drawX, drawY);
+            }
+            if (isBossKey) {
+                ctx.restore();
             }
         }
 

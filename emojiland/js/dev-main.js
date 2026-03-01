@@ -58,10 +58,18 @@ class DevGame extends Game {
         const arenaX = 3200; // Keep dev arena away from world-start wall (x < 0 clamp).
         const arenaW = 1200; // Match normal boss platform length.
         const platform = new Platform(arenaX, baseY, arenaW, 100, false, theme);
+        const rescuePlatform = new Platform(arenaX + arenaW + 360, baseY - 30, 390, 90, false, theme);
+        const victoryPlatform = new Platform(arenaX + arenaW + 980, baseY - 50, 300, 100, true, theme);
+        victoryPlatform.flagActive = false;
 
-        this.platforms = [platform];
+        this.platforms = [platform, rescuePlatform, victoryPlatform];
+        this._victoryPlatforms = [victoryPlatform];
         this.movingPlatforms = [];
         this.collectibles = [];
+        this.pendingBossStarDrops = [];
+        this.prisonerRescue = null;
+        this.hasBossKey = false;
+        this.victoryFlagEnabled = false;
         this.safeZones = [];
         this.vines = [];
         this.swingingVines = [];
@@ -85,6 +93,13 @@ class DevGame extends Game {
         this.player = new Player(arenaX + 80, baseY - 70);
         this.player.facingRight = true;
         this.camera.x = Math.max(0, this.player.x + this.player.width / 2 - this.camera.effectiveWidth / 2);
+
+        this._initPrisonerRescue({
+            platformX: rescuePlatform.x,
+            platformY: rescuePlatform.y,
+            platformWidth: rescuePlatform.width,
+            platformHeight: rescuePlatform.height
+        });
 
         const spawnMargin = 140;
         const spawnLeft = arenaX + spawnMargin;

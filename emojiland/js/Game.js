@@ -71,6 +71,9 @@ export class Game {
         this.rocks = [];
         this.lightningOrbs = [];
         this.enemyProjectiles = [];
+        this.prisonerRescue = null;
+        this.hasBossKey = false;
+        this.victoryFlagEnabled = false;
         this.vines = [];
         this.swingingVines = [];
         this.movingPlatforms = [];
@@ -386,6 +389,9 @@ export class Game {
         this.pendingBossSpawns = levelData.bossSpawns || [];
         this.collectibles = levelData.collectibles;
         this.pendingBossStarDrops = [];
+        this.prisonerRescue = null;
+        this.hasBossKey = false;
+        this.victoryFlagEnabled = false;
         this.safeZones = levelData.safeZones || [];
         this.vines = levelData.vines || [];
         this.swingingVines = levelData.swingingVines || [];
@@ -395,12 +401,14 @@ export class Game {
         this.rocks = [];
         this.lightningOrbs = [];
         this.enemyProjectiles = [];
+        this._initPrisonerRescue(levelData.prisonerRescue);
 
         this.totalCoins = this.collectibles.length;
         this._victoryPlatforms = [];
         for (let i = 0; i < this.platforms.length; i++) {
             const platform = this.platforms[i];
             if (platform && platform.isVictory) {
+                platform.flagActive = false;
                 this._victoryPlatforms.push(platform);
             }
         }
@@ -443,6 +451,454 @@ export class Game {
         this._muteCache = getEmojiCanvas('\u{1F507}', 24);
         this._unmuteCache = getEmojiCanvas('\u{1F50A}', 24);
         this._bombUICache = getEmojiCanvas('\u{1F4A3}', 24);
+    }
+
+    _initPrisonerRescue(rescueData) {
+        if (!rescueData) {
+            this.prisonerRescue = null;
+            this.victoryFlagEnabled = true;
+            for (let i = 0; i < this._victoryPlatforms.length; i++) {
+                this._victoryPlatforms[i].flagActive = true;
+            }
+            return;
+        }
+        const prisonerEmojis = ['🐇', '🧝‍♀️', '🧚‍♀️', '🧸', '🐈', '🐈', '🐈'];
+        const emoji = prisonerEmojis[Math.floor(Math.random() * prisonerEmojis.length)];
+        const cageSize = 94;
+        const prisonerSize = 62;
+        const centerX = rescueData.platformX + rescueData.platformWidth * 0.5;
+        const floorY = rescueData.platformY - 6;
+        const prisonerX = centerX - prisonerSize / 2;
+        const prisonerY = floorY - prisonerSize;
+        this.prisonerRescue = {
+            emoji,
+            emojiCache: getEmojiCanvas(emoji, prisonerSize),
+            keyEmojiCache: getEmojiCanvas('\u{1F511}', 30),
+            state: 'LOCKED',
+            x: prisonerX,
+            y: prisonerY,
+            width: prisonerSize,
+            height: prisonerSize,
+            alpha: 1,
+            floorY,
+            platformRef: {
+                x: rescueData.platformX,
+                y: rescueData.platformY,
+                width: rescueData.platformWidth,
+                height: rescueData.platformHeight
+            },
+            cage: {
+                width: cageSize,
+                height: cageSize,
+                alpha: 1
+            },
+            helpPulse: 0,
+            screamTimer: 5,
+            screamPulse: 0,
+            rescueLabelTimer: 0,
+            danceTimer: 0,
+            escapeTargets: null,
+            escapeTarget: null,
+            vx: 0,
+            vy: 0,
+            onGround: true,
+            keyAnim: null,
+            jumpCooldown: 0.08,
+            despawnAlpha: 1
+        };
+    }
+
+    _isAabbOverlap(a, b) {
+        return (
+            a.x < b.x + b.width &&
+            a.x + a.width > b.x &&
+            a.y < b.y + b.height &&
+            a.y + a.height > b.y
+        );
+    }
+
+    tryRescuePrisoner(player) {
+        const rescue = this.prisonerRescue;
+        if (!rescue || rescue.state !== 'LOCKED' || !player) return false;
+        const bossCleared = this.pendingBossSpawns.length === 0 && !this.hasAliveBoss();
+        if (!bossCleared || !this.hasBossKey) return false;
+        const cageRect = this._getPrisonerCageRect(rescue);
+        if (!this._isAabbOverlap(player, cageRect)) return false;
+        const lockTarget = {
+            x: cageRect.x + cageRect.width * 0.5,
+            y: cageRect.y + cageRect.height * 0.6 + 6
+        };
+        const playerCenter = {
+            x: player.x + player.width * 0.5,
+            y: player.y + player.height * 0.5
+        };
+        rescue.keyAnim = {
+            fromX: playerCenter.x,
+            fromY: playerCenter.y,
+            toX: lockTarget.x,
+            toY: lockTarget.y,
+            t: 0,
+            duration: 0.34
+        };
+        rescue.state = 'KEY_TRAVEL';
+        this.hasBossKey = false;
+        rescue.rescueLabelTimer = 5.2;
+        this.victoryFlagEnabled = true;
+        for (let i = 0; i < this._victoryPlatforms.length; i++) {
+            this._victoryPlatforms[i].flagActive = true;
+        }
+        return true;
+    }
+
+    _getPrisonerCageRect(rescue) {
+        return {
+            x: rescue.x + rescue.width / 2 - rescue.cage.width / 2,
+            y: rescue.y + rescue.height - rescue.cage.height,
+            width: rescue.cage.width,
+            height: rescue.cage.height
+        };
+    }
+
+    _buildPrisonerEscapeTargets(rescue) {
+        if (!rescue) return [];
+        const startX = rescue.x + rescue.width / 2;
+        const candidates = [];
+        for (let i = 0; i < this.platforms.length; i++) {
+            const p = this.platforms[i];
+            if (!p || p.width < 120) continue;
+            const cx = p.x + p.width / 2;
+            if (cx >= startX - 12) continue;
+            candidates.push({
+                x: cx,
+                y: p.y - rescue.height
+            });
+        }
+        candidates.sort((a, b) => b.x - a.x);
+        const hops = [];
+        let prevX = startX;
+        let prevY = rescue.y;
+        for (let i = 0; i < candidates.length; i++) {
+            const c = candidates[i];
+            const dx = prevX - c.x;
+            if (dx < 150 || dx > 680) continue;
+            if (Math.abs(c.y - prevY) > 260) continue;
+            hops.push(c);
+            prevX = c.x;
+            prevY = c.y;
+            if (hops.length >= 7) break;
+        }
+        if (hops.length === 0 || (startX - hops[hops.length - 1].x) < 680) {
+            hops.push({ x: startX - 900, y: rescue.floorY - rescue.height });
+        }
+        return hops;
+    }
+
+    _startPrisonerEscapeJump(rescue, target) {
+        if (!rescue || !target) return;
+        const gravity = 1450;
+        const fromX = rescue.x;
+        const fromY = rescue.y;
+        const toX = target.x - rescue.width / 2;
+        const toY = target.y;
+        const dx = toX - fromX;
+        const distance = Math.max(1, Math.abs(dx));
+        const jumpTime = Math.max(0.38, Math.min(0.7, distance / 360));
+        rescue.vx = dx / jumpTime;
+        rescue.vy = (toY - fromY - 0.5 * gravity * jumpTime * jumpTime) / jumpTime;
+        rescue.escapeTarget = { x: toX, y: toY, gravity };
+        rescue.onGround = false;
+    }
+
+    _updatePrisonerRescue(dt) {
+        const rescue = this.prisonerRescue;
+        if (!rescue) return;
+        rescue.helpPulse += dt * 5;
+        const isBossFightActive = this.hasAliveBoss() || this.pendingBossSpawns.length > 0;
+        if (rescue.state === 'LOCKED') {
+            if (isBossFightActive) {
+                rescue.screamTimer -= dt;
+                if (rescue.screamTimer <= 0) {
+                    rescue.screamTimer = 5;
+                    rescue.screamPulse = 0.9;
+                }
+            } else {
+                rescue.screamTimer = 5;
+            }
+            rescue.screamPulse = Math.max(0, rescue.screamPulse - dt * 1.8);
+            return;
+        }
+
+        if (rescue.state === 'KEY_TRAVEL') {
+            if (!rescue.keyAnim) {
+                rescue.state = 'UNLOCKING';
+                return;
+            }
+            rescue.keyAnim.t += dt / Math.max(0.01, rescue.keyAnim.duration);
+            if (rescue.keyAnim.t >= 1) {
+                rescue.keyAnim = null;
+                rescue.state = 'UNLOCKING';
+            }
+            return;
+        }
+
+        if (rescue.state === 'UNLOCKING') {
+            rescue.cage.alpha = Math.max(0, rescue.cage.alpha - dt * 2.5);
+            rescue.danceTimer += dt;
+            if (rescue.cage.alpha <= 0) {
+                rescue.state = 'FREED_CELEBRATE';
+                rescue.danceTimer = 0;
+            }
+            return;
+        }
+
+        if (rescue.state === 'FREED_CELEBRATE') {
+            rescue.danceTimer += dt;
+            rescue.rescueLabelTimer -= dt;
+            const jumpsFinished = rescue.danceTimer >= 3.85;
+            if (jumpsFinished || rescue.rescueLabelTimer <= 0) {
+                rescue.state = 'ESCAPING';
+                rescue.escapeTargets = this._buildPrisonerEscapeTargets(rescue);
+                rescue.escapeTarget = null;
+                rescue.vx = 0;
+                rescue.vy = 0;
+                rescue.jumpCooldown = 0.06;
+            }
+            return;
+        }
+
+        if (rescue.state === 'ESCAPING') {
+            rescue.jumpCooldown = Math.max(0, rescue.jumpCooldown - dt);
+            if (rescue.onGround && !rescue.escapeTarget && rescue.jumpCooldown <= 0) {
+                if (Array.isArray(rescue.escapeTargets) && rescue.escapeTargets.length > 0) {
+                    const target = rescue.escapeTargets.shift();
+                    this._startPrisonerEscapeJump(rescue, target);
+                } else {
+                    rescue.escapeTarget = { x: this.camera.x - 320, y: rescue.y, gravity: 1450 };
+                    rescue.vx = -460;
+                    rescue.vy = -240;
+                    rescue.onGround = false;
+                }
+            }
+
+            if (!rescue.onGround) {
+                const gravity = (rescue.escapeTarget && rescue.escapeTarget.gravity) ? rescue.escapeTarget.gravity : 1450;
+                rescue.vy += gravity * dt;
+                rescue.x += rescue.vx * dt;
+                rescue.y += rescue.vy * dt;
+
+                if (rescue.escapeTarget) {
+                    const tx = rescue.escapeTarget.x;
+                    const reachedX = rescue.vx <= 0 ? (rescue.x <= tx) : (rescue.x >= tx);
+                    if (reachedX && rescue.vy >= 0) {
+                        rescue.x = tx;
+                        rescue.y = rescue.escapeTarget.y;
+                        rescue.vx = 0;
+                        rescue.vy = 0;
+                        rescue.onGround = true;
+                        rescue.escapeTarget = null;
+                        rescue.jumpCooldown = 0.08;
+                    }
+                }
+            }
+
+            if (rescue.x + rescue.width < this.camera.x - 240) {
+                rescue.state = 'DESPAWNING';
+            }
+            return;
+        }
+
+        if (rescue.state === 'DESPAWNING') {
+            rescue.despawnAlpha = Math.max(0, rescue.despawnAlpha - dt * 1.7);
+            rescue.x -= 170 * dt;
+            if (rescue.despawnAlpha <= 0 || rescue.x + rescue.width < this.camera.x - 320) {
+                rescue.state = 'DONE';
+            }
+        }
+    }
+
+    _drawPrisonerCage(ctx, rescue) {
+        const cageRect = this._getPrisonerCageRect(rescue);
+        const alpha = Math.max(0, Math.min(1, rescue.cage.alpha));
+        if (alpha <= 0) return;
+        ctx.save();
+        ctx.globalAlpha *= alpha;
+
+        const r = 10;
+        const x = cageRect.x;
+        const y = cageRect.y;
+        const w = cageRect.width;
+        const h = cageRect.height;
+        const topArcH = Math.max(16, h * 0.18);
+
+        // See-through classic cage look: dark iron bars with minimal fill.
+        ctx.strokeStyle = 'rgba(22, 22, 24, 0.95)';
+        ctx.fillStyle = 'rgba(22, 22, 24, 0.08)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+            ctx.roundRect(x, y + topArcH, w, h - topArcH, r);
+        } else {
+            ctx.rect(x, y + topArcH, w, h - topArcH);
+        }
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(10, 10, 11, 0.98)';
+        ctx.lineWidth = 3.2;
+        ctx.beginPath();
+        ctx.moveTo(x + 8, y + topArcH);
+        ctx.quadraticCurveTo(x + w / 2, y - topArcH * 0.72, x + w - 8, y + topArcH);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x + 14, y + h - 2);
+        ctx.lineTo(x + w - 14, y + h - 2);
+        ctx.stroke();
+
+        const bars = 8;
+        ctx.strokeStyle = 'rgba(18, 18, 20, 0.96)';
+        ctx.lineWidth = 3;
+        for (let i = 0; i < bars; i++) {
+            const bx = x + 10 + (i * (w - 20) / (bars - 1));
+            ctx.beginPath();
+            ctx.moveTo(bx, y + topArcH + 2);
+            ctx.lineTo(bx, y + h - 4);
+            ctx.stroke();
+        }
+
+        const lockW = 16;
+        const lockH = 13;
+        const lockX = x + w / 2 - lockW / 2;
+        const lockY = y + h * 0.6;
+        ctx.fillStyle = 'rgba(35, 35, 38, 0.98)';
+        if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(lockX, lockY, lockW, lockH, 3);
+            ctx.fill();
+        } else {
+            ctx.fillRect(lockX, lockY, lockW, lockH);
+        }
+        ctx.strokeStyle = 'rgba(6, 6, 7, 1)';
+        ctx.lineWidth = 1.6;
+        ctx.strokeRect(lockX, lockY, lockW, lockH);
+        ctx.beginPath();
+        ctx.arc(lockX + lockW / 2, lockY, 4.2, Math.PI, 0);
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    _drawPrisonerRescue(ctx) {
+        const rescue = this.prisonerRescue;
+        if (!rescue || rescue.state === 'DONE') return;
+
+        const inView = this._isVisible({
+            x: rescue.x - 90,
+            y: rescue.y - 140,
+            width: rescue.width + 180,
+            height: rescue.height + 220
+        }, 120);
+        if (!inView) return;
+
+        ctx.save();
+        const alpha = rescue.state === 'DESPAWNING' ? rescue.despawnAlpha : 1;
+        ctx.globalAlpha *= Math.max(0, Math.min(1, alpha));
+
+        const celebrateActive = rescue.state === 'FREED_CELEBRATE';
+        const celebrateT = celebrateActive ? Math.max(0, rescue.danceTimer) : 0;
+        const wigglePhase = celebrateActive && celebrateT < 0.9;
+        const jumpPhase = celebrateActive && celebrateT >= 0.9 && celebrateT < 1.85;
+        const crankPhase = celebrateActive && celebrateT >= 1.85 && celebrateT < 3.85;
+        const danceOffset = (rescue.state === 'UNLOCKING')
+            ? (Math.sin(rescue.danceTimer * 7) * 2.2 - Math.abs(Math.sin(rescue.danceTimer * 8.5)) * 4.5)
+            : (jumpPhase
+                ? (-Math.abs(Math.sin((celebrateT - 0.9) * 18.5)) * 15.5)
+                : (crankPhase
+                    ? (-Math.abs(Math.sin((celebrateT - 1.85) * 20.0)) * 5.4)
+                    : (celebrateActive ? Math.sin(celebrateT * 8.5) * 1.8 : 0)));
+        const screamShake = (rescue.state === 'LOCKED' && rescue.screamPulse > 0)
+            ? Math.sin(rescue.helpPulse * 35) * (2.4 * rescue.screamPulse)
+            : 0;
+        const px = rescue.x + screamShake;
+        const py = rescue.y + danceOffset;
+
+        if (rescue.emojiCache) {
+            if (celebrateActive) {
+                // Ordered celebration: wiggle/tilt -> a few hops -> jog/crank wind-up.
+                const centerX = px + rescue.width / 2 + (
+                    jumpPhase
+                        ? Math.sin(celebrateT * 6.2) * 2.2
+                        : (crankPhase ? Math.sin((celebrateT - 1.85) * 22.0) * 6.8 : Math.sin(celebrateT * 6.2) * 4.8)
+                );
+                const centerY = py + rescue.height / 2;
+                const wiggleRotation = wigglePhase
+                    ? Math.sin(celebrateT * 12.6) * 0.34
+                    : (crankPhase ? Math.sin((celebrateT - 1.85) * 18.0) * 0.2 : Math.sin(celebrateT * 9.5) * 0.12);
+                const flipScaleX = wigglePhase
+                    ? (Math.cos(celebrateT * 6.6) >= 0 ? 1 : -1)
+                    : 1;
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(wiggleRotation);
+                ctx.scale(flipScaleX, 1);
+                ctx.drawImage(rescue.emojiCache.canvas, -rescue.emojiCache.width / 2, -rescue.emojiCache.height / 2);
+                ctx.restore();
+            } else {
+                ctx.drawImage(rescue.emojiCache.canvas, px - (rescue.emojiCache.width - rescue.width) / 2, py - (rescue.emojiCache.height - rescue.height) / 2);
+            }
+        }
+
+        if (rescue.state === 'LOCKED' || rescue.state === 'KEY_TRAVEL' || rescue.state === 'UNLOCKING') {
+            this._drawPrisonerCage(ctx, rescue);
+        }
+
+        if (rescue.state === 'KEY_TRAVEL' && rescue.keyAnim && rescue.keyEmojiCache) {
+            const k = rescue.keyAnim;
+            const t = Math.max(0, Math.min(1, k.t));
+            const eased = 1 - Math.pow(1 - t, 3);
+            const arc = Math.sin(t * Math.PI) * 28;
+            const kx = k.fromX + (k.toX - k.fromX) * eased;
+            const ky = k.fromY + (k.toY - k.fromY) * eased - arc;
+            const keyW = rescue.keyEmojiCache.width;
+            const keyH = rescue.keyEmojiCache.height;
+
+            ctx.save();
+            ctx.translate(kx, ky);
+            ctx.rotate((1 - t) * 0.45 - 0.25);
+            ctx.drawImage(rescue.keyEmojiCache.canvas, -keyW / 2, -keyH / 2);
+            ctx.restore();
+        }
+
+        if (rescue.state === 'LOCKED') {
+            const pulse = 1 + Math.sin(rescue.helpPulse) * 0.08 + rescue.screamPulse * 0.26;
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = `bold ${Math.round(26 * pulse)}px "Outfit", sans-serif`;
+            ctx.fillStyle = rescue.screamPulse > 0 ? '#ff8a80' : '#fff2f2';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.82)';
+            ctx.lineWidth = 5;
+            const tx = rescue.x + rescue.width / 2 + screamShake * 1.5;
+            const ty = rescue.y - 44 - rescue.screamPulse * 8;
+            ctx.strokeText('Help Me! 😢', tx, ty);
+            ctx.fillText('Help Me! 😢', tx, ty);
+            ctx.restore();
+        } else if (rescue.state === 'FREED_CELEBRATE') {
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 28px "Outfit", sans-serif';
+            ctx.fillStyle = '#e8ff7a';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.82)';
+            ctx.lineWidth = 5;
+            const tx = rescue.x + rescue.width / 2;
+            const ty = rescue.y - 44;
+            ctx.strokeText('Yay, I’m free! 🥰', tx, ty);
+            ctx.fillText('Yay, I’m free! 🥰', tx, ty);
+            ctx.restore();
+        }
+
+        ctx.restore();
     }
 
     start() {
@@ -642,6 +1098,7 @@ export class Game {
 
             const collectibles = this.collectibles;
             this._updatePendingBossStarDrops(dt);
+            this._updatePrisonerRescue(dt);
             for (let i = 0; i < collectibles.length; i++) {
                 const collectible = collectibles[i];
                 if (
@@ -700,6 +1157,9 @@ export class Game {
         this.state = GameState.VICTORY;
         this.canRestart = false;
         setTimeout(() => { this.canRestart = true; }, 1000);
+        if (this.audio && typeof this.audio.playVictoryJingle === 'function') {
+            this.audio.playVictoryJingle();
+        }
         this.audio.fadeOutMusic(1000);
     }
 
@@ -712,7 +1172,7 @@ export class Game {
     }
 
     canTriggerVictory() {
-        return this.pendingBossSpawns.length === 0 && !this.hasAliveBoss();
+        return this.victoryFlagEnabled && this.pendingBossSpawns.length === 0 && !this.hasAliveBoss();
     }
 
     _spawnNearbyBosses() {
@@ -1130,6 +1590,7 @@ export class Game {
                     collectible.draw(this.ctx);
                 }
             }
+            this._drawPrisonerRescue(this.ctx);
 
             const safeZones = this.safeZones;
             for (let i = 0; i < safeZones.length; i++) {
@@ -1206,6 +1667,7 @@ export class Game {
             for (let i = 0; i < collectibles.length; i++) {
                 if (this._isVisible(collectibles[i])) collectibles[i].draw(this.ctx);
             }
+            this._drawPrisonerRescue(this.ctx);
 
             const safeZones = this.safeZones;
             for (let i = 0; i < safeZones.length; i++) {
