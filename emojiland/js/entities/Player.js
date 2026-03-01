@@ -1691,7 +1691,9 @@ export class Player extends Entity {
             const pulse = 1 + Math.sin(this.pulseTimer * 10) * 0.025;
             const text = 'Level 100% ✅';
             const centerX = this.x + this.width / 2;
-            const y = this.y - 184 - (1 - t) * 10;
+            const celebrationActive = this.letterCelebrationTimer > 0 && this.letterCelebrationVisibleCount > 0;
+            const popupBaseY = celebrationActive ? (this.y - 258) : (this.y - 184);
+            const y = popupBaseY - (1 - t) * 10;
 
             ctx.save();
             ctx.globalAlpha = Math.max(0, Math.min(1, fade));
