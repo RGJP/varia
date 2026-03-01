@@ -1388,4 +1388,26 @@ export class AudioEngine {
             }, delays[i]);
         }
     }
+
+    playPadlockUnlock() {
+        // Distinct metallic "click click" for cage/padlock unlock.
+        const click = (base, detune = 0) => {
+            this._playTone('square', this._jitter(base, 0.01), 0.048, {
+                endFreq: this._jitter(base * 0.74, 0.01),
+                gain: 0.34,
+                attack: 0.0007,
+                detune
+            });
+            this._playTone('triangle', this._jitter(base * 1.58, 0.012), 0.04, {
+                endFreq: this._jitter(base * 1.2, 0.012),
+                gain: 0.19,
+                attack: 0.0006,
+                detune: detune * 0.6
+            });
+            this._playNoiseBurst(0.022, 0.07, 2600);
+        };
+
+        click(1480, 2);
+        setTimeout(() => click(1280, -3), 88);
+    }
 }

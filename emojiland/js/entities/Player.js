@@ -42,6 +42,7 @@ export class Player extends Entity {
         this.vineClimbDist = 0; // distance along swinging vine rope from pivot
 
         this.airJumps = 1;
+        this.walkOffAirJumpBonusAvailable = false;
         this.touchingWall = false;
         this.wasTouchingWall = false;
 
@@ -200,6 +201,7 @@ export class Player extends Entity {
         if (this.grounded || (this.wasTouchingWall && this.vy >= 0)) {
             this.coyoteTimer = this.coyoteTime;
             this.airJumps = 1;
+            this.walkOffAirJumpBonusAvailable = true;
         } else {
             this.coyoteTimer -= dt;
         }
@@ -427,6 +429,7 @@ export class Player extends Entity {
                         this.jumpBufferTimer = 0;
                         this.coyoteTimer = 0;
                         this.airJumps = 1;
+                        this.walkOffAirJumpBonusAvailable = false;
                         break;
                     }
                 }
@@ -454,6 +457,7 @@ export class Player extends Entity {
                         this.jumpBufferTimer = 0;
                         this.coyoteTimer = 0;
                         this.airJumps = 1;
+                        this.walkOffAirJumpBonusAvailable = false;
                         break;
                     }
                 }
@@ -494,6 +498,7 @@ export class Player extends Entity {
                 this.spinDirection = this.facingRight ? 1 : -1;
                 this.rotation = 0;
                 this.airJumps = 1;
+                this.walkOffAirJumpBonusAvailable = false;
                 this.spinBaseRotation = this.rotation;
                 this.jumpBufferTimer = 0;
                 this.coyoteTimer = 0;
@@ -560,6 +565,7 @@ export class Player extends Entity {
                 this.spinBaseRotation = this.rotation;
                 this.jumpBufferTimer = 0;
                 this.coyoteTimer = 0;
+                this.walkOffAirJumpBonusAvailable = false;
                 game.audio.playJump();
                 game.particles.emitJump(this.x + this.width / 2, this.y + this.height, game.currentTheme.particleColor);
             } else if (this.airJumps > 0) {
@@ -571,7 +577,12 @@ export class Player extends Entity {
                 this.spinDirection = this.facingRight ? 1 : -1;
                 this.spinBaseRotation = this.rotation;
                 this.jumpBufferTimer = 0;
-                this.airJumps--;
+                if (this.walkOffAirJumpBonusAvailable) {
+                    // Walking off a ledge grants one extra in-air jump before consuming the normal air jump.
+                    this.walkOffAirJumpBonusAvailable = false;
+                } else {
+                    this.airJumps--;
+                }
                 game.audio.playJump();
                 game.particles.emitJump(this.x + this.width / 2, this.y + this.height, game.currentTheme.particleColor);
             }
@@ -675,6 +686,7 @@ export class Player extends Entity {
                 this.vy = this.jumpForce;
                 this.ignoreVineTimer = 0.3; // Prevent re-sticking
                 this.isJumping = true;
+                this.walkOffAirJumpBonusAvailable = false;
                 this.isSpinning = true;
                 this.spinDirection = this.facingRight ? 1 : -1;
                 this.spinBaseRotation = this.rotation;
@@ -812,6 +824,7 @@ export class Player extends Entity {
                         this.forceFullJump = true;
                         // Treat stomps like a fresh jump launch so a follow-up air jump is available.
                         this.airJumps = 1;
+                        this.walkOffAirJumpBonusAvailable = false;
                         this.coyoteTimer = 0;
                         this.jumpBufferTimer = 0;
                         this.isSpinning = true;
@@ -1006,6 +1019,7 @@ export class Player extends Entity {
                             this.isJumping = true;
                             this.forceFullJump = true;
                             this.airJumps = 1;
+                            this.walkOffAirJumpBonusAvailable = false;
                             this.coyoteTimer = 0;
                             this.jumpBufferTimer = 0;
                             this.isSpinning = true;

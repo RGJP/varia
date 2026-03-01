@@ -37,6 +37,11 @@ export class ParticleSystem {
         this.maxParticles = this.baseMaxParticles;
         this.quality = 1;
         this.mobileMode = false;
+        this.emissionScale = 1;
+        this.lifeDecayMultiplier = 1;
+        this.renderSizeScale = 1;
+        this.drawStride = 1;
+        this.drawAsSquaresOnly = false;
         this.pool = [];
         for (let i = 0; i < this.baseMaxParticles; i++) {
             this.pool.push(new Particle());
@@ -50,17 +55,27 @@ export class ParticleSystem {
     }
 
     setQuality(quality) {
-        const minQuality = this.mobileMode ? 0.45 : 0.62;
+        const minQuality = this.mobileMode ? 0.2 : 0.25;
         this.quality = Math.max(minQuality, Math.min(1, quality));
         const scaledMax = this.mobileMode
-            ? this.baseMaxParticles * (0.55 + this.quality * 0.45)
-            : this.baseMaxParticles * this.quality;
-        this.maxParticles = Math.max(this.mobileMode ? 180 : 320, Math.floor(scaledMax));
+            ? this.baseMaxParticles * (0.16 + Math.pow(this.quality, 1.8) * 0.84)
+            : this.baseMaxParticles * (0.2 + Math.pow(this.quality, 1.5) * 0.8);
+        this.maxParticles = Math.max(this.mobileMode ? 110 : 160, Math.floor(scaledMax));
+        this.emissionScale = this.mobileMode
+            ? Math.pow(this.quality, 2.4)
+            : Math.pow(this.quality, 2.0);
+        this.lifeDecayMultiplier = this.mobileMode
+            ? (1 + (1 - this.quality) * 2.4)
+            : (1 + (1 - this.quality) * 1.8);
+        this.renderSizeScale = 0.7 + this.quality * 0.3;
+        this.drawStride = this.quality < 0.32 ? 4 : (this.quality < 0.5 ? 3 : (this.quality < 0.68 ? 2 : 1));
+        this.drawAsSquaresOnly = this.quality < 0.64;
     }
 
     _scaledCount(baseCount, minCount = 1) {
-        const scale = this.mobileMode ? Math.max(0.2, this.quality * this.quality) : this.quality;
-        return Math.max(minCount, Math.floor(baseCount * scale));
+        const scaled = Math.floor(baseCount * this.emissionScale);
+        if (minCount <= 0) return Math.max(0, scaled);
+        return Math.max(minCount, scaled);
     }
 
     _getParticle() {
@@ -72,7 +87,8 @@ export class ParticleSystem {
 
     emit(x, y, count, color, speedRange, lifeRange, sizeRange) {
         if (count <= 0) return;
-        const reducedCount = this._scaledCount(count / 4);
+        const minCount = count >= 10 ? 1 : 0;
+        const reducedCount = this._scaledCount(count / 4, minCount);
         for (let i = 0; i < reducedCount; i++) {
             if (this.particles.length >= this.maxParticles) break;
             const p = this._getParticle();
@@ -246,11 +262,12 @@ export class ParticleSystem {
     update(dt) {
         // Update and filter dead in a single pass using a write index
         let writeIdx = 0;
+        const decay = this.lifeDecayMultiplier;
         for (let i = 0; i < this.particles.length; i++) {
             const p = this.particles[i];
             p.x += p.vx * dt;
             p.y += p.vy * dt;
-            p.life -= dt;
+            p.life -= dt * decay;
             if (p.life > 0) {
                 this.particles[writeIdx++] = p;
             } else {
@@ -280,14 +297,14 @@ export class ParticleSystem {
         for (const [color, particles] of byColor) {
             if (particles.length === 0) continue;
             ctx.fillStyle = color;
-            for (let i = 0; i < particles.length; i++) {
+            for (let i = 0; i < particles.length; i += this.drawStride) {
                 const p = particles[i];
                 const ratio = p.life / p.maxLife;
                 if (ratio <= 0) continue;
                 // If fadeInverse is true, it's faint at start and opaque at end of life
                 ctx.globalAlpha = p.fadeInverse ? (1 - ratio) : ratio;
-                const drawRadius = p.size * (p.fadeInverse ? 1 : ratio);
-                if (drawRadius <= 2.2) {
+                const drawRadius = p.size * (p.fadeInverse ? 1 : ratio) * this.renderSizeScale;
+                if (this.drawAsSquaresOnly || drawRadius <= 2.2) {
                     const d = drawRadius * 2;
                     ctx.fillRect(p.x - drawRadius, p.y - drawRadius, d, d);
                 } else {
