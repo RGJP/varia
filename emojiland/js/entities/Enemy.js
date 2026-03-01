@@ -17,7 +17,7 @@ const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_tengu', 'boss_spider', 'bos
 const TYPE_PATROL = 'patrol';
 const TYPE_CHASER = 'chaser'; // 👹
 const TYPE_JUMPER = 'jumper'; // 🐸
-const TYPE_SHOOTER = 'shooter'; // 🧜‍♂️
+const TYPE_SHOOTER = 'shooter'; // 🐡
 const TYPE_FLYER = 'flyer';
 
 const TYPE_GHOST = 'ghost'; // 👻
@@ -51,7 +51,7 @@ export class Enemy extends Entity {
             { type: TYPE_PATROL, width: 58, height: 58, emoji: '🐢', baseSpeed: 50, health: 2 },
             { type: TYPE_CHASER, width: 55, height: 55, emoji: '👹', baseSpeed: 100, health: 4 },
             { type: TYPE_JUMPER, width: 52, height: 52, emoji: '🐸', baseSpeed: 64, health: 2 },
-            { type: TYPE_SHOOTER, width: 50, height: 60, emoji: '🧜‍♂️', baseSpeed: 75, health: 3 },
+            { type: TYPE_SHOOTER, width: 50, height: 60, emoji: '🐡', baseSpeed: 75, health: 3 },
             { type: TYPE_EAGLE, width: 56, height: 56, emoji: '🦅', baseSpeed: 90, health: 2 },
             { type: TYPE_OWL, width: 40, height: 40, emoji: '🦉', baseSpeed: 90, health: 2 },
             { type: TYPE_CROW, width: 48, height: 48, emoji: '🐦‍⬛', baseSpeed: 120, health: 1 },
@@ -122,6 +122,8 @@ export class Enemy extends Entity {
         this.shellHitCooldownTimer = 0;
         this.alienStompCount = 0;
         this.countsForCompletionObjective = true;
+        this.deathFadeDuration = 0;
+        this.deathFadeTimer = 0;
 
         if (this.type === TYPE_PATROL) this.state = 'PATROL';
         if (this.type === TYPE_CHASER) this.state = 'PATROL';
@@ -181,8 +183,9 @@ export class Enemy extends Entity {
             this.kamikazeCountdown = 0;
         }
 
-        // Pre-cache emoji
-        this._cachedEmoji = getEmojiCanvas(this.emoji, this.height);
+        // Keep shooter visually larger without changing gameplay hitbox/mechanics.
+        const emojiRenderSize = this.type === TYPE_SHOOTER ? Math.round(this.height * 1.25) : this.height;
+        this._cachedEmoji = getEmojiCanvas(this.emoji, emojiRenderSize);
         this._tongueRect = { x: 0, y: 0, width: 0, height: 0 };
     }
 
@@ -203,6 +206,8 @@ export class Enemy extends Entity {
     }
 
     takeDamage(amount, game) {
+        if (this.markedForDeletion) return;
+
         if (this.type === TYPE_ENRAGED) {
             this.damageFlashTimer = 0.2;
             if (game && game.particles) {
@@ -262,6 +267,7 @@ export class Enemy extends Entity {
                 if (game && game.audio) game.audio.playHit();
             } else {
                 this.markedForDeletion = true;
+                if (this._shouldUseDeathFade(game)) this._startDeathFade();
                 if (game && game.particles) {
                     const cx = this.x + this.width / 2;
                     const cy = this.y + this.height / 2;
@@ -305,6 +311,13 @@ export class Enemy extends Entity {
     }
 
     update(dt, game) {
+        if (this.markedForDeletion) {
+            if (this.deathFadeTimer > 0) {
+                this.deathFadeTimer = Math.max(0, this.deathFadeTimer - dt);
+            }
+            return;
+        }
+
         if (this.state === 'REVIVING') {
             this.stateTimer -= dt;
             if (this.stateTimer <= 0) {
@@ -530,6 +543,7 @@ export class Enemy extends Entity {
             if (game && this.y > game.lowestY + 120) {
                 if (!this.markedForDeletion) {
                     this.markedForDeletion = true;
+                    if (this._shouldUseDeathFade(game)) this._startDeathFade();
                     if (game.particles) {
                         game.particles.emitDeath(this.x + this.width / 2, game.lowestY - 10);
                     }
@@ -667,6 +681,7 @@ export class Enemy extends Entity {
     stomp(game) {
         if (this.type === TYPE_JELLYFISH) {
             this.markedForDeletion = true;
+            if (this._shouldUseDeathFade(game)) this._startDeathFade();
             if (game && game.particles) game.particles.emitDeath(this.x + this.width / 2, this.y + this.height / 2);
             if (game && game.player) game.player.score += 50;
             if (game && typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(this);
@@ -1425,6 +1440,8 @@ export class Enemy extends Entity {
     }
 
     draw(ctx) {
+        if (this.markedForDeletion && this.deathFadeTimer <= 0) return;
+
         ctx.save();
         if (this.type === TYPE_TROLL) {
             const cx = this.x + this.width / 2;
@@ -1540,6 +1557,9 @@ export class Enemy extends Entity {
             ctx.shadowOffsetY = 0;
         }
 
+        if (this.deathFadeTimer > 0 && this.deathFadeDuration > 0) {
+            alpha *= Math.max(0, Math.min(1, this.deathFadeTimer / this.deathFadeDuration));
+        }
         ctx.globalAlpha = alpha;
 
         ctx.translate(drawX, drawY);
@@ -1642,6 +1662,17 @@ export class Enemy extends Entity {
             ctx.fillText(label, tx, ty);
             ctx.restore();
         }
+    }
+
+    _shouldUseDeathFade(game) {
+        return !!(game && game.particles && game.particles.panicMode && game.particles.emissionScale <= 0.06);
+    }
+
+    _startDeathFade() {
+        this.deathFadeDuration = 0.3;
+        this.deathFadeTimer = this.deathFadeDuration;
+        this.vx = 0;
+        this.vy = 0;
     }
 }
 

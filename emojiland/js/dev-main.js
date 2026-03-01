@@ -9,7 +9,7 @@ const DEV_TARGETS = [
     { id: 'enemy:patrol:turtle', label: 'Enemy - Turtle (🐢)', kind: 'enemy', type: 'patrol', emoji: '🐢' },
     { id: 'enemy:chaser:ogre', label: 'Enemy - Ogre (👹)', kind: 'enemy', type: 'chaser', emoji: '👹' },
     { id: 'enemy:jumper:frog', label: 'Enemy - Frog (🐸)', kind: 'enemy', type: 'jumper', emoji: '🐸' },
-    { id: 'enemy:shooter:genie', label: 'Enemy - Genie (🧜‍♂️)', kind: 'enemy', type: 'shooter', emoji: '🧜‍♂️' },
+    { id: 'enemy:shooter:genie', label: 'Enemy - Genie (🐡)', kind: 'enemy', type: 'shooter', emoji: '🐡' },
     { id: 'enemy:eagle', label: 'Enemy - Eagle (🦅)', kind: 'enemy', type: 'eagle', emoji: '🦅' },
     { id: 'enemy:owl', label: 'Enemy - Owl (🦉)', kind: 'enemy', type: 'owl', emoji: '🦉' },
     { id: 'enemy:crow', label: 'Enemy - Crow (🐦‍⬛)', kind: 'enemy', type: 'crow', emoji: '🐦‍⬛' },

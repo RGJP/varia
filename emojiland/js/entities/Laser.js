@@ -11,7 +11,7 @@ export class Laser extends Entity {
         this.vy = Math.sin(angle) * this.speed;
         // Point the emoji in the direction of travel
         this.rotation = angle + Math.PI / 2;
-        this.emoji = '🔱';
+        this.emoji = '⚡';
         this._cachedEmoji = getEmojiCanvas(this.emoji, 30, true);
     }
 

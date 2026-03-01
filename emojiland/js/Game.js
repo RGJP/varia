@@ -13,8 +13,12 @@ import { getEmojiCanvas } from './EmojiCache.js';
 export function filterInPlace(array) {
     let writeIdx = 0;
     for (let i = 0; i < array.length; i++) {
-        if (!array[i].markedForDeletion) {
-            array[writeIdx++] = array[i];
+        const item = array[i];
+        if (!item) continue;
+        const keepDuringDeathFade = item && item.markedForDeletion &&
+            typeof item.deathFadeTimer === 'number' && item.deathFadeTimer > 0;
+        if (!item.markedForDeletion || keepDuringDeathFade) {
+            array[writeIdx++] = item;
         }
     }
     array.length = writeIdx;
@@ -965,8 +969,8 @@ export class Game {
         if (hadPreviousFrame && dt > 0) {
             const instantFps = 1 / dt;
             this.fpsDisplay = this.fpsDisplay * 0.9 + instantFps * 0.1;
-            const lowThreshold = this.targetFrameRate * 0.985;
-            const recoverThreshold = this.targetFrameRate * 0.998;
+            const lowThreshold = this.targetFrameRate * 0.88;
+            const recoverThreshold = this.targetFrameRate * 0.92;
 
             // Keep background rendering untouched; only clamp particle/VFX density.
             const frameDropped = instantFps < lowThreshold;
@@ -975,7 +979,7 @@ export class Game {
                 this._topFpsStreak = 0;
             } else if (this._particlePanicMode && instantFps >= recoverThreshold) {
                 this._topFpsStreak += dt;
-                if (this._topFpsStreak >= this._panicRecoveryWindow) {
+                if (this._topFpsStreak >= 0.35) {
                     this._particlePanicMode = false;
                     this._topFpsStreak = 0;
                     this.performanceQuality = 1;
