@@ -36,6 +36,7 @@ export class ParticleSystem {
         this.baseMaxParticles = 700;
         this.maxParticles = this.baseMaxParticles;
         this.quality = 1;
+        this.panicMode = false;
         this.mobileMode = false;
         this.emissionScale = 1;
         this.lifeDecayMultiplier = 1;
@@ -54,6 +55,16 @@ export class ParticleSystem {
     setMobileMode(enabled) {
         this.mobileMode = !!enabled;
         this.setQuality(this.quality);
+    }
+
+    setPanicMode(enabled) {
+        const next = !!enabled;
+        if (this.panicMode === next) return;
+        this.panicMode = next;
+        this.setQuality(this.quality);
+        if (this.panicMode) {
+            this._panicCullParticles();
+        }
     }
 
     setQuality(quality) {
@@ -79,13 +90,41 @@ export class ParticleSystem {
         this.emissionTokenRate = this.mobileMode
             ? Math.floor(90 + Math.pow(this.quality, 2.6) * 360)
             : Math.floor(120 + Math.pow(this.quality, 2.2) * 520);
+
+        if (this.panicMode) {
+            this.maxParticles = Math.min(this.maxParticles, this.mobileMode ? 34 : 46);
+            this.emissionScale *= 0.05;
+            this.lifeDecayMultiplier *= 3.1;
+            this.renderSizeScale *= 0.8;
+            this.drawStride = Math.max(this.drawStride, 14);
+            this.drawAsSquaresOnly = true;
+            this.emissionTokenRate = Math.min(this.emissionTokenRate, this.mobileMode ? 20 : 28);
+        }
         this.emissionTokens = Math.min(this.emissionTokens, this.emissionTokenRate * 1.5);
     }
 
     _scaledCount(baseCount, minCount = 1) {
+        if (this.panicMode) {
+            return Math.max(0, Math.floor(baseCount * this.emissionScale));
+        }
         const scaled = Math.floor(baseCount * this.emissionScale);
         if (minCount <= 0) return Math.max(0, scaled);
         return Math.max(minCount, scaled);
+    }
+
+    _panicCullParticles() {
+        const keepStride = this.mobileMode ? 9 : 7;
+        let writeIdx = 0;
+        for (let i = 0; i < this.particles.length; i++) {
+            const p = this.particles[i];
+            if (i % keepStride === 0 && writeIdx < this.maxParticles) {
+                this.particles[writeIdx++] = p;
+            } else {
+                this.pool.push(p);
+            }
+        }
+        this.particles.length = writeIdx;
+        this.emissionTokens = Math.min(this.emissionTokens, this.emissionTokenRate * 0.4);
     }
 
     _getParticle() {
@@ -97,7 +136,7 @@ export class ParticleSystem {
 
     emit(x, y, count, color, speedRange, lifeRange, sizeRange) {
         if (count <= 0) return;
-        const minCount = (count >= 12 && this.quality >= 0.2) ? 1 : 0;
+        const minCount = this.panicMode ? 0 : ((count >= 12 && this.quality >= 0.2) ? 1 : 0);
         const reducedCount = this._scaledCount(count / 4, minCount);
         const allowedCount = Math.min(reducedCount, Math.max(0, Math.floor(this.emissionTokens)));
         if (allowedCount <= 0) return;

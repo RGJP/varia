@@ -127,11 +127,17 @@ export class Game {
         this._performanceAdjustTimer = 0;
         this._qualityRecoveryHold = 0;
         this.targetFrameRate = 60;
+        this._panicRecoveryWindow = 5;
+        this._topFpsStreak = 0;
+        this._particlePanicMode = false;
         if (this.particles && typeof this.particles.setMobileMode === 'function') {
             this.particles.setMobileMode(this.isMobileDevice);
         }
         if (this.particles && typeof this.particles.setQuality === 'function') {
             this.particles.setQuality(this.performanceQuality);
+        }
+        if (this.particles && typeof this.particles.setPanicMode === 'function') {
+            this.particles.setPanicMode(false);
         }
 
         this.gameOverTriggered = false;
@@ -388,6 +394,17 @@ export class Game {
     initLevel() {
         clearEmojiCache();
         this._bossMusicEngaged = false;
+        this._topFpsStreak = 0;
+        this._particlePanicMode = false;
+        this.performanceQuality = 1;
+        this._qualityRecoveryHold = 0;
+        this._performanceAdjustTimer = 0;
+        if (this.particles && typeof this.particles.setPanicMode === 'function') {
+            this.particles.setPanicMode(false);
+        }
+        if (this.particles && typeof this.particles.setQuality === 'function') {
+            this.particles.setQuality(this.performanceQuality);
+        }
         if (this.audio && typeof this.audio.stopLightningBuzz === 'function') this.audio.stopLightningBuzz();
         const levelData = loadLevel();
         this.platforms = levelData.platforms;
@@ -948,11 +965,32 @@ export class Game {
         if (hadPreviousFrame && dt > 0) {
             const instantFps = 1 / dt;
             this.fpsDisplay = this.fpsDisplay * 0.9 + instantFps * 0.1;
+            const lowThreshold = this.targetFrameRate * 0.985;
+            const recoverThreshold = this.targetFrameRate * 0.998;
+
+            // Keep background rendering untouched; only clamp particle/VFX density.
+            const frameDropped = instantFps < lowThreshold;
+            if (frameDropped) {
+                this._particlePanicMode = true;
+                this._topFpsStreak = 0;
+            } else if (this._particlePanicMode && instantFps >= recoverThreshold) {
+                this._topFpsStreak += dt;
+                if (this._topFpsStreak >= this._panicRecoveryWindow) {
+                    this._particlePanicMode = false;
+                    this._topFpsStreak = 0;
+                    this.performanceQuality = 1;
+                    this._qualityRecoveryHold = 0;
+                }
+            } else if (this._particlePanicMode) {
+                this._topFpsStreak = 0;
+            }
+            if (this.particles && typeof this.particles.setPanicMode === 'function') {
+                this.particles.setPanicMode(this._particlePanicMode);
+            }
+
             this._performanceAdjustTimer += dt;
             if (this._performanceAdjustTimer >= 0.12) {
                 const elapsed = this._performanceAdjustTimer;
-                const lowThreshold = this.targetFrameRate * 0.985;
-                const recoverThreshold = this.targetFrameRate * 0.998;
                 if (this.fpsDisplay < lowThreshold) {
                     const floor = this.isMobileDevice ? 0.12 : 0.15;
                     const dropStep = this.isMobileDevice ? 0.2 : 0.16;
@@ -965,11 +1003,14 @@ export class Game {
                         this.isMobileDevice ? 12 : 8
                     );
                 } else {
-                    this._qualityRecoveryHold = Math.max(0, this._qualityRecoveryHold - elapsed);
-                    if (this._qualityRecoveryHold <= 0 && this.fpsDisplay > recoverThreshold) {
-                        this.performanceQuality = Math.min(1, this.performanceQuality + (this.isMobileDevice ? 0.004 : 0.006));
+                    if (!this._particlePanicMode) {
+                        this._qualityRecoveryHold = Math.max(0, this._qualityRecoveryHold - elapsed);
+                        if (this._qualityRecoveryHold <= 0 && this.fpsDisplay > recoverThreshold) {
+                            this.performanceQuality = Math.min(1, this.performanceQuality + (this.isMobileDevice ? 0.004 : 0.006));
+                        }
                     }
                 }
+
                 if (this.particles && typeof this.particles.setQuality === 'function') {
                     this.particles.setQuality(this.performanceQuality);
                 }
@@ -2051,7 +2092,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('🎵 Music from Pixabay & Suno • Game Version 1.38', 0, cardY + cardHeight + 152);
+            this.ctx.fillText('🎵 Music from Pixabay & Suno • Game Version 1.39', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';

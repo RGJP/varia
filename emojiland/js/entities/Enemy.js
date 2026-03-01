@@ -12,7 +12,7 @@ import { triggerBombExplosionAt } from './Bomb.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 import { BossProjectile } from './BossProjectile.js';
 
-const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_tengu', 'boss_spider', 'boss_dragon', 'boss_manliftingweights', 'boss_lobster', 'boss_kangaroo', 'boss_monkey', 'boss_mammoth', 'boss_trex', 'boss_mosquito', 'boss_beetle', 'boss_juggler'];
+const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_tengu', 'boss_spider', 'boss_dragon', 'boss_manliftingweights', 'boss_lobster', 'boss_kangaroo', 'boss_monkey', 'boss_mammoth', 'boss_trex', 'boss_mosquito', 'boss_beetle', 'boss_juggler', 'boss_honeybee'];
 
 const TYPE_PATROL = 'patrol';
 const TYPE_CHASER = 'chaser'; // 👹
@@ -1654,7 +1654,21 @@ export class Boss extends Entity {
             ? 'boss_tengu'
             : (bossType === 'boss_robot' ? 'boss_manliftingweights' : bossType);
         const resolvedBossType = normalizedBossType || BOSS_TYPES[Math.floor(Math.random() * BOSS_TYPES.length)];
-        const size = resolvedBossType === 'boss_spider' ? 122 : (resolvedBossType === 'boss_dragon' ? 170 : (resolvedBossType === 'boss_manliftingweights' ? 156 : (resolvedBossType === 'boss_lobster' ? 150 : (resolvedBossType === 'boss_kangaroo' ? 154 : (resolvedBossType === 'boss_monkey' ? 150 : (resolvedBossType === 'boss_mammoth' ? 168 : (resolvedBossType === 'boss_trex' ? 166 : (resolvedBossType === 'boss_mosquito' ? 144 : (resolvedBossType === 'boss_beetle' ? 158 : (resolvedBossType === 'boss_juggler' ? 154 : 160))))))))));
+        const bossSizes = {
+            boss_spider: 122,
+            boss_dragon: 170,
+            boss_manliftingweights: 156,
+            boss_lobster: 150,
+            boss_kangaroo: 154,
+            boss_monkey: 150,
+            boss_mammoth: 168,
+            boss_trex: 166,
+            boss_mosquito: 144,
+            boss_beetle: 158,
+            boss_juggler: 154,
+            boss_honeybee: 150
+        };
+        const size = bossSizes[resolvedBossType] || 160;
         super(x, y - size, size, size);
 
         this.bossType = resolvedBossType;
@@ -1907,6 +1921,20 @@ export class Boss extends Entity {
         this.jugglerRollDir = 0;
         this.jugglerRollFxTimer = 0;
 
+        // Honeybee (boss_honeybee): lane-sweep swarms with high/low telegraphed mixups.
+        this.honeybeePatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.honeybeeHoverCenterY = this.platform.y - this.height - 170;
+        this.honeybeeTelegraphTimer = 0;
+        this.honeybeeTelegraphType = 'high'; // 'high' | 'low'
+        this.honeybeeGatherTimer = 0;
+        this.honeybeeGatherDuration = 0;
+        this.honeybeeDeployTimer = 0;
+        this.honeybeeDeployDuration = 0;
+        this.honeybeeSwarmActiveTimer = 0;
+        this.honeybeeSwarmDuration = 0;
+        this.honeybeeSwarmType = 'high'; // 'high' | 'low'
+        this.honeybeeSwarmHitTimer = 0;
+
         switch (this.bossType) {
             case 'boss_chick': this.emoji = String.fromCodePoint(0x1F423); break;
             case 'boss_moai': this.emoji = String.fromCodePoint(0x1F5FF); break;
@@ -1922,6 +1950,7 @@ export class Boss extends Entity {
             case 'boss_mosquito': this.emoji = String.fromCodePoint(0x1F99F); break;
             case 'boss_beetle': this.emoji = String.fromCodePoint(0x1FAB2); break;
             case 'boss_juggler': this.emoji = String.fromCodePoint(0x1F939); break;
+            case 'boss_honeybee': this.emoji = String.fromCodePoint(0x1F41D); break;
             default: this.emoji = String.fromCodePoint(0x1F5FF); break;
         }
         if (this.bossType === 'boss_lobster') {
@@ -1996,6 +2025,15 @@ export class Boss extends Entity {
                 'LORD HYPERJUGGLE'
             ];
             this.displayName = jugglerNames[Math.floor(Math.random() * jugglerNames.length)];
+        } else if (this.bossType === 'boss_honeybee') {
+            const honeybeeNames = [
+                'QUEEN STINGER',
+                'HIVE HOWLER',
+                'NECTAR NEMESIS',
+                'BUZZSTORM REGENT',
+                'SWARM SOVEREIGN'
+            ];
+            this.displayName = honeybeeNames[Math.floor(Math.random() * honeybeeNames.length)];
         }
 
         this._cachedEmoji = getEmojiCanvas(this.emoji, size);
@@ -2048,6 +2086,39 @@ export class Boss extends Entity {
         // Force-lite boss VFX for consistent frame pacing across devices.
         // This only affects visual density (particles/telegraph richness), not gameplay logic.
         return true;
+    }
+
+    _getHoneybeeSwarmBand(type) {
+        if (!this.platform) return null;
+        if (type === 'low') {
+            return { y: this.platform.y - 42, height: 62 };
+        }
+        return { y: this.platform.y - 210, height: 70 };
+    }
+
+    _isPlayerInHoneybeeSwarm(player, type) {
+        if (!player || !this.platform) return false;
+        const band = this._getHoneybeeSwarmBand(type);
+        if (!band) return false;
+        const hitbox = player.getHitbox ? player.getHitbox() : player;
+        const bossCenterX = this.x + this.width / 2;
+        
+        let minX = this.platform.x + 12;
+        let maxX = this.platform.x + this.platform.width - 12;
+        
+        // Front-facing horizontal swarm restriction
+        if (this.facingRight) {
+            minX = bossCenterX;
+        } else {
+            maxX = bossCenterX;
+        }
+        
+        return (
+            hitbox.x + hitbox.width > minX &&
+            hitbox.x < maxX &&
+            hitbox.y + hitbox.height > band.y &&
+            hitbox.y < band.y + band.height
+        );
     }
 
     _emitBossFx(game, x, y, count, color, speedRange, lifeRange, sizeRange) {
@@ -4391,6 +4462,89 @@ export class Boss extends Entity {
         }
     }
 
+    _updateHoneybeeBoss(dt, game, player) {
+        const left = this.platform.x + 12;
+        const right = this.platform.x + this.platform.width - this.width - 12;
+        const baseHoverY = this.platform.y - this.height - (156 + Math.sin(this.timeAlive * 0.7) * 22);
+        this.honeybeeHoverCenterY += (baseHoverY - this.honeybeeHoverCenterY) * Math.min(1, dt * 2.4);
+        const hoverBob = Math.sin(this.timeAlive * (2.6 + this.phase * 0.18)) * (18 + this.phase * 2);
+
+        if (this.honeybeeSwarmHitTimer > 0) this.honeybeeSwarmHitTimer -= dt;
+
+        if (this.honeybeeGatherTimer > 0) {
+            this.honeybeeGatherTimer -= dt;
+            this.honeybeeTelegraphTimer = Math.max(0, this.honeybeeTelegraphTimer - dt);
+            this.vx = 0;
+            this.y = this.honeybeeHoverCenterY + hoverBob * 0.35;
+            if (player) this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            if (this.honeybeeGatherTimer <= 0) {
+                this.honeybeeDeployDuration = this.phase >= 3 ? 0.32 : (this.phase >= 2 ? 0.36 : 0.42);
+                this.honeybeeDeployTimer = this.honeybeeDeployDuration;
+            }
+            return;
+        }
+
+        if (this.honeybeeDeployTimer > 0) {
+            this.honeybeeDeployTimer -= dt;
+            this.honeybeeTelegraphTimer = Math.max(0, this.honeybeeTelegraphTimer - dt);
+            this.vx = 0;
+            this.y = this.honeybeeHoverCenterY + hoverBob * 0.42;
+            if (player) this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            if (this.honeybeeDeployTimer <= 0) {
+                this.honeybeeSwarmType = this.honeybeeTelegraphType;
+                this.honeybeeSwarmDuration = this.phase >= 3 ? 1.16 : (this.phase >= 2 ? 1.04 : 0.92);
+                this.honeybeeSwarmActiveTimer = this.honeybeeSwarmDuration;
+                this.honeybeeSwarmHitTimer = 0;
+                this.honeybeeTelegraphTimer = 0;
+            }
+            return;
+        }
+
+        if (this.honeybeeSwarmActiveTimer > 0) {
+            this.honeybeeSwarmActiveTimer -= dt;
+            this.vx = 0;
+            this.y = this.honeybeeHoverCenterY + hoverBob * 0.5;
+            if (player) this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            const swarmElapsed = this.honeybeeSwarmDuration - this.honeybeeSwarmActiveTimer;
+            const damageActive = swarmElapsed >= 0.14;
+            if (damageActive && player && player.invulnerableTimer <= 0 && this.honeybeeSwarmHitTimer <= 0 && this._isPlayerInHoneybeeSwarm(player, this.honeybeeSwarmType)) {
+                player.takeDamage(game);
+                this.honeybeeSwarmHitTimer = 0.28;
+            }
+            if (this.honeybeeSwarmActiveTimer <= 0) {
+                this.attackCooldown = 1.3 + Math.random() * 0.7;
+            }
+            return;
+        }
+
+        const patrolSpeed = 150 + this.phase * 15;
+        this.vx = this.honeybeePatrolDir * patrolSpeed;
+        this.x += this.vx * dt;
+        this.y = this.honeybeeHoverCenterY + hoverBob;
+        if (this.x <= left) {
+            this.x = left;
+            this.honeybeePatrolDir = 1;
+        } else if (this.x >= right) {
+            this.x = right;
+            this.honeybeePatrolDir = -1;
+        }
+
+        if (player) {
+            this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            if (this.attackCooldown <= 0) {
+                this.honeybeeTelegraphType = Math.random() < 0.5 ? 'high' : 'low';
+                this.honeybeeGatherDuration = this.phase >= 3 ? 0.44 : (this.phase >= 2 ? 0.5 : 0.58);
+                this.honeybeeGatherTimer = this.honeybeeGatherDuration;
+                this.honeybeeDeployDuration = this.phase >= 3 ? 0.32 : (this.phase >= 2 ? 0.36 : 0.42);
+                this.honeybeeDeployTimer = 0;
+                this.honeybeeTelegraphTimer = this.honeybeeGatherDuration + this.honeybeeDeployDuration;
+                this.vx = 0;
+            }
+        } else {
+            this.facingRight = this.honeybeePatrolDir > 0;
+        }
+    }
+
     update(dt, game) {
         this._lastGameRef = game || null;
         if (this.damageFlashTimer > 0) this.damageFlashTimer -= dt;
@@ -4436,6 +4590,8 @@ export class Boss extends Entity {
             this._updateBeetleBoss(dt, game, player);
         } else if (this.bossType === 'boss_juggler') {
             this._updateJugglerBoss(dt, game, player);
+        } else if (this.bossType === 'boss_honeybee') {
+            this._updateHoneybeeBoss(dt, game, player);
         } else {
             this._updateAerialBoss(dt, game, player);
         }
@@ -4495,7 +4651,9 @@ export class Boss extends Entity {
             || this.jugglerTelegraphTimer > 0
             || this.jugglerCascadeShots > 0
             || this.jugglerRainWaves > 0
-            || this.jugglerState === 'ROLL';
+            || this.jugglerState === 'ROLL'
+            || this.honeybeeTelegraphTimer > 0
+            || this.honeybeeSwarmActiveTimer > 0;
         if (game && player && player.invulnerableTimer <= 0 && !inFairWindow) {
             if (Physics.checkAABB(this, player.getHitbox())) {
                 player.takeDamage(game);
@@ -4522,7 +4680,7 @@ export class Boss extends Entity {
         ctx.translate(cx, cy);
         const useDirectFacing = this.bossType === 'boss_dragon' || this.bossType === 'boss_kangaroo';
         let shouldFlipSprite = useDirectFacing ? this.facingRight : !this.facingRight;
-        const emojiFacingInvertedBosses = new Set(['boss_monkey', 'boss_trex', 'boss_mammoth', 'boss_mosquito']);
+        const emojiFacingInvertedBosses = new Set(['boss_monkey', 'boss_trex', 'boss_mammoth', 'boss_mosquito', 'boss_honeybee']);
         if (emojiFacingInvertedBosses.has(this.bossType)) {
             shouldFlipSprite = !shouldFlipSprite;
         }
@@ -4657,7 +4815,8 @@ export class Boss extends Entity {
             || this.trexTelegraphTimer > 0
             || this.mosquitoTelegraphTimer > 0
             || this.beetleTelegraphTimer > 0
-            || this.jugglerTelegraphTimer > 0;
+            || this.jugglerTelegraphTimer > 0
+            || this.honeybeeTelegraphTimer > 0;
         if (isTelegraphing) {
             const pulse = 0.55 + Math.sin(this.timeAlive * 24) * 0.45;
             if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
@@ -5101,6 +5260,127 @@ export class Boss extends Entity {
             ctx.beginPath();
             ctx.ellipse(0, this.height * 0.44, this.width * 0.22, 8, 0, 0, Math.PI * 2);
             ctx.stroke();
+        }
+
+        if (this.bossType === 'boss_honeybee' && (this.honeybeeGatherTimer > 0 || this.honeybeeDeployTimer > 0)) {
+            if (!this._beeTellCache) this._beeTellCache = getEmojiCanvas(String.fromCodePoint(0x1F41D), 25);
+            if (!this._upArrowTellCache) this._upArrowTellCache = getEmojiCanvas(String.fromCodePoint(0x2B06) + '\uFE0F', 24);
+            if (!this._downArrowTellCache) this._downArrowTellCache = getEmojiCanvas(String.fromCodePoint(0x2B07) + '\uFE0F', 24);
+            if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+
+            const pulse = 0.56 + Math.sin(this.timeAlive * 24) * 0.34;
+            const band = this._getHoneybeeSwarmBand(this.honeybeeTelegraphType);
+            
+            const gatherProgress = this.honeybeeGatherDuration > 0
+                ? Math.max(0, Math.min(1, 1 - this.honeybeeGatherTimer / this.honeybeeGatherDuration))
+                : 1;
+            const deployProgress = this.honeybeeDeployDuration > 0
+                ? Math.max(0, Math.min(1, 1 - this.honeybeeDeployTimer / this.honeybeeDeployDuration))
+                : 0;
+            
+            // Sphere center relative to boss
+            const sphereCenterX = 0;
+            const sphereCenterY = band.y + band.height / 2 - (this.y + this.height / 2);
+            
+            // Sphere gathering effect
+            const telegraphCount = lowVfx ? 12 : 24;
+            const totalProgress = (gatherProgress + deployProgress) / 2;
+
+            for (let i = 0; i < telegraphCount; i++) {
+                const spawnOffset = i / telegraphCount;
+                if (totalProgress < spawnOffset * 0.5) continue;
+                
+                let flightT = Math.min(1, (totalProgress - spawnOffset * 0.5) * 5);
+                const angle = this.timeAlive * (10 + i % 3) + i * 2.1;
+                const radius = 28 * (1 - deployProgress);
+                
+                let beeX = 0;
+                let beeY = 0;
+                
+                if (flightT < 1) {
+                    beeX = sphereCenterX * flightT;
+                    beeY = sphereCenterY * flightT;
+                } else {
+                    beeX = sphereCenterX + Math.cos(angle) * radius * Math.random();
+                    beeY = sphereCenterY + Math.sin(angle) * radius * Math.random();
+                }
+                
+                const beeAlpha = (0.4 + pulse * 0.4) * (flightT < 1 ? flightT : 1);
+                ctx.globalAlpha = alpha * beeAlpha;
+                ctx.drawImage(this._beeTellCache.canvas, beeX - this._beeTellCache.width / 2, beeY - this._beeTellCache.height / 2);
+            }
+
+            // Growing sphere
+            if (gatherProgress > 0.5) {
+                const ballPulse = 0.5 + Math.sin(this.timeAlive * 12) * 0.2;
+                const ballR = 10 + deployProgress * 15;
+                ctx.globalAlpha = alpha * (0.2 + deployProgress * 0.4);
+                ctx.fillStyle = this.honeybeeTelegraphType === 'low' ? `rgba(130, 220, 255, ${0.48 + ballPulse * 0.18})` : `rgba(255, 220, 120, ${0.48 + ballPulse * 0.18})`;
+                ctx.beginPath();
+                ctx.arc(sphereCenterX, sphereCenterY, ballR, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Warning indicators
+            const arrow = this.honeybeeTelegraphType === 'low' ? this._upArrowTellCache : this._downArrowTellCache;
+            ctx.drawImage(arrow.canvas, -arrow.width / 2, -this.height / 2 - 56);
+            
+            if (deployProgress > 0) {
+                 ctx.globalAlpha = alpha * deployProgress;
+                 ctx.drawImage(this._warnCache.canvas, sphereCenterX - this._warnCache.width / 2, sphereCenterY - 40);
+            }
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_honeybee' && this.honeybeeSwarmActiveTimer > 0) {
+            if (!this._beeTellCache) this._beeTellCache = getEmojiCanvas(String.fromCodePoint(0x1F41D), 25);
+            const band = this._getHoneybeeSwarmBand(this.honeybeeSwarmType);
+            const pulse = 0.6 + Math.sin(this.timeAlive * 26) * 0.3;
+            
+            const swarmElapsed = (this.honeybeeSwarmDuration || 0) - this.honeybeeSwarmActiveTimer;
+            const introWindow = 0.15;
+            const introProgress = Math.max(0, Math.min(1, swarmElapsed / introWindow));
+            const outroWindow = 0.15;
+            const outroProgress = Math.max(0, Math.min(1, this.honeybeeSwarmActiveTimer / outroWindow));
+            const activeScale = introProgress * outroProgress;
+            
+            const sphereCenterX = 0;
+            const sphereCenterY = band.y + band.height / 2 - (this.y + this.height / 2);
+            
+            const dir = -1; // Forward in local space
+            const attackDistance = this.platform.width;
+            
+            const currentDistance = attackDistance * introProgress;
+            const frontX = sphereCenterX + dir * currentDistance;
+            
+            const startX = Math.min(sphereCenterX, frontX);
+            const endX = Math.max(sphereCenterX, frontX);
+            const beamW = endX - startX;
+            
+            const laneY = band.y - (this.y + this.height / 2);
+            const laneH = band.height;
+            
+            ctx.fillStyle = this.honeybeeSwarmType === 'low'
+                ? `rgba(155, 225, 255, ${(0.2 + pulse * 0.16) * activeScale})`
+                : `rgba(255, 228, 140, ${(0.2 + pulse * 0.16) * activeScale})`;
+            if (beamW > 0) {
+                ctx.fillRect(startX, laneY, beamW, laneH);
+            }
+
+            const beesTotal = lowVfx ? 20 : 45;
+            for (let i = 0; i < beesTotal; i++) {
+                const speed = 5 + (i % 3);
+                const timeOffset = (this.timeAlive * speed + i * 0.3) % 1.0;
+                if (timeOffset > introProgress) continue;
+                
+                const bx = sphereCenterX + dir * attackDistance * timeOffset;
+                const by = sphereCenterY + Math.sin(this.timeAlive * 20 + i) * (laneH * 0.4);
+                
+                const beeAlpha = (0.5 + pulse * 0.5) * activeScale;
+                ctx.globalAlpha = alpha * beeAlpha;
+                ctx.drawImage(this._beeTellCache.canvas, bx - this._beeTellCache.width / 2, by - this._beeTellCache.height / 2);
+            }
+            ctx.globalAlpha = alpha;
         }
 
         ctx.restore();
