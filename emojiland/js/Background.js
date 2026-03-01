@@ -361,8 +361,8 @@ export class Background {
     }
 
     _drawLiteBackground(ctx, cameraX, cameraY, quality) {
-        const maxLayers = Math.min(2, this.layers.length);
-        const step = quality < 0.72 ? 3 : 2;
+        const maxLayers = Math.min(quality < 0.45 ? 1 : 2, this.layers.length);
+        const step = quality < 0.35 ? 5 : (quality < 0.55 ? 4 : (quality < 0.72 ? 3 : 2));
 
         for (let li = 0; li < maxLayers; li++) {
             const layer = this.layers[li];
@@ -397,9 +397,9 @@ export class Background {
         const clampedQuality = Math.max(0, Math.min(1, Number(quality) || 1));
         this._qualityEma = this._qualityEma * 0.9 + clampedQuality * 0.1;
         // Hysteresis avoids rapid full<->lite toggling that looks like background redraw flicker.
-        if (!this._useLiteMode && this._qualityEma < 0.58) {
+        if (!this._useLiteMode && this._qualityEma < 0.72) {
             this._useLiteMode = true;
-        } else if (this._useLiteMode && this._qualityEma > 0.9) {
+        } else if (this._useLiteMode && this._qualityEma > 0.94) {
             this._useLiteMode = false;
         }
 

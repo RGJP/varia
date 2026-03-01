@@ -33,7 +33,7 @@ export class Particle {
 export class ParticleSystem {
     constructor() {
         this.particles = [];
-        this.baseMaxParticles = 850;
+        this.baseMaxParticles = 700;
         this.maxParticles = this.baseMaxParticles;
         this.quality = 1;
         this.mobileMode = false;
@@ -42,6 +42,8 @@ export class ParticleSystem {
         this.renderSizeScale = 1;
         this.drawStride = 1;
         this.drawAsSquaresOnly = false;
+        this.emissionTokenRate = 700;
+        this.emissionTokens = this.emissionTokenRate;
         this.pool = [];
         for (let i = 0; i < this.baseMaxParticles; i++) {
             this.pool.push(new Particle());
@@ -55,21 +57,29 @@ export class ParticleSystem {
     }
 
     setQuality(quality) {
-        const minQuality = this.mobileMode ? 0.2 : 0.25;
+        const minQuality = this.mobileMode ? 0.12 : 0.15;
         this.quality = Math.max(minQuality, Math.min(1, quality));
         const scaledMax = this.mobileMode
-            ? this.baseMaxParticles * (0.16 + Math.pow(this.quality, 1.8) * 0.84)
-            : this.baseMaxParticles * (0.2 + Math.pow(this.quality, 1.5) * 0.8);
-        this.maxParticles = Math.max(this.mobileMode ? 110 : 160, Math.floor(scaledMax));
+            ? this.baseMaxParticles * (0.09 + Math.pow(this.quality, 2.1) * 0.91)
+            : this.baseMaxParticles * (0.12 + Math.pow(this.quality, 1.9) * 0.88);
+        this.maxParticles = Math.max(this.mobileMode ? 80 : 120, Math.floor(scaledMax));
         this.emissionScale = this.mobileMode
-            ? Math.pow(this.quality, 2.4)
-            : Math.pow(this.quality, 2.0);
+            ? Math.pow(this.quality, 3.2) * 0.9
+            : Math.pow(this.quality, 2.7) * 0.9;
         this.lifeDecayMultiplier = this.mobileMode
-            ? (1 + (1 - this.quality) * 2.4)
-            : (1 + (1 - this.quality) * 1.8);
-        this.renderSizeScale = 0.7 + this.quality * 0.3;
-        this.drawStride = this.quality < 0.32 ? 4 : (this.quality < 0.5 ? 3 : (this.quality < 0.68 ? 2 : 1));
-        this.drawAsSquaresOnly = this.quality < 0.64;
+            ? (1 + (1 - this.quality) * 3.4)
+            : (1 + (1 - this.quality) * 2.6);
+        this.renderSizeScale = 0.6 + this.quality * 0.4;
+        this.drawStride = this.quality < 0.2 ? 6
+            : (this.quality < 0.32 ? 5
+                : (this.quality < 0.45 ? 4
+                    : (this.quality < 0.62 ? 3
+                        : (this.quality < 0.78 ? 2 : 1))));
+        this.drawAsSquaresOnly = this.quality < 0.82;
+        this.emissionTokenRate = this.mobileMode
+            ? Math.floor(90 + Math.pow(this.quality, 2.6) * 360)
+            : Math.floor(120 + Math.pow(this.quality, 2.2) * 520);
+        this.emissionTokens = Math.min(this.emissionTokens, this.emissionTokenRate * 1.5);
     }
 
     _scaledCount(baseCount, minCount = 1) {
@@ -87,9 +97,12 @@ export class ParticleSystem {
 
     emit(x, y, count, color, speedRange, lifeRange, sizeRange) {
         if (count <= 0) return;
-        const minCount = count >= 10 ? 1 : 0;
+        const minCount = (count >= 12 && this.quality >= 0.2) ? 1 : 0;
         const reducedCount = this._scaledCount(count / 4, minCount);
-        for (let i = 0; i < reducedCount; i++) {
+        const allowedCount = Math.min(reducedCount, Math.max(0, Math.floor(this.emissionTokens)));
+        if (allowedCount <= 0) return;
+        this.emissionTokens = Math.max(0, this.emissionTokens - allowedCount);
+        for (let i = 0; i < allowedCount; i++) {
             if (this.particles.length >= this.maxParticles) break;
             const p = this._getParticle();
             if (!p) break;
@@ -263,6 +276,8 @@ export class ParticleSystem {
         // Update and filter dead in a single pass using a write index
         let writeIdx = 0;
         const decay = this.lifeDecayMultiplier;
+        const tokenCap = this.emissionTokenRate * 1.5;
+        this.emissionTokens = Math.min(tokenCap, this.emissionTokens + this.emissionTokenRate * dt);
         for (let i = 0; i < this.particles.length; i++) {
             const p = this.particles[i];
             p.x += p.vx * dt;

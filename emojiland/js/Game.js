@@ -943,25 +943,25 @@ export class Game {
             const instantFps = 1 / dt;
             this.fpsDisplay = this.fpsDisplay * 0.9 + instantFps * 0.1;
             this._performanceAdjustTimer += dt;
-            if (this._performanceAdjustTimer >= 0.18) {
+            if (this._performanceAdjustTimer >= 0.12) {
                 const elapsed = this._performanceAdjustTimer;
-                const lowThreshold = this.targetFrameRate * 0.97;
-                const recoverThreshold = this.targetFrameRate * 0.992;
+                const lowThreshold = this.targetFrameRate * 0.985;
+                const recoverThreshold = this.targetFrameRate * 0.998;
                 if (this.fpsDisplay < lowThreshold) {
-                    const floor = this.isMobileDevice ? 0.2 : 0.25;
-                    const dropStep = this.isMobileDevice ? 0.16 : 0.12;
+                    const floor = this.isMobileDevice ? 0.12 : 0.15;
+                    const dropStep = this.isMobileDevice ? 0.2 : 0.16;
                     this.performanceQuality = Math.max(floor, this.performanceQuality - dropStep);
-                    if (this.fpsDisplay < this.targetFrameRate * 0.88) {
-                        this.performanceQuality = Math.max(floor, this.performanceQuality - 0.08);
+                    if (this.fpsDisplay < this.targetFrameRate * 0.9) {
+                        this.performanceQuality = Math.max(floor, this.performanceQuality - 0.12);
                     }
                     this._qualityRecoveryHold = Math.max(
                         this._qualityRecoveryHold,
-                        this.isMobileDevice ? 8 : 4.5
+                        this.isMobileDevice ? 12 : 8
                     );
                 } else {
                     this._qualityRecoveryHold = Math.max(0, this._qualityRecoveryHold - elapsed);
                     if (this._qualityRecoveryHold <= 0 && this.fpsDisplay > recoverThreshold) {
-                        this.performanceQuality = Math.min(1, this.performanceQuality + (this.isMobileDevice ? 0.01 : 0.015));
+                        this.performanceQuality = Math.min(1, this.performanceQuality + (this.isMobileDevice ? 0.004 : 0.006));
                     }
                 }
                 if (this.particles && typeof this.particles.setQuality === 'function') {
