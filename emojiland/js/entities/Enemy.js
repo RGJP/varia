@@ -2201,16 +2201,15 @@ export class Boss extends Entity {
             const cx = this.x + this.width / 2;
             const cy = this.y + this.height / 2;
             if (game && game.particles) {
-                const lite = this._isBossVfxLite(game);
-                // Cinematic boss-defeat fireworks show (scaled down in mobile low-VFX mode).
-                game.particles.emitFireworksShow(cx, cy, lite ? 0.75 : 1.4);
-                game.particles.emitFireworks(cx - 90, cy - 46, lite ? 0.65 : 1.2);
-                game.particles.emitFireworks(cx + 90, cy - 46, lite ? 0.65 : 1.2);
-                game.particles.emitFireworks(cx, cy - 95, lite ? 0.8 : 1.45);
+                // Always run full boss-defeat celebration, even in performance mode.
+                game.particles.emitFireworksShow(cx, cy, 1.4);
+                game.particles.emitFireworks(cx - 90, cy - 46, 1.2);
+                game.particles.emitFireworks(cx + 90, cy - 46, 1.2);
+                game.particles.emitFireworks(cx, cy - 95, 1.45);
                 game.particles.emitDeath(cx, cy);
                 game.particles.emitDeath(cx - 26, cy + 10);
                 game.particles.emitDeath(cx + 26, cy + 10);
-                const ringBursts = lite ? 10 : 22;
+                const ringBursts = 22;
                 for (let i = 0; i < ringBursts; i++) {
                     const a = (i / ringBursts) * Math.PI * 2;
                     const r = 130 + Math.random() * 90;
