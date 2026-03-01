@@ -56,6 +56,9 @@ export class Player extends Entity {
         this.letterPickupPopupTimer = 0;
         this.letterPickupPopupDuration = 0.62;
         this.letterPickupPopupLetter = '';
+        this.completionPopupTimer = 0;
+        this.completionPopupDuration = 2.1;
+        this.completionPopupTriggered = false;
         this.rotation = 0;
         this.isSpinning = false;
         this.spinDirection = 1;
@@ -323,6 +326,22 @@ export class Player extends Entity {
             if (this.letterPickupPopupTimer <= 0) {
                 this.letterPickupPopupTimer = 0;
                 this.letterPickupPopupLetter = '';
+            }
+        }
+        if (this.completionPopupTimer > 0) {
+            this.completionPopupTimer -= dt;
+            if (this.completionPopupTimer <= 0) {
+                this.completionPopupTimer = 0;
+            }
+        }
+        if (!this.completionPopupTriggered && game && typeof game.getLevelCompletionPercent === 'function') {
+            const completion = game.getLevelCompletionPercent();
+            if (completion >= 100) {
+                this.completionPopupTriggered = true;
+                this.completionPopupTimer = this.completionPopupDuration;
+                if (game.audio && typeof game.audio.playCompletion100Cue === 'function') {
+                    game.audio.playCompletion100Cue();
+                }
             }
         }
 
@@ -1647,6 +1666,69 @@ export class Player extends Entity {
                 const checkY = baseY - tileSize - 20 - Math.sin(this.pulseTimer * 8 + 4.2) * 2;
                 ctx.drawImage(cached.canvas, centerX - cached.width / 2, checkY - cached.height / 2);
             }
+            ctx.restore();
+        }
+
+        if (!game?.gameOverTriggered && this.completionPopupTimer > 0) {
+            const t = this.completionPopupTimer / this.completionPopupDuration;
+            const fade = t < 0.25 ? (t / 0.25) : (t > 0.82 ? (1 - t) / 0.18 : 1);
+            const pulse = 1 + Math.sin(this.pulseTimer * 10) * 0.025;
+            const text = 'Level 100% ✅';
+            const centerX = this.x + this.width / 2;
+            const y = this.y - 184 - (1 - t) * 10;
+
+            ctx.save();
+            ctx.globalAlpha = Math.max(0, Math.min(1, fade));
+            ctx.translate(centerX, y);
+            ctx.scale(pulse, pulse);
+
+            ctx.font = 'bold 28px "Outfit", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const textW = ctx.measureText(text).width;
+            const padX = 18;
+            const padY = 12;
+            const boxW = textW + padX * 2;
+            const boxH = 44 + padY * 2;
+            const boxX = -boxW / 2;
+            const boxY = -boxH / 2;
+            const radius = 14;
+
+            const glow = ctx.createRadialGradient(0, 0, 8, 0, 0, boxW * 0.65);
+            glow.addColorStop(0, 'rgba(255, 240, 130, 0.36)');
+            glow.addColorStop(1, 'rgba(255, 220, 90, 0)');
+            ctx.fillStyle = glow;
+            ctx.beginPath();
+            ctx.arc(0, 0, boxW * 0.58, 0, Math.PI * 2);
+            ctx.fill();
+
+            const tileGrad = ctx.createLinearGradient(0, boxY, 0, boxY + boxH);
+            tileGrad.addColorStop(0, '#ffe082');
+            tileGrad.addColorStop(1, '#ffb300');
+            ctx.fillStyle = tileGrad;
+            if (ctx.roundRect) {
+                ctx.beginPath();
+                ctx.roundRect(boxX, boxY, boxW, boxH, radius);
+                ctx.fill();
+            } else {
+                ctx.fillRect(boxX, boxY, boxW, boxH);
+            }
+            ctx.strokeStyle = '#8a5200';
+            ctx.lineWidth = 3;
+            if (ctx.roundRect) {
+                ctx.beginPath();
+                ctx.roundRect(boxX, boxY, boxW, boxH, radius);
+                ctx.stroke();
+            } else {
+                ctx.strokeRect(boxX, boxY, boxW, boxH);
+            }
+
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = '#3a2300';
+            ctx.strokeText(text, 0, 1);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(text, 0, 1);
             ctx.restore();
         }
 

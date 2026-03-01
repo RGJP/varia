@@ -1366,4 +1366,26 @@ export class AudioEngine {
             this._playTone('sine', base * 2.0, 0.2, { endFreq: base * 2.35, gain: 0.3, attack: 0.0012 });
         }, 28);
     }
+
+    playCompletion100Cue() {
+        // Short 3-tone climb for "Collectibles 100% ✅" confirmation.
+        const notes = [659.25, 783.99, 987.77]; // E5 G5 B5
+        const delays = [0, 110, 220];
+        for (let i = 0; i < notes.length; i++) {
+            const n = notes[i];
+            const isFinal = i === notes.length - 1;
+            setTimeout(() => {
+                this._playTone('triangle', n, isFinal ? 0.2 : 0.14, {
+                    endFreq: n * 1.04,
+                    gain: isFinal ? 0.34 : 0.24,
+                    attack: 0.0012
+                });
+                this._playTone('sine', n * 2, isFinal ? 0.15 : 0.11, {
+                    endFreq: n * 2.03,
+                    gain: isFinal ? 0.16 : 0.11,
+                    attack: 0.0009
+                });
+            }, delays[i]);
+        }
+    }
 }
