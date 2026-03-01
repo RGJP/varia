@@ -1305,7 +1305,7 @@ export class Enemy extends Entity {
             const projectile = new UfoProjectile(centerX, centerY, spread);
             game.enemyProjectiles.push(projectile);
 
-            this.attackCooldown = 0.15; // Constant shower
+            this.attackCooldown = 0.28; // Same rain attack, fewer projectiles for better performance
         }
     }
 
