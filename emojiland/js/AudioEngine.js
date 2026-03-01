@@ -18,7 +18,7 @@ export class AudioEngine {
         ];
         this.bossTrackPool = [];
 
-        this.totalSongs = 46;
+        this.totalSongs = 49;
         this.recentHistorySize = Math.max(0, Math.min(5, this.totalSongs - 1));
         this.musicPool = [];
         this.recentSongHistory = [];
