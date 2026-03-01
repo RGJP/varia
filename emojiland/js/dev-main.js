@@ -4,6 +4,7 @@ import { getRandomTheme } from './environment/ThemeManager.js';
 import { Player } from './entities/Player.js';
 import { Enemy, Boss } from './entities/Enemy.js';
 import { clearEmojiCache, getEmojiCanvas } from './EmojiCache.js';
+import { SafeBubble } from './entities/SafeBubble.js';
 
 const DEV_TARGETS = [
     { id: 'enemy:patrol:turtle', label: 'Enemy - Turtle (🐢)', kind: 'enemy', type: 'patrol', emoji: '🐢' },
@@ -78,6 +79,13 @@ class DevGame extends Game {
         this.pendingBossSpawns = [];
         this.rocks = [];
         this.enemyProjectiles = [];
+
+        // Mirror main-game boss arena safety setup: two corner honey pots.
+        const bossCornerBarrelSize = 100;
+        const bossCornerOffset = 60;
+        const bossCornerCenterY = platform.y + platform.height + bossCornerBarrelSize / 2;
+        const leftCornerCenterX = platform.x - bossCornerOffset - bossCornerBarrelSize / 2;
+        this.safeZones.push(new SafeBubble(leftCornerCenterX, bossCornerCenterY, bossCornerBarrelSize));
 
         this.totalCoins = 0;
         this.coinsCollected = 0;

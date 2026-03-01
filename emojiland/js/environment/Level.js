@@ -962,6 +962,14 @@ export function loadLevel() {
     const arenaX = currentX + 400; // Large gap from the last regular platform
     const arenaPlatform = new Platform(arenaX, arenaY, arenaW, 100, false, theme);
     platforms.push(arenaPlatform);
+    const isInsideBossArena = (x) => x >= arenaPlatform.x && x <= arenaPlatform.x + arenaPlatform.width;
+
+    // Always place two safe honey pots on boss arena corners (with padding).
+    const bossCornerBarrelSize = 100;
+    const bossCornerOffset = 60; // place outside each bottom corner
+    const bossCornerCenterY = arenaPlatform.y + arenaPlatform.height + bossCornerBarrelSize / 2;
+    const leftCornerCenterX = arenaPlatform.x - bossCornerOffset - bossCornerBarrelSize / 2;
+    safeZones.push(new SafeBubble(leftCornerCenterX, bossCornerCenterY, bossCornerBarrelSize));
 
     // Queue boss spawn centered on the arena.
     // Boss is instantiated later when the player gets near the arena.
@@ -1170,6 +1178,7 @@ export function loadLevel() {
             .filter((loc) =>
                 loc.x > 900 &&
                 loc.x < victoryPlatform.x * 0.8 &&
+                !isInsideBossArena(loc.x) &&
                 loc.y >= 120 &&
                 loc.y <= 620 &&
                 loc.drop !== null &&
@@ -1197,7 +1206,7 @@ export function loadLevel() {
 
             for (let i = 0; i < platforms.length; i++) {
                 const p = platforms[i];
-                if (!p || p.isVictory || p.width < 140) continue;
+                if (!p || p.isVictory || p === arenaPlatform || p.width < 140) continue;
                 const y = p.y - 150;
                 const c = p.x + p.width * 0.5;
                 tryAddFallback(c, y, 320);
@@ -1289,7 +1298,7 @@ export function loadLevel() {
                     let bestY = null;
                     let bestDx = Infinity;
                     const consider = (p) => {
-                        if (!p || p.isVictory) return;
+                        if (!p || p.isVictory || p === arenaPlatform) return;
                         if (x < p.x - 30 || x > p.x + p.width + 30) return;
                         const candidateY = clamp(p.y - 150, 120, 620);
                         if (!hasBarrelLaunchHeadroom(x, candidateY)) return;
