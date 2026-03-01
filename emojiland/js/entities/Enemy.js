@@ -40,7 +40,6 @@ const TYPE_JELLYFISH = 'jellyfish'; // 🪼
 const TYPE_LOBSTER_MINION = 'lobster_minion'; // 🦞
 const TYPE_PEACOCK = 'peacock'; // 🦚
 const TYPE_ENRAGED = 'enraged'; // 😡
-const SHOOTER_OPACITY_SPEED = 1.6;
 
 export class Enemy extends Entity {
     constructor(x, y, platform) {
@@ -108,7 +107,6 @@ export class Enemy extends Entity {
         this.startX = x;
         this.timeAlive = Math.random() * 100;
         this.attackCooldown = 0;
-        this.shooterPeakLock = false;
 
         this.revivesRemaining = (this.type === TYPE_ZOMBIE) ? 1 : 0;
         this.damageFlashTimer = 0;
@@ -182,6 +180,9 @@ export class Enemy extends Entity {
             this.kamikazeArmed = false;
             this.kamikazeCountdownDuration = 3.0;
             this.kamikazeCountdown = 0;
+        }
+        if (this.type === TYPE_SHOOTER) {
+            this.attackCooldown = 0.35 + Math.random() * 1.25;
         }
 
         // Keep shooter visually larger without changing gameplay hitbox/mechanics.
@@ -982,17 +983,12 @@ export class Enemy extends Entity {
         // Since we set x/y directly, zero out vx/vy so update()'s else branch doesn't interfere
         this.vx = 0;
         this.vy = 0;
-        const shooterOpacity = 0.5 + Math.sin(this.timeAlive * SHOOTER_OPACITY_SPEED) * 0.5;
-        const atFullOpacity = shooterOpacity >= 0.995;
-        if (!atFullOpacity) this.shooterPeakLock = false;
-
         if (player) {
             // Turn to face player at any distance
             this.facingRight = distX > 0;
 
-            if (atFullOpacity && !this.shooterPeakLock) {
+            if (this.attackCooldown <= 0) {
                 this.state = 'ATTACK';
-                this.shooterPeakLock = true;
 
                 const centerX = this.x + this.width / 2;
                 const centerY = this.y + this.height / 2;
@@ -1004,6 +1000,7 @@ export class Enemy extends Entity {
                     game.enemyProjectiles.push(laser);
                 }
 
+                this.attackCooldown = 0.45 + Math.random() * 1.55;
                 this.stateTimer = 0.5;
             } else if (this.stateTimer > 0) {
                 this.stateTimer -= dt;
@@ -1554,8 +1551,8 @@ export class Enemy extends Entity {
         }
 
         if (this.type === TYPE_SHOOTER) {
-            // Keep merman clearly readable at all times.
-            alpha = 0.7 + Math.sin(this.timeAlive * SHOOTER_OPACITY_SPEED) * 0.3;
+            // Blowfish is always fully visible.
+            alpha = 1.0;
         }
 
 
