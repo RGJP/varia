@@ -50,6 +50,7 @@ export class AudioEngine {
         };
         this._lightningBuzzNodes = null;
         this._lightningBuzzInterval = null;
+        this._resumeLightningBuzzOnUnpause = false;
 
         this._loadSettings();
     }
@@ -464,6 +465,7 @@ export class AudioEngine {
 
     startLightningBuzz() {
         if (this._lightningBuzzNodes) return;
+        this._resumeLightningBuzzOnUnpause = false;
         this._ensureContext();
         if (!this.ctx || !this.masterGain) return;
         if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => { });
@@ -515,7 +517,10 @@ export class AudioEngine {
         }, 90);
     }
 
-    stopLightningBuzz() {
+    stopLightningBuzz({ preserveResumeFlag = false } = {}) {
+        if (!preserveResumeFlag) {
+            this._resumeLightningBuzzOnUnpause = false;
+        }
         if (!this._lightningBuzzNodes) return;
         if (this._lightningBuzzInterval) {
             clearInterval(this._lightningBuzzInterval);
@@ -545,6 +550,19 @@ export class AudioEngine {
             try { n.band.disconnect(); } catch (e) { }
             try { n.baseGain.disconnect(); } catch (e) { }
         }, 140);
+    }
+
+    pauseLightningBuzz() {
+        this._resumeLightningBuzzOnUnpause = !!this._lightningBuzzNodes;
+        if (this._lightningBuzzNodes) {
+            this.stopLightningBuzz({ preserveResumeFlag: true });
+        }
+    }
+
+    resumeLightningBuzz() {
+        if (!this._resumeLightningBuzzOnUnpause) return;
+        this._resumeLightningBuzzOnUnpause = false;
+        this.startLightningBuzz();
     }
 
     playBackgroundMusic(isAutoNext = false) {

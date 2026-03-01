@@ -303,6 +303,9 @@ export class Game {
                 if (this.audio && this.audio.pauseBackgroundMusic) {
                     this.audio.pauseBackgroundMusic();
                 }
+                if (this.audio && this.audio.pauseLightningBuzz) {
+                    this.audio.pauseLightningBuzz();
+                }
             }
         });
 
@@ -313,6 +316,9 @@ export class Game {
                     this._autoPausedByVisibility = true;
                     if (this.audio && this.audio.pauseBackgroundMusic) {
                         this.audio.pauseBackgroundMusic();
+                    }
+                    if (this.audio && this.audio.pauseLightningBuzz) {
+                        this.audio.pauseLightningBuzz();
                     }
                 }
             } else if (this._autoPausedByVisibility && this.state === GameState.PAUSED) {
@@ -462,7 +468,7 @@ export class Game {
             }
             return;
         }
-        const prisonerEmojis = ['🐇', '🧝‍♀️', '🧚‍♀️', '🧸', '🐈', '🐈', '🐈'];
+        const prisonerEmojis = ['🐇', '🧝‍♀️', '🧚‍♀️', '🧸', '🐈', '🐈', '🐈', '🐅', '🐩', '🐕', '🐀', '🐆', '🦌', '🐄', '🦜'];
         const emoji = prisonerEmojis[Math.floor(Math.random() * prisonerEmojis.length)];
         const cageSize = 94;
         const prisonerSize = 62;
@@ -993,9 +999,11 @@ export class Game {
             if (this.state === GameState.PLAYING) {
                 this.state = GameState.PAUSED;
                 this.audio.pauseBackgroundMusic && this.audio.pauseBackgroundMusic();
+                this.audio.pauseLightningBuzz && this.audio.pauseLightningBuzz();
             } else if (this.state === GameState.PAUSED) {
                 this.state = GameState.PLAYING;
                 this.audio.resumeBackgroundMusic && this.audio.resumeBackgroundMusic();
+                this.audio.resumeLightningBuzz && this.audio.resumeLightningBuzz();
             }
         }
 
@@ -1193,6 +1201,12 @@ export class Game {
             if (shouldSpawn) {
                 this.player.clearActivePowerUps();
                 this.player.bombs = 0;
+                if (Array.isArray(this.lightningOrbs) && this.lightningOrbs.length > 0) {
+                    this.lightningOrbs.length = 0;
+                }
+                if (this.audio && typeof this.audio.stopLightningBuzz === 'function') {
+                    this.audio.stopLightningBuzz();
+                }
                 this.enemies.push(new Boss(spawn.x, spawn.y, spawn.platform, spawn.bossType));
                 spawnedBoss = true;
             } else {
@@ -1844,11 +1858,11 @@ export class Game {
             const barH = 6;
             const barY = currentY + 2 - barH / 2;
             const fillW = Math.round(barW * (completion / 100));
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.24)';
             this.ctx.fillRect(barX, barY, barW, barH);
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.52)';
             this.ctx.fillRect(barX, barY, fillW, barH);
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.28)';
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
             this.ctx.fillText(completionText, completionTextX, currentY + 2);
 
             if (this.player && this.player.inSafeBubble) {
