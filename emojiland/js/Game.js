@@ -489,7 +489,7 @@ export class Game {
             }
             return;
         }
-        const prisonerEmojis = ['🐇', '🧝‍♀️', '🧚‍♀️', '🧸', '🐈', '🐈', '🐈', '🐅', '🐩', '🐕', '🐀', '🐆', '🦌', '🐄', '🦜'];
+        const prisonerEmojis = ['🐇', '🧝‍♀️', '🧚‍♀️', '🧸', '🐈', '🐈', '🐈', '🐅', '🐩', '🐕', '🐀', '🐆', '🦌', '🐄', '🦜', '💩'];
         const emoji = prisonerEmojis[Math.floor(Math.random() * prisonerEmojis.length)];
         const cageSize = 94;
         const prisonerSize = 62;
@@ -2058,7 +2058,7 @@ export class Game {
             this.ctx.font = '20px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
             let ry = cardY + 74;
-            this.ctx.fillText('🪙 Collect All Coins and Collectibles', 40, ry); ry += yStep;
+            this.ctx.fillText('🪙 Reach 100% Level Completion', 40, ry); ry += yStep;
             this.ctx.fillText('⚔️ Defeat All Enemies', 40, ry); ry += yStep;
             this.ctx.fillText('🏁 Reach the end with the best score', 40, ry); ry += yStep;
             this.ctx.fillText('🎰 Experiment, Explore, Enjoy', 40, ry); ry += yStep;
