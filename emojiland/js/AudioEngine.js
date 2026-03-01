@@ -1331,10 +1331,18 @@ export class AudioEngine {
         for (let i = 0; i < notes.length; i++) {
             const duration = i === notes.length - 1 ? 1.0 : 0.13;
             setTimeout(() => {
-                this.playOscillator('triangle', notes[i], duration);
+                this._playTone('triangle', notes[i], duration, {
+                    endFreq: notes[i] * 1.015,
+                    gain: i === notes.length - 1 ? 0.2 : 0.15,
+                    attack: 0.0015
+                });
                 if (i === notes.length - 1) {
                     // Light harmony on the long final note.
-                    this.playOscillator('sine', notes[i] * 1.25, 0.8);
+                    this._playTone('sine', notes[i] * 1.25, 0.8, {
+                        endFreq: notes[i] * 1.28,
+                        gain: 0.1,
+                        attack: 0.0012
+                    });
                 }
             }, steps[i]);
         }

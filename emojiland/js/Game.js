@@ -15,9 +15,9 @@ export function filterInPlace(array) {
     for (let i = 0; i < array.length; i++) {
         const item = array[i];
         if (!item) continue;
-        const keepDuringDeathFade = item && item.markedForDeletion &&
-            typeof item.deathFadeTimer === 'number' && item.deathFadeTimer > 0;
-        if (!item.markedForDeletion || keepDuringDeathFade) {
+        const keepDuringDeathPop = item && item.markedForDeletion &&
+            typeof item.deathPopTimer === 'number' && item.deathPopTimer > 0;
+        if (!item.markedForDeletion || keepDuringDeathPop) {
             array[writeIdx++] = item;
         }
     }
@@ -2096,7 +2096,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('🎵 Music from Pixabay & Suno • Game Version 1.40', 0, cardY + cardHeight + 152);
+            this.ctx.fillText('🎵 Music from Pixabay & Suno • Game Version 1.41', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';

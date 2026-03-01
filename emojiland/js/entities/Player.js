@@ -286,12 +286,12 @@ export class Player extends Entity {
             }
         }
         if (game && game.audio) {
-            const timerActive = !this.inSafeBubble && this.lightningPowerUpTimer > 0;
-            const lingeringOrbsActive = Array.isArray(game.lightningOrbs) && game.lightningOrbs.length > 0;
-            const lightningActive = timerActive || lingeringOrbsActive;
-            if (lightningActive && typeof game.audio.startLightningBuzz === 'function') {
+            const activeOrbs = Array.isArray(game.lightningOrbs)
+                ? game.lightningOrbs.some(orb => orb && !orb.markedForDeletion)
+                : false;
+            if (activeOrbs && typeof game.audio.startLightningBuzz === 'function') {
                 game.audio.startLightningBuzz();
-            } else if (!lightningActive && typeof game.audio.stopLightningBuzz === 'function') {
+            } else if (!activeOrbs && typeof game.audio.stopLightningBuzz === 'function') {
                 game.audio.stopLightningBuzz();
             }
         }
@@ -1082,6 +1082,8 @@ export class Player extends Entity {
 
     _spawnLightningOrb(game) {
         if (!game || !Array.isArray(game.lightningOrbs) || this.inSafeBubble) return;
+        const hasTarget = Array.isArray(game.enemies) && game.enemies.some(enemy => enemy && !enemy.markedForDeletion);
+        if (!hasTarget) return;
         const ox = this.x + this.width / 2;
         const oy = this.y + this.height / 2 + 4;
         game.lightningOrbs.push(new LightningOrb(ox, oy));

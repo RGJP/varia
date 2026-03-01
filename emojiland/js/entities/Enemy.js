@@ -122,8 +122,9 @@ export class Enemy extends Entity {
         this.shellHitCooldownTimer = 0;
         this.alienStompCount = 0;
         this.countsForCompletionObjective = true;
-        this.deathFadeDuration = 0;
-        this.deathFadeTimer = 0;
+        this.deathPopDuration = 0;
+        this.deathPopTimer = 0;
+        this._deathPopCache = null;
 
         if (this.type === TYPE_PATROL) this.state = 'PATROL';
         if (this.type === TYPE_CHASER) this.state = 'PATROL';
@@ -267,7 +268,7 @@ export class Enemy extends Entity {
                 if (game && game.audio) game.audio.playHit();
             } else {
                 this.markedForDeletion = true;
-                if (this._shouldUseDeathFade(game)) this._startDeathFade();
+                if (this._shouldUseLowPerfDeathPop(game)) this._startDeathPop();
                 if (game && game.particles) {
                     const cx = this.x + this.width / 2;
                     const cy = this.y + this.height / 2;
@@ -312,8 +313,8 @@ export class Enemy extends Entity {
 
     update(dt, game) {
         if (this.markedForDeletion) {
-            if (this.deathFadeTimer > 0) {
-                this.deathFadeTimer = Math.max(0, this.deathFadeTimer - dt);
+            if (this.deathPopTimer > 0) {
+                this.deathPopTimer = Math.max(0, this.deathPopTimer - dt);
             }
             return;
         }
@@ -543,7 +544,7 @@ export class Enemy extends Entity {
             if (game && this.y > game.lowestY + 120) {
                 if (!this.markedForDeletion) {
                     this.markedForDeletion = true;
-                    if (this._shouldUseDeathFade(game)) this._startDeathFade();
+                    if (this._shouldUseLowPerfDeathPop(game)) this._startDeathPop();
                     if (game.particles) {
                         game.particles.emitDeath(this.x + this.width / 2, game.lowestY - 10);
                     }
@@ -681,7 +682,7 @@ export class Enemy extends Entity {
     stomp(game) {
         if (this.type === TYPE_JELLYFISH) {
             this.markedForDeletion = true;
-            if (this._shouldUseDeathFade(game)) this._startDeathFade();
+            if (this._shouldUseLowPerfDeathPop(game)) this._startDeathPop();
             if (game && game.particles) game.particles.emitDeath(this.x + this.width / 2, this.y + this.height / 2);
             if (game && game.player) game.player.score += 50;
             if (game && typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(this);
@@ -1440,7 +1441,23 @@ export class Enemy extends Entity {
     }
 
     draw(ctx) {
-        if (this.markedForDeletion && this.deathFadeTimer <= 0) return;
+        if (this.markedForDeletion) {
+            if (this.deathPopTimer > 0) {
+                if (!this._deathPopCache) {
+                    this._deathPopCache = getEmojiCanvas('💥', Math.max(28, Math.round(this.height * 0.85)));
+                }
+                const cached = this._deathPopCache;
+                const t = Math.max(0, Math.min(1, this.deathPopTimer / this.deathPopDuration));
+                const scale = 0.9 + (1 - t) * 0.25;
+                ctx.save();
+                ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+                ctx.scale(scale, scale);
+                ctx.globalAlpha = 0.9;
+                ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2);
+                ctx.restore();
+            }
+            return;
+        }
 
         ctx.save();
         if (this.type === TYPE_TROLL) {
@@ -1557,9 +1574,6 @@ export class Enemy extends Entity {
             ctx.shadowOffsetY = 0;
         }
 
-        if (this.deathFadeTimer > 0 && this.deathFadeDuration > 0) {
-            alpha *= Math.max(0, Math.min(1, this.deathFadeTimer / this.deathFadeDuration));
-        }
         ctx.globalAlpha = alpha;
 
         ctx.translate(drawX, drawY);
@@ -1664,13 +1678,13 @@ export class Enemy extends Entity {
         }
     }
 
-    _shouldUseDeathFade(game) {
-        return !!(game && game.particles && game.particles.panicMode && game.particles.emissionScale <= 0.06);
+    _shouldUseLowPerfDeathPop(game) {
+        return !!(game && game.particles && game.particles.panicMode);
     }
 
-    _startDeathFade() {
-        this.deathFadeDuration = 0.3;
-        this.deathFadeTimer = this.deathFadeDuration;
+    _startDeathPop() {
+        this.deathPopDuration = 0.18;
+        this.deathPopTimer = this.deathPopDuration;
         this.vx = 0;
         this.vy = 0;
     }
