@@ -55,9 +55,9 @@ export class Game {
         this.state = GameState.START_MENU;
         this.lastTime = 0;
         this.difficultyOptions = [
-            { id: 'easy', label: '🌱 Easy (20 HP)', hearts: 20 },
-            { id: 'normal', label: '⚖️ Normal (5 HP)', hearts: 5 },
-            { id: 'heroic', label: '🧗 Hard (3 HP)', hearts: 3 }
+            { id: 'easy', label: '🌱 Easy', hearts: 18 },
+            { id: 'normal', label: '⚖️ Normal', hearts: 6 },
+            { id: 'heroic', label: '🧗 Hard', hearts: 3 }
         ];
         this.selectedDifficultyId = null;
 
@@ -66,8 +66,10 @@ export class Game {
         this.enemies = [];
         this.pendingBossSpawns = [];
         this.collectibles = [];
+        this.pendingBossStarDrops = [];
         this.safeZones = [];
         this.rocks = [];
+        this.lightningOrbs = [];
         this.enemyProjectiles = [];
         this.vines = [];
         this.swingingVines = [];
@@ -377,11 +379,13 @@ export class Game {
     initLevel() {
         clearEmojiCache();
         this._bossMusicEngaged = false;
+        if (this.audio && typeof this.audio.stopLightningBuzz === 'function') this.audio.stopLightningBuzz();
         const levelData = loadLevel();
         this.platforms = levelData.platforms;
         this.enemies = levelData.enemies;
         this.pendingBossSpawns = levelData.bossSpawns || [];
         this.collectibles = levelData.collectibles;
+        this.pendingBossStarDrops = [];
         this.safeZones = levelData.safeZones || [];
         this.vines = levelData.vines || [];
         this.swingingVines = levelData.swingingVines || [];
@@ -389,6 +393,7 @@ export class Game {
         this.currentTheme = levelData.theme;
         this.layoutVariantLabel = levelData.layoutVariantLabel || 'V:N/A';
         this.rocks = [];
+        this.lightningOrbs = [];
         this.enemyProjectiles = [];
 
         this.totalCoins = this.collectibles.length;
@@ -574,6 +579,7 @@ export class Game {
                 if (!this.gameOverTriggered) {
                     this.gameOverTriggered = true;
                     this.gameOverTimer = 2.0;
+                    if (this.audio && typeof this.audio.stopLightningBuzz === 'function') this.audio.stopLightningBuzz();
                     if (this.audio && typeof this.audio.playDeathTune === 'function') {
                         this.audio.playDeathTune();
                     }
@@ -635,6 +641,7 @@ export class Game {
             }
 
             const collectibles = this.collectibles;
+            this._updatePendingBossStarDrops(dt);
             for (let i = 0; i < collectibles.length; i++) {
                 const collectible = collectibles[i];
                 if (
@@ -652,6 +659,11 @@ export class Game {
                 rocks[i].update(dt, this);
             }
 
+            const lightningOrbs = this.lightningOrbs;
+            for (let i = 0; i < lightningOrbs.length; i++) {
+                lightningOrbs[i].update(dt, this);
+            }
+
             const enemyProjectiles = this.enemyProjectiles;
             for (let i = 0; i < enemyProjectiles.length; i++) {
                 enemyProjectiles[i].update(dt, this);
@@ -660,6 +672,7 @@ export class Game {
             this.enemies = filterInPlace(this.enemies);
             this.collectibles = filterInPlace(this.collectibles);
             this.rocks = filterInPlace(this.rocks);
+            this.lightningOrbs = filterInPlace(this.lightningOrbs);
             this.enemyProjectiles = filterInPlace(this.enemyProjectiles);
             if (this._bossMusicEngaged && !this.hasAliveBoss()) {
                 this._bossMusicEngaged = false;
@@ -675,6 +688,7 @@ export class Game {
 
     triggerVictory() {
         if (!this.canTriggerVictory()) return;
+        if (this.audio && typeof this.audio.stopLightningBuzz === 'function') this.audio.stopLightningBuzz();
         this.lastVictoryEmojiBonus = 0;
         if (this.player && this.player.collectedLetters) {
             const hasAllEmojiLetters = ['E', 'M', 'O', 'J', 'I'].every(letter => this.player.collectedLetters[letter]);
@@ -757,6 +771,22 @@ export class Game {
         const x = spawnMin + Math.random() * (spawnMax - spawnMin);
         const y = p.y - 70;
         this.collectibles.push(new Collectible(x, y, 'health'));
+    }
+
+    _updatePendingBossStarDrops(dt) {
+        if (!Array.isArray(this.pendingBossStarDrops) || this.pendingBossStarDrops.length === 0) return;
+        let writeIdx = 0;
+        for (let i = 0; i < this.pendingBossStarDrops.length; i++) {
+            const drop = this.pendingBossStarDrops[i];
+            if (!drop) continue;
+            drop.timer -= dt;
+            if (drop.timer <= 0) {
+                this.collectibles.push(new Collectible(drop.x, drop.y, 'boss_star', null, drop.size));
+            } else {
+                this.pendingBossStarDrops[writeIdx++] = drop;
+            }
+        }
+        this.pendingBossStarDrops.length = writeIdx;
     }
 
     _buildPlayerCollisionContext() {
@@ -989,6 +1019,67 @@ export class Game {
         }
     }
 
+    _drawLightningLinks(ctx) {
+        if (!this.player || !Array.isArray(this.lightningOrbs) || this.lightningOrbs.length === 0) return;
+
+        const px = this.player.x + this.player.width / 2;
+        const py = this.player.y + this.player.height / 2 + 4;
+        const t = (this.lastTime || 0) * 0.001;
+
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        for (let i = 0; i < this.lightningOrbs.length; i++) {
+            const orb = this.lightningOrbs[i];
+            if (!orb || orb.markedForDeletion) continue;
+
+            const ox = orb.x + orb.width / 2;
+            const oy = orb.y + orb.height / 2;
+            const dx = ox - px;
+            const dy = oy - py;
+            const dist = Math.hypot(dx, dy);
+            if (dist < 2) continue;
+
+            const nx = -dy / dist;
+            const ny = dx / dist;
+            const segments = Math.max(4, Math.min(8, Math.floor(dist / 90) + 3));
+            const amp = Math.min(16, 5 + dist * 0.018);
+
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            for (let s = 1; s < segments; s++) {
+                const u = s / segments;
+                const baseX = px + dx * u;
+                const baseY = py + dy * u;
+                const taper = 1 - Math.abs(u - 0.5) * 0.9;
+                const wobble = Math.sin(u * 11 + t * 24 + i * 1.9) * amp * taper;
+                ctx.lineTo(baseX + nx * wobble, baseY + ny * wobble);
+            }
+            ctx.lineTo(ox, oy);
+            ctx.strokeStyle = 'rgba(255, 235, 120, 0.45)';
+            ctx.lineWidth = 4.6;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            for (let s = 1; s < segments; s++) {
+                const u = s / segments;
+                const baseX = px + dx * u;
+                const baseY = py + dy * u;
+                const taper = 1 - Math.abs(u - 0.5) * 0.9;
+                const wobble = Math.sin(u * 11 + t * 26 + i * 2.1) * amp * 0.65 * taper;
+                ctx.lineTo(baseX + nx * wobble, baseY + ny * wobble);
+            }
+            ctx.lineTo(ox, oy);
+            ctx.strokeStyle = 'rgba(255, 251, 210, 0.78)';
+            ctx.lineWidth = 2.1;
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+
     draw() {
         this.ctx.setTransform(this.pixelRatio, 0, 0, this.pixelRatio, 0, 0);
         if (this.state === GameState.START_MENU) {
@@ -1071,12 +1162,18 @@ export class Game {
                 rocks[i].draw(this.ctx);
             }
 
+            const lightningOrbs = this.lightningOrbs;
+            for (let i = 0; i < lightningOrbs.length; i++) {
+                lightningOrbs[i].draw(this.ctx);
+            }
+
             const projectiles = this.enemyProjectiles;
             for (let i = 0; i < projectiles.length; i++) {
                 projectiles[i].draw(this.ctx);
             }
 
             this.player.draw(this.ctx, this);
+            this._drawLightningLinks(this.ctx);
             this.particles.draw(this.ctx);
             this.ctx.restore();
         } else if (this.state === GameState.PAUSED) {
@@ -1125,12 +1222,18 @@ export class Game {
                 rocks[i].draw(this.ctx);
             }
 
+            const lightningOrbs = this.lightningOrbs;
+            for (let i = 0; i < lightningOrbs.length; i++) {
+                lightningOrbs[i].draw(this.ctx);
+            }
+
             const projectiles = this.enemyProjectiles;
             for (let i = 0; i < projectiles.length; i++) {
                 projectiles[i].draw(this.ctx);
             }
 
             this.player.draw(this.ctx, this);
+            this._drawLightningLinks(this.ctx);
             this.particles.draw(this.ctx);
 
             this.ctx.restore();
@@ -1147,7 +1250,7 @@ export class Game {
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'bottom';
         this.ctx.font = '12px "Outfit", sans-serif';
-        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
         this.ctx.fillText(`${Math.round(this.fpsDisplay)} ${this.layoutVariantLabel}`, this.viewportWidth / 2, this.viewportHeight - 8);
         this.ctx.restore();
     }
@@ -1163,30 +1266,23 @@ export class Game {
             this.ctx.textAlign = 'left';
             this.ctx.textBaseline = 'middle';
 
-            // 1. Draw Health using cached emoji
-            const heartSpacing = 28;
+            // 1. Draw compact health indicator: ❤️xN
             const heartCached = this._heartCache;
-            this._syncMobileCameraButtonPosition(this.player.maxHealth);
-            for (let i = 0; i < this.player.maxHealth; i++) {
-                const x = startX + i * heartSpacing;
-                const isFull = i < this.player.health;
-
-                this.ctx.globalAlpha = isFull ? 1.0 : 0.1;
-                ctx_drawCachedEmoji(this.ctx, heartCached, x, currentY);
-            }
+            this._syncMobileCameraButtonPosition(2);
+            ctx_drawCachedEmoji(this.ctx, heartCached, startX, currentY);
             this.ctx.globalAlpha = 1.0;
+            this.ctx.fillStyle = 'white';
+            this.ctx.font = 'bold 24px "Outfit", sans-serif';
+            this.ctx.shadowColor = 'rgba(0, 0, 0, 0.78)';
+            this.ctx.shadowBlur = 6;
+            this.ctx.shadowOffsetY = 2.5;
+            this.ctx.fillText(`${Math.max(0, this.player.health | 0)}`, startX + 32, currentY + 2);
 
             currentY += lineSpacing;
 
             // 2. Draw Bombs indicator
             const bombCached = this._bombUICache;
             ctx_drawCachedEmoji(this.ctx, bombCached, startX, currentY);
-
-            this.ctx.fillStyle = 'white';
-            this.ctx.font = 'bold 24px "Outfit", sans-serif';
-            this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-            this.ctx.shadowBlur = 4;
-            this.ctx.shadowOffsetY = 2;
 
             this.ctx.fillText(`${this.player.bombs}`, startX + 32, currentY + 2);
 
@@ -1206,17 +1302,63 @@ export class Game {
             currentY += lineSpacing;
             const letters = ['E', 'M', 'O', 'J', 'I'];
             const collected = (this.player && this.player.collectedLetters) ? this.player.collectedLetters : {};
-            this.ctx.font = 'bold 20px monospace';
-            this.ctx.fontKerning = 'none';
             this.ctx.textAlign = 'center';
-            const letterStartX = startX + 4;
-            const letterSpacing = 16;
-            const emojiTrackerWidth = (letters.length - 1) * letterSpacing + 12;
+            this.ctx.textBaseline = 'middle';
+            const tileSize = 16;
+            const tileRadius = 4;
+            const letterSpacing = 18;
+            const letterStartX = startX + tileSize / 2;
+            const emojiTrackerWidth = tileSize + (letters.length - 1) * letterSpacing;
             for (let i = 0; i < letters.length; i++) {
                 const letter = letters[i];
                 const isCollected = !!collected[letter];
-                this.ctx.fillStyle = isCollected ? '#ffd54f' : 'rgba(255, 255, 255, 0.28)';
-                this.ctx.fillText(letter, letterStartX + i * letterSpacing, currentY + 2);
+                const cx = letterStartX + i * letterSpacing;
+                const tileX = cx - tileSize / 2;
+                const tileY = currentY - tileSize / 2 + 2;
+                const alpha = isCollected ? 0.98 : 0.32;
+
+                this.ctx.save();
+                this.ctx.globalAlpha = alpha;
+
+                const tileGrad = this.ctx.createLinearGradient(tileX, tileY, tileX, tileY + tileSize);
+                tileGrad.addColorStop(0, '#ffe082');
+                tileGrad.addColorStop(1, '#ffb300');
+                this.ctx.fillStyle = tileGrad;
+                if (this.ctx.roundRect) {
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(tileX, tileY, tileSize, tileSize, tileRadius);
+                    this.ctx.fill();
+                } else {
+                    this.ctx.fillRect(tileX, tileY, tileSize, tileSize);
+                }
+
+                this.ctx.strokeStyle = '#8a5200';
+                this.ctx.lineWidth = 1.5;
+                if (this.ctx.roundRect) {
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(tileX, tileY, tileSize, tileSize, tileRadius);
+                    this.ctx.stroke();
+                } else {
+                    this.ctx.strokeRect(tileX, tileY, tileSize, tileSize);
+                }
+
+                this.ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+                if (this.ctx.roundRect) {
+                    this.ctx.beginPath();
+                    this.ctx.roundRect(tileX + 1.5, tileY + 1.5, tileSize - 3, Math.max(3, tileSize * 0.24), 3);
+                    this.ctx.fill();
+                } else {
+                    this.ctx.fillRect(tileX + 1.5, tileY + 1.5, tileSize - 3, Math.max(3, tileSize * 0.24));
+                }
+
+                this.ctx.font = 'bold 13px "Outfit", sans-serif';
+                this.ctx.lineJoin = 'round';
+                this.ctx.lineWidth = 2.5;
+                this.ctx.strokeStyle = '#3a2300';
+                this.ctx.strokeText(letter, cx, tileY + tileSize / 2 + 0.5);
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillText(letter, cx, tileY + tileSize / 2 + 0.5);
+                this.ctx.restore();
             }
             currentY += 20;
 
@@ -1360,11 +1502,11 @@ export class Game {
 
             let ly = cardY + 74;
             const yStep = 30;
-            this.ctx.fillText('Arrows/Joystick : Move Character', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('A : Jump (🦘)', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('D / HOLD: Rock Attack (🪨⬆️)', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('S : Drop Bomb (💣)', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('P : Pause/Unpause (⏸️)', cardX + 40, ly);
+            this.ctx.fillText('KB Arrows or Joystick : Move', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('A or 🦘 : Jump', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('D or 🪨⬆️ : Attack / Charge', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('S or 💣 Drop Bomb From Above', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('P or ⏯️: Pause/Unpause', cardX + 40, ly);
 
             // Vertical Divider
             this.ctx.beginPath();
@@ -1425,7 +1567,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('🎵 Music from Pixabay & Suno • Game Version 1.31', 0, cardY + cardHeight + 152);
+            this.ctx.fillText('🎵 Music from Pixabay & Suno • Game Version 1.34', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';

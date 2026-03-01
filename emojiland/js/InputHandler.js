@@ -3,18 +3,84 @@ export class InputHandler {
         this.keys = new Set();
         this.justPressed = new Set();
         this.justReleased = new Set();
+        this.aliasByCode = {
+            Space: ['KeyA']
+        };
+        this.preventDefaultCodes = new Set([
+            'ArrowLeft',
+            'ArrowRight',
+            'ArrowUp',
+            'ArrowDown',
+            'KeyA',
+            'KeyD',
+            'KeyS',
+            'KeyP',
+            'Space'
+        ]);
+
+        const pressCode = (code) => {
+            if (!this.keys.has(code)) {
+                this.justPressed.add(code);
+            }
+            this.keys.add(code);
+        };
+
+        const releaseCode = (code) => {
+            if (this.keys.has(code)) {
+                this.justReleased.add(code);
+            }
+            this.keys.delete(code);
+            this.justPressed.delete(code);
+        };
 
         window.addEventListener('keydown', (e) => {
-            if (!this.keys.has(e.code)) {
-                this.justPressed.add(e.code);
+            const target = e.target;
+            const isEditableTarget = !!(
+                target &&
+                (
+                    target.tagName === 'INPUT' ||
+                    target.tagName === 'TEXTAREA' ||
+                    target.isContentEditable
+                )
+            );
+            if (isEditableTarget) return;
+            if (this.preventDefaultCodes.has(e.code) && e.cancelable) {
+                e.preventDefault();
             }
-            this.keys.add(e.code);
+            pressCode(e.code);
+            const aliases = this.aliasByCode[e.code];
+            if (aliases) {
+                for (let i = 0; i < aliases.length; i++) pressCode(aliases[i]);
+            }
         });
 
         window.addEventListener('keyup', (e) => {
-            this.justReleased.add(e.code);
-            this.keys.delete(e.code);
-            this.justPressed.delete(e.code);
+            const target = e.target;
+            const isEditableTarget = !!(
+                target &&
+                (
+                    target.tagName === 'INPUT' ||
+                    target.tagName === 'TEXTAREA' ||
+                    target.isContentEditable
+                )
+            );
+            if (isEditableTarget) return;
+            if (this.preventDefaultCodes.has(e.code) && e.cancelable) {
+                e.preventDefault();
+            }
+            releaseCode(e.code);
+            const aliases = this.aliasByCode[e.code];
+            if (aliases) {
+                for (let i = 0; i < aliases.length; i++) releaseCode(aliases[i]);
+            }
+        });
+
+        window.addEventListener('blur', () => {
+            this.clearAllInputs();
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) this.clearAllInputs();
         });
 
         // Add generic touch for basic interactions
@@ -219,10 +285,10 @@ export class InputHandler {
                 this.keys.delete('ArrowUp');
                 this.keys.delete('ArrowDown');
 
-                const thresholdX = 20;
-                const thresholdY = 25;
+                const thresholdX = 14;
+                const thresholdY = 18;
 
-                if (distance > 10) {
+                if (distance > 6) {
                     if (dx < -thresholdX) this.keys.add('ArrowLeft');
                     else if (dx > thresholdX) this.keys.add('ArrowRight');
 
@@ -287,6 +353,12 @@ export class InputHandler {
             return true;
         }
         return false;
+    }
+
+    clearAllInputs() {
+        this.keys.clear();
+        this.justPressed.clear();
+        this.justReleased.clear();
     }
 
     update() {

@@ -2,7 +2,7 @@ import { Entity } from './Entity.js';
 import { Physics } from '../Physics.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
-// projectileType: 'drumstick' | 'stone' | 'skewer' | 'web' | 'wrench' | 'venom' | 'flame' | 'boomerang' | 'banana' | 'coconut' | 'egg' | 'icicle' | 'roar' | 'fossil' | 'needle' | 'scarab'
+// projectileType: 'drumstick' | 'stone' | 'skewer' | 'web' | 'wrench' | 'venom' | 'flame' | 'boomerang' | 'banana' | 'coconut' | 'egg' | 'icicle' | 'roar' | 'fossil' | 'needle' | 'scarab' | 'juggle_ball'
 export class BossProjectile extends Entity {
     constructor(x, y, vx, vy, projectileType) {
         super(x, y, 40, 40);
@@ -116,6 +116,12 @@ export class BossProjectile extends Entity {
                 this.emoji = String.fromCodePoint(0x1FAB2);
                 this.maxBounces = 0;
                 this.canBounceOnPlatforms = true;
+                break;
+            case 'juggle_ball':
+                this.emoji = String.fromCodePoint(0x1F534); // red ball by default (can be overridden by boss)
+                this.maxBounces = 3;
+                this.canBounceOnPlatforms = true;
+                this.projectileLifetime = 3.4;
                 break;
             default:
                 this.emoji = String.fromCodePoint(0x1FAA8);

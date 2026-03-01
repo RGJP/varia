@@ -12,7 +12,7 @@ import { triggerBombExplosionAt } from './Bomb.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 import { BossProjectile } from './BossProjectile.js';
 
-const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_tengu', 'boss_spider', 'boss_dragon', 'boss_manliftingweights', 'boss_lobster', 'boss_kangaroo', 'boss_monkey', 'boss_mammoth', 'boss_trex', 'boss_mosquito', 'boss_beetle'];
+const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_tengu', 'boss_spider', 'boss_dragon', 'boss_manliftingweights', 'boss_lobster', 'boss_kangaroo', 'boss_monkey', 'boss_mammoth', 'boss_trex', 'boss_mosquito', 'boss_beetle', 'boss_juggler'];
 
 const TYPE_PATROL = 'patrol';
 const TYPE_CHASER = 'chaser'; // 👹
@@ -1654,7 +1654,7 @@ export class Boss extends Entity {
             ? 'boss_tengu'
             : (bossType === 'boss_robot' ? 'boss_manliftingweights' : bossType);
         const resolvedBossType = normalizedBossType || BOSS_TYPES[Math.floor(Math.random() * BOSS_TYPES.length)];
-        const size = resolvedBossType === 'boss_spider' ? 122 : (resolvedBossType === 'boss_dragon' ? 170 : (resolvedBossType === 'boss_manliftingweights' ? 156 : (resolvedBossType === 'boss_lobster' ? 150 : (resolvedBossType === 'boss_kangaroo' ? 154 : (resolvedBossType === 'boss_monkey' ? 150 : (resolvedBossType === 'boss_mammoth' ? 168 : (resolvedBossType === 'boss_trex' ? 166 : (resolvedBossType === 'boss_mosquito' ? 144 : (resolvedBossType === 'boss_beetle' ? 158 : 160)))))))));
+        const size = resolvedBossType === 'boss_spider' ? 122 : (resolvedBossType === 'boss_dragon' ? 170 : (resolvedBossType === 'boss_manliftingweights' ? 156 : (resolvedBossType === 'boss_lobster' ? 150 : (resolvedBossType === 'boss_kangaroo' ? 154 : (resolvedBossType === 'boss_monkey' ? 150 : (resolvedBossType === 'boss_mammoth' ? 168 : (resolvedBossType === 'boss_trex' ? 166 : (resolvedBossType === 'boss_mosquito' ? 144 : (resolvedBossType === 'boss_beetle' ? 158 : (resolvedBossType === 'boss_juggler' ? 154 : 160))))))))));
         super(x, y - size, size, size);
 
         this.bossType = resolvedBossType;
@@ -1716,8 +1716,6 @@ export class Boss extends Entity {
         this.aerialSwoopTimer = 0;
         this.aerialSwoopDuration = 1.2;
         this.aerialSwoopDepth = 0;
-        this.aerialMinionPhase = Math.random() * Math.PI * 2;
-        this.aerialMinionRadius = 88 + Math.random() * 24;
         this.chickMovementMode = 'LOOP'; // 'LOOP' | 'SWOOP'
         this.chickMovementModeTimer = 2.4 + Math.random() * 1.2;
         this.chickPanicFlapTimer = 0;
@@ -1894,6 +1892,21 @@ export class Boss extends Entity {
         this.beetleBurrowTimer = 0;
         this.beetleBurrowTargetX = this.x;
 
+        // Juggler (boss_juggler): goofy circus duel with cascades, rain bursts, and rolling ball sprints.
+        this.jugglerState = 'PATROL'; // 'PATROL' | 'CASCADE' | 'RAIN' | 'ROLL'
+        this.jugglerPatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.jugglerHopCycle = Math.random() * Math.PI * 2;
+        this.jugglerTelegraphTimer = 0;
+        this.jugglerTelegraphType = 'cascade'; // 'cascade' | 'rain' | 'roll'
+        this.jugglerCascadeShots = 0;
+        this.jugglerCascadeTimer = 0;
+        this.jugglerRainWaves = 0;
+        this.jugglerRainTimer = 0;
+        this.jugglerRainCenterX = this.x + this.width / 2;
+        this.jugglerRollTimer = 0;
+        this.jugglerRollDir = 0;
+        this.jugglerRollFxTimer = 0;
+
         switch (this.bossType) {
             case 'boss_chick': this.emoji = String.fromCodePoint(0x1F423); break;
             case 'boss_moai': this.emoji = String.fromCodePoint(0x1F5FF); break;
@@ -1908,12 +1921,9 @@ export class Boss extends Entity {
             case 'boss_trex': this.emoji = String.fromCodePoint(0x1F996); break;
             case 'boss_mosquito': this.emoji = String.fromCodePoint(0x1F99F); break;
             case 'boss_beetle': this.emoji = String.fromCodePoint(0x1FAB2); break;
+            case 'boss_juggler': this.emoji = String.fromCodePoint(0x1F939); break;
             default: this.emoji = String.fromCodePoint(0x1F5FF); break;
         }
-        this.minionEmoji = this.bossType === 'boss_lobster'
-            ? String.fromCodePoint(0x1F99E)
-            : this.emoji;
-
         if (this.bossType === 'boss_lobster') {
             const lobsterNames = [
                 'LOBSTER MOBSTER',
@@ -1977,6 +1987,15 @@ export class Boss extends Entity {
                 'THE IRON ELYTRON'
             ];
             this.displayName = beetleNames[Math.floor(Math.random() * beetleNames.length)];
+        } else if (this.bossType === 'boss_juggler') {
+            const jugglerNames = [
+                'CIRCUS CHAOS',
+                'THE HONK JUGGLER',
+                'CAPTAIN BOUNCEBRAIN',
+                'RINGMASTER MAYHEM',
+                'LORD HYPERJUGGLE'
+            ];
+            this.displayName = jugglerNames[Math.floor(Math.random() * jugglerNames.length)];
         }
 
         this._cachedEmoji = getEmojiCanvas(this.emoji, size);
@@ -2055,6 +2074,17 @@ export class Boss extends Entity {
 
         if (this.health <= 0) {
             this.markedForDeletion = true;
+            if (game && Array.isArray(game.pendingBossStarDrops)) {
+                const dropSize = (game.player && game.player.width) ? game.player.width : 72;
+                const dropX = this.x + this.width / 2 - dropSize / 2;
+                const dropY = this.y + this.height / 2 - dropSize / 2;
+                game.pendingBossStarDrops.push({
+                    x: dropX,
+                    y: dropY,
+                    size: dropSize,
+                    timer: 0.3
+                });
+            }
             const cx = this.x + this.width / 2;
             const cy = this.y + this.height / 2;
             if (game && game.particles) {
@@ -4195,6 +4225,172 @@ export class Boss extends Entity {
         }
     }
 
+    _spawnJugglerBall(game, x, y, vx, vy, emoji = null) {
+        if (!game) return;
+        const shot = new BossProjectile(x, y, vx, vy, 'juggle_ball');
+        if (emoji) {
+            shot.emoji = emoji;
+            shot._cachedEmoji = getEmojiCanvas(emoji, 44);
+        }
+        game.enemyProjectiles.push(shot);
+    }
+
+    _spawnJugglerRainWave(game) {
+        if (!game) return;
+        const lanes = this.phase >= 3 ? 5 : (this.phase >= 2 ? 4 : 4);
+        const palette = ['🔴', '🟠', '🟡', '🟢', '🔵', '🟣'];
+        for (let i = 0; i < lanes; i++) {
+            const t = lanes <= 1 ? 0.5 : i / (lanes - 1);
+            const laneOffset = (t - 0.5) * (148 + this.phase * 20);
+            const x = this.jugglerRainCenterX + laneOffset + (Math.random() * 28 - 14);
+            const y = this.y - 260 - Math.random() * 90;
+            const vx = (Math.random() * 52 - 26) + Math.sin(this.timeAlive * 3 + i) * 14;
+            const vy = 360 + this.phase * 38 + Math.random() * 44;
+            const emoji = palette[(i + this.phase) % palette.length];
+            this._spawnJugglerBall(game, x, y, vx, vy, emoji);
+        }
+    }
+
+    _updateJugglerBoss(dt, game, player) {
+        const left = this.platform.x + 8;
+        const right = this.platform.x + this.platform.width - this.width - 8;
+        const groundY = this.platform.y - this.height;
+        this.y = groundY;
+
+        if (this.jugglerTelegraphTimer > 0) {
+            this.jugglerTelegraphTimer -= dt;
+            this.vx = 0;
+            if (player) this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            if (this.jugglerTelegraphTimer <= 0) {
+                if (this.jugglerTelegraphType === 'cascade') {
+                    this.jugglerState = 'CASCADE';
+                    this.jugglerCascadeShots = this.phase >= 3 ? 8 : (this.phase >= 2 ? 7 : 6);
+                    this.jugglerCascadeTimer = 0;
+                } else if (this.jugglerTelegraphType === 'rain') {
+                    this.jugglerState = 'RAIN';
+                    this.jugglerRainWaves = this.phase >= 3 ? 3 : 2;
+                    this.jugglerRainTimer = 0;
+                    this.jugglerRainCenterX = player ? (player.x + player.width / 2) : (this.x + this.width / 2);
+                } else {
+                    this.jugglerState = 'ROLL';
+                    this.jugglerRollDir = this.facingRight ? 1 : -1;
+                    this.jugglerRollTimer = this.phase >= 3 ? 1.05 : (this.phase >= 2 ? 0.92 : 0.8);
+                    this.jugglerRollFxTimer = 0;
+                }
+            }
+            return;
+        }
+
+        if (this.jugglerState === 'CASCADE') {
+            this.vx = 0;
+            this.jugglerCascadeTimer -= dt;
+            if (this.jugglerCascadeTimer <= 0 && this.jugglerCascadeShots > 0) {
+                const total = this.phase >= 3 ? 8 : (this.phase >= 2 ? 7 : 6);
+                const idx = total - this.jugglerCascadeShots;
+                const dir = idx % 2 === 0 ? 1 : -1;
+                const sideX = this.x + this.width / 2 + dir * (this.width * 0.22);
+                const sideY = this.y + this.height * 0.34;
+                const speed = 330 + this.phase * 22 + Math.random() * 26;
+                const angle = (dir > 0 ? -0.56 : -2.58) + Math.sin(idx * 1.4) * 0.08;
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed - 32;
+                const palette = ['🔴', '🟡', '🔵', '🟣', '🟢', '🟠'];
+                const emoji = palette[idx % palette.length];
+                this._spawnJugglerBall(game, sideX, sideY, vx, vy, emoji);
+                this.jugglerCascadeShots--;
+                this.jugglerCascadeTimer = Math.max(0.09, 0.15 - this.phase * 0.015);
+                if (this.jugglerCascadeShots <= 0) {
+                    this.jugglerState = 'PATROL';
+                    this.attackCooldown = 1.5 + Math.random() * 0.7;
+                }
+            }
+            return;
+        }
+
+        if (this.jugglerState === 'RAIN') {
+            this.vx = 0;
+            this.jugglerRainTimer -= dt;
+            if (this.jugglerRainTimer <= 0) {
+                this._spawnJugglerRainWave(game);
+                this.jugglerRainWaves--;
+                this.jugglerRainTimer = this.phase >= 3 ? 0.28 : 0.34;
+                if (this.jugglerRainWaves <= 0) {
+                    this.jugglerState = 'PATROL';
+                    this.attackCooldown = 1.8 + Math.random() * 0.7;
+                }
+            }
+            return;
+        }
+
+        if (this.jugglerState === 'ROLL') {
+            this.jugglerRollTimer -= dt;
+            const speed = 410 + this.phase * 32;
+            this.vx = this.jugglerRollDir * speed;
+            this.x += this.vx * dt;
+            this.y = groundY + Math.sin(this.timeAlive * 24) * 4;
+            if (this.x <= left || this.x >= right) {
+                this.x = Math.max(left, Math.min(right, this.x));
+                this.jugglerRollDir *= -1;
+                this.facingRight = this.jugglerRollDir > 0;
+            }
+
+            this.jugglerRollFxTimer -= dt;
+            if (this.jugglerRollFxTimer <= 0) {
+                const back = this.jugglerRollDir > 0 ? -1 : 1;
+                const spawnX = this.x + this.width / 2 + back * (this.width * 0.2);
+                const spawnY = this.y + this.height * 0.45;
+                const vx = back * (120 + Math.random() * 60);
+                const vy = -280 - Math.random() * 110;
+                this._spawnJugglerBall(game, spawnX, spawnY, vx, vy, '🟡');
+                this.jugglerRollFxTimer = this.phase >= 3 ? 0.18 : 0.24;
+            }
+
+            if (this.jugglerRollTimer <= 0) {
+                this.jugglerState = 'PATROL';
+                this.y = groundY;
+                this.attackCooldown = 1.55 + Math.random() * 0.75;
+            }
+            return;
+        }
+
+        // PATROL: goofy bouncy side-step to set up readable attack windows.
+        const patrolSpeed = 135 + this.phase * 14;
+        this.vx = this.jugglerPatrolDir * patrolSpeed;
+        this.x += this.vx * dt;
+        if (this.x <= left) {
+            this.x = left;
+            this.jugglerPatrolDir = 1;
+        } else if (this.x >= right) {
+            this.x = right;
+            this.jugglerPatrolDir = -1;
+        }
+        this.jugglerHopCycle += dt * (6.5 + this.phase * 0.4);
+        this.y = groundY - Math.max(0, Math.sin(this.jugglerHopCycle)) * (9 + this.phase * 2);
+
+        if (player) {
+            const dx = (player.x + player.width / 2) - (this.x + this.width / 2);
+            const dist = Math.abs(dx);
+            this.facingRight = dx >= 0;
+            if (this.attackCooldown <= 0) {
+                const roll = Math.random();
+                if (dist > 150 && dist < 520 && roll < (this.phase >= 3 ? 0.42 : 0.32)) {
+                    this.jugglerTelegraphType = 'roll';
+                    this.jugglerTelegraphTimer = (this.phase >= 3 ? 0.2 : (this.phase >= 2 ? 0.26 : 0.34)) + 0.5;
+                } else if (roll < 0.7) {
+                    this.jugglerTelegraphType = 'cascade';
+                    this.jugglerTelegraphTimer = (this.phase >= 3 ? 0.18 : (this.phase >= 2 ? 0.24 : 0.32)) + 0.5;
+                } else {
+                    this.jugglerTelegraphType = 'rain';
+                    this.jugglerTelegraphTimer = (this.phase >= 3 ? 0.22 : (this.phase >= 2 ? 0.3 : 0.38)) + 0.5;
+                    this.jugglerRainCenterX = player.x + player.width / 2;
+                }
+                this.vx = 0;
+            }
+        } else {
+            this.facingRight = this.jugglerPatrolDir > 0;
+        }
+    }
+
     update(dt, game) {
         this._lastGameRef = game || null;
         if (this.damageFlashTimer > 0) this.damageFlashTimer -= dt;
@@ -4238,6 +4434,8 @@ export class Boss extends Entity {
             this._updateMosquitoBoss(dt, game, player);
         } else if (this.bossType === 'boss_beetle') {
             this._updateBeetleBoss(dt, game, player);
+        } else if (this.bossType === 'boss_juggler') {
+            this._updateJugglerBoss(dt, game, player);
         } else {
             this._updateAerialBoss(dt, game, player);
         }
@@ -4293,7 +4491,11 @@ export class Boss extends Entity {
             || this.beetleTelegraphTimer > 0
             || this.beetleSprayShots > 0
             || this.beetleState === 'ROLL'
-            || this.beetleState === 'BURROW';
+            || this.beetleState === 'BURROW'
+            || this.jugglerTelegraphTimer > 0
+            || this.jugglerCascadeShots > 0
+            || this.jugglerRainWaves > 0
+            || this.jugglerState === 'ROLL';
         if (game && player && player.invulnerableTimer <= 0 && !inFairWindow) {
             if (Physics.checkAABB(this, player.getHitbox())) {
                 player.takeDamage(game);
@@ -4332,6 +4534,10 @@ export class Boss extends Entity {
 
         if (this.attackTelegraphTimer > 0) {
             ctx.scale(1.06, 1.06);
+            if (this.bossType === 'boss_juggler') {
+                // Extra squash/stretch for clearer "wind-up" readability.
+                ctx.scale(1.08, 0.92);
+            }
         }
         if (this.spiderPounceTelegraph > 0) {
             ctx.scale(1.1, 0.9);
@@ -4342,22 +4548,6 @@ export class Boss extends Entity {
 
         const cached = this._cachedEmoji;
         ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2);
-
-        // Cosmetic wingmen for all bosses; visual flair only (no collision/damage).
-        if (!this._bossMinionCache) this._bossMinionCache = getEmojiCanvas(this.minionEmoji, 24);
-        const minionCount = lowVfx ? 1 : 3;
-        const orbitBase = (this.bossType === 'boss_spider' || this.bossType === 'boss_manliftingweights' || this.bossType === 'boss_lobster' || this.bossType === 'boss_kangaroo' || this.bossType === 'boss_monkey' || this.bossType === 'boss_mammoth' || this.bossType === 'boss_trex' || this.bossType === 'boss_beetle')
-            ? (this.width * 0.38 + Math.sin(this.timeAlive * 2.3) * 6)
-            : (this.aerialMinionRadius + Math.sin(this.timeAlive * 2.1) * 8);
-        for (let i = 0; i < minionCount; i++) {
-            const a = this.aerialMinionPhase + this.timeAlive * (this.bossType === 'boss_dragon' ? 1.8 : 1.45) + (i / minionCount) * Math.PI * 2;
-            const mx = Math.cos(a) * orbitBase;
-            const my = Math.sin(a * 1.2) * (orbitBase * 0.52) - this.height * 0.06;
-            ctx.globalAlpha = alpha * (0.55 + 0.18 * Math.sin(this.timeAlive * 6 + i));
-            ctx.drawImage(this._bossMinionCache.canvas, mx - this._bossMinionCache.width / 2, my - this._bossMinionCache.height / 2);
-        }
-        ctx.globalAlpha = alpha;
-
         if (this.bossType === 'boss_dragon') {
             if (!this._fireTellCache) this._fireTellCache = getEmojiCanvas(String.fromCodePoint(0x1F525), 28);
             const mouthOffset = this._getDragonMouthOffset();
@@ -4466,7 +4656,8 @@ export class Boss extends Entity {
             || this.mammothTelegraphTimer > 0
             || this.trexTelegraphTimer > 0
             || this.mosquitoTelegraphTimer > 0
-            || this.beetleTelegraphTimer > 0;
+            || this.beetleTelegraphTimer > 0
+            || this.jugglerTelegraphTimer > 0;
         if (isTelegraphing) {
             const pulse = 0.55 + Math.sin(this.timeAlive * 24) * 0.45;
             if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
@@ -4802,6 +4993,69 @@ export class Boss extends Entity {
             ctx.lineTo(-18, 16);
             ctx.moveTo(6, 2);
             ctx.lineTo(20, 20);
+            ctx.stroke();
+        }
+
+        if (this.bossType === 'boss_juggler' && this.jugglerTelegraphTimer > 0) {
+            const pulse = 0.58 + Math.sin(this.timeAlive * 24) * 0.34;
+            if (this.jugglerTelegraphType === 'cascade') {
+                if (!this._jugglerBallTellCache) this._jugglerBallTellCache = getEmojiCanvas('🟡', 30);
+                ctx.fillStyle = `rgba(255, 210, 90, ${0.14 + pulse * 0.14})`;
+                ctx.beginPath();
+                ctx.ellipse(0, -this.height / 2 - 36, this.width * 0.34, 22, 0, 0, Math.PI * 2);
+                ctx.fill();
+                for (let i = -1; i <= 1; i++) {
+                    ctx.globalAlpha = alpha * (0.56 + pulse * 0.38);
+                    ctx.drawImage(this._jugglerBallTellCache.canvas, i * 30 - this._jugglerBallTellCache.width / 2, -this.height / 2 - 50 - Math.abs(i) * 7);
+                }
+            } else if (this.jugglerTelegraphType === 'rain') {
+                if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 30);
+                if (!this._jugglerRainTellCache) this._jugglerRainTellCache = getEmojiCanvas('🔴', 28);
+                const markerX = this.jugglerRainCenterX - (this.x + this.width / 2);
+                const laneW = 128 + this.phase * 16;
+                const laneH = 26;
+                const laneY = -this.height / 2 - 70;
+                ctx.fillStyle = `rgba(255, 96, 96, ${0.12 + pulse * 0.16})`;
+                ctx.fillRect(markerX - laneW / 2, laneY, laneW, laneH);
+                ctx.strokeStyle = `rgba(255, 196, 120, ${0.36 + pulse * 0.26})`;
+                ctx.lineWidth = 2.5;
+                ctx.strokeRect(markerX - laneW / 2, laneY, laneW, laneH);
+                ctx.globalAlpha = alpha * (0.52 + pulse * 0.4);
+                ctx.drawImage(this._warnCache.canvas, markerX - this._warnCache.width / 2, laneY - 18);
+                ctx.drawImage(this._warnCache.canvas, markerX - laneW * 0.38 - this._warnCache.width / 2, laneY - 8);
+                ctx.drawImage(this._warnCache.canvas, markerX + laneW * 0.38 - this._warnCache.width / 2, laneY - 8);
+                ctx.drawImage(this._jugglerRainTellCache.canvas, markerX - this._jugglerRainTellCache.width / 2, laneY + 2);
+            } else {
+                if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 30);
+                if (!this._rollTellCache) this._rollTellCache = getEmojiCanvas('🟠', 28);
+                const dir = this.facingRight ? 1 : -1;
+                const laneLen = 120;
+                const laneY = this.height * 0.2;
+                ctx.strokeStyle = `rgba(255, 206, 115, ${0.42 + pulse * 0.26})`;
+                ctx.lineWidth = 5;
+                ctx.lineCap = 'round';
+                ctx.beginPath();
+                ctx.moveTo(0, laneY);
+                ctx.lineTo(dir * laneLen, laneY);
+                ctx.stroke();
+                ctx.globalAlpha = alpha * (0.56 + pulse * 0.36);
+                ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2 - 24, -this.height / 2 - 50);
+                ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2 + 24, -this.height / 2 - 50);
+                ctx.drawImage(this._rollTellCache.canvas, -this._rollTellCache.width / 2, laneY - this._rollTellCache.height / 2);
+            }
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_juggler' && this.jugglerState === 'ROLL') {
+            const dir = this.facingRight ? 1 : -1;
+            ctx.strokeStyle = `rgba(255, 225, 140, ${0.42 + Math.sin(this.timeAlive * 28) * 0.16})`;
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-dir * 16, 4);
+            ctx.lineTo(-dir * 54, 0);
+            ctx.moveTo(-dir * 10, -9);
+            ctx.lineTo(-dir * 44, -16);
             ctx.stroke();
         }
 

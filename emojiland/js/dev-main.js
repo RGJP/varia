@@ -39,7 +39,8 @@ const DEV_TARGETS = [
     { id: 'boss:boss_mammoth', label: 'Boss - Mammoth', kind: 'boss', bossType: 'boss_mammoth' },
     { id: 'boss:boss_trex', label: 'Boss - T-Rex', kind: 'boss', bossType: 'boss_trex' },
     { id: 'boss:boss_mosquito', label: 'Boss - Mosquito', kind: 'boss', bossType: 'boss_mosquito' },
-    { id: 'boss:boss_beetle', label: 'Boss - Beetle', kind: 'boss', bossType: 'boss_beetle' }
+    { id: 'boss:boss_beetle', label: 'Boss - Beetle', kind: 'boss', bossType: 'boss_beetle' },
+    { id: 'boss:boss_juggler', label: 'Boss - Person Juggling', kind: 'boss', bossType: 'boss_juggler' }
 ];
 
 class DevGame extends Game {

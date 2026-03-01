@@ -1116,6 +1116,7 @@ export function loadLevel() {
         spawnSpecial('diamond_powerup', Math.floor(Math.random() * 2) + 1);
         spawnSpecial('fire_powerup', Math.floor(Math.random() * 2) + 1);
         spawnSpecial('frost_powerup', Math.floor(Math.random() * 2) + 1);
+        spawnSpecial('lightning_powerup', Math.floor(Math.random() * 2) + 1);
         spawnSpecial('wing_powerup', Math.floor(Math.random() * 2) + 1);
 
         const numBombPickups = Math.floor(Math.random() * 3) + 2; // 2 to 4

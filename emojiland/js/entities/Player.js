@@ -2,6 +2,7 @@ import { Entity } from './Entity.js';
 import { Physics } from '../Physics.js';
 import { Rock } from './Rock.js';
 import { Bomb } from './Bomb.js';
+import { LightningOrb } from './LightningOrb.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
 export class Player extends Entity {
@@ -28,9 +29,9 @@ export class Player extends Entity {
         this.isAttacking = false;
         this.attackDuration = 0.05; // 50ms
 
-        this.coyoteTime = 0.1;
+        this.coyoteTime = 0.13;
         this.coyoteTimer = 0;
-        this.jumpBufferTime = 0.1;
+        this.jumpBufferTime = 0.13;
         this.jumpBufferTimer = 0;
         this.isJumping = false;
         this.forceFullJump = false;
@@ -69,6 +70,10 @@ export class Player extends Entity {
         this.firePowerUpRotation = 0;
         this.frostPowerUpTimer = 0;
         this.frostPowerUpDuration = this.firePowerUpDuration;
+        this.lightningPowerUpTimer = 0;
+        this.lightningPowerUpDuration = 7.0;
+        this.lightningOrbShootInterval = 0.7;
+        this.lightningOrbShootTimer = 0;
         this.frostBlastRadius = this.width * 3.6; // 7.2x player sprite size diameter.
         this.frostBlastDamage = 3;
         this.frostBlastTimer = 0;
@@ -81,6 +86,7 @@ export class Player extends Entity {
         this.powerVisualTimer = 0;
         this.pulseTimer = 0;
         this.attackChargeTimer = 0;
+        this.minTapAttackChargeTime = 0.045;
         this.maxAttackChargeTime = 1.5;
         this.chargeIndicatorDelay = 0.14;
         this.isChargingAttack = false;
@@ -266,6 +272,24 @@ export class Player extends Entity {
                 );
             }
         }
+        if (!this.inSafeBubble && this.lightningPowerUpTimer > 0) {
+            this.lightningPowerUpTimer = Math.max(0, this.lightningPowerUpTimer - dt);
+            this.lightningOrbShootTimer -= dt;
+            while (this.lightningOrbShootTimer <= 0 && this.lightningPowerUpTimer > 0) {
+                this.lightningOrbShootTimer += this.lightningOrbShootInterval;
+                this._spawnLightningOrb(game);
+            }
+        }
+        if (game && game.audio) {
+            const timerActive = !this.inSafeBubble && this.lightningPowerUpTimer > 0;
+            const lingeringOrbsActive = Array.isArray(game.lightningOrbs) && game.lightningOrbs.length > 0;
+            const lightningActive = timerActive || lingeringOrbsActive;
+            if (lightningActive && typeof game.audio.startLightningBuzz === 'function') {
+                game.audio.startLightningBuzz();
+            } else if (!lightningActive && typeof game.audio.stopLightningBuzz === 'function') {
+                game.audio.stopLightningBuzz();
+            }
+        }
         if (!this.inSafeBubble && this.frostBlastTimer > 0) {
             this.frostBlastTimer -= dt;
             if (this.frostBlastTimer <= 0) this.frostBlastTimer = 0;
@@ -321,16 +345,27 @@ export class Player extends Entity {
             this.attackChargeTimer = 0;
             this.isChargingAttack = false;
         } else {
-            if (this.frostPowerUpTimer > 0 && input.isJustPressed('KeyD')) {
+            const attackPressed = input.isJustPressed('KeyD');
+            const attackReleased = input.isJustReleased('KeyD');
+            const attackHeld = input.isDown('KeyD');
+
+            if (this.frostPowerUpTimer > 0 && attackPressed) {
                 this.isAttacking = true;
                 this.attackTimer = this.attackDuration;
                 this._triggerFrostBlast(game);
             }
-            if (input.isDown('KeyD')) {
+
+            // Seed charge on press so quick taps between frames still fire.
+            if (attackPressed && this.attackChargeTimer <= 0) {
+                this.attackChargeTimer = this.minTapAttackChargeTime;
+            }
+
+            if (attackHeld) {
                 this.isChargingAttack = true;
                 this.attackChargeTimer = Math.min(this.maxAttackChargeTime, this.attackChargeTimer + dt);
             }
-            if (input.isJustReleased('KeyD') && this.isChargingAttack) {
+
+            if (attackReleased && this.attackChargeTimer > 0) {
                 this.isAttacking = true;
                 this.attackTimer = this.attackDuration;
 
@@ -348,6 +383,10 @@ export class Player extends Entity {
                 game.rocks.push(rock);
                 if (game.audio) game.audio.playThrow();
 
+                this.attackChargeTimer = 0;
+                this.isChargingAttack = false;
+            } else if (!attackHeld && !attackPressed) {
+                // Defensive reset for cases where focus loss cancels a hold mid-charge.
                 this.attackChargeTimer = 0;
                 this.isChargingAttack = false;
             }
@@ -787,6 +826,14 @@ export class Player extends Entity {
 
         // Collectibles
         const nearbyCollectibles = (collisionContext && collisionContext.collectibles) ? collisionContext.collectibles : game.collectibles;
+        const playPowerUpPickup = (powerUpType) => {
+            if (!game.audio) return;
+            if (typeof game.audio.playPowerUpCollect === 'function') {
+                game.audio.playPowerUpCollect(powerUpType);
+            } else {
+                game.audio.playCollect('powerup');
+            }
+        };
         for (let ci = 0; ci < nearbyCollectibles.length; ci++) {
             const collectible = nearbyCollectibles[ci];
             if (!collectible.markedForDeletion && Physics.checkAABB(this, collectible)) {
@@ -796,36 +843,41 @@ export class Player extends Entity {
                 if (collectible.type === 'health') {
                     this.health = Math.min(this.health + 1, this.maxHealth);
                     this.hasCatProtector = true;
-                    game.audio.playCollect('powerup');
+                    playPowerUpPickup('health');
                     game.particles.emit(centerX, centerY, 15, '#FF0000', [50, 150], [0.2, 0.5], [2, 4]);
                 } else if (collectible.type === 'bomb') {
                     this.bombs += 1;
-                    if (game.audio) game.audio.playCollect('powerup');
+                    playPowerUpPickup('bomb');
                     game.particles.emit(centerX, centerY, 15, '#444444', [50, 150], [0.2, 0.5], [2, 4]);
                 } else if (collectible.type === 'diamond_powerup') {
                     this.diamondPowerUpTimer = this.diamondPowerUpDuration;
-                    if (game.audio) game.audio.playCollect('powerup');
+                    playPowerUpPickup('diamond_powerup');
                     game.particles.emit(centerX, centerY, 20, '#888888', [50, 200], [0.2, 0.5], [3, 5]);
                 } else if (collectible.type === 'full_health') {
                     this.health = this.maxHealth;
                     this.hasCatProtector = true;
-                    if (game.audio) game.audio.playCollect('powerup');
+                    playPowerUpPickup('full_health');
                     game.particles.emit(centerX, centerY, 30, '#FF69B4', [50, 250], [0.2, 0.6], [3, 6]);
                 } else if (collectible.type === 'fire_powerup') {
                     this.firePowerUpTimer = this.firePowerUpDuration;
-                    if (game.audio) game.audio.playCollect('powerup');
+                    playPowerUpPickup('fire_powerup');
                     game.particles.emit(centerX, centerY, 20, '#FF4500', [50, 200], [0.2, 0.5], [3, 5]);
                 } else if (collectible.type === 'frost_powerup') {
                     this.frostPowerUpTimer = this.frostPowerUpDuration;
-                    if (game.audio) game.audio.playCollect('powerup');
+                    playPowerUpPickup('frost_powerup');
                     game.particles.emit(centerX, centerY, 22, '#9edcff', [50, 210], [0.2, 0.55], [2, 5]);
+                } else if (collectible.type === 'lightning_powerup') {
+                    this.lightningPowerUpTimer = this.lightningPowerUpDuration;
+                    this.lightningOrbShootTimer = 0;
+                    playPowerUpPickup('lightning_powerup');
+                    game.particles.emit(centerX, centerY, 24, '#ffe066', [70, 220], [0.2, 0.55], [2, 5]);
                 } else if (collectible.type === 'wing_powerup') {
                     this.flightTimer = this.flightPowerUpDuration;
                     this.isClimbing = false;
                     this.currentVine = null;
                     this.vx = 0;
                     this.vy = 0;
-                    if (game.audio) game.audio.playCollect('powerup');
+                    playPowerUpPickup('wing_powerup');
                     game.particles.emit(centerX, centerY, 24, '#9ad9ff', [70, 220], [0.2, 0.6], [2, 5]);
                 } else if (collectible.type === 'letter') {
                     const letter = collectible.letter;
@@ -854,6 +906,10 @@ export class Player extends Entity {
                     }
                     this.score += 75;
                     game.particles.emit(centerX, centerY, 16, '#ffd54f', [80, 180], [0.2, 0.45], [2, 5]);
+                } else if (collectible.type === 'boss_star') {
+                    this.score += 300;
+                    playPowerUpPickup('boss_star');
+                    game.particles.emit(centerX, centerY, 24, '#ffe066', [90, 240], [0.22, 0.6], [2, 6]);
                 } else {
                     this.score += 10;
                     game.coinsCollected++;
@@ -978,10 +1034,22 @@ export class Player extends Entity {
         this.diamondPowerUpTimer = 0;
         this.firePowerUpTimer = 0;
         this.frostPowerUpTimer = 0;
+        this.lightningPowerUpTimer = 0;
+        this.lightningOrbShootTimer = 0;
         this.frostBlastTimer = 0;
         this.flightTimer = 0;
         this.isChargingAttack = false;
         this.attackChargeTimer = 0;
+    }
+
+    _spawnLightningOrb(game) {
+        if (!game || !Array.isArray(game.lightningOrbs) || this.inSafeBubble) return;
+        const ox = this.x + this.width / 2;
+        const oy = this.y + this.height / 2 + 4;
+        game.lightningOrbs.push(new LightningOrb(ox, oy));
+        if (game.particles) {
+            game.particles.emit(ox, oy, 8, '#fff176', [70, 230], [0.12, 0.26], [1.8, 4.6]);
+        }
     }
 
     _triggerFrostBlast(game) {
@@ -1422,6 +1490,12 @@ export class Player extends Entity {
                 activeBars.push({
                     ratio: Math.max(0, Math.min(1, this.frostPowerUpTimer / this.frostPowerUpDuration)),
                     color: '#7dd3fc'
+                });
+            }
+            if (this.lightningPowerUpTimer > 0) {
+                activeBars.push({
+                    ratio: Math.max(0, Math.min(1, this.lightningPowerUpTimer / this.lightningPowerUpDuration)),
+                    color: '#fde047'
                 });
             }
             if (this.flightTimer > 0) {

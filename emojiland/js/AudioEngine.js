@@ -48,6 +48,8 @@ export class AudioEngine {
             coin: -1,
             powerup: -1
         };
+        this._lightningBuzzNodes = null;
+        this._lightningBuzzInterval = null;
 
         this._loadSettings();
     }
@@ -304,24 +306,8 @@ export class AudioEngine {
     }
 
     _persistNormalizationSample(force = false) {
-        const state = this._musicLoudnessState;
-        if (!state || !state.trackKey || state.sampleCount <= 0) return;
-        if (!force && state.sampleCount < this.musicNormalization.settleSamples) return;
-
-        const avgGainDb = this._clamp(
-            state.sumDesiredGainDb / state.sampleCount,
-            this.musicNormalization.minGainDb,
-            this.musicNormalization.maxGainDb
-        );
-        const prev = this.musicNormalizationCache[state.trackKey];
-        if (!Number.isFinite(prev) || Math.abs(prev - avgGainDb) > 0.5) {
-            this.musicNormalizationCache[state.trackKey] = avgGainDb;
-            this._musicNormalizationCacheDirty = true;
-        }
-        if (this._musicNormalizationCacheDirty && (force || state.sampleCount % this.musicNormalization.saveEverySamples === 0)) {
-            this._musicNormalizationCacheDirty = false;
-            this._saveSettings();
-        }
+        // Disabled: keep music gain flat over time.
+        return;
     }
 
     _stopMusicLoudnessMonitor() {
@@ -329,61 +315,17 @@ export class AudioEngine {
             clearInterval(this._musicLoudnessInterval);
             this._musicLoudnessInterval = null;
         }
-        this._persistNormalizationSample(true);
         this._musicLoudnessState = null;
     }
 
     _applyCachedTrackNormalization(trackKey) {
-        if (!this.musicNodeChain || !this.musicNodeChain.normalizerGain || !this.ctx) return;
-        const cachedGainDb = this.musicNormalizationCache[trackKey];
-        const gainLinear = Number.isFinite(cachedGainDb) ? Math.pow(10, cachedGainDb / 20) : 1;
-        this.musicNodeChain.normalizerGain.gain.setValueAtTime(gainLinear, this.ctx.currentTime);
+        // Disabled: keep music gain flat over time.
+        return;
     }
 
     _startMusicLoudnessMonitor(trackKey) {
-        if (!this.musicNodeChain || !this.musicNodeChain.analyser || !this.musicNodeChain.normalizerGain || !this.ctx) return;
+        // Disabled: keep music gain flat over time.
         this._stopMusicLoudnessMonitor();
-
-        const analyser = this.musicNodeChain.analyser;
-        const normalizerGain = this.musicNodeChain.normalizerGain;
-        const sampleBuffer = new Float32Array(analyser.fftSize);
-        let loudnessEmaDb = null;
-
-        this._musicLoudnessState = {
-            trackKey,
-            sampleCount: 0,
-            sumDesiredGainDb: 0
-        };
-
-        this._musicLoudnessInterval = setInterval(() => {
-            if (!this.currentMusicAudio || this.currentMusicAudio.paused || this.currentMusicAudio.ended) return;
-            if (!this.musicNodeChain || this.musicNodeChain.normalizerGain !== normalizerGain) return;
-
-            analyser.getFloatTimeDomainData(sampleBuffer);
-            let sumSquares = 0;
-            for (let i = 0; i < sampleBuffer.length; i++) {
-                const s = sampleBuffer[i];
-                sumSquares += s * s;
-            }
-            const rms = Math.sqrt(sumSquares / sampleBuffer.length);
-            const rmsDb = 20 * Math.log10(Math.max(1e-5, rms));
-            if (!Number.isFinite(rmsDb) || rmsDb < this.musicNormalization.silenceDb) return;
-
-            loudnessEmaDb = loudnessEmaDb === null ? rmsDb : (loudnessEmaDb * 0.8) + (rmsDb * 0.2);
-            const desiredGainDb = this._clamp(
-                this.musicNormalization.targetDb - loudnessEmaDb,
-                this.musicNormalization.minGainDb,
-                this.musicNormalization.maxGainDb
-            );
-            const desiredGainLinear = Math.pow(10, desiredGainDb / 20);
-            const currentGain = normalizerGain.gain.value;
-            const timeConstant = desiredGainLinear < currentGain ? 0.08 : 0.45;
-            normalizerGain.gain.setTargetAtTime(desiredGainLinear, this.ctx.currentTime, timeConstant);
-
-            this._musicLoudnessState.sampleCount++;
-            this._musicLoudnessState.sumDesiredGainDb += desiredGainDb;
-            this._persistNormalizationSample(false);
-        }, 125);
     }
 
     _teardownMusicProcessing() {
@@ -410,44 +352,15 @@ export class AudioEngine {
 
         if (!this.musicNodeChain) {
             const source = this.ctx.createMediaElementSource(audioElement);
-            const analyser = this.ctx.createAnalyser();
-            analyser.fftSize = 2048;
-            analyser.smoothingTimeConstant = 0.82;
-
-            const normalizerGain = this.ctx.createGain();
-            normalizerGain.gain.value = 1;
-
-            const compressor = this.ctx.createDynamicsCompressor();
-            compressor.threshold.setValueAtTime(-20, this.ctx.currentTime);
-            compressor.knee.setValueAtTime(18, this.ctx.currentTime);
-            compressor.ratio.setValueAtTime(2.2, this.ctx.currentTime);
-            compressor.attack.setValueAtTime(0.015, this.ctx.currentTime);
-            compressor.release.setValueAtTime(0.2, this.ctx.currentTime);
-
-            const limiter = this.ctx.createDynamicsCompressor();
-            limiter.threshold.setValueAtTime(-2, this.ctx.currentTime);
-            limiter.knee.setValueAtTime(0, this.ctx.currentTime);
-            limiter.ratio.setValueAtTime(20, this.ctx.currentTime);
-            limiter.attack.setValueAtTime(0.003, this.ctx.currentTime);
-            limiter.release.setValueAtTime(0.09, this.ctx.currentTime);
-
             const userGain = this.ctx.createGain();
             userGain.gain.value = this._musicUserVolume;
 
-            source.connect(analyser);
-            analyser.connect(normalizerGain);
-            normalizerGain.connect(compressor);
-            compressor.connect(limiter);
-            limiter.connect(userGain);
+            source.connect(userGain);
             userGain.connect(this.masterGain);
 
             this.musicNodeChain = {
                 audioElement,
                 source,
-                analyser,
-                normalizerGain,
-                compressor,
-                limiter,
                 userGain,
                 trackKey: ''
             };
@@ -549,6 +462,91 @@ export class AudioEngine {
         src.stop(now + duration);
     }
 
+    startLightningBuzz() {
+        if (this._lightningBuzzNodes) return;
+        this._ensureContext();
+        if (!this.ctx || !this.masterGain) return;
+        if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => { });
+
+        const now = this.ctx.currentTime;
+        const baseGain = this.ctx.createGain();
+        baseGain.gain.setValueAtTime(0.0001, now);
+        baseGain.gain.exponentialRampToValueAtTime(0.06, now + 0.05);
+
+        const band = this.ctx.createBiquadFilter();
+        band.type = 'bandpass';
+        band.frequency.setValueAtTime(620, now);
+        band.Q.setValueAtTime(0.85, now);
+
+        const lfo = this.ctx.createOscillator();
+        lfo.type = 'sine';
+        lfo.frequency.setValueAtTime(8.5, now);
+        const lfoGain = this.ctx.createGain();
+        lfoGain.gain.setValueAtTime(170, now);
+
+        const hum = this.ctx.createOscillator();
+        hum.type = 'sawtooth';
+        hum.frequency.setValueAtTime(132, now);
+        const edge = this.ctx.createOscillator();
+        edge.type = 'triangle';
+        edge.frequency.setValueAtTime(268, now);
+
+        hum.connect(band);
+        edge.connect(band);
+        band.connect(baseGain);
+        baseGain.connect(this.masterGain);
+
+        lfo.connect(lfoGain);
+        lfoGain.connect(band.frequency);
+
+        hum.start(now);
+        edge.start(now);
+        lfo.start(now);
+
+        this._lightningBuzzNodes = { hum, edge, lfo, lfoGain, band, baseGain };
+
+        this._lightningBuzzInterval = setInterval(() => {
+            if (!this._lightningBuzzNodes || !this.ctx) return;
+            const t = this.ctx.currentTime;
+            const jitter = (Math.random() - 0.5) * 18;
+            const freq = 620 + jitter;
+            this._lightningBuzzNodes.band.frequency.cancelScheduledValues(t);
+            this._lightningBuzzNodes.band.frequency.setTargetAtTime(freq, t, 0.05);
+        }, 90);
+    }
+
+    stopLightningBuzz() {
+        if (!this._lightningBuzzNodes) return;
+        if (this._lightningBuzzInterval) {
+            clearInterval(this._lightningBuzzInterval);
+            this._lightningBuzzInterval = null;
+        }
+
+        const n = this._lightningBuzzNodes;
+        this._lightningBuzzNodes = null;
+
+        const now = this.ctx ? this.ctx.currentTime : 0;
+        try {
+            n.baseGain.gain.cancelScheduledValues(now);
+            n.baseGain.gain.setValueAtTime(Math.max(0.0001, n.baseGain.gain.value || 0.0001), now);
+            n.baseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+        } catch (e) { }
+
+        const stopAt = now + 0.1;
+        try { n.hum.stop(stopAt); } catch (e) { }
+        try { n.edge.stop(stopAt); } catch (e) { }
+        try { n.lfo.stop(stopAt); } catch (e) { }
+
+        setTimeout(() => {
+            try { n.hum.disconnect(); } catch (e) { }
+            try { n.edge.disconnect(); } catch (e) { }
+            try { n.lfo.disconnect(); } catch (e) { }
+            try { n.lfoGain.disconnect(); } catch (e) { }
+            try { n.band.disconnect(); } catch (e) { }
+            try { n.baseGain.disconnect(); } catch (e) { }
+        }, 140);
+    }
+
     playBackgroundMusic(isAutoNext = false) {
         const startMusic = () => {
             this._ensureContext();
@@ -567,7 +565,7 @@ export class AudioEngine {
             this.currentMusicAudio.loop = false; // Never loop
             this.currentMusicAudio.volume = 1;
             this.currentMusicAudio.muted = this.isMusicMuted;
-            this._setMusicUserVolume(0);
+            this._setMusicUserVolume(this.defaultMusicLevel);
             this._setupMusicProcessingForElement(this.currentMusicAudio, this.currentMusicAudio.src);
 
             this.currentMusicAudio.onended = () => {
@@ -579,7 +577,7 @@ export class AudioEngine {
             let playPromise = this.currentMusicAudio.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
-                    this.fadeMusic(0, this.defaultMusicLevel, 3000); // Slightly louder music while SFX remain forward.
+                    this._setMusicUserVolume(this.defaultMusicLevel);
                 }).catch(e => console.error("Audio playback failed:", e));
             }
         };
@@ -600,7 +598,7 @@ export class AudioEngine {
                 this.currentMusicAudio.pause();
                 this.currentMusicAudio.onended = null;
             }
-            this._setMusicUserVolume(0);
+            this._setMusicUserVolume(this.defaultMusicLevel);
             startMusic();
         }
     }
@@ -608,7 +606,7 @@ export class AudioEngine {
     playBackgroundMusicTrack(songRef, options = {}) {
         const resolvedTrack = this._resolveMusicTrack(songRef);
         const startAt = Math.max(0, Number(options.startAt) || 0);
-        const fadeInMs = Math.max(0, Number(options.fadeInMs) || 300);
+        const fadeInMs = Math.max(0, Number(options.fadeInMs) || 0);
 
         const startMusic = () => {
             this._ensureContext();
@@ -635,13 +633,14 @@ export class AudioEngine {
                 this.playBackgroundMusic(true);
             };
             this.currentMusicAudio = musicAudio;
-            this._setMusicUserVolume(0);
+            this._setMusicUserVolume(this.defaultMusicLevel);
             this._setupMusicProcessingForElement(musicAudio, baseSrc);
 
             const isCurrentRequest = () => requestId === this._musicRequestId && this.currentMusicAudio === musicAudio;
             const fadeInCurrent = () => {
                 if (!isCurrentRequest()) return;
-                this.fadeMusic(0, this.defaultMusicLevel, fadeInMs);
+                if (fadeInMs > 0) this.fadeMusic(0, this.defaultMusicLevel, fadeInMs);
+                else this._setMusicUserVolume(this.defaultMusicLevel);
             };
 
             const seekThenFade = () => {
@@ -967,33 +966,43 @@ export class AudioEngine {
 
     playBlastOff() {
         const variants = [
-            { boomStart: 108, boomEnd: 86, boomGain: 0.46, crackStart: 780, crackEnd: 420, crackGain: 0.22, whistleStart: 620, whistleEnd: 1380, whistleGain: 0.2, ventHp: 760 },
-            { boomStart: 116, boomEnd: 92, boomGain: 0.44, crackStart: 860, crackEnd: 470, crackGain: 0.21, whistleStart: 680, whistleEnd: 1480, whistleGain: 0.19, ventHp: 840 },
-            { boomStart: 102, boomEnd: 82, boomGain: 0.48, crackStart: 740, crackEnd: 390, crackGain: 0.23, whistleStart: 600, whistleEnd: 1320, whistleGain: 0.21, ventHp: 700 }
+            { boomStart: 92, boomEnd: 66, boomGain: 0.52, bodyStart: 132, bodyEnd: 88, bodyGain: 0.24, crackStart: 620, crackEnd: 300, crackGain: 0.17, whistleStart: 430, whistleEnd: 920, whistleGain: 0.13, ventHp: 520 },
+            { boomStart: 98, boomEnd: 72, boomGain: 0.5, bodyStart: 140, bodyEnd: 94, bodyGain: 0.23, crackStart: 680, crackEnd: 330, crackGain: 0.16, whistleStart: 470, whistleEnd: 980, whistleGain: 0.12, ventHp: 560 },
+            { boomStart: 88, boomEnd: 62, boomGain: 0.54, bodyStart: 126, bodyEnd: 84, bodyGain: 0.25, crackStart: 590, crackEnd: 280, crackGain: 0.18, whistleStart: 410, whistleEnd: 880, whistleGain: 0.14, ventHp: 500 }
         ];
         const idx = this._pickVariant(variants.length, this._lastBlastOffVariant);
         this._lastBlastOffVariant = idx;
         const v = variants[idx];
 
-        // Cannon-like launch: compact low boom + bright crack + quick pressure whistle.
-        this._playTone('square', this._jitter(v.boomStart, 0.02), 0.2, {
+        // Barrel launch: deeper boom with a thick low-mid body and softer top-end.
+        this._playTone('square', this._jitter(v.boomStart, 0.018), 0.24, {
             endFreq: this._jitter(v.boomEnd, 0.018),
             gain: v.boomGain,
-            attack: 0.0016
+            attack: 0.0018
+        });
+        this._playTone('triangle', this._jitter(v.bodyStart, 0.018), 0.26, {
+            endFreq: this._jitter(v.bodyEnd, 0.018),
+            gain: v.bodyGain,
+            attack: 0.0022
         });
         this._playTone('triangle', this._jitter(v.crackStart, 0.025), 0.11, {
             endFreq: this._jitter(v.crackEnd, 0.025),
             gain: v.crackGain,
             attack: 0.0011
         });
-        this._playNoiseBurst(0.11, 0.08, 340);
+        this._playNoiseBurst(0.1, 0.055, 280);
         setTimeout(() => {
             this._playTone('sawtooth', this._jitter(v.whistleStart, 0.028), 0.17, {
                 endFreq: this._jitter(v.whistleEnd, 0.028),
                 gain: v.whistleGain,
                 attack: 0.0014
             });
-            this._playNoiseBurst(0.075, 0.05, v.ventHp);
+            this._playNoiseBurst(0.07, 0.032, v.ventHp);
+            this._playTone('sine', this._jitter(v.bodyEnd * 0.9, 0.015), 0.2, {
+                endFreq: this._jitter(v.bodyEnd * 0.68, 0.015),
+                gain: v.bodyGain * 0.55,
+                attack: 0.0026
+            });
         }, 20);
     }
 
@@ -1088,6 +1097,124 @@ export class AudioEngine {
                 attack: 0.0012
             });
         }, 24);
+    }
+
+    playPowerUpCollect(powerUpType = 'powerup') {
+        this.playCollect('powerup');
+
+        switch (powerUpType) {
+            case 'fire_powerup':
+                // Short flame burst: low-mid roar + bright crackle.
+                this._playTone('sawtooth', this._jitter(210, 0.03), 0.19, {
+                    endFreq: this._jitter(140, 0.03),
+                    gain: 0.28,
+                    attack: 0.0016
+                });
+                this._playNoiseBurst(0.085, 0.05, 1800);
+                setTimeout(() => {
+                    this._playTone('triangle', this._jitter(520, 0.03), 0.1, {
+                        endFreq: this._jitter(300, 0.03),
+                        gain: 0.16,
+                        attack: 0.0012
+                    });
+                }, 20);
+                break;
+            case 'frost_powerup':
+                // Cold sparkle with a thin icy tail.
+                this._playTone('sine', this._jitter(2217, 0.02), 0.12, {
+                    endFreq: this._jitter(1680, 0.02),
+                    gain: 0.28,
+                    attack: 0.0008
+                });
+                setTimeout(() => {
+                    this._playTone('triangle', this._jitter(3120, 0.02), 0.08, {
+                        endFreq: this._jitter(2460, 0.02),
+                        gain: 0.18,
+                        attack: 0.0007
+                    });
+                }, 16);
+                this._playNoiseBurst(0.03, 0.035, 5200);
+                break;
+            case 'lightning_powerup':
+                // Sharp zap transient before the sustained lightning buzz.
+                this._playTone('square', this._jitter(1320, 0.025), 0.09, {
+                    endFreq: this._jitter(560, 0.025),
+                    gain: 0.24,
+                    attack: 0.0009
+                });
+                this._playNoiseBurst(0.032, 0.03, 6800);
+                setTimeout(() => {
+                    this._playTone('triangle', this._jitter(940, 0.02), 0.08, {
+                        endFreq: this._jitter(430, 0.02),
+                        gain: 0.13,
+                        attack: 0.0009
+                    });
+                }, 12);
+                break;
+            case 'wing_powerup':
+                // Airy wing whoosh sweep.
+                this._playNoiseBurst(0.11, 0.045, 1200);
+                this._playTone('sine', this._jitter(430, 0.03), 0.16, {
+                    endFreq: this._jitter(860, 0.03),
+                    gain: 0.2,
+                    attack: 0.0012
+                });
+                setTimeout(() => {
+                    this._playTone('triangle', this._jitter(700, 0.03), 0.12, {
+                        endFreq: this._jitter(980, 0.03),
+                        gain: 0.11,
+                        attack: 0.0011
+                    });
+                }, 18);
+                break;
+            case 'diamond_powerup':
+                // Crystal-like shimmer.
+                this._playTone('triangle', this._jitter(1244, 0.018), 0.14, {
+                    endFreq: this._jitter(1661, 0.018),
+                    gain: 0.22,
+                    attack: 0.0011
+                });
+                setTimeout(() => {
+                    this._playTone('sine', this._jitter(1865, 0.018), 0.11, {
+                        endFreq: this._jitter(2349, 0.018),
+                        gain: 0.16,
+                        attack: 0.0009
+                    });
+                }, 24);
+                break;
+            case 'full_health':
+            case 'health':
+                this._playTone('triangle', this._jitter(660, 0.02), 0.13, {
+                    endFreq: this._jitter(990, 0.02),
+                    gain: 0.22,
+                    attack: 0.0014
+                });
+                break;
+            case 'bomb':
+                this._playTone('square', this._jitter(180, 0.03), 0.12, {
+                    endFreq: this._jitter(120, 0.03),
+                    gain: 0.22,
+                    attack: 0.0016
+                });
+                this._playNoiseBurst(0.05, 0.05, 480);
+                break;
+            case 'boss_star':
+                this._playTone('triangle', this._jitter(987.77, 0.015), 0.12, {
+                    endFreq: this._jitter(1318.51, 0.015),
+                    gain: 0.24,
+                    attack: 0.001
+                });
+                setTimeout(() => {
+                    this._playTone('sine', this._jitter(1568, 0.015), 0.18, {
+                        endFreq: this._jitter(2093, 0.015),
+                        gain: 0.16,
+                        attack: 0.0009
+                    });
+                }, 22);
+                break;
+            default:
+                break;
+        }
     }
 
     playHurt() {

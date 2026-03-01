@@ -2,23 +2,29 @@ import { Entity } from './Entity.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
 export class Collectible extends Entity {
-    constructor(x, y, type = 'coin', letter = null) {
-        const isSpecial = type === 'health' || type === 'bomb' || type === 'diamond_powerup' || type === 'fire_powerup' || type === 'frost_powerup' || type === 'full_health' || type === 'wing_powerup' || type === 'letter';
-        const size = type === 'full_health' ? 66 : (isSpecial ? 50 : 30);
+    constructor(x, y, type = 'coin', letter = null, customSize = null) {
+        const isSpecial = type === 'health' || type === 'bomb' || type === 'diamond_powerup' || type === 'fire_powerup' || type === 'frost_powerup' || type === 'lightning_powerup' || type === 'full_health' || type === 'wing_powerup' || type === 'letter';
+        const size = (typeof customSize === 'number' && customSize > 0)
+            ? customSize
+            : (type === 'full_health' ? 66 : (isSpecial ? 50 : 30));
         super(x, y, size, size);
         this.baseY = y;
         this.time = Math.random() * Math.PI * 2;
         this.type = type;
         this.letter = (type === 'letter' && letter) ? String(letter).toUpperCase() : null;
+        this.fadeInDuration = type === 'boss_star' ? 0.45 : 0;
+        this.fadeInTimer = this.fadeInDuration;
         const emoji = type === 'health' ? '\u2764\uFE0F' :
             type === 'bomb' ? '\u{1F4A3}' :
                 type === 'diamond_powerup' ? '\u{1FAA8}' :
                     type === 'fire_powerup' ? '\u{1F525}' :
                         type === 'frost_powerup' ? '\u2744\uFE0F' :
+                            type === 'lightning_powerup' ? '\u26A1' :
                         type === 'full_health' ? '\u{1F9DA}' :
                             type === 'wing_powerup' ? '\u{1FAB6}' :
+                                type === 'boss_star' ? '\u{1F31F}' :
                                 type === 'letter' ? (this.letter || 'E') : '\u{1FA99}';
-        this.isPowerUp = type === 'diamond_powerup' || type === 'fire_powerup' || type === 'frost_powerup' || type === 'full_health' || type === 'wing_powerup';
+        this.isPowerUp = type === 'diamond_powerup' || type === 'fire_powerup' || type === 'frost_powerup' || type === 'lightning_powerup' || type === 'full_health' || type === 'wing_powerup';
         this.isReplenish = type === 'health' || type === 'bomb';
         this._cachedEmoji = getEmojiCanvas(emoji, size);
     }
@@ -26,6 +32,9 @@ export class Collectible extends Entity {
     update(dt) {
         this.time += dt * 3;
         this.y = this.baseY + Math.sin(this.time) * 5;
+        if (this.fadeInTimer > 0) {
+            this.fadeInTimer = Math.max(0, this.fadeInTimer - dt);
+        }
     }
 
     draw(ctx) {
@@ -98,7 +107,35 @@ export class Collectible extends Entity {
         }
 
         const cached = this._cachedEmoji;
-        ctx.drawImage(cached.canvas, this.x - (cached.width - this.width) / 2, this.y - (cached.height - this.height) / 2);
+        const drawX = this.x - (cached.width - this.width) / 2;
+        const drawY = this.y - (cached.height - this.height) / 2;
+        if (this.fadeInDuration > 0 && this.fadeInTimer > 0) {
+            const alpha = 1 - (this.fadeInTimer / this.fadeInDuration);
+            ctx.save();
+            ctx.globalAlpha *= Math.max(0, Math.min(1, alpha));
+            if (this.type === 'lightning_powerup') {
+                const cx = this.x + this.width / 2;
+                const cy = this.y + this.height / 2;
+                ctx.translate(cx, cy);
+                ctx.rotate(Math.PI / 2);
+                ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2);
+            } else {
+                ctx.drawImage(cached.canvas, drawX, drawY);
+            }
+            ctx.restore();
+        } else {
+            if (this.type === 'lightning_powerup') {
+                const cx = this.x + this.width / 2;
+                const cy = this.y + this.height / 2;
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(Math.PI / 2);
+                ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2);
+                ctx.restore();
+            } else {
+                ctx.drawImage(cached.canvas, drawX, drawY);
+            }
+        }
 
         if (this.isReplenish || this.isPowerUp) {
             const hoverMultiplier = this.isPowerUp ? 0.6 : 0.5;

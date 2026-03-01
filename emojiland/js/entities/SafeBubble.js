@@ -62,21 +62,6 @@ export class SafeBarrel extends Entity {
         ctx.translate(this.centerX, this.centerY + wobbleY);
         ctx.rotate(tilt);
 
-        // Soft smoke plume, positioned above the opening of the honey pot.
-        const smokeBaseX = this.size * 0.08;
-        const smokeBaseY = -this.size * 0.53;
-        for (let i = 0; i < 4; i++) {
-            const t = this.time * 1.5 + i * 0.9;
-            const px = smokeBaseX + Math.sin(t) * (4.5 + i * 3.2);
-            const py = smokeBaseY - i * 11 + Math.cos(t * 0.8) * 2.3;
-            const r = 8.5 + i * 3.1;
-            const alpha = 0.28 - i * 0.048;
-            ctx.fillStyle = `rgba(235, 235, 235, ${Math.max(0.08, alpha)})`;
-            ctx.beginPath();
-            ctx.arc(px, py, r, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
         ctx.drawImage(cached.canvas, -cached.width / 2, -cached.height / 2);
         ctx.restore();
     }
