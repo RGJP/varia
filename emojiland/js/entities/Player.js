@@ -87,7 +87,7 @@ export class Player extends Entity {
         this.pulseTimer = 0;
         this.attackChargeTimer = 0;
         this.minTapAttackChargeTime = 0.045;
-        this.maxAttackChargeTime = 1.5;
+        this.maxAttackChargeTime = 1.0;
         this.chargeIndicatorDelay = 0.14;
         this.isChargingAttack = false;
         this.inSafeBubble = false;
