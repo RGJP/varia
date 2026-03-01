@@ -394,19 +394,8 @@ export class Background {
         ctx.fillStyle = horizon;
         ctx.fillRect(0, 0, this.width, this.height);
 
-        const clampedQuality = Math.max(0, Math.min(1, Number(quality) || 1));
-        this._qualityEma = this._qualityEma * 0.9 + clampedQuality * 0.1;
-        // Hysteresis avoids rapid full<->lite toggling that looks like background redraw flicker.
-        if (!this._useLiteMode && this._qualityEma < 0.72) {
-            this._useLiteMode = true;
-        } else if (this._useLiteMode && this._qualityEma > 0.94) {
-            this._useLiteMode = false;
-        }
-
-        if (this._useLiteMode) {
-            this._drawLiteBackground(ctx, cameraX, cameraY, this._qualityEma);
-            return;
-        }
+        // Keep full background rendering during gameplay.
+        // Performance throttling is handled via particles/VFX only.
 
         // Motion-comfort reduction: keep parallax movement much calmer.
         const motionScaleX = 0.45;
