@@ -1963,18 +1963,18 @@ export class Boss extends Entity {
         this.jugglerRollDir = 0;
         this.jugglerRollFxTimer = 0;
 
-        // Honeybee (boss_honeybee): lane-sweep swarms with high/low telegraphed mixups.
+        // Honeybee (boss_honeybee): lane-sweep swarms with high/mid/low telegraphed mixups.
         this.honeybeePatrolDir = Math.random() > 0.5 ? 1 : -1;
         this.honeybeeHoverCenterY = this.platform.y - this.height - 170;
         this.honeybeeTelegraphTimer = 0;
-        this.honeybeeTelegraphType = 'high'; // 'high' | 'low'
+        this.honeybeeTelegraphType = 'high'; // 'high' | 'mid' | 'low'
         this.honeybeeGatherTimer = 0;
         this.honeybeeGatherDuration = 0;
         this.honeybeeDeployTimer = 0;
         this.honeybeeDeployDuration = 0;
         this.honeybeeSwarmActiveTimer = 0;
         this.honeybeeSwarmDuration = 0;
-        this.honeybeeSwarmType = 'high'; // 'high' | 'low'
+        this.honeybeeSwarmType = 'high'; // 'high' | 'mid' | 'low'
         this.honeybeeSwarmHitTimer = 0;
 
         switch (this.bossType) {
@@ -2132,10 +2132,17 @@ export class Boss extends Entity {
 
     _getHoneybeeSwarmBand(type) {
         if (!this.platform) return null;
+        const high = { y: this.platform.y - 210, height: 70 };
+        const low = { y: this.platform.y - 42, height: 62 };
+        if (type === 'high') return high;
         if (type === 'low') {
-            return { y: this.platform.y - 42, height: 62 };
+            return low;
         }
-        return { y: this.platform.y - 210, height: 70 };
+        const highCenter = high.y + high.height / 2;
+        const lowCenter = low.y + low.height / 2;
+        const midCenter = (highCenter + lowCenter) * 0.5;
+        const midHeight = Math.round((high.height + low.height) * 0.5);
+        return { y: Math.round(midCenter - midHeight / 2), height: midHeight };
     }
 
     _isPlayerInHoneybeeSwarm(player, type) {
@@ -4534,6 +4541,9 @@ export class Boss extends Entity {
             if (this.honeybeeDeployTimer <= 0) {
                 this.honeybeeSwarmType = this.honeybeeTelegraphType;
                 this.honeybeeSwarmDuration = this.phase >= 3 ? 1.16 : (this.phase >= 2 ? 1.04 : 0.92);
+                if (this.honeybeeSwarmType === 'mid') {
+                    this.honeybeeSwarmDuration *= 0.78;
+                }
                 this.honeybeeSwarmActiveTimer = this.honeybeeSwarmDuration;
                 this.honeybeeSwarmHitTimer = 0;
                 this.honeybeeTelegraphTimer = 0;
@@ -4573,7 +4583,8 @@ export class Boss extends Entity {
         if (player) {
             this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
             if (this.attackCooldown <= 0) {
-                this.honeybeeTelegraphType = Math.random() < 0.5 ? 'high' : 'low';
+                const honeybeeSwarmTypes = ['high', 'mid', 'low'];
+                this.honeybeeTelegraphType = honeybeeSwarmTypes[Math.floor(Math.random() * honeybeeSwarmTypes.length)];
                 this.honeybeeGatherDuration = this.phase >= 3 ? 0.44 : (this.phase >= 2 ? 0.5 : 0.58);
                 this.honeybeeGatherTimer = this.honeybeeGatherDuration;
                 this.honeybeeDeployDuration = this.phase >= 3 ? 0.32 : (this.phase >= 2 ? 0.36 : 0.42);
@@ -5356,14 +5367,22 @@ export class Boss extends Entity {
                 const ballPulse = 0.5 + Math.sin(this.timeAlive * 12) * 0.2;
                 const ballR = 10 + deployProgress * 15;
                 ctx.globalAlpha = alpha * (0.2 + deployProgress * 0.4);
-                ctx.fillStyle = this.honeybeeTelegraphType === 'low' ? `rgba(130, 220, 255, ${0.48 + ballPulse * 0.18})` : `rgba(255, 220, 120, ${0.48 + ballPulse * 0.18})`;
+                if (this.honeybeeTelegraphType === 'low') {
+                    ctx.fillStyle = `rgba(130, 220, 255, ${0.48 + ballPulse * 0.18})`;
+                } else if (this.honeybeeTelegraphType === 'mid') {
+                    ctx.fillStyle = `rgba(185, 232, 170, ${0.48 + ballPulse * 0.18})`;
+                } else {
+                    ctx.fillStyle = `rgba(255, 220, 120, ${0.48 + ballPulse * 0.18})`;
+                }
                 ctx.beginPath();
                 ctx.arc(sphereCenterX, sphereCenterY, ballR, 0, Math.PI * 2);
                 ctx.fill();
             }
 
             // Warning indicators
-            const arrow = this.honeybeeTelegraphType === 'low' ? this._upArrowTellCache : this._downArrowTellCache;
+            const arrow = this.honeybeeTelegraphType === 'low'
+                ? this._upArrowTellCache
+                : (this.honeybeeTelegraphType === 'mid' ? this._warnCache : this._downArrowTellCache);
             ctx.drawImage(arrow.canvas, -arrow.width / 2, -this.height / 2 - 56);
             
             if (deployProgress > 0) {
@@ -5401,9 +5420,13 @@ export class Boss extends Entity {
             const laneY = band.y - (this.y + this.height / 2);
             const laneH = band.height;
             
-            ctx.fillStyle = this.honeybeeSwarmType === 'low'
-                ? `rgba(155, 225, 255, ${(0.2 + pulse * 0.16) * activeScale})`
-                : `rgba(255, 228, 140, ${(0.2 + pulse * 0.16) * activeScale})`;
+            if (this.honeybeeSwarmType === 'low') {
+                ctx.fillStyle = `rgba(155, 225, 255, ${(0.2 + pulse * 0.16) * activeScale})`;
+            } else if (this.honeybeeSwarmType === 'mid') {
+                ctx.fillStyle = `rgba(188, 236, 176, ${(0.2 + pulse * 0.16) * activeScale})`;
+            } else {
+                ctx.fillStyle = `rgba(255, 228, 140, ${(0.2 + pulse * 0.16) * activeScale})`;
+            }
             if (beamW > 0) {
                 ctx.fillRect(startX, laneY, beamW, laneH);
             }

@@ -551,7 +551,14 @@ export class Game {
         const bossCleared = this.pendingBossSpawns.length === 0 && !this.hasAliveBoss();
         if (!bossCleared || !this.hasBossKey) return false;
         const cageRect = this._getPrisonerCageRect(rescue);
-        if (!this._isAabbOverlap(player, cageRect)) return false;
+        const unlockRangePadding = 24;
+        const unlockRect = {
+            x: cageRect.x - unlockRangePadding,
+            y: cageRect.y - unlockRangePadding,
+            width: cageRect.width + unlockRangePadding * 2,
+            height: cageRect.height + unlockRangePadding * 2
+        };
+        if (!this._isAabbOverlap(player, unlockRect)) return false;
         const lockTarget = {
             x: cageRect.x + cageRect.width * 0.5,
             y: cageRect.y + cageRect.height * 0.6 + 6
@@ -2096,7 +2103,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('🎵 Music from Pixabay & Suno • Game Version 1.41', 0, cardY + cardHeight + 152);
+            this.ctx.fillText('🎵 Music from Pixabay & Suno • Game Version 1.42', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
