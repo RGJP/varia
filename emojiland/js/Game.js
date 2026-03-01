@@ -2058,11 +2058,11 @@ export class Game {
             this.ctx.font = '20px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
             let ry = cardY + 74;
-            this.ctx.fillText('🪙 Reach 100% Level Completion', 40, ry); ry += yStep;
-            this.ctx.fillText('⚔️ Defeat All Enemies', 40, ry); ry += yStep;
-            this.ctx.fillText('🏁 Reach the end with the best score', 40, ry); ry += yStep;
+            this.ctx.fillText('🪙 Reach 100% level completion', 40, ry); ry += yStep;
+            this.ctx.fillText('☠️ Defeat All Enemies', 40, ry); ry += yStep;
+            this.ctx.fillText('🚩 Reach the end with the best score', 40, ry); ry += yStep;
             this.ctx.fillText('🎰 Experiment, Explore, Enjoy', 40, ry); ry += yStep;
-            this.ctx.fillText('🎲 Levels are always unique', 40, ry);
+            this.ctx.fillText('🎲 Levels are always unique!', 40, ry);
 
             for (let i = 0; i < buttons.length; i++) {
                 const btn = buttons[i];
