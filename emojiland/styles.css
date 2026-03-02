@@ -175,6 +175,16 @@ canvas {
     margin: 0;
 }
 
+#btn-portal {
+    position: absolute;
+    bottom: 66px;
+    right: -56px;
+    margin: 0;
+    width: 58px;
+    height: 58px;
+    font-size: 28px;
+}
+
 @media (pointer: coarse) and (orientation: landscape) {
     #mobile-ui {
         /* Typical landscape comfort zone: inward from edges and up from bottom */
@@ -227,6 +237,14 @@ canvas {
     #btn-bomb {
         top: 0;
         right: 28px;
+    }
+
+    #btn-portal {
+        bottom: 78px;
+        right: -56px;
+        width: 64px;
+        height: 64px;
+        font-size: 32px;
     }
 
     .ui-btn,

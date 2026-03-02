@@ -14,6 +14,7 @@ export class InputHandler {
             'KeyA',
             'KeyD',
             'KeyS',
+            'KeyW',
             'KeyP',
             'Space'
         ]);
@@ -217,6 +218,7 @@ export class InputHandler {
         attachButton('btn-jump', 'KeyA');
         attachButton('btn-attack', 'KeyD');
         attachButton('btn-bomb', 'KeyS');
+        attachButton('btn-portal', 'KeyW');
         attachButton('btn-pause', 'KeyP');
 
         setTimeout(() => {

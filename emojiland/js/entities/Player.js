@@ -64,6 +64,11 @@ export class Player extends Entity {
         this.isSpinning = false;
         this.spinDirection = 1;
         this.spinBaseRotation = 0;
+        this.portalEntry = null;
+        this.portalExit = null;
+        this.portalSpawnCooldown = 0;
+        this.portalTeleportCooldown = 0;
+        this.portalHoldTimer = 0;
 
         this.diamondPowerUpTimer = 0;
         this.diamondPowerUpDuration = 5.0;
@@ -141,6 +146,23 @@ export class Player extends Entity {
         }
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
+        }
+        if (this.portalSpawnCooldown > 0) {
+            this.portalSpawnCooldown = Math.max(0, this.portalSpawnCooldown - dt);
+        }
+        if (this.portalTeleportCooldown > 0) {
+            this.portalTeleportCooldown = Math.max(0, this.portalTeleportCooldown - dt);
+        }
+        if (this.portalHoldTimer > 0) {
+            this.portalHoldTimer -= dt;
+            if (this.portalHoldTimer <= 0) {
+                this.portalHoldTimer = 0;
+                this.portalEntry = null;
+                this.portalExit = null;
+                // Grant two jumps after portal exit to prevent falling deaths.
+                this.airJumps = 2;
+                this.coyoteTimer = this.coyoteTime;
+            }
         }
         if (this.slowTimer > 0) {
             this.slowTimer -= dt;
@@ -359,6 +381,9 @@ export class Player extends Entity {
                 if (game.audio) game.audio.playThrow();
             }
         }
+        if (!this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0 && input.isJustPressed('KeyW')) {
+            this._spawnPortals(game);
+        }
 
         // Attack charge and release
         const canChargeAttack = !this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0;
@@ -464,8 +489,16 @@ export class Player extends Entity {
             }
         }
 
+        const isPortalTraveling = this.portalHoldTimer > 0;
+
         // Movement
-        if (this.inSafeBubble && this.activeSafeBubble) {
+        if (isPortalTraveling) {
+            this.grounded = false;
+            this.isClimbing = false;
+            this.currentVine = null;
+            this.vx = 0;
+            this.vy = 0;
+        } else if (this.inSafeBubble && this.activeSafeBubble) {
             this.grounded = false;
             this.isClimbing = false;
             this.currentVine = null;
@@ -554,7 +587,7 @@ export class Player extends Entity {
         }
 
         // Jump
-        if (!this.inSafeBubble && !isFlying && !game.gameOverTriggered && this.stunTimer <= 0 && this.jumpBufferTimer > 0 && !this.isClimbing) {
+        if (!isPortalTraveling && !this.inSafeBubble && !isFlying && !game.gameOverTriggered && this.stunTimer <= 0 && this.jumpBufferTimer > 0 && !this.isClimbing) {
             if (this.coyoteTimer > 0) {
                 this.vy = this.jumpForce;
                 this.grounded = false;
@@ -694,7 +727,7 @@ export class Player extends Entity {
                 game.audio.playJump();
                 game.particles.emitJump(this.x + this.width / 2, this.y + this.height, game.currentTheme.particleColor);
             }
-        } else {
+        } else if (!isPortalTraveling) {
             // Carry player on moving platforms BEFORE collision resolution
             // This prevents vertical movers from causing X-axis collision artifacts
             for (let platform of platforms) {
@@ -735,10 +768,11 @@ export class Player extends Entity {
             this.grounded = false;
             this.resolveCollision(platforms, 'y', game);
         }
+        this._handlePortalTeleport(game);
 
         // Enemy collision + fire aura logic.
         // Fire must keep damaging enemies even while flight is active.
-        if (!this.inSafeBubble && ((this.invulnerableTimer <= 0 && !isFlying) || this.firePowerUpTimer > 0)) {
+        if (!isPortalTraveling && !this.inSafeBubble && ((this.invulnerableTimer <= 0 && !isFlying) || this.firePowerUpTimer > 0)) {
             const hitbox = this._hitbox;
             const nearbyEnemies = (collisionContext && collisionContext.enemies) ? collisionContext.enemies : game.enemies;
 
@@ -952,7 +986,7 @@ export class Player extends Entity {
             }
         }
 
-        if (game && typeof game.tryRescuePrisoner === 'function') {
+        if (!isPortalTraveling && game && typeof game.tryRescuePrisoner === 'function') {
             game.tryRescuePrisoner(this);
         }
 
@@ -964,7 +998,7 @@ export class Player extends Entity {
             const platform = victoryPlatforms[i];
             if (platform.isVictory) {
                 const flagBox = platform.getFlagBox();
-                if (Physics.checkAABB(this, platform) || (flagBox && Physics.checkAABB(this, flagBox))) {
+                if (!isPortalTraveling && (Physics.checkAABB(this, platform) || (flagBox && Physics.checkAABB(this, flagBox)))) {
                     if (game.canTriggerVictory()) {
                         game.triggerVictory();
                     }
@@ -1142,6 +1176,179 @@ export class Player extends Entity {
         this.letterCelebrationSpawnTimer = 0.02;
     }
 
+    _spawnPortals(game) {
+        if (this.portalSpawnCooldown > 0) return;
+        const portalWidth = Math.round(this.width * 1.22);
+        const portalHeight = Math.max(28, Math.round(this.height * 0.4));
+        const centerX = this.x + this.width / 2;
+
+        const entryX = centerX - portalWidth / 2;
+        const entryY = this.y - 66;
+
+        const camX = game?.camera ? game.camera.x : 0;
+        const camY = game?.camera ? game.camera.y : 0;
+        const viewW = game?.camera ? game.camera.effectiveWidth : (game?.viewportWidth || 1280);
+        const viewH = game?.camera ? game.camera.effectiveHeight : (game?.viewportHeight || 720);
+        const marginRight = 26;
+        const topOffset = 74;
+        const exitX = camX + viewW - portalWidth - marginRight;
+        const minExitY = camY + topOffset;
+        const maxExitY = camY + Math.max(topOffset, viewH - 170);
+        let exitY = minExitY;
+
+        // Keep the destination portal clear of terrain/rope hazards to avoid clipping on emerge.
+        const step = 22;
+        let foundClearSpot = false;
+        for (let y = minExitY; y <= maxExitY; y += step) {
+            const candidate = { x: exitX, y, width: portalWidth, height: portalHeight };
+            if (this._isPortalAreaClear(game, candidate)) {
+                exitY = y;
+                foundClearSpot = true;
+                break;
+            }
+        }
+        if (!foundClearSpot) {
+            for (let y = minExitY - step; y >= camY + 10; y -= step) {
+                const candidate = { x: exitX, y, width: portalWidth, height: portalHeight };
+                if (this._isPortalAreaClear(game, candidate)) {
+                    exitY = y;
+                    foundClearSpot = true;
+                    break;
+                }
+            }
+        }
+
+        this.portalEntry = { x: entryX, y: entryY, width: portalWidth, height: portalHeight };
+        this.portalExit = { x: exitX, y: exitY, width: portalWidth, height: portalHeight };
+        this.portalSpawnCooldown = 0.16;
+        this.portalTeleportCooldown = 0.12;
+
+        if (game?.particles) {
+            game.particles.emit(centerX, entryY + portalHeight * 0.5, 10, '#d7d2ff', [30, 120], [0.15, 0.32], [2, 5]);
+            game.particles.emit(exitX + portalWidth * 0.5, exitY + portalHeight * 0.5, 12, '#b1fff3', [40, 140], [0.15, 0.36], [2, 5]);
+        }
+    }
+
+    _rectsOverlap(a, b) {
+        return !!(
+            a && b &&
+            a.x < b.x + b.width &&
+            a.x + a.width > b.x &&
+            a.y < b.y + b.height &&
+            a.y + a.height > b.y
+        );
+    }
+
+    _isPortalAreaClear(game, portalRect) {
+        if (!game || !portalRect) return true;
+        const checkRect = {
+            x: portalRect.x - 8,
+            y: portalRect.y - 8,
+            width: portalRect.width + 16,
+            height: portalRect.height + 16
+        };
+        const groups = [game.platforms, game.movingPlatforms, game.vines, game.swingingVines, game.safeZones];
+        for (let gi = 0; gi < groups.length; gi++) {
+            const list = groups[gi];
+            if (!Array.isArray(list)) continue;
+            for (let i = 0; i < list.length; i++) {
+                const obj = list[i];
+                if (!obj || typeof obj.x !== 'number' || typeof obj.y !== 'number' || typeof obj.width !== 'number' || typeof obj.height !== 'number') continue;
+                if (this._rectsOverlap(checkRect, obj)) return false;
+            }
+        }
+        return true;
+    }
+
+    _isPlayerInsidePortal(portal) {
+        if (!portal) return false;
+        const px = this.x + this.width / 2;
+        const py = this.y + this.height / 2;
+        const cx = portal.x + portal.width / 2;
+        const cy = portal.y + portal.height / 2;
+        const rx = portal.width / 2;
+        const ry = portal.height / 2;
+        if (rx <= 0 || ry <= 0) return false;
+        const dx = (px - cx) / rx;
+        const dy = (py - cy) / ry;
+        return (dx * dx + dy * dy) <= 1;
+    }
+
+    _handlePortalTeleport(game) {
+        if (!this.portalEntry || !this.portalExit || this.portalTeleportCooldown > 0) return;
+        const inEntry = this._isPlayerInsidePortal(this.portalEntry);
+        if (!inEntry) return;
+
+        const source = this.portalEntry;
+        const target = this.portalExit;
+        const sourceCenterX = source.x + source.width / 2;
+        const sourceCenterY = source.y + source.height / 2;
+        const targetCenterX = target.x + target.width / 2;
+        const targetCenterY = target.y + target.height / 2;
+
+        const offsetX = this.x + this.width / 2 - sourceCenterX;
+        const offsetY = this.y + this.height / 2 - sourceCenterY;
+
+        this.x = targetCenterX + offsetX - this.width / 2;
+        this.y = targetCenterY + offsetY - this.height / 2;
+
+        this.portalTeleportCooldown = 0.2;
+        this._updateHitbox();
+
+        const cam = game?.camera;
+        if (cam && typeof cam.fastPan === 'function') {
+            cam.fastPan();
+        }
+        if (game?.particles) {
+            game.particles.emit(sourceCenterX, sourceCenterY, 10, '#d2ceff', [30, 130], [0.14, 0.3], [2, 4.4]);
+            game.particles.emit(targetCenterX, targetCenterY, 16, '#9cf9ff', [45, 180], [0.15, 0.34], [2.2, 5.2]);
+        }
+
+        // Hold player for 0.5 seconds before despawning portals
+        this.portalHoldTimer = 0.5;
+    }
+
+    _drawPortal(ctx, portal, pulseTimer, isExit) {
+        if (!portal) return;
+        const cx = portal.x + portal.width / 2;
+        const cy = portal.y + portal.height / 2;
+        const rx = portal.width / 2;
+        const ry = portal.height / 2;
+        const pulse = 0.5 + Math.sin(pulseTimer * 7.5 + (isExit ? 1.6 : 0)) * 0.5;
+        const edgeColor = isExit
+            ? `rgba(130, 245, 235, ${0.62 + pulse * 0.22})`
+            : `rgba(178, 164, 245, ${0.58 + pulse * 0.2})`;
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(5, 5, 8, 0.98)';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx * 0.84, ry * 0.64, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = edgeColor;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = isExit ? 'rgba(190, 255, 248, 0.42)' : 'rgba(220, 210, 255, 0.35)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx * 0.72, ry * 0.56, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        if (isExit) {
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = '24px "Outfit", sans-serif';
+            // Subtle bobbing animation below the portal
+            const arrowY = cy + ry + 20 + Math.sin(pulseTimer * 10) * 4;
+            ctx.fillText('⬇️', cx, arrowY);
+        }
+
+        ctx.restore();
+    }
+
     takeDamage(game) {
         if (this.inSafeBubble) return;
         if (this.flightTimer > 0) return;
@@ -1178,12 +1385,15 @@ export class Player extends Entity {
     }
 
     draw(ctx, game) {
+        this._drawPortal(ctx, this.portalEntry, this.pulseTimer, false);
+        this._drawPortal(ctx, this.portalExit, this.pulseTimer, true);
         if (this.inSafeBubble) return;
+        if (this.portalHoldTimer > 0) return;
 
         ctx.save();
         if (!game?.gameOverTriggered && this.invulnerableTimer > 0) {
             // Non-flashing invulnerability readability.
-            ctx.globalAlpha = 0.62;
+            ctx.globalAlpha *= 0.62;
         }
 
         if (!game?.gameOverTriggered && this.damageGlowTimer > 0) {
@@ -1436,7 +1646,8 @@ export class Player extends Entity {
         }
 
         if (this.firePowerUpTimer > 0) {
-            if (!this._fireEmoji) {                this._fireEmoji = getEmojiCanvas(String.fromCodePoint(0x1F525), 30);
+            if (!this._fireEmoji) {
+                this._fireEmoji = getEmojiCanvas(String.fromCodePoint(0x1F525), 30);
             }
             let numFireballs = 3;
             if (this.firePowerUpTimer <= 1.0) {

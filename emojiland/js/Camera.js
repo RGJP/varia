@@ -24,8 +24,10 @@ export class Camera {
         this.shakeOffsetX = 0;
         this.shakeOffsetY = 0;
 
-        // Vertical framing control: 0.50 = hard center (50/50 sky-ground).
         this.verticalFocusRatio = 0.50;
+        this.overrideTarget = null;
+        this.overrideSpeed = 0;
+        this.fastTransitionSpeed = 0;
     }
 
     // Cycle through mobile zoom levels and return the new label
@@ -63,14 +65,44 @@ export class Camera {
         this.shakeIntensity = 0;
     }
 
+    fastPan() {
+        this.fastTransitionSpeed = 25; // High speed for quick transition
+    }
+
+    setOverrideTarget(x, y, speed = 2.2) {
+        this.overrideTarget = { x, y };
+        this.overrideSpeed = Math.max(0.1, speed || 2.2);
+    }
+
+    clearOverrideTarget() {
+        this.overrideTarget = null;
+        this.overrideSpeed = 0;
+    }
+
     update(player, dt) {
-        // Center camera on player using effective (zoomed) viewport
-        let targetX = player.x + player.width / 2 - this.effectiveWidth / 2;
-        let targetY = player.y + player.height / 2 - this.effectiveHeight * this.verticalFocusRatio;
+        let targetX;
+        let targetY;
+        let followSpeed = 5;
+        if (this.overrideTarget) {
+            targetX = this.overrideTarget.x;
+            targetY = this.overrideTarget.y;
+            followSpeed = this.overrideSpeed;
+        } else {
+            // Center camera on player using effective (zoomed) viewport
+            targetX = player.x + player.width / 2 - this.effectiveWidth / 2;
+            targetY = player.y + player.height / 2 - this.effectiveHeight * this.verticalFocusRatio;
+
+            if (this.fastTransitionSpeed > 5) {
+                followSpeed = this.fastTransitionSpeed;
+                this.fastTransitionSpeed -= 50 * dt; // Decay speed quickly back to normal
+            } else {
+                this.fastTransitionSpeed = 0;
+            }
+        }
 
         // Smooth follow
-        this.x += (targetX - this.x) * 5 * dt;
-        this.y += (targetY - this.y) * 5 * dt;
+        this.x += (targetX - this.x) * followSpeed * dt;
+        this.y += (targetY - this.y) * followSpeed * dt;
 
         // Clamp to left edge of the level
         if (this.x < 0) this.x = 0;

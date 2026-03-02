@@ -1424,7 +1424,7 @@ export class Game {
 
     _getStartMenuCardLayout() {
         const cardWidth = 780;
-        const cardHeight = 220;
+        const cardHeight = 255;
         const cardX = -cardWidth / 2;
         const cardY = -102;
         return { cardWidth, cardHeight, cardX, cardY };
@@ -1474,7 +1474,7 @@ export class Game {
     _getStartMenuOverlayCenter(scale) {
         // Vertically center the full start-menu composition (title to attribution line).
         const localTop = -192;
-        const localBottom = 278;
+        const localBottom = 313;
         const localMid = (localTop + localBottom) / 2;
         return {
             x: this.viewportWidth / 2,
@@ -2042,7 +2042,8 @@ export class Game {
             this.ctx.fillText('A or 🦘 : Jump', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('D or 🪨⬆️ : Attack / Charge', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('S or 💣 Drop Bomb From Above', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('P or ⏯️: Pause/Unpause', cardX + 40, ly);
+            this.ctx.fillText('P or ⏯️: Pause/Unpause', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('W or 🌀: Spawn a Portal', cardX + 40, ly);
 
             // Vertical Divider
             this.ctx.beginPath();
