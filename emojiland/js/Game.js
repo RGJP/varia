@@ -2068,12 +2068,12 @@ export class Game {
 
             let ly = cardY + 74;
             const yStep = 30;
-            this.ctx.fillText('KB Arrows or Joystick : Move', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('A or 🦘 : Jump', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('D or 🪨⬆️ : Attack / Charge', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('S or 💣 Drop Bomb From Above', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('P or ⏯️: Pause/Unpause', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('W or 🌀: Spawn a Portal', cardX + 40, ly);
+            this.ctx.fillText('KB Arrows • Joystick : Move Player', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('A •🦘 Jump', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('D • 🪨⬆️ Attack / Charge', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('S • 💣 Drop a bomb from above', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('W • 🌀 Spawn a portal', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('P • ⏯️ Pause/Unpause', cardX + 40, ly);
 
             // Vertical Divider
             this.ctx.beginPath();
@@ -2094,7 +2094,7 @@ export class Game {
             this.ctx.fillText('⛑️ Save the Prisoner', 40, ry); ry += yStep;
             this.ctx.fillText('🚩 Reach the end with the best score', 40, ry); ry += yStep;
             this.ctx.fillText('🎰 Experiment, Explore, Enjoy', 40, ry); ry += yStep;
-            this.ctx.fillText('🎲 Levels are always unique!', 40, ry);
+            this.ctx.fillText('🎲 Levels are always unique', 40, ry);
 
             for (let i = 0; i < buttons.length; i++) {
                 const btn = buttons[i];

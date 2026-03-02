@@ -1124,12 +1124,41 @@ export function loadLevel() {
         const numHealthPickups = Math.floor(Math.random() * 3) + 3; // 3 to 5
         spawnSpecial('health', numHealthPickups);
 
-        // Spawn 1-2 powerups of each type
-        spawnSpecial('diamond_powerup', Math.floor(Math.random() * 2) + 1);
-        spawnSpecial('fire_powerup', Math.floor(Math.random() * 2) + 1);
-        spawnSpecial('frost_powerup', Math.floor(Math.random() * 2) + 1);
-        spawnSpecial('lightning_powerup', Math.floor(Math.random() * 2) + 1);
-        spawnSpecial('wing_powerup', Math.floor(Math.random() * 2) + 1);
+        // Spawn a slightly smaller pool of non-fairy power-ups.
+        // All non-fairy power-up types share the same spawn chance so runs
+        // don't over-favor any particular element (fire, frost, etc.).
+        const powerUpTypes = [
+            'diamond_powerup',
+            'fire_powerup',
+            'frost_powerup',
+            'lightning_powerup',
+            'wing_powerup'
+        ];
+        const availablePowerSlots = Math.max(0, safeCoinLocations.length - occupiedIndices.size);
+        const requestedPowerUps = 3 + Math.floor(Math.random() * 3); // 3–5 total
+        const maxPowerUps = Math.min(availablePowerSlots, powerUpTypes.length * 2);
+        const totalPowerUps = Math.min(requestedPowerUps, maxPowerUps);
+
+        if (totalPowerUps > 0) {
+            const stepPower = safeCoinLocations.length / totalPowerUps;
+            for (let i = 0; i < totalPowerUps; i++) {
+                const minIdx = Math.floor(i * stepPower);
+                const maxIdx = Math.floor((i + 1) * stepPower) - 1;
+                if (maxIdx < minIdx) continue;
+                let idx = Math.floor(Math.random() * (maxIdx - minIdx + 1)) + minIdx;
+                let attempts = 0;
+                while (occupiedIndices.has(idx) && attempts < 12) {
+                    idx = Math.floor(Math.random() * (maxIdx - minIdx + 1)) + minIdx;
+                    attempts++;
+                }
+                if (occupiedIndices.has(idx)) continue;
+                const loc = safeCoinLocations[idx];
+                const typeIndex = Math.floor(Math.random() * powerUpTypes.length);
+                const type = powerUpTypes[typeIndex];
+                collectibles.push(new Collectible(loc.x, loc.y, type));
+                occupiedIndices.add(idx);
+            }
+        }
 
         const numBombPickups = Math.floor(Math.random() * 3) + 2; // 2 to 4
         spawnSpecial('bomb', numBombPickups);
