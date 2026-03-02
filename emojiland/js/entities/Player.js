@@ -117,10 +117,13 @@ export class Player extends Entity {
             "🤸‍♂️",
             "🧑‍🦽‍➡️",
             "🐧",
-            "🏇"
+            "🏇",
+            "🏌️‍♂️",
+            "🤾‍♀️",
+            "⛹️‍♀️"
         ];
         this.emoji = icons[Math.floor(Math.random() * icons.length)];
-        this._emojiFacesLeft = this.emoji === "🏇";
+        this._emojiFacesLeft = this.emoji === "🏇" || this.emoji === "🤾‍♀️" || this.emoji === "⛹️‍♀️";
         // Pre-cache the emoji
         this._cachedEmoji = getEmojiCanvas(this.emoji, 72);
 

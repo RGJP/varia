@@ -502,7 +502,7 @@ export class Game {
             }
             return;
         }
-        const prisonerEmojis = ['🐇', '🧝‍♀️', '🧚‍♀️', '🧸', '🐈', '🐈', '🐈', '🐅', '🐩', '🐕', '🐀', '🐆', '🦌', '🐄', '🦜', '💩'];
+        const prisonerEmojis = ['🐇', '🧝‍♀️', '🧚‍♀️', '🧸', '🐈', '🐈', '🐈', '🐅', '🐩', '🐕', '🐀', '🐆', '🦌', '🐄', '🦜'];
         const emoji = prisonerEmojis[Math.floor(Math.random() * prisonerEmojis.length)];
         const cageSize = 94;
         const prisonerSize = 62;
