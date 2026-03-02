@@ -49,8 +49,8 @@ export class Enemy extends Entity {
         const ENEMY_POOL = [
             { type: TYPE_PATROL, width: 58, height: 58, emoji: '🐢', baseSpeed: 50, health: 2 },
             { type: TYPE_CHASER, width: 55, height: 55, emoji: '👹', baseSpeed: 100, health: 4 },
-            { type: TYPE_JUMPER, width: 52, height: 52, emoji: '🐸', baseSpeed: 64, health: 2 },
-            { type: TYPE_SHOOTER, width: 50, height: 60, emoji: '🐡', baseSpeed: 75, health: 3 },
+            { type: TYPE_JUMPER, width: 52, height: 52, emoji: '🐸', baseSpeed: 48, health: 2 },
+            { type: TYPE_SHOOTER, width: 50, height: 60, emoji: '🐡', baseSpeed: 75, health: 4 },
             { type: TYPE_EAGLE, width: 56, height: 56, emoji: '🦅', baseSpeed: 90, health: 2 },
             { type: TYPE_OWL, width: 40, height: 40, emoji: '🦉', baseSpeed: 90, health: 2 },
             { type: TYPE_CROW, width: 48, height: 48, emoji: '🐦‍⬛', baseSpeed: 120, health: 1 },
@@ -249,10 +249,7 @@ export class Enemy extends Entity {
 
         if (game && game.particles) {
             if (this.type === TYPE_TROLL) {
-                // Larger burst of green smoke when hit
-                for (let i = 0; i < 5; i++) {
-                    game.particles.emitGreenSmoke(this.x + this.width / 2, this.y + this.height / 2);
-                }
+                game.particles.emitGreenSmokeRings(this.x + this.width / 2, this.y + this.height / 2);
             } else {
                 game.particles.emitHit(this.x + this.width / 2, this.y + this.height / 2);
             }
@@ -908,9 +905,9 @@ export class Enemy extends Entity {
                 const disc = b * b - 4 * a * c;
                 if (disc >= 0) {
                     const t = (-b + Math.sqrt(disc)) / (2 * a);
-                    this.vx = dx / Math.max(0.14, t);
+                    this.vx = (dx / Math.max(0.14, t)) * 0.82;
                 } else {
-                    this.vx = dx >= 0 ? 170 : -170;
+                    this.vx = (dx >= 0 ? 170 : -170) * 0.82;
                 }
                 this.facingRight = this.vx > 0;
             } else {

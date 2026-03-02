@@ -2089,7 +2089,7 @@ export class Game {
             this.ctx.font = '20px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
             let ry = cardY + 74;
-            this.ctx.fillText('🪙 Reach 100% level completion', 40, ry); ry += yStep;
+            this.ctx.fillText('🪙 Achieve 100% level completion', 40, ry); ry += yStep;
             this.ctx.fillText('☠️ Defeat All Enemies', 40, ry); ry += yStep;
             this.ctx.fillText('⛑️ Save the Prisoner', 40, ry); ry += yStep;
             this.ctx.fillText('🚩 Reach the end with the best score', 40, ry); ry += yStep;

@@ -191,6 +191,35 @@ export class ParticleSystem {
         }
     }
 
+    /** Two little green smoke rings (e.g. for troll hit feedback). */
+    emitGreenSmokeRings(x, y) {
+        const greenColors = [
+            'rgba(34, 139, 34, 0.35)',
+            'rgba(50, 205, 50, 0.3)',
+            'rgba(107, 142, 35, 0.25)',
+        ];
+        const rings = 2;
+        const particlesPerRing = 4;
+        for (let r = 0; r < rings; r++) {
+            if (this.particles.length >= this.maxParticles) break;
+            const baseSpeed = 28 + r * 12 + Math.random() * 8;
+            const life = 0.35 + Math.random() * 0.2;
+            const size = 6 + Math.random() * 5;
+            for (let i = 0; i < particlesPerRing; i++) {
+                if (this.particles.length >= this.maxParticles) break;
+                const p = this._getParticle();
+                if (!p) break;
+                const angle = (i / particlesPerRing) * Math.PI * 2 + Math.random() * 0.3;
+                const speed = baseSpeed * (0.9 + Math.random() * 0.2);
+                const vx = Math.cos(angle) * speed;
+                const vy = Math.sin(angle) * speed;
+                const color = greenColors[Math.floor(Math.random() * greenColors.length)];
+                p.init(x, y, vx, vy, color, life, size, true);
+                this.particles.push(p);
+            }
+        }
+    }
+
     emitHit(x, y) {
         this.emit(x, y, 15, 'white', [150, 400], [0.2, 0.4], [3, 6]);
     }
