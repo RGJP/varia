@@ -1923,14 +1923,6 @@ export class Player extends Entity {
             const boxY = -boxH / 2;
             const radius = 14;
 
-            const glow = ctx.createRadialGradient(0, 0, 8, 0, 0, boxW * 0.65);
-            glow.addColorStop(0, 'rgba(255, 240, 130, 0.36)');
-            glow.addColorStop(1, 'rgba(255, 220, 90, 0)');
-            ctx.fillStyle = glow;
-            ctx.beginPath();
-            ctx.arc(0, 0, boxW * 0.58, 0, Math.PI * 2);
-            ctx.fill();
-
             const tileGrad = ctx.createLinearGradient(0, boxY, 0, boxY + boxH);
             tileGrad.addColorStop(0, '#ffe082');
             tileGrad.addColorStop(1, '#ffb300');
