@@ -98,6 +98,8 @@ export class Player extends Entity {
         this.minTapAttackChargeTime = 0.045;
         this.maxAttackChargeTime = 1.0;
         this.chargeIndicatorDelay = 0.14;
+        this.shellThrowLockoutTimer = 0;
+        this.shellGrabLockoutTimer = 0;
         this.isChargingAttack = false;
         this.inSafeBubble = false;
         this.activeSafeBubble = null;
@@ -128,6 +130,7 @@ export class Player extends Entity {
         for (let i = 0; i < 3; i++) {
             this._fireboxes.push({ x: 0, y: 0, width: 30, height: 30 });
         }
+        this.carriedShell = null;
     }
 
     update(dt, input, platforms, game, collisionContext = null) {
@@ -172,6 +175,12 @@ export class Player extends Entity {
         }
         if (this.safeZoneReentryLockTimer > 0) {
             this.safeZoneReentryLockTimer = Math.max(0, this.safeZoneReentryLockTimer - dt);
+        }
+        if (this.shellThrowLockoutTimer > 0) {
+            this.shellThrowLockoutTimer = Math.max(0, this.shellThrowLockoutTimer - dt);
+        }
+        if (this.shellGrabLockoutTimer > 0) {
+            this.shellGrabLockoutTimer = Math.max(0, this.shellGrabLockoutTimer - dt);
         }
         if (
             this.safeZoneReentryLockedZone &&
@@ -395,23 +404,32 @@ export class Player extends Entity {
             const attackReleased = input.isJustReleased('KeyD');
             const attackHeld = input.isDown('KeyD');
 
-            if (this.frostPowerUpTimer > 0 && attackPressed) {
+            let shellWasKickedThisFrame = false;
+            if (attackPressed && this.carriedShell) {
+                this._kickCarriedShell(game);
+                this.attackChargeTimer = 0;
+                this.isChargingAttack = false;
+                shellWasKickedThisFrame = true;
+            }
+
+            if (!shellWasKickedThisFrame && this.shellThrowLockoutTimer <= 0 && this.frostPowerUpTimer > 0 && attackPressed) {
                 this.isAttacking = true;
                 this.attackTimer = this.attackDuration;
                 this._triggerFrostBlast(game);
             }
 
             // Seed charge on press so quick taps between frames still fire.
-            if (attackPressed && this.attackChargeTimer <= 0) {
+            // Only seed if we didn't just kick a shell and aren't carrying one.
+            if (!shellWasKickedThisFrame && this.shellThrowLockoutTimer <= 0 && attackPressed && this.attackChargeTimer <= 0 && !this.carriedShell) {
                 this.attackChargeTimer = this.minTapAttackChargeTime;
             }
 
-            if (attackHeld) {
+            if (!shellWasKickedThisFrame && this.shellThrowLockoutTimer <= 0 && attackHeld && !this.carriedShell) {
                 this.isChargingAttack = true;
                 this.attackChargeTimer = Math.min(this.maxAttackChargeTime, this.attackChargeTimer + dt);
             }
 
-            if (attackReleased && this.attackChargeTimer > 0) {
+            if (!this.carriedShell && !game.gameOverTriggered && this.shellThrowLockoutTimer <= 0 && attackReleased && this.attackChargeTimer > 0) {
                 this.isAttacking = true;
                 this.attackTimer = this.attackDuration;
 
@@ -431,7 +449,7 @@ export class Player extends Entity {
 
                 this.attackChargeTimer = 0;
                 this.isChargingAttack = false;
-            } else if (!attackHeld && !attackPressed) {
+            } else if (!attackHeld && !attackPressed && !this.carriedShell) {
                 // Defensive reset for cases where focus loss cancels a hold mid-charge.
                 this.attackChargeTimer = 0;
                 this.isChargingAttack = false;
@@ -799,6 +817,7 @@ export class Player extends Entity {
             for (let ei = 0; ei < nearbyEnemies.length; ei++) {
                 const enemy = nearbyEnemies[ei];
                 if (enemy.markedForDeletion) continue;
+                if (enemy === this.carriedShell) continue;
 
                 let hitByFireball = false;
                 for (let i = 0; i < numFireballsActive; i++) {
@@ -820,7 +839,10 @@ export class Player extends Entity {
                     }
                 } else if (!isFlying && Physics.checkAABB(hitbox, enemy)) {
                     const isTurtleEnemy = enemy.type === 'patrol' && enemy.emoji === '🐢';
-                    const isTurtleShell = enemy.type === 'patrol' && enemy.emoji === '🐢' && enemy.turtleFlipped;
+                    const isTurtleShell = enemy.type === 'patrol' &&
+                        enemy.emoji === '🐢' &&
+                        enemy.turtleFlipped &&
+                        (Math.abs(enemy.vx) <= 1 || enemy.state === 'SHELL_SLIDE');
                     const prevBottom = hitbox.y + hitbox.height - (this.vy * dt);
                     const playerCenterY = hitbox.y + hitbox.height * 0.5;
                     const enemyCenterY = enemy.y + enemy.height * 0.5;
@@ -828,20 +850,25 @@ export class Player extends Entity {
                     const isTopStomp = this.vy >= -20 && fromAbove;
                     const prevHitboxX = hitbox.x - (this.vx * dt);
                     const prevHitboxRight = prevHitboxX + hitbox.width;
-                    const fromLeftSide = this.vx > 0 && prevHitboxRight <= enemy.x + 8;
-                    const fromRightSide = this.vx < 0 && prevHitboxX >= enemy.x + enemy.width - 8;
+                    const prevEnemyX = enemy.x - (enemy.vx * dt);
+                    const prevEnemyRight = prevEnemyX + enemy.width;
+                    // Relaxed 'moving' requirement: shells can be caught if they slide into a stationary player 'from the side'.
+                    const fromLeftSide = prevHitboxRight <= prevEnemyX + 10;
+                    const fromRightSide = prevHitboxX >= prevEnemyRight - 10;
                     const playerMidY = playerCenterY;
                     const sideKickVerticalBandTop = enemy.y + enemy.height * 0.2;
                     const sideKickVerticalBandBottom = enemy.y + enemy.height * 0.9;
                     const isSideKickContact = (fromLeftSide || fromRightSide) &&
                         playerMidY >= sideKickVerticalBandTop &&
                         playerMidY <= sideKickVerticalBandBottom;
-                    if (isTurtleShell && isSideKickContact) {
-                        if (typeof enemy.kickShell === 'function') {
-                            const playerCenterX = this.x + this.width / 2;
-                            const enemyCenterX = enemy.x + enemy.width / 2;
-                            const kickDir = playerCenterX <= enemyCenterX ? 1 : -1;
-                            enemy.kickShell(kickDir, game);
+                    if (isTurtleShell && isSideKickContact && this.shellGrabLockoutTimer <= 0) {
+                        if (!this.carriedShell) {
+                            this.carriedShell = enemy;
+                            enemy.state = 'SHELL_CARRIED';
+                            enemy.vx = 0;
+                            enemy.vy = 0;
+                            enemy.turtleRecovering = false;
+                            enemy.turtleRecoverTimer = 0;
                         }
                         continue;
                     }
@@ -1954,6 +1981,30 @@ export class Player extends Entity {
         }
 
         ctx.globalAlpha = 1.0;
+    }
+
+    _kickCarriedShell(game) {
+        const shell = this.carriedShell;
+        if (!shell) return;
+        this.carriedShell = null;
+        this.shellThrowLockoutTimer = 1.0; // 1-second total lockout of rock attacks after throw.
+        this.shellGrabLockoutTimer = 0.4; // brief grace period before shell can be grabbed again
+
+        let dir = this.facingRight ? 1 : -1;
+        if (game && game.player === this) {
+            const playerCenterX = this.x + this.width / 2;
+            const shellCenterX = shell.x + shell.width / 2;
+            dir = playerCenterX <= shellCenterX ? 1 : -1;
+        }
+
+        if (typeof shell.kickShell === 'function') {
+            shell.kickShell(dir, game);
+        } else {
+            shell.vx = dir * 620;
+            shell.vy = 0;
+            shell.platform = null;
+            shell.state = 'SHELL_SLIDE';
+        }
     }
 }
 

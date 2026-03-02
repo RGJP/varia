@@ -358,6 +358,21 @@ export class Enemy extends Entity {
             this.peacockFacingPlayer = !!player && this.isFacingWorldX(playerCenterX);
         }
 
+        if (this.state === 'SHELL_CARRIED' && this.type === TYPE_PATROL && this.emoji === '🐢') {
+            if (!player || player.carriedShell !== this) {
+                this.state = 'SHELL';
+            } else {
+                const carryForward = player.width * 0.72;
+                const shellCenterX = (player.x + player.width / 2) + (player.facingRight ? carryForward : -carryForward);
+                this.x = shellCenterX - this.width / 2;
+                this.y = player.y + player.height - this.height;
+                this.vx = 0;
+                this.vy = 0;
+                this.platform = player.platform || this.platform;
+                return;
+            }
+        }
+
         switch (this.type) {
             case TYPE_PATROL: this.updatePatrol(dt); break;
             case TYPE_CHASER: this.updateChaser(dt, game, player, distToPlayer, distToPlayerX); break;
@@ -413,17 +428,19 @@ export class Enemy extends Entity {
             const isSpiderJumping = (this.type === TYPE_SPIDER || this.type === TYPE_MINI_SPIDER) && this.state === 'JUMP';
             const isJumperJumping = this.type === TYPE_JUMPER && this.state === 'JUMP';
             const isEnragedJumping = this.type === TYPE_ENRAGED && this.state === 'JUMP';
-            const isSlidingShell = this.type === TYPE_PATROL &&
+            const isSlidingShell =
+                this.type === TYPE_PATROL &&
                 this.emoji === '🐢' &&
-                this.turtleFlipped &&
-                !this.turtleRecovering &&
+                this.state === 'SHELL_SLIDE' &&
                 Math.abs(this.vx) > 1;
 
             if (isSlidingShell && game) {
                 this._resolveSlidingShellWorldCollisions(game, prevX, prevY);
             }
 
-            if (!isSpiderJumping && !isJumperJumping && !isEnragedJumping && !isSlidingShell) {
+            const isGroundedShell = isSlidingShell && this.vy === 0 && this.platform;
+
+            if (!isSpiderJumping && !isJumperJumping && !isEnragedJumping && (!isSlidingShell || isGroundedShell)) {
                 let platLeft = this.platform.x;
                 let platRight = this.platform.x + this.platform.width;
 
@@ -734,6 +751,7 @@ export class Enemy extends Entity {
         this.state = 'SHELL_SLIDE';
         this.vx = dir * 620;
         this.vy = 0;
+        this.platform = null;
         this.damageFlashTimer = 0.08;
         this.shellHitCooldownTimer = 0;
         if (game && game.audio) game.audio.playHit();
@@ -744,10 +762,10 @@ export class Enemy extends Entity {
     }
 
     tryDamageEnemiesAsSlidingShell(game) {
-        const isSlidingShell = this.type === TYPE_PATROL &&
+        const isSlidingShell =
+            this.type === TYPE_PATROL &&
             this.emoji === '🐢' &&
-            this.turtleFlipped &&
-            !this.turtleRecovering &&
+            this.state === 'SHELL_SLIDE' &&
             Math.abs(this.vx) > 1;
         if (!isSlidingShell || !game || !game.enemies || this.shellHitCooldownTimer > 0) return;
 
@@ -771,88 +789,33 @@ export class Enemy extends Entity {
             for (let i = 0; i < game.movingPlatforms.length; i++) allPlats.push(game.movingPlatforms[i]);
         }
 
+        let landedOnPlatform = false;
+        const prevBottom = prevY + this.height;
+
         for (let i = 0; i < allPlats.length; i++) {
             const p = allPlats[i];
-            if (!p || !Physics.checkAABB(this, p)) continue;
+            if (!p) continue;
 
-            const overlapX = Math.min(this.x + this.width, p.x + p.width) - Math.max(this.x, p.x);
-            const overlapY = Math.min(this.y + this.height, p.y + p.height) - Math.max(this.y, p.y);
-            if (overlapX <= 0 || overlapY <= 0) continue;
+            const isHorizOverPlatform = this.x + this.width > p.x && this.x < p.x + p.width;
+            if (!isHorizOverPlatform) continue;
 
-            const prevRight = prevX + this.width;
-            const prevLeft = prevX;
-            const prevTop = prevY;
-            const prevBottom = prevY + this.height;
-            const sideSkin = 6;
-            const verticalSkin = 1.25;
+            const platformTop = p.y;
+            const shellBottom = this.y + this.height;
 
-            const cameFromLeft = prevRight <= p.x + sideSkin;
-            const cameFromRight = prevLeft >= p.x + p.width - sideSkin;
-            // Keep top/bottom crossing strict to avoid side corner contacts being
-            // misread as "from above/below" and snapping shells back onto ledges.
-            const cameFromAbove = prevBottom <= p.y + verticalSkin;
-            const cameFromBelow = prevTop >= p.y + p.height - verticalSkin;
+            const wasAboveTop = prevBottom <= platformTop;
+            const nowBelowOrAtTop = shellBottom >= platformTop && shellBottom <= platformTop + 20;
 
-            // Shells are primarily horizontal movers; prefer side resolution unless
-            // we clearly crossed the top/bottom plane this frame.
-            const preferHorizontal = Math.abs(this.vx) >= Math.abs(this.vy);
-
-            if ((cameFromLeft || cameFromRight) && (overlapX <= overlapY + 2 || preferHorizontal)) {
-                if (cameFromLeft) {
-                    this.x = p.x - this.width - 0.01;
-                    this.vx = -Math.abs(this.vx);
-                    this.facingRight = false;
-                } else {
-                    this.x = p.x + p.width + 0.01;
-                    this.vx = Math.abs(this.vx);
-                    this.facingRight = true;
-                }
-                continue;
+            if (wasAboveTop && nowBelowOrAtTop && this.vy >= 0) {
+                this.y = platformTop - this.height;
+                this.vy = 0;
+                this.platform = p;
+                landedOnPlatform = true;
+                break;
             }
+        }
 
-            if ((cameFromAbove || cameFromBelow) && overlapY <= overlapX + 2) {
-                if (cameFromAbove && this.vy >= 0) {
-                    this.y = p.y - this.height;
-                    this.vy = 0;
-                    this.platform = p;
-                } else if (cameFromBelow && this.vy <= 0) {
-                    this.y = p.y + p.height + 0.01;
-                    if (this.vy < 0) this.vy = 0;
-                }
-                continue;
-            }
-
-            if (overlapX < overlapY || preferHorizontal) {
-                if (this.x + this.width / 2 < p.x + p.width / 2) {
-                    this.x = p.x - this.width - 0.01;
-                    this.vx = -Math.abs(this.vx);
-                    this.facingRight = false;
-                } else {
-                    this.x = p.x + p.width + 0.01;
-                    this.vx = Math.abs(this.vx);
-                    this.facingRight = true;
-                }
-            } else {
-                if (cameFromAbove && this.vy >= 0) {
-                    this.y = p.y - this.height;
-                    this.vy = 0;
-                    this.platform = p;
-                } else if (cameFromBelow && this.vy <= 0) {
-                    this.y = p.y + p.height + 0.01;
-                    if (this.vy < 0) this.vy = 0;
-                } else {
-                    // Ambiguous corner contact: resolve sideways to avoid popping up to platform tops.
-                    if (this.x + this.width / 2 < p.x + p.width / 2) {
-                        this.x = p.x - this.width - 0.01;
-                        this.vx = -Math.abs(this.vx);
-                        this.facingRight = false;
-                    } else {
-                        this.x = p.x + p.width + 0.01;
-                        this.vx = Math.abs(this.vx);
-                        this.facingRight = true;
-                    }
-                }
-            }
+        if (!landedOnPlatform) {
+            this.platform = null;
         }
     }
 
@@ -1000,7 +963,8 @@ export class Enemy extends Entity {
                     game.enemyProjectiles.push(laser);
                 }
 
-                this.attackCooldown = 0.45 + Math.random() * 1.55;
+                // Blowfish fires less frequently: random between 3 and 6 seconds
+                this.attackCooldown = 3 + Math.random() * 3;
                 this.stateTimer = 0.5;
             } else if (this.stateTimer > 0) {
                 this.stateTimer -= dt;
@@ -2151,17 +2115,17 @@ export class Boss extends Entity {
         if (!band) return false;
         const hitbox = player.getHitbox ? player.getHitbox() : player;
         const bossCenterX = this.x + this.width / 2;
-        
+
         let minX = this.platform.x + 12;
         let maxX = this.platform.x + this.platform.width - 12;
-        
+
         // Front-facing horizontal swarm restriction
         if (this.facingRight) {
             minX = bossCenterX;
         } else {
             maxX = bossCenterX;
         }
-        
+
         return (
             hitbox.x + hitbox.width > minX &&
             hitbox.x < maxX &&
@@ -5322,18 +5286,18 @@ export class Boss extends Entity {
 
             const pulse = 0.56 + Math.sin(this.timeAlive * 24) * 0.34;
             const band = this._getHoneybeeSwarmBand(this.honeybeeTelegraphType);
-            
+
             const gatherProgress = this.honeybeeGatherDuration > 0
                 ? Math.max(0, Math.min(1, 1 - this.honeybeeGatherTimer / this.honeybeeGatherDuration))
                 : 1;
             const deployProgress = this.honeybeeDeployDuration > 0
                 ? Math.max(0, Math.min(1, 1 - this.honeybeeDeployTimer / this.honeybeeDeployDuration))
                 : 0;
-            
+
             // Sphere center relative to boss
             const sphereCenterX = 0;
             const sphereCenterY = band.y + band.height / 2 - (this.y + this.height / 2);
-            
+
             // Sphere gathering effect
             const telegraphCount = lowVfx ? 12 : 24;
             const totalProgress = (gatherProgress + deployProgress) / 2;
@@ -5341,14 +5305,14 @@ export class Boss extends Entity {
             for (let i = 0; i < telegraphCount; i++) {
                 const spawnOffset = i / telegraphCount;
                 if (totalProgress < spawnOffset * 0.5) continue;
-                
+
                 let flightT = Math.min(1, (totalProgress - spawnOffset * 0.5) * 5);
                 const angle = this.timeAlive * (10 + i % 3) + i * 2.1;
                 const radius = 28 * (1 - deployProgress);
-                
+
                 let beeX = 0;
                 let beeY = 0;
-                
+
                 if (flightT < 1) {
                     beeX = sphereCenterX * flightT;
                     beeY = sphereCenterY * flightT;
@@ -5356,7 +5320,7 @@ export class Boss extends Entity {
                     beeX = sphereCenterX + Math.cos(angle) * radius * Math.random();
                     beeY = sphereCenterY + Math.sin(angle) * radius * Math.random();
                 }
-                
+
                 const beeAlpha = (0.4 + pulse * 0.4) * (flightT < 1 ? flightT : 1);
                 ctx.globalAlpha = alpha * beeAlpha;
                 ctx.drawImage(this._beeTellCache.canvas, beeX - this._beeTellCache.width / 2, beeY - this._beeTellCache.height / 2);
@@ -5384,10 +5348,10 @@ export class Boss extends Entity {
                 ? this._upArrowTellCache
                 : (this.honeybeeTelegraphType === 'mid' ? this._warnCache : this._downArrowTellCache);
             ctx.drawImage(arrow.canvas, -arrow.width / 2, -this.height / 2 - 56);
-            
+
             if (deployProgress > 0) {
-                 ctx.globalAlpha = alpha * deployProgress;
-                 ctx.drawImage(this._warnCache.canvas, sphereCenterX - this._warnCache.width / 2, sphereCenterY - 40);
+                ctx.globalAlpha = alpha * deployProgress;
+                ctx.drawImage(this._warnCache.canvas, sphereCenterX - this._warnCache.width / 2, sphereCenterY - 40);
             }
             ctx.globalAlpha = alpha;
         }
@@ -5396,30 +5360,30 @@ export class Boss extends Entity {
             if (!this._beeTellCache) this._beeTellCache = getEmojiCanvas(String.fromCodePoint(0x1F41D), 25);
             const band = this._getHoneybeeSwarmBand(this.honeybeeSwarmType);
             const pulse = 0.6 + Math.sin(this.timeAlive * 26) * 0.3;
-            
+
             const swarmElapsed = (this.honeybeeSwarmDuration || 0) - this.honeybeeSwarmActiveTimer;
             const introWindow = 0.15;
             const introProgress = Math.max(0, Math.min(1, swarmElapsed / introWindow));
             const outroWindow = 0.15;
             const outroProgress = Math.max(0, Math.min(1, this.honeybeeSwarmActiveTimer / outroWindow));
             const activeScale = introProgress * outroProgress;
-            
+
             const sphereCenterX = 0;
             const sphereCenterY = band.y + band.height / 2 - (this.y + this.height / 2);
-            
+
             const dir = -1; // Forward in local space
             const attackDistance = this.platform.width;
-            
+
             const currentDistance = attackDistance * introProgress;
             const frontX = sphereCenterX + dir * currentDistance;
-            
+
             const startX = Math.min(sphereCenterX, frontX);
             const endX = Math.max(sphereCenterX, frontX);
             const beamW = endX - startX;
-            
+
             const laneY = band.y - (this.y + this.height / 2);
             const laneH = band.height;
-            
+
             if (this.honeybeeSwarmType === 'low') {
                 ctx.fillStyle = `rgba(155, 225, 255, ${(0.2 + pulse * 0.16) * activeScale})`;
             } else if (this.honeybeeSwarmType === 'mid') {
@@ -5436,10 +5400,10 @@ export class Boss extends Entity {
                 const speed = 5 + (i % 3);
                 const timeOffset = (this.timeAlive * speed + i * 0.3) % 1.0;
                 if (timeOffset > introProgress) continue;
-                
+
                 const bx = sphereCenterX + dir * attackDistance * timeOffset;
                 const by = sphereCenterY + Math.sin(this.timeAlive * 20 + i) * (laneH * 0.4);
-                
+
                 const beeAlpha = (0.5 + pulse * 0.5) * activeScale;
                 ctx.globalAlpha = alpha * beeAlpha;
                 ctx.drawImage(this._beeTellCache.canvas, bx - this._beeTellCache.width / 2, by - this._beeTellCache.height / 2);
