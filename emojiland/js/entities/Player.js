@@ -58,7 +58,7 @@ export class Player extends Entity {
         this.letterPickupPopupDuration = 0.62;
         this.letterPickupPopupLetter = '';
         this.completionPopupTimer = 0;
-        this.completionPopupDuration = 2.1;
+        this.completionPopupDuration = 3.1;
         this.completionPopupTriggered = false;
         this.rotation = 0;
         this.isSpinning = false;

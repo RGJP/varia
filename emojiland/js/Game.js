@@ -258,6 +258,19 @@ export class Game {
                             return;
                         }
                     }
+
+                    const feedbackBtn = this._getStartMenuFeedbackButton();
+                    if (
+                        x >= feedbackBtn.x &&
+                        x <= feedbackBtn.x + feedbackBtn.width &&
+                        y >= feedbackBtn.y &&
+                        y <= feedbackBtn.y + feedbackBtn.height
+                    ) {
+                        if (e && e.cancelable) e.preventDefault();
+                        const subject = encodeURIComponent('Feedback about EmojiLand Game');
+                        window.location.href = `mailto:rakha6727@gmail.com?subject=${subject}`;
+                        return;
+                    }
                 }
             } else if (this.state === GameState.GAME_OVER) {
                 const scale = this._getMenuOverlayScale(GameState.GAME_OVER);
@@ -1455,6 +1468,16 @@ export class Game {
         };
     }
 
+    _getStartMenuFeedbackButton() {
+        const { cardY, cardHeight } = this._getStartMenuCardLayout();
+        const width = 160;
+        const height = 40;
+        const x = -width / 2;
+        // Position where the attribution line used to sit.
+        const y = cardY + cardHeight + 150;
+        return { x, y, width, height };
+    }
+
     _getStartMenuLayout() {
         if (this.state !== GameState.START_MENU) return null;
         const scale = this._getMenuOverlayScale(GameState.START_MENU);
@@ -1837,6 +1860,13 @@ export class Game {
             currentY += lineSpacing;
             const letters = ['E', 'M', 'O', 'J', 'I'];
             const collected = (this.player && this.player.collectedLetters) ? this.player.collectedLetters : {};
+
+            // Ensure the EMOJI tracker tiles render cleanly without any drop shadows.
+            this.ctx.shadowColor = 'transparent';
+            this.ctx.shadowBlur = 0;
+            this.ctx.shadowOffsetX = 0;
+            this.ctx.shadowOffsetY = 0;
+
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
             const tileSize = 16;
@@ -1868,7 +1898,7 @@ export class Game {
                 }
 
                 this.ctx.strokeStyle = '#8a5200';
-                this.ctx.lineWidth = 1.5;
+                this.ctx.lineWidth = 1;
                 if (this.ctx.roundRect) {
                     this.ctx.beginPath();
                     this.ctx.roundRect(tileX, tileY, tileSize, tileSize, tileRadius);
@@ -2061,7 +2091,7 @@ export class Game {
             let ry = cardY + 74;
             this.ctx.fillText('🪙 Reach 100% level completion', 40, ry); ry += yStep;
             this.ctx.fillText('☠️ Defeat All Enemies', 40, ry); ry += yStep;
-            this.ctx.fillText('⚜️ Save the Prisoner', 40, ry); ry += yStep;
+            this.ctx.fillText('⛑️ Save the Prisoner', 40, ry); ry += yStep;
             this.ctx.fillText('🚩 Reach the end with the best score', 40, ry); ry += yStep;
             this.ctx.fillText('🎰 Experiment, Explore, Enjoy', 40, ry); ry += yStep;
             this.ctx.fillText('🎲 Levels are always unique!', 40, ry);
@@ -2101,11 +2131,25 @@ export class Game {
                 this.ctx.fillText('SELECT DIFFICULTY TO START', 0, cardY + cardHeight + 108);
             }
 
-            // Subtle Music Attribution
+            // Feedback button
+            const feedbackBtn = this._getStartMenuFeedbackButton();
             this.ctx.shadowBlur = 0;
-            this.ctx.font = '14px "Outfit", sans-serif';
-            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('🎵 Music from Pixabay & Suno • Game Version 1.43', 0, cardY + cardHeight + 152);
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.font = '16px "Outfit", sans-serif';
+            this.ctx.beginPath();
+            if (this.ctx.roundRect) {
+                this.ctx.roundRect(feedbackBtn.x, feedbackBtn.y, feedbackBtn.width, feedbackBtn.height, 14);
+            } else {
+                this.ctx.rect(feedbackBtn.x, feedbackBtn.y, feedbackBtn.width, feedbackBtn.height);
+            }
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+            this.ctx.fill();
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+            this.ctx.lineWidth = 1.5;
+            this.ctx.stroke();
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillText('✍️ Feedback', feedbackBtn.x + feedbackBtn.width / 2, feedbackBtn.y + feedbackBtn.height / 2 + 1);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';

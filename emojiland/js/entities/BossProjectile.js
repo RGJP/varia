@@ -78,8 +78,8 @@ export class BossProjectile extends Entity {
             case 'coconut':
                 this.emoji = String.fromCodePoint(0x1F965);
                 this.maxBounces = 0;
-                this.canBounceOnPlatforms = false;
-                this.projectileLifetime = 2.8;
+                // Let coconuts land on top surfaces and roll off edges, similar to beetle scarabs.
+                this.canBounceOnPlatforms = true;
                 break;
             case 'egg':
                 this.emoji = String.fromCodePoint(0x1F95A);
@@ -228,8 +228,8 @@ export class BossProjectile extends Entity {
             const crossedTop = this.vy >= 0 && overlapsX && prevBottom <= p.y && currBottom >= p.y;
             if (!aabbHit && !crossedTop) continue;
 
-            if (this.projectileType === 'scarab' && crossedTop) {
-                // Beetle scarabs should keep rolling on top surfaces until they fall off.
+            if ((this.projectileType === 'scarab' || this.projectileType === 'coconut') && crossedTop) {
+                // Beetle scarabs and monkey coconuts should keep rolling on top surfaces until they fall off.
                 this.y = p.y - this.height;
                 this.vy = 0;
                 if (Math.abs(this.vx) < 110) this.vx = this.vx >= 0 ? 110 : -110;
