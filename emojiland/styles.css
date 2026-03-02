@@ -178,11 +178,9 @@ canvas {
 #btn-portal {
     position: absolute;
     bottom: 66px;
-    right: -56px;
+    right: -16px;
     margin: 0;
-    width: 58px;
-    height: 58px;
-    font-size: 28px;
+    font-size: 24px;
 }
 
 @media (pointer: coarse) and (orientation: landscape) {
@@ -241,10 +239,8 @@ canvas {
 
     #btn-portal {
         bottom: 78px;
-        right: -56px;
-        width: 64px;
-        height: 64px;
-        font-size: 32px;
+        right: -16px;
+        font-size: 26px;
     }
 
     .ui-btn,

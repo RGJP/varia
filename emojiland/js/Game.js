@@ -2061,6 +2061,7 @@ export class Game {
             let ry = cardY + 74;
             this.ctx.fillText('🪙 Reach 100% level completion', 40, ry); ry += yStep;
             this.ctx.fillText('☠️ Defeat All Enemies', 40, ry); ry += yStep;
+            this.ctx.fillText('⚜️ Save the Prisoner', 40, ry); ry += yStep;
             this.ctx.fillText('🚩 Reach the end with the best score', 40, ry); ry += yStep;
             this.ctx.fillText('🎰 Experiment, Explore, Enjoy', 40, ry); ry += yStep;
             this.ctx.fillText('🎲 Levels are always unique!', 40, ry);
@@ -2104,7 +2105,7 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.font = '14px "Outfit", sans-serif';
             this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-            this.ctx.fillText('🎵 Music from Pixabay & Suno • Game Version 1.42', 0, cardY + cardHeight + 152);
+            this.ctx.fillText('🎵 Music from Pixabay & Suno • Game Version 1.43', 0, cardY + cardHeight + 152);
 
         } else if (this.state === GameState.GAME_OVER) {
             this.ctx.textAlign = 'center';
