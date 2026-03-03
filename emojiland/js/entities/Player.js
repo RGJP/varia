@@ -1701,6 +1701,24 @@ export class Player extends Entity {
             ctx.restore();
         }
 
+        if (!game?.gameOverTriggered && this.health === 1) {
+            if (!this._lowHealthWarningEmoji) {
+                this._lowHealthWarningEmoji = getEmojiCanvas('⚠️', 34);
+            }
+            const warning = this._lowHealthWarningEmoji;
+            const bob = Math.sin(this.pulseTimer * 7.5) * 3;
+            const pulse = 0.9 + (Math.sin(this.pulseTimer * 12) + 1) * 0.09;
+
+            ctx.save();
+            if (shouldMirrorForFacing) ctx.scale(-1, 1);
+            if (this.rotation !== 0) ctx.rotate(-this.rotation);
+            ctx.globalAlpha = 0.86 + (Math.sin(this.pulseTimer * 15) + 1) * 0.07;
+            ctx.translate(0, -this.height / 2 - 72 + bob);
+            ctx.scale(pulse, pulse);
+            ctx.drawImage(warning.canvas, -warning.width / 2, -warning.height / 2);
+            ctx.restore();
+        }
+
         if (!game?.gameOverTriggered && this.letterPickupPopupTimer > 0 && this.letterPickupPopupLetter) {
             const t = this.letterPickupPopupTimer / this.letterPickupPopupDuration;
             const rise = (1 - t) * 22;
