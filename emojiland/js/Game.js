@@ -502,7 +502,7 @@ export class Game {
             }
             return;
         }
-        const prisonerEmojis = ['🐇', '🧝‍♀️', '🧚‍♀️', '🧸', '🐈', '🐈', '🐈', '🐅', '🐩', '🐕', '🐀', '🐆', '🦌', '🐄', '🦜'];
+        const prisonerEmojis = ['🐇', '🧝‍♀️', '🧚‍♀️', '🧸', '🐈', '🐈', '🐈', '🐅', '🐩', '🐕', '🐀', '🐆', '🦌', '🐄', '🦜','🐑'];
         const emoji = prisonerEmojis[Math.floor(Math.random() * prisonerEmojis.length)];
         const cageSize = 94;
         const prisonerSize = 62;
@@ -1470,8 +1470,8 @@ export class Game {
 
     _getStartMenuFeedbackButton() {
         const { cardY, cardHeight } = this._getStartMenuCardLayout();
-        const width = 160;
-        const height = 40;
+        const width = 110;
+        const height = 28;
         const x = -width / 2;
         // Position where the attribution line used to sit.
         const y = cardY + cardHeight + 150;
@@ -2136,10 +2136,10 @@ export class Game {
             this.ctx.shadowBlur = 0;
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
-            this.ctx.font = '16px "Outfit", sans-serif';
+            this.ctx.font = '12px "Outfit", sans-serif';
             this.ctx.beginPath();
             if (this.ctx.roundRect) {
-                this.ctx.roundRect(feedbackBtn.x, feedbackBtn.y, feedbackBtn.width, feedbackBtn.height, 14);
+                this.ctx.roundRect(feedbackBtn.x, feedbackBtn.y, feedbackBtn.width, feedbackBtn.height, 8);
             } else {
                 this.ctx.rect(feedbackBtn.x, feedbackBtn.y, feedbackBtn.width, feedbackBtn.height);
             }

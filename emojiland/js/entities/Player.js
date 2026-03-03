@@ -24,6 +24,13 @@ export class Player extends Entity {
         this.knockbackTimer = 0;
         this.stunTimer = 0;
         this.slowTimer = 0;
+        this.tornadoTrapTimer = 0; // RHINO tornado capture state
+        this.tornadoTrapDuration = 0;
+        this.tornadoTrapAnchorX = 0;
+        this.tornadoTrapAnchorY = 0;
+        this.tornadoTrapWidth = 0;
+        this.tornadoTrapHeight = 0;
+        this.tornadoTrapPhase = 0;
 
         this.attackTimer = 0;
         this.isAttacking = false;
@@ -152,6 +159,49 @@ export class Player extends Entity {
         }
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
+        }
+        if (this.tornadoTrapTimer > 0) {
+            this.tornadoTrapTimer = Math.max(0, this.tornadoTrapTimer - dt);
+            const duration = Math.max(0.001, this.tornadoTrapDuration || 0.2);
+            const progress = Math.max(0, Math.min(1, 1 - this.tornadoTrapTimer / duration));
+            this.tornadoTrapPhase += dt * (34 + progress * 28);
+
+            const centerX = this.tornadoTrapAnchorX || (this.x + this.width / 2);
+            const centerY = this.tornadoTrapAnchorY || (this.y + this.height / 2);
+            const trapW = this.tornadoTrapWidth || 116;
+            const trapH = this.tornadoTrapHeight || 116;
+            const radiusX = Math.max(16, Math.min(trapW * 0.36, 54));
+            const radiusY = Math.max(8, Math.min(trapH * 0.18, 24));
+            const shakeX = (Math.random() - 0.5) * (6 + progress * 8);
+            const shakeY = (Math.random() - 0.5) * (5 + progress * 7);
+
+            this.x = centerX - this.width / 2 + Math.sin(this.tornadoTrapPhase * 2.2) * radiusX + shakeX;
+            this.y = centerY - this.height / 2 + Math.cos(this.tornadoTrapPhase * 1.7) * radiusY + shakeY;
+            this._updateHitbox();
+
+            const spinDir = Math.sin(this.tornadoTrapPhase * 1.35) >= 0 ? 1 : -1;
+            this.rotation += spinDir * dt * (15 + progress * 18);
+            this.vx = 0;
+            this.vy = 0;
+            this.grounded = false;
+            this.isClimbing = false;
+            this.currentVine = null;
+            this.isSpinning = false;
+
+            if (this.tornadoTrapTimer <= 0) {
+                this.vy = -900; // High launch after the trap shake (reduced a bit)
+                this.vx = (Math.random() < 0.5 ? -1 : 1) * (90 + Math.random() * 70);
+                this.rotation = 0;
+                this.isJumping = true;
+                this.forceFullJump = true;
+                this.isSpinning = true;
+                this.spinDirection = this.vx >= 0 ? 1 : -1;
+                this.spinBaseRotation = this.rotation;
+                this.jumpBufferTimer = 0;
+                this.coyoteTimer = 0;
+                this.airJumps = 1;
+                this.walkOffAirJumpBonusAvailable = false;
+            }
         }
         if (this.portalSpawnCooldown > 0) {
             this.portalSpawnCooldown = Math.max(0, this.portalSpawnCooldown - dt);
@@ -383,7 +433,7 @@ export class Player extends Entity {
 
         // Input
         // Drop Bomb
-        if (!this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0 && input.isJustPressed('KeyS')) {
+        if (!this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0 && this.tornadoTrapTimer <= 0 && input.isJustPressed('KeyS')) {
             if (this.bombs > 0) {
                 this.bombs--;
                 const bombX = this.x + this.width / 2 - 12; // Center bomb
@@ -393,12 +443,12 @@ export class Player extends Entity {
                 if (game.audio) game.audio.playThrow();
             }
         }
-        if (!this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0 && input.isJustPressed('KeyW')) {
+        if (!this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0 && this.tornadoTrapTimer <= 0 && input.isJustPressed('KeyW')) {
             this._spawnPortals(game);
         }
 
         // Attack charge and release
-        const canChargeAttack = !this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0;
+        const canChargeAttack = !this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0 && this.tornadoTrapTimer <= 0;
         if (!canChargeAttack) {
             this.attackChargeTimer = 0;
             this.isChargingAttack = false;
@@ -589,6 +639,13 @@ export class Player extends Entity {
                 this.vx += Physics.FRICTION * dt;
                 if (this.vx > 0) this.vx = 0;
             }
+        } else if (this.tornadoTrapTimer > 0) {
+            // Tornado capture hard-locks movement while spinning.
+            this.grounded = false;
+            this.isClimbing = false;
+            this.currentVine = null;
+            this.vx = 0;
+            this.vy = 0;
         } else if (this.stunTimer > 0) {
             if (this.grounded) {
                 this.vx = 0;
@@ -608,7 +665,7 @@ export class Player extends Entity {
         }
 
         // Jump
-        if (!isPortalTraveling && !this.inSafeBubble && !isFlying && !game.gameOverTriggered && this.stunTimer <= 0 && this.jumpBufferTimer > 0 && !this.isClimbing) {
+        if (!isPortalTraveling && !this.inSafeBubble && !isFlying && !game.gameOverTriggered && this.stunTimer <= 0 && this.tornadoTrapTimer <= 0 && this.jumpBufferTimer > 0 && !this.isClimbing) {
             if (this.coyoteTimer > 0) {
                 this.vy = this.jumpForce;
                 this.grounded = false;
@@ -652,7 +709,9 @@ export class Player extends Entity {
             this.isJumping = false;
         }
 
-        if (!isFlying && !this.grounded && !this.isClimbing && this.isSpinning) {
+        if (this.tornadoTrapTimer > 0) {
+            // Keep custom tornado spin pose set above.
+        } else if (!isFlying && !this.grounded && !this.isClimbing && this.isSpinning) {
             const spinSpeed = Math.PI * 4;
             const increment = spinSpeed * dt;
             const currentDir = this.spinDirection || (this.facingRight ? 1 : -1);
@@ -670,6 +729,12 @@ export class Player extends Entity {
             this.grounded = false;
             this.x += this.vx * dt;
             this.y += this.vy * dt;
+        } else if (this.tornadoTrapTimer > 0) {
+            this.grounded = false;
+            this.isClimbing = false;
+            this.currentVine = null;
+            this.vx = 0;
+            this.vy = 0;
         } else if (this.isClimbing) {
             this.grounded = false;
             this.vy = 0;
@@ -1412,6 +1477,25 @@ export class Player extends Entity {
             game.audio.playHurt();
             game.particles.emitExplosion(this.x + this.width / 2, this.y + this.height / 2, 'red');
         }
+    }
+
+    beginTornadoTrap(centerX, centerY, trapWidth = 116, trapHeight = 116) {
+        this.tornadoTrapDuration = 0.2;
+        this.tornadoTrapTimer = this.tornadoTrapDuration;
+        this.tornadoTrapAnchorX = centerX;
+        this.tornadoTrapAnchorY = centerY;
+        this.tornadoTrapWidth = trapWidth;
+        this.tornadoTrapHeight = trapHeight;
+        this.tornadoTrapPhase = Math.random() * Math.PI * 2;
+        this.grounded = false;
+        this.isClimbing = false;
+        this.currentVine = null;
+        this.vx = 0;
+        this.vy = 0;
+        this.isJumping = false;
+        this.forceFullJump = false;
+        this.isSpinning = false;
+        this.invulnerableTimer = Math.max(this.invulnerableTimer, this.tornadoTrapDuration + 0.18);
     }
 
     draw(ctx, game) {

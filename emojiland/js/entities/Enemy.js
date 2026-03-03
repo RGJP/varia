@@ -12,7 +12,7 @@ import { triggerBombExplosionAt } from './Bomb.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 import { BossProjectile } from './BossProjectile.js';
 
-const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_tengu', 'boss_spider', 'boss_dragon', 'boss_manliftingweights', 'boss_lobster', 'boss_kangaroo', 'boss_monkey', 'boss_mammoth', 'boss_trex', 'boss_mosquito', 'boss_beetle', 'boss_juggler', 'boss_honeybee'];
+const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_tengu', 'boss_spider', 'boss_dragon', 'boss_manliftingweights', 'boss_lobster', 'boss_kangaroo', 'boss_monkey', 'boss_mammoth', 'boss_trex', 'boss_mosquito', 'boss_beetle', 'boss_juggler', 'boss_honeybee', 'boss_rhino', 'boss_camel', 'boss_skunk'];
 
 const TYPE_PATROL = 'patrol';
 const TYPE_CHASER = 'chaser'; // 👹
@@ -1655,7 +1655,9 @@ export class Boss extends Entity {
     constructor(x, y, platform, bossType) {
         const normalizedBossType = bossType === 'boss_hedgehog'
             ? 'boss_tengu'
-            : (bossType === 'boss_robot' ? 'boss_manliftingweights' : bossType);
+            : (bossType === 'boss_robot'
+                ? 'boss_manliftingweights'
+                : bossType);
         const resolvedBossType = normalizedBossType || BOSS_TYPES[Math.floor(Math.random() * BOSS_TYPES.length)];
         const bossSizes = {
             boss_spider: 122,
@@ -1669,7 +1671,10 @@ export class Boss extends Entity {
             boss_mosquito: 144,
             boss_beetle: 158,
             boss_juggler: 154,
-            boss_honeybee: 150
+            boss_honeybee: 150,
+            boss_rhino: 164,
+            boss_camel: 142,
+            boss_skunk: 122
         };
         const size = bossSizes[resolvedBossType] || 160;
         super(x, y - size, size, size);
@@ -1938,6 +1943,72 @@ export class Boss extends Entity {
         this.honeybeeSwarmType = 'high'; // 'high' | 'mid' | 'low'
         this.honeybeeSwarmHitTimer = 0;
 
+        // Skunk (boss_skunk): stench duelist with telegraphed smoke zoning, lane carpets, and trail dashes.
+        this.skunkState = 'PATROL'; // 'PATROL' | 'TELEGRAPH' | 'LOB' | 'CARPET' | 'DASH'
+        this.skunkPatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.skunkStridePhase = Math.random() * Math.PI * 2;
+        this.skunkTelegraphTimer = 0;
+        this.skunkTelegraphType = 'lob'; // 'lob' | 'carpet' | 'dash'
+        this.skunkActionShots = 0;
+        this.skunkActionTotalShots = 0;
+        this.skunkActionTimer = 0;
+        this.skunkDashTimer = 0;
+        this.skunkDashDir = 1;
+        this.skunkDashFxTimer = 0;
+        this.skunkDashDropTimer = 0;
+        this.skunkPreviewTargets = [];
+        this.skunkPreviewSafeTarget = null;
+
+        // Camel (boss_camel): desert illusionist with pyramid throws, mirage dashes, and clone wards.
+        this.camelState = 'PATROL'; // 'PATROL' | 'PYRAMID_CAST' | 'MIRAGE_DASH' | 'CLONE_RITUAL'
+        this.camelPatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.camelTelegraphTimer = 0;
+        this.camelTelegraphType = 'pyramid'; // 'pyramid' | 'dash' | 'clone' | 'spike'
+        this.camelSpikeTelegraphX = this.x + this.width * 0.5;
+        this.camelPyramidShots = 0;
+        this.camelPyramidTotalShots = 0;
+        this.camelPyramidTimer = 0;
+        this.camelDashTimer = 0;
+        this.camelDashDir = 1;
+        this.camelDashFxTimer = 0;
+        this.camelDashShotTimer = 0;
+        this.camelCloneRitualTimer = 0;
+        this.camelCloneCooldown = 1.8 + Math.random() * 0.8;
+        this.camelCloneHealth = 0;
+        this.camelCloneMaxHealth = 0;
+        this.camelCloneOrbitPhase = Math.random() * Math.PI * 2;
+        this.camelCloneHitFlash = 0;
+        this.camelCloneHitCooldown = 0;
+
+        // Rhino (boss_rhino): lane pressure with charge feints, tornado tosses, and jumping arcs.
+        this.rhinoState = 'IDLE'; // 'IDLE' | 'MOVE_TO_END' | 'TELEGRAPH_CHARGE' | 'CHARGE' | 'TURN' | 'TORNADO_TELEGRAPH' | 'TORNADO_THROW' | 'JUMP_TELEGRAPH' | 'JUMP_START' | 'JUMP_AIR' | 'JUMP_PAUSE'
+        this.rhinoNextAttack = null; // 'CHARGE' | 'TORNADO' | 'JUMPS'
+        this.rhinoLastAttack = null;
+        this.rhinoPatrolDir = Math.random() > 0.5 ? 1 : -1;
+        this.rhinoTelegraphTimer = 0;
+        this.rhinoTelegraphDuration = 0;
+        this.rhinoTornadoTelegraphTimer = 0;
+        this.rhinoJumpTelegraphTimer = 0;
+        this.rhinoChargeDir = -1;
+        this.rhinoChargeTargetX = this.x;
+        this.rhinoChargeTelegraphX = this.x;
+        this.rhinoChargeFxTimer = 0;
+        this.rhinoChargeLeg = 0; // 0 = outbound, 1 = return
+        this.rhinoGallopPhase = Math.random() * Math.PI * 2;
+        this.rhinoMoveSpeed = 0;
+        this.rhinoTurnTimer = 0;
+        this.rhinoTornadoEnd = 1; // 0 = left end, 1 = right end
+        this.rhinoTornadoShots = 0;
+        this.rhinoTornadoTotalShots = 0;
+        this.rhinoTornadoTimer = 0;
+        this.rhinoTornadoDir = 1;
+        this.rhinoTornadoShotSpeed = 420;
+        this.rhinoMoveToEndTarget = 1; // 0 = left, 1 = right
+        this.rhinoJumpDir = 1;
+        this.rhinoJumpsRemaining = 0;
+        this.rhinoJumpTotal = 0;
+        this.rhinoJumpPauseTimer = 0;
+
         switch (this.bossType) {
             case 'boss_chick': this.emoji = String.fromCodePoint(0x1F423); break;
             case 'boss_moai': this.emoji = String.fromCodePoint(0x1F5FF); break;
@@ -1954,6 +2025,9 @@ export class Boss extends Entity {
             case 'boss_beetle': this.emoji = String.fromCodePoint(0x1FAB2); break;
             case 'boss_juggler': this.emoji = String.fromCodePoint(0x1F939); break;
             case 'boss_honeybee': this.emoji = String.fromCodePoint(0x1F41D); break;
+            case 'boss_rhino': this.emoji = String.fromCodePoint(0x1F98F); break;
+            case 'boss_camel': this.emoji = String.fromCodePoint(0x1F42B); break;
+            case 'boss_skunk': this.emoji = String.fromCodePoint(0x1F9A8); break;
             default: this.emoji = String.fromCodePoint(0x1F5FF); break;
         }
         if (this.bossType === 'boss_lobster') {
@@ -2037,6 +2111,33 @@ export class Boss extends Entity {
                 'SWARM SOVEREIGN'
             ];
             this.displayName = honeybeeNames[Math.floor(Math.random() * honeybeeNames.length)];
+        } else if (this.bossType === 'boss_rhino') {
+            const rhinoNames = [
+                'THUNDER HORN',
+                'DUSTSTAMP TYRANT',
+                'RAMPAGE RHINO',
+                'THE STORM TUSKER',
+                'IRON HOOF SIEGER'
+            ];
+            this.displayName = rhinoNames[Math.floor(Math.random() * rhinoNames.length)];
+        } else if (this.bossType === 'boss_camel') {
+            const camelNames = [
+                'DUNE MIRAGE',
+                'SAND SOVEREIGN',
+                'PHARAOH OF DUST',
+                'THE TWIN HUMP ORACLE',
+                'PYRAMID TRICKSTER'
+            ];
+            this.displayName = camelNames[Math.floor(Math.random() * camelNames.length)];
+        } else if (this.bossType === 'boss_skunk') {
+            const skunkNames = [
+                'NOXIOUS DON',
+                'SMOKESTACK SKUNK',
+                'BLACK FOG BARON',
+                'CIGAR CALAMITY',
+                'STENCH SUPREME'
+            ];
+            this.displayName = skunkNames[Math.floor(Math.random() * skunkNames.length)];
         }
 
         this._cachedEmoji = getEmojiCanvas(this.emoji, size);
@@ -2145,6 +2246,39 @@ export class Boss extends Entity {
     }
 
     takeDamage(amount, game) {
+        if (this.bossType === 'boss_camel' && this.camelCloneHealth > 0) {
+            if (this.camelCloneHitCooldown > 0) {
+                this.camelCloneHitFlash = Math.max(this.camelCloneHitFlash, 0.08);
+                return;
+            }
+
+            const cloneDamage = Math.max(1, Math.min(2, Math.ceil(amount)));
+            this.camelCloneHealth -= cloneDamage;
+            this.camelCloneHitCooldown = 0.22;
+            this.camelCloneHitFlash = 0.24;
+
+            const cloneOrbit = this.camelCloneOrbitPhase || 0;
+            const cloneWorldX = this.x + this.width / 2 + Math.cos(cloneOrbit) * (56 + this.phase * 6);
+            const cloneWorldY = this.y + this.height / 2 - 30 + Math.sin(cloneOrbit * 1.75) * (15 + this.phase * 2);
+
+            if (game && game.particles) {
+                game.particles.emitHit(cloneWorldX, cloneWorldY);
+            }
+            if (game && game.audio) {
+                game.audio.playHit();
+            }
+
+            if (this.camelCloneHealth <= 0) {
+                this.camelCloneHealth = 0;
+                this.camelCloneCooldown = (this.phase >= 3 ? 3.25 : 3.85) + Math.random() * 0.85;
+                this.attackCooldown = Math.max(this.attackCooldown, 0.22);
+                if (game && game.particles) {
+                    this._emitBossFx(game, cloneWorldX, cloneWorldY, 16, '#d8f4ff', [55, 170], [0.14, 0.3], [1.4, 3.4]);
+                }
+            }
+            return;
+        }
+
         this.health -= amount;
         this.damageFlashTimer = 0.15;
         this._updatePhase();
@@ -3935,6 +4069,1035 @@ export class Boss extends Entity {
         }
     }
 
+    _throwSkunkCigarette(game, targetX, options = {}) {
+        if (!game || !this.platform || !Array.isArray(game.enemyProjectiles)) return;
+
+        const left = this.platform.x + 20;
+        const right = this.platform.x + this.platform.width - 20;
+        const centerX = this.x + this.width / 2;
+        const clampedTargetX = Math.max(left, Math.min(right, targetX));
+        const throwDir = clampedTargetX >= centerX ? 1 : -1;
+        const spawnX = centerX + throwDir * this.width * 0.26;
+        const spawnY = this.y + this.height * 0.3;
+
+        const dx = clampedTargetX - spawnX;
+        const dist = Math.max(70, Math.abs(dx));
+        const baseFlight = options.flightTime || (0.58 + Math.min(0.62, dist / 540));
+        const flight = Math.max(0.48, Math.min(1.4, baseFlight + (Math.random() - 0.5) * 0.06));
+        const targetY = this.platform.y - (options.targetYOffset || 8);
+        let vy = (targetY - spawnY - 0.5 * Physics.GRAVITY * flight * flight) / flight;
+        const arcLift = options.arcLift != null ? options.arcLift : (145 + this.phase * 22);
+        vy -= arcLift;
+        vy = Math.max(-980, Math.min(-260, vy));
+        const vx = dx / flight;
+
+        const shot = new BossProjectile(spawnX, spawnY, vx, vy, 'cigarette');
+        shot.smokeBurstCount = Math.max(1, Math.min(3, Math.round(options.burstCount || 1)));
+        shot.smokeSpread = options.spread || (this.phase >= 3 ? 82 : 74);
+        shot.smokeMaxRadius = Math.max(84, options.smokeRadius || (this.phase >= 3 ? 190 : (this.phase >= 2 ? 172 : 154)));
+        shot.smokeDuration = Math.max(1.2, options.smokeDuration || (this.phase >= 3 ? 4.0 : (this.phase >= 2 ? 3.5 : 3.0)));
+        shot.smokeWarmup = Math.max(0, options.smokeWarmup != null ? options.smokeWarmup : 0.2);
+        shot.smokeTick = Math.max(0.28, options.smokeTick || (this.phase >= 3 ? 0.42 : 0.46));
+        shot.maxSmokeClouds = Math.max(3, options.maxClouds || (this.phase >= 3 ? 6 : 5));
+        if (options.projectileLifetime) shot.projectileLifetime = options.projectileLifetime;
+        game.enemyProjectiles.push(shot);
+
+        this.facingRight = vx >= 0;
+    }
+
+    _spawnSkunkTrailSmoke(game, centerX, groundY, radiusScale = 0.72) {
+        if (!game || !Array.isArray(game.enemyProjectiles)) return;
+        const radius = (this.phase >= 3 ? 132 : (this.phase >= 2 ? 118 : 104)) * Math.max(0.45, radiusScale);
+        const size = Math.max(56, Math.round(radius * 0.58));
+        const cloud = new BossProjectile(centerX - size / 2, groundY - size * 0.9, 0, 0, 'smoke_cloud');
+        cloud.smokeCenterX = centerX;
+        cloud.smokeGroundY = groundY;
+        cloud.smokeStartRadius = Math.max(20, radius * 0.24);
+        cloud.smokeMaxRadius = radius;
+        cloud.smokeRadius = cloud.smokeStartRadius;
+        cloud.smokeDuration = 1.4 + this.phase * 0.2;
+        cloud.smokeGrowTime = 0.32;
+        cloud.smokeWarmupTimer = 0.12;
+        cloud.smokeTick = 0.55;
+        cloud.smokeAge = 0;
+        cloud.smokeHitTimer = 0;
+        cloud.maxSmokeClouds = this.phase >= 3 ? 6 : 5;
+
+        const existingClouds = [];
+        for (let i = 0; i < game.enemyProjectiles.length; i++) {
+            const p = game.enemyProjectiles[i];
+            if (!p || p.markedForDeletion || p.projectileType !== 'smoke_cloud') continue;
+            existingClouds.push(p);
+        }
+        if (existingClouds.length >= cloud.maxSmokeClouds) {
+            existingClouds.sort((a, b) => (b.smokeAge || 0) - (a.smokeAge || 0));
+            const removeCount = existingClouds.length - cloud.maxSmokeClouds + 1;
+            for (let i = 0; i < removeCount; i++) {
+                existingClouds[i].markedForDeletion = true;
+            }
+        }
+
+        game.enemyProjectiles.push(cloud);
+    }
+
+    _startSkunkTelegraph(type, player, left, right) {
+        this.skunkState = 'TELEGRAPH';
+        this.skunkTelegraphType = type;
+        this.skunkActionShots = 0;
+        this.skunkActionTotalShots = 0;
+        this.skunkActionTimer = 0;
+        this.skunkDashTimer = 0;
+        this.skunkDashFxTimer = 0;
+        this.skunkDashDropTimer = 0;
+        this.skunkPreviewTargets.length = 0;
+        this.skunkPreviewSafeTarget = null;
+
+        const centerX = this.x + this.width / 2;
+        const playerCenterX = player ? (player.x + player.width / 2) : centerX;
+        if (type === 'dash') {
+            this.skunkTelegraphTimer = this.phase >= 3 ? 0.24 : (this.phase >= 2 ? 0.3 : 0.36);
+            const dir = player ? (Math.sign(playerCenterX - centerX) || this.skunkPatrolDir) : this.skunkPatrolDir;
+            const endX = dir > 0 ? (right - this.width * 0.18) : (left + this.width * 0.18);
+            this.skunkPreviewTargets.push(endX + this.width / 2);
+        } else if (type === 'carpet') {
+            this.skunkTelegraphTimer = this.phase >= 3 ? 0.34 : (this.phase >= 2 ? 0.44 : 0.52);
+            const lanes = this.phase >= 3 ? 5 : 4;
+            const laneLeft = this.platform.x + 90;
+            const laneRight = this.platform.x + this.platform.width - 90;
+            const laneTargets = [];
+            for (let i = 0; i < lanes; i++) {
+                const t = lanes <= 1 ? 0.5 : (i / (lanes - 1));
+                laneTargets.push(laneLeft + (laneRight - laneLeft) * t);
+            }
+            let safeIdx = 0;
+            let bestSafeDist = Infinity;
+            for (let i = 0; i < laneTargets.length; i++) {
+                const d = Math.abs(laneTargets[i] - playerCenterX);
+                if (d < bestSafeDist) {
+                    bestSafeDist = d;
+                    safeIdx = i;
+                }
+            }
+            this.skunkPreviewSafeTarget = laneTargets[safeIdx];
+            for (let i = 0; i < laneTargets.length; i++) {
+                if (i === safeIdx) continue;
+                this.skunkPreviewTargets.push(laneTargets[i]);
+            }
+        } else {
+            this.skunkTelegraphTimer = this.phase >= 3 ? 0.28 : (this.phase >= 2 ? 0.36 : 0.44);
+            const lead = player ? ((player.vx || 0) * (0.16 + this.phase * 0.03)) : 0;
+            const targetX = playerCenterX + lead + (Math.random() > 0.5 ? 1 : -1) * (26 + Math.random() * 34);
+            this.skunkPreviewTargets.push(Math.max(this.platform.x + 44, Math.min(this.platform.x + this.platform.width - 44, targetX)));
+        }
+    }
+
+    _updateSkunkBoss(dt, game, player) {
+        const left = this.platform.x + 8;
+        const right = this.platform.x + this.platform.width - this.width - 8;
+        const groundY = this.platform.y - this.height;
+        const centerX = this.x + this.width / 2;
+        const playerCenterX = player ? (player.x + player.width / 2) : centerX;
+
+        this.x = Math.max(left, Math.min(right, this.x));
+
+        if (this.skunkTelegraphTimer > 0) {
+            this.skunkTelegraphTimer -= dt;
+            this.vx = 0;
+            this.y = groundY + Math.sin(this.timeAlive * 20) * 1.2;
+            if (player) this.facingRight = playerCenterX >= centerX;
+            if (this.skunkTelegraphTimer <= 0) {
+                if (this.skunkTelegraphType === 'dash') {
+                    this.skunkState = 'DASH';
+                    this.skunkDashDir = player ? (Math.sign(playerCenterX - centerX) || this.skunkPatrolDir) : this.skunkPatrolDir;
+                    this.skunkDashTimer = this.phase >= 3 ? 0.8 : (this.phase >= 2 ? 0.68 : 0.56);
+                    this.skunkDashFxTimer = 0;
+                    this.skunkDashDropTimer = 0;
+                } else if (this.skunkTelegraphType === 'carpet') {
+                    this.skunkState = 'CARPET';
+                    this.skunkActionShots = this.phase >= 3 ? 2 : 1;
+                    this.skunkActionTotalShots = this.skunkActionShots;
+                    this.skunkActionTimer = 0;
+                } else {
+                    this.skunkState = 'LOB';
+                    this.skunkActionShots = this.phase >= 3 ? 3 : (this.phase >= 2 ? 2 : 1);
+                    this.skunkActionTotalShots = this.skunkActionShots;
+                    this.skunkActionTimer = 0;
+                }
+            }
+            return;
+        }
+
+        if (this.skunkState === 'LOB') {
+            this.vx = 0;
+            this.y = groundY;
+            this.skunkActionTimer -= dt;
+
+            if (this.skunkActionTimer <= 0 && this.skunkActionShots > 0) {
+                const total = Math.max(1, this.skunkActionTotalShots || this.skunkActionShots);
+                const idx = total - this.skunkActionShots;
+                const lead = player ? ((player.vx || 0) * (0.18 + this.phase * 0.04)) : 0;
+                const side = idx % 2 === 0 ? -1 : 1;
+                const offset = side * (42 + this.phase * 10) + (Math.random() - 0.5) * 46;
+                const targetX = (player ? playerCenterX : (centerX + this.skunkPatrolDir * 120)) + lead + offset;
+                const splitShot = this.phase >= 3 && idx % 2 === 1;
+                this._throwSkunkCigarette(game, targetX, {
+                    burstCount: splitShot ? 2 : 1,
+                    smokeRadius: this.phase >= 3 ? 184 : (this.phase >= 2 ? 166 : 150),
+                    smokeDuration: this.phase >= 3 ? 3.9 : (this.phase >= 2 ? 3.4 : 2.95),
+                    maxClouds: this.phase >= 3 ? 6 : 5
+                });
+                this.skunkActionShots--;
+                this.skunkActionTimer = Math.max(0.22, 0.34 - this.phase * 0.03);
+            }
+
+            if (this.skunkActionShots <= 0 && this.skunkActionTimer <= 0) {
+                this.skunkState = 'PATROL';
+                this.attackCooldown = 2.15 + Math.random() * 0.85;
+                this.skunkPreviewTargets.length = 0;
+                this.skunkPreviewSafeTarget = null;
+            }
+            return;
+        }
+
+        if (this.skunkState === 'CARPET') {
+            this.vx = 0;
+            this.y = groundY;
+            this.skunkActionTimer -= dt;
+
+            if (this.skunkActionTimer <= 0 && this.skunkActionShots > 0) {
+                const lanes = this.phase >= 3 ? 5 : 4;
+                const laneLeft = this.platform.x + 92;
+                const laneRight = this.platform.x + this.platform.width - 92;
+                const laneTargets = [];
+                for (let i = 0; i < lanes; i++) {
+                    const t = lanes <= 1 ? 0.5 : (i / (lanes - 1));
+                    laneTargets.push(laneLeft + (laneRight - laneLeft) * t);
+                }
+
+                let safeIdx = 0;
+                let bestSafeDist = Infinity;
+                for (let i = 0; i < laneTargets.length; i++) {
+                    const d = Math.abs(laneTargets[i] - playerCenterX);
+                    if (d < bestSafeDist) {
+                        bestSafeDist = d;
+                        safeIdx = i;
+                    }
+                }
+
+                this.skunkPreviewTargets.length = 0;
+                this.skunkPreviewSafeTarget = laneTargets[safeIdx];
+                for (let i = 0; i < laneTargets.length; i++) {
+                    if (i === safeIdx) continue;
+                    const target = laneTargets[i] + (Math.random() - 0.5) * 18;
+                    this._throwSkunkCigarette(game, target, {
+                        burstCount: 1,
+                        smokeRadius: this.phase >= 3 ? 156 : 142,
+                        smokeDuration: this.phase >= 3 ? 3.05 : 2.75,
+                        smokeWarmup: 0.18,
+                        maxClouds: this.phase >= 3 ? 6 : 5
+                    });
+                    this.skunkPreviewTargets.push(laneTargets[i]);
+                }
+
+                this.skunkActionShots--;
+                this.skunkActionTimer = this.phase >= 3 ? 0.5 : (this.phase >= 2 ? 0.58 : 0.68);
+            }
+
+            if (this.skunkActionShots <= 0 && this.skunkActionTimer <= 0) {
+                this.skunkState = 'PATROL';
+                this.attackCooldown = 2.3 + Math.random() * 0.9;
+                this.skunkPreviewTargets.length = 0;
+                this.skunkPreviewSafeTarget = null;
+            }
+            return;
+        }
+
+        if (this.skunkState === 'DASH') {
+            this.skunkDashTimer -= dt;
+            const dashSpeed = 360 + this.phase * 54;
+            this.vx = this.skunkDashDir * dashSpeed;
+            this.x += this.vx * dt;
+            this.y = groundY + Math.sin(this.timeAlive * 24) * 1.6;
+            this.facingRight = this.skunkDashDir > 0;
+
+            if (this.x <= left || this.x >= right) {
+                this.x = Math.max(left, Math.min(right, this.x));
+                this.skunkDashDir *= -1;
+                this.skunkDashTimer *= 0.55;
+            }
+
+            this.skunkDashFxTimer -= dt;
+            if (this.skunkDashFxTimer <= 0 && game && game.particles) {
+                this.skunkDashFxTimer = this._isBossVfxLite(game) ? 0.12 : 0.08;
+                this._emitBossFx(game, this.x + this.width * 0.5, this.y + this.height * 0.86, 8, '#74bf63', [35, 110], [0.11, 0.26], [1.2, 2.7]);
+            }
+
+            this.skunkDashDropTimer -= dt;
+            if (this.skunkDashDropTimer <= 0) {
+                const trailX = this.x + this.width / 2 - this.skunkDashDir * this.width * 0.2;
+                this._spawnSkunkTrailSmoke(game, trailX, this.platform.y, this.phase >= 3 ? 0.72 : 0.58);
+                this.skunkDashDropTimer = this.phase >= 3 ? 0.2 : (this.phase >= 2 ? 0.24 : 0.3);
+            }
+
+            if (this.skunkDashTimer <= 0) {
+                if (player && this.phase >= 3 && Math.random() < 0.45) {
+                    const backTarget = this.x + this.width / 2 - this.skunkDashDir * (160 + Math.random() * 90);
+                    this._throwSkunkCigarette(game, backTarget, {
+                        arcLift: 110,
+                        burstCount: 1,
+                        smokeRadius: 150,
+                        smokeDuration: 2.7,
+                        smokeWarmup: 0.14,
+                        maxClouds: 5
+                    });
+                }
+                this.skunkState = 'PATROL';
+                this.attackCooldown = 2.2 + Math.random() * 0.9;
+                this.vx = 0;
+                this.skunkPreviewTargets.length = 0;
+                this.skunkPreviewSafeTarget = null;
+            }
+            return;
+        }
+
+        // PATROL
+        const patrolSpeed = 132 + this.phase * 15;
+        this.vx = this.skunkPatrolDir * patrolSpeed;
+        this.x += this.vx * dt;
+        if (this.x <= left) {
+            this.x = left;
+            this.skunkPatrolDir = 1;
+        } else if (this.x >= right) {
+            this.x = right;
+            this.skunkPatrolDir = -1;
+        }
+        this.skunkStridePhase += dt * (6 + this.phase * 0.4);
+        this.y = groundY - Math.max(0, Math.sin(this.skunkStridePhase)) * (7 + this.phase * 1.4);
+
+        if (player) {
+            const dx = playerCenterX - (this.x + this.width / 2);
+            const dist = Math.abs(dx);
+            this.facingRight = dx >= 0;
+            if (this.attackCooldown <= 0) {
+                const roll = Math.random();
+                const dashChance = this.phase >= 3 ? 0.24 : (this.phase >= 2 ? 0.16 : 0.08);
+                const carpetChance = this.phase >= 3 ? 0.24 : (this.phase >= 2 ? 0.16 : 0.08);
+                if (this.phase >= 2 && dist > 130 && dist < 540 && roll < dashChance) {
+                    this._startSkunkTelegraph('dash', player, left, right);
+                } else if (this.phase >= 2 && roll < dashChance + carpetChance) {
+                    this._startSkunkTelegraph('carpet', player, left, right);
+                } else {
+                    this._startSkunkTelegraph('lob', player, left, right);
+                }
+                this.vx = 0;
+            }
+        } else {
+            this.facingRight = this.skunkPatrolDir > 0;
+        }
+    }
+
+    _spawnCamelPyramidProjectile(game, x, y, vx, vy) {
+        if (!game || !Array.isArray(game.enemyProjectiles)) return;
+        const shot = new BossProjectile(x, y, vx, vy, 'stone');
+        shot.emoji = String.fromCodePoint(0x1F53A); // 🔺
+        shot.width = 48;
+        shot.height = 48;
+        shot.maxBounces = 0;
+        shot.canBounceOnPlatforms = false;
+        shot.ignoreGravity = true;
+        shot.projectileLifetime = 2.35;
+        shot.ignorePlatformTimer = 999;
+        shot.camelCorkscrew = true;
+        shot.camelCorkscrewAxisY = y;
+        shot.camelCorkscrewAxisYInitialized = true;
+        shot.camelCorkscrewTime = Math.random() * Math.PI * 2;
+        shot.camelCorkscrewAmplitude = 14 + Math.random() * 6;
+        shot.camelCorkscrewOmega = 9.2 + Math.random() * 1.1;
+        shot.camelCorkscrewPhase = Math.random() * Math.PI * 2;
+        shot.camelCorkscrewTilt = (Math.random() - 0.5) * 10;
+        shot._cachedEmoji = getEmojiCanvas(shot.emoji, 44);
+        game.enemyProjectiles.push(shot);
+    }
+
+    _spawnCamelPyramidShot(game, player, speed, spread = 0, _arcBias = -55, lateralOffset = 0) {
+        if (!game) return;
+        const spawnX = this.x + this.width / 2 + lateralOffset;
+        const spawnY = this.y + this.height * 0.4;
+        const targetX = player ? (player.x + player.width / 2) : (spawnX + (this.facingRight ? 1 : -1) * 140);
+        const dir = (targetX >= spawnX ? 1 : -1);
+        const vx = Math.max(180, speed) * dir * Math.cos(spread);
+        const vy = 0;
+        this._spawnCamelPyramidProjectile(game, spawnX, spawnY, vx, vy);
+        this.facingRight = vx >= 0;
+    }
+
+    _spawnCamelGroundSpike(game, worldX) {
+        if (!game || !Array.isArray(game.enemyProjectiles) || !this.platform) return;
+        const spikeW = 60;
+        const spikeH = 74;
+        const clampedX = Math.max(this.platform.x + 14, Math.min(this.platform.x + this.platform.width - 14, worldX));
+        const spawnX = clampedX - spikeW / 2;
+        const spawnY = this.platform.y - spikeH;
+        const spike = new BossProjectile(spawnX, spawnY, 0, 0, 'stone');
+        spike.emoji = String.fromCodePoint(0x1F53A); // 🔺
+        spike.width = spikeW;
+        spike.height = spikeH;
+        spike.maxBounces = 0;
+        spike.canBounceOnPlatforms = false;
+        spike.ignoreGravity = true;
+        spike.ignorePlatformTimer = 999;
+        spike.projectileLifetime = 3.0;
+        spike.camelGroundSpike = true;
+        spike.camelGroundSpikeLifetime = 3.0;
+        spike._cachedEmoji = getEmojiCanvas(spike.emoji, 58);
+        game.enemyProjectiles.push(spike);
+    }
+
+    _updateCamelBoss(dt, game, player) {
+        const left = this.platform.x + 8;
+        const right = this.platform.x + this.platform.width - this.width - 8;
+        const groundY = this.platform.y - this.height;
+        const centerX = this.x + this.width / 2;
+        const playerCenterX = player ? (player.x + player.width / 2) : centerX;
+
+        if (this.camelCloneCooldown > 0) this.camelCloneCooldown -= dt;
+        if (this.camelCloneHitFlash > 0) this.camelCloneHitFlash -= dt;
+        if (this.camelCloneHitCooldown > 0) this.camelCloneHitCooldown -= dt;
+        if (this.camelCloneHealth > 0) {
+            this.camelCloneOrbitPhase += dt * (3.8 + this.phase * 0.52);
+        }
+
+        if (this.camelTelegraphTimer > 0) {
+            this.camelTelegraphTimer -= dt;
+            this.vx = 0;
+            this.y = groundY + Math.sin(this.timeAlive * 18) * 1.2;
+            if (player) this.facingRight = playerCenterX >= centerX;
+
+            if (this.camelTelegraphTimer <= 0) {
+                if (this.camelTelegraphType === 'clone') {
+                    this.camelState = 'CLONE_RITUAL';
+                    this.camelCloneRitualTimer = this.phase >= 3 ? 0.28 : (this.phase >= 2 ? 0.34 : 0.4);
+                } else if (this.camelTelegraphType === 'dash') {
+                    this.camelState = 'MIRAGE_DASH';
+                    this.camelDashDir = player ? (Math.sign(playerCenterX - centerX) || this.camelPatrolDir) : this.camelPatrolDir;
+                    this.camelDashTimer = this.phase >= 3 ? 0.92 : (this.phase >= 2 ? 0.8 : 0.68);
+                    this.camelDashFxTimer = 0;
+                    this.camelDashShotTimer = this.phase >= 3 ? 0.18 : (this.phase >= 2 ? 0.22 : 0.28);
+                } else if (this.camelTelegraphType === 'spike') {
+                    this.camelState = 'PATROL';
+                    this._spawnCamelGroundSpike(game, this.camelSpikeTelegraphX);
+                    this.attackCooldown = (this.phase >= 3 ? 1.16 : (this.phase >= 2 ? 1.3 : 1.46)) + Math.random() * 0.6;
+                } else {
+                    this.camelState = 'PYRAMID_CAST';
+                    this.camelPyramidShots = this.phase >= 3 ? 7 : (this.phase >= 2 ? 5 : 4);
+                    this.camelPyramidTotalShots = this.camelPyramidShots;
+                    this.camelPyramidTimer = 0;
+                }
+            }
+            return;
+        }
+
+        if (this.camelState === 'CLONE_RITUAL') {
+            this.camelCloneRitualTimer -= dt;
+            this.vx = 0;
+            this.y = groundY + Math.sin(this.timeAlive * 20) * 1.8;
+            if (player) this.facingRight = playerCenterX >= centerX;
+            if (this.camelCloneRitualTimer <= 0) {
+                this.camelCloneMaxHealth = this.phase >= 3 ? 6 : (this.phase >= 2 ? 5 : 4);
+                this.camelCloneHealth = this.camelCloneMaxHealth;
+                this.camelCloneOrbitPhase = Math.random() * Math.PI * 2;
+                this.camelCloneHitFlash = 0;
+                this.camelCloneHitCooldown = 0;
+                this.camelCloneCooldown = (this.phase >= 3 ? 4.6 : 5.2) + Math.random() * 1.0;
+                this.camelState = 'PATROL';
+                this.attackCooldown = 0.56 + Math.random() * 0.32;
+                if (game && game.particles) {
+                    this._emitBossFx(game, this.x + this.width / 2, this.y + this.height * 0.42, 16, '#e5f4ff', [45, 165], [0.14, 0.34], [1.4, 3.6]);
+                }
+            }
+            return;
+        }
+
+        if (this.camelState === 'PYRAMID_CAST') {
+            this.vx = 0;
+            this.y = groundY;
+            this.camelPyramidTimer -= dt;
+            if (this.camelPyramidTimer <= 0 && this.camelPyramidShots > 0) {
+                const total = Math.max(1, this.camelPyramidTotalShots || this.camelPyramidShots);
+                const idx = total - this.camelPyramidShots;
+                const speed = 430 + this.phase * 30 + idx * 8;
+                const patterns = this.phase >= 3
+                    ? [[0], [-0.16, 0.16], [-0.28, 0, 0.28]]
+                    : (this.phase >= 2
+                        ? [[0], [-0.14, 0.14], [-0.22, 0.22]]
+                        : [[0], [-0.14, 0.14]]);
+                const spreads = patterns[idx % patterns.length];
+                for (let i = 0; i < spreads.length; i++) {
+                    const spread = spreads[i];
+                    const arcBias = -60 + Math.abs(spread) * -36;
+                    this._spawnCamelPyramidShot(game, player, speed, spread, arcBias);
+                }
+                if (this.camelCloneHealth > 0 && idx % 2 === 0) {
+                    const side = idx % 4 < 2 ? -1 : 1;
+                    this._spawnCamelPyramidShot(game, player, speed - 20, side * 0.08, -35, side * this.width * 0.2);
+                }
+                this.camelPyramidShots--;
+                this.camelPyramidTimer = Math.max(0.1, 0.18 - this.phase * 0.018);
+            }
+            if (this.camelPyramidShots <= 0 && this.camelPyramidTimer <= 0) {
+                this.camelState = 'PATROL';
+                this.attackCooldown = (this.camelCloneHealth > 0 ? 1.26 : 1.52) + Math.random() * 0.68;
+            }
+            return;
+        }
+
+        if (this.camelState === 'MIRAGE_DASH') {
+            this.camelDashTimer -= dt;
+            const dashSpeed = 360 + this.phase * 48;
+            this.vx = this.camelDashDir * dashSpeed;
+            this.x += this.vx * dt;
+            this.y = groundY + Math.sin(this.timeAlive * 24) * 2.4;
+            this.facingRight = this.camelDashDir > 0;
+
+            if (this.x <= left || this.x >= right) {
+                this.x = Math.max(left, Math.min(right, this.x));
+                this.camelDashDir *= -1;
+                this.camelDashTimer *= 0.72;
+            }
+
+            this.camelDashFxTimer -= dt;
+            if (this.camelDashFxTimer <= 0 && game && game.particles) {
+                this.camelDashFxTimer = this._isBossVfxLite(game) ? 0.12 : 0.08;
+                this._emitBossFx(game, this.x + this.width * 0.5, this.y + this.height * 0.86, 8, '#f3e2bc', [40, 125], [0.11, 0.28], [1.2, 2.8]);
+            }
+
+            this.camelDashShotTimer -= dt;
+            if (this.camelDashShotTimer <= 0) {
+                const back = this.camelDashDir > 0 ? -1 : 1;
+                const speed = 315 + this.phase * 30;
+                const spawnX = this.x + this.width / 2 + back * this.width * 0.2;
+                const spawnY = this.y + this.height * 0.5;
+                const vx = back * (speed + Math.random() * 36);
+                const vy = 0;
+                this._spawnCamelPyramidProjectile(game, spawnX, spawnY, vx, vy);
+                this.camelDashShotTimer = this.phase >= 3 ? 0.16 : (this.phase >= 2 ? 0.2 : 0.25);
+            }
+
+            if (this.camelDashTimer <= 0) {
+                this.camelState = 'PATROL';
+                this.attackCooldown = (this.camelCloneHealth > 0 ? 1.05 : 1.3) + Math.random() * 0.6;
+            }
+            return;
+        }
+
+        // PATROL
+        const patrolSpeed = 124 + this.phase * 14;
+        this.vx = this.camelPatrolDir * patrolSpeed;
+        this.x += this.vx * dt;
+        if (this.x <= left) {
+            this.x = left;
+            this.camelPatrolDir = 1;
+        } else if (this.x >= right) {
+            this.x = right;
+            this.camelPatrolDir = -1;
+        }
+        const stride = Math.max(0, Math.sin(this.timeAlive * (5.4 + this.phase * 0.35)));
+        this.y = groundY - stride * (6 + this.phase * 1.1);
+
+        if (player) {
+            const dx = playerCenterX - (this.x + this.width / 2);
+            const dist = Math.abs(dx);
+            this.facingRight = dx >= 0;
+            if (this.attackCooldown <= 0) {
+                const cloneReady = this.camelCloneHealth <= 0 && this.camelCloneCooldown <= 0;
+                const cloneChance = this.phase >= 3 ? 0.4 : (this.phase >= 2 ? 0.33 : 0.26);
+                if (cloneReady && Math.random() < cloneChance) {
+                    this.camelTelegraphType = 'clone';
+                    this.camelTelegraphTimer = this.phase >= 3 ? 0.38 : (this.phase >= 2 ? 0.48 : 0.58);
+                    this.vx = 0;
+                    return;
+                }
+
+                const dashChance = this.camelCloneHealth > 0
+                    ? (this.phase >= 3 ? 0.6 : 0.5)
+                    : (this.phase >= 3 ? 0.48 : (this.phase >= 2 ? 0.42 : 0.34));
+                const spikeChance = this.phase >= 3 ? 0.28 : (this.phase >= 2 ? 0.2 : 0.12);
+                const chooseSpike = Math.random() < spikeChance;
+                const chooseDash = !chooseSpike && dist > 130 && dist < 520 && Math.random() < dashChance;
+                if (chooseSpike) {
+                    this.camelTelegraphType = 'spike';
+                    this.camelSpikeTelegraphX = Math.max(
+                        this.platform.x + 20,
+                        Math.min(this.platform.x + this.platform.width - 20, playerCenterX)
+                    );
+                    this.camelTelegraphTimer = this.phase >= 3 ? 0.54 : (this.phase >= 2 ? 0.62 : 0.72);
+                } else {
+                    this.camelTelegraphType = chooseDash ? 'dash' : 'pyramid';
+                    this.camelTelegraphTimer = chooseDash
+                        ? (this.phase >= 3 ? 0.24 : (this.phase >= 2 ? 0.3 : 0.37))
+                        : (this.phase >= 3 ? 0.26 : (this.phase >= 2 ? 0.34 : 0.42));
+                }
+                this.vx = 0;
+            }
+        } else {
+            this.facingRight = this.camelPatrolDir > 0;
+        }
+    }
+
+    _updateRhinoBoss(dt, game, player) {
+        const left = this.platform.x + 8;
+        const right = this.platform.x + this.platform.width - this.width - 8;
+        const groundY = this.platform.y - this.height;
+        const platformCenterX = this.platform.x + this.platform.width * 0.5;
+        const centerX = this.x + this.width * 0.5;
+        const playerCenterX = player ? (player.x + player.width * 0.5) : centerX;
+        const playerDistanceRatio = Math.min(1, Math.abs(playerCenterX - centerX) / Math.max(1, this.platform.width * 0.5));
+        const clampX = (value) => Math.max(left, Math.min(right, value));
+        const approach = (value, target, maxDelta) => {
+            if (value < target) return Math.min(target, value + maxDelta);
+            if (value > target) return Math.max(target, value - maxDelta);
+            return target;
+        };
+        const pickWeightedRhinoAttack = () => {
+            if (this.rhinoNextAttack) {
+                const forced = this.rhinoNextAttack;
+                this.rhinoNextAttack = null;
+                return forced;
+            }
+
+            const playerAirBias = player ? Math.max(0, (groundY - (player.y + player.height * 0.5)) / 260) : 0;
+            let chargeWeight = this.phase === 1 ? 0.54 : (this.phase === 2 ? 0.44 : 0.36);
+            let tornadoWeight = this.phase === 1 ? 0.2 : (this.phase === 2 ? 0.24 : 0.28);
+            let jumpWeight = this.phase === 1 ? 0.26 : (this.phase === 2 ? 0.32 : 0.36);
+
+            chargeWeight += playerDistanceRatio * 0.18;
+            jumpWeight += (1 - playerDistanceRatio) * 0.14;
+            tornadoWeight += playerAirBias * 0.14;
+
+            if (this.rhinoLastAttack === 'CHARGE') chargeWeight *= 0.62;
+            if (this.rhinoLastAttack === 'TORNADO') tornadoWeight *= 0.66;
+            if (this.rhinoLastAttack === 'JUMPS') jumpWeight *= 0.64;
+
+            const total = Math.max(0.001, chargeWeight + tornadoWeight + jumpWeight);
+            let roll = Math.random() * total;
+            if (roll < chargeWeight) return 'CHARGE';
+            roll -= chargeWeight;
+            if (roll < tornadoWeight) return 'TORNADO';
+            return 'JUMPS';
+        };
+        const beginChargeTelegraph = (dir, duration) => {
+            this.rhinoState = 'TELEGRAPH_CHARGE';
+            this.rhinoChargeDir = dir;
+            this.rhinoChargeTargetX = dir < 0 ? left : right;
+            this.rhinoTelegraphDuration = Math.max(0.15, duration);
+            this.rhinoTelegraphTimer = this.rhinoTelegraphDuration;
+            this.rhinoChargeTelegraphX = this.x;
+            this.rhinoChargeFxTimer = 0;
+            this.rhinoMoveSpeed = 0;
+            this.vx = 0;
+            this.facingRight = dir > 0;
+            this.rhinoTornadoTelegraphTimer = 0;
+            this.rhinoStompTelegraphTimer = 0;
+            this.rhinoNextAttack = null;
+        };
+        const beginTornadoTelegraph = () => {
+            this.rhinoState = 'TORNADO_TELEGRAPH';
+            this.rhinoTornadoTelegraphTimer = this.phase >= 3 ? 0.2 : (this.phase >= 2 ? 0.25 : 0.31);
+            this.rhinoTornadoShots = this.phase >= 3 ? 7 : (this.phase >= 2 ? 6 : 5);
+            this.rhinoTornadoTotalShots = this.rhinoTornadoShots;
+            this.rhinoTornadoTimer = 0;
+            this.rhinoChargeFxTimer = 0;
+            this.rhinoMoveSpeed = 0;
+            this.vx = 0;
+            this.rhinoTelegraphTimer = 0;
+            this.rhinoStompTelegraphTimer = 0;
+            this.rhinoNextAttack = null;
+        };
+        const beginJumpTelegraph = () => {
+            this.rhinoState = 'JUMP_TELEGRAPH';
+            this.rhinoJumpTelegraphTimer = this.phase >= 3 ? 0.38 : (this.phase >= 2 ? 0.46 : 0.55);
+            this.rhinoJumpsRemaining = this.phase >= 3 ? 5 : (this.phase >= 2 ? 4 : 3);
+            this.rhinoJumpTotal = this.rhinoJumpsRemaining;
+            this.rhinoJumpPauseTimer = 0;
+            this.rhinoChargeTelegraphX = this.x;
+            this.rhinoMoveSpeed = 0;
+            this.vx = 0;
+            this.rhinoChargeFxTimer = 0;
+            this.rhinoTelegraphTimer = 0;
+            this.rhinoTornadoTelegraphTimer = 0;
+            this.rhinoJumpDir = player ? (Math.sign(playerCenterX - (this.x + this.width * 0.5)) || (this.facingRight ? 1 : -1)) : (this.facingRight ? 1 : -1);
+            this.facingRight = this.rhinoJumpDir > 0;
+            this.rhinoNextAttack = null;
+        };
+
+        this.x = clampX(this.x);
+
+        if (this.rhinoState === 'IDLE') {
+            const patrolSpeed = 112 + this.phase * 10;
+            this.rhinoMoveSpeed = approach(this.rhinoMoveSpeed, patrolSpeed, dt * (1500 + this.phase * 150));
+            this.vx = this.rhinoPatrolDir * this.rhinoMoveSpeed;
+            this.x += this.vx * dt;
+            if (this.x <= left) {
+                this.x = left;
+                this.rhinoPatrolDir = 1;
+            } else if (this.x >= right) {
+                this.x = right;
+                this.rhinoPatrolDir = -1;
+            }
+            this.rhinoGallopPhase += dt * (4.6 + this.phase * 0.36);
+            this.y = groundY + Math.max(0, Math.sin(this.rhinoGallopPhase)) * (1.8 + this.phase * 0.2);
+            this.facingRight = playerCenterX >= (this.x + this.width * 0.5);
+
+            if (this.attackCooldown <= 0) {
+                const nextAttack = pickWeightedRhinoAttack();
+                this.rhinoLastAttack = nextAttack;
+                this.rhinoNextAttack = nextAttack;
+                this.rhinoChargeLeg = 0;
+
+                if (nextAttack === 'JUMPS') {
+                    beginJumpTelegraph();
+                    return;
+                }
+
+                if (nextAttack === 'CHARGE') {
+                    const startFromOpposite = playerCenterX >= platformCenterX ? 0 : 1;
+                    this.rhinoMoveToEndTarget = Math.random() < 0.72 ? startFromOpposite : (Math.random() < 0.5 ? 0 : 1);
+                } else {
+                    this.rhinoTornadoEnd = player ? (playerCenterX < platformCenterX ? 1 : 0) : (Math.random() < 0.5 ? 0 : 1);
+                    this.rhinoMoveToEndTarget = this.rhinoTornadoEnd;
+                }
+
+                const targetStartX = this.rhinoMoveToEndTarget === 0 ? left : right;
+                if (Math.abs(this.x - targetStartX) > 1.4) {
+                    this.rhinoState = 'MOVE_TO_END';
+                } else if (nextAttack === 'CHARGE') {
+                    beginChargeTelegraph(this.rhinoMoveToEndTarget === 1 ? -1 : 1, 0.5 - this.phase * 0.045 + (Math.random() - 0.5) * 0.07);
+                } else {
+                    beginTornadoTelegraph();
+                }
+            }
+            return;
+        }
+
+        if (this.rhinoState === 'MOVE_TO_END') {
+            const targetX = this.rhinoMoveToEndTarget === 0 ? left : right;
+            const dx = targetX - this.x;
+            const absDx = Math.abs(dx);
+            const dir = absDx > 0.0001 ? (dx > 0 ? 1 : -1) : 0;
+            const maxWalkSpeed = 290 + this.phase * 24;
+            const walkAccel = 1850 + this.phase * 180;
+            const walkBrake = 2800 + this.phase * 220;
+            const brakeDistance = (this.rhinoMoveSpeed * this.rhinoMoveSpeed) / (2 * walkBrake + 0.0001);
+            const desiredSpeed = absDx <= brakeDistance + 12 ? Math.max(0, absDx * 8.2) : maxWalkSpeed;
+            const maxDelta = (desiredSpeed > this.rhinoMoveSpeed ? walkAccel : walkBrake) * dt;
+            this.rhinoMoveSpeed = approach(this.rhinoMoveSpeed, desiredSpeed, maxDelta);
+
+            const step = Math.min(absDx, this.rhinoMoveSpeed * dt);
+            this.x += dir * step;
+            this.x = clampX(this.x);
+            this.vx = dir * this.rhinoMoveSpeed;
+            if (dir !== 0) this.facingRight = dir > 0;
+
+            this.rhinoGallopPhase += dt * (7.6 + (this.rhinoMoveSpeed / Math.max(1, maxWalkSpeed)) * 7.4);
+            this.y = groundY + Math.sin(this.rhinoGallopPhase) * Math.min(2.2, (this.rhinoMoveSpeed / Math.max(1, maxWalkSpeed)) * 2.2);
+
+            if (absDx <= 1.2 || step >= absDx - 0.001) {
+                this.x = targetX;
+                this.y = groundY;
+                this.vx = 0;
+                this.rhinoMoveSpeed = 0;
+                if (this.rhinoNextAttack === 'CHARGE') {
+                    beginChargeTelegraph(this.rhinoMoveToEndTarget === 1 ? -1 : 1, 0.5 - this.phase * 0.045 + (Math.random() - 0.5) * 0.07);
+                } else {
+                    beginTornadoTelegraph();
+                }
+            }
+            return;
+        }
+
+        if (this.rhinoState === 'TELEGRAPH_CHARGE') {
+            const duration = Math.max(0.0001, this.rhinoTelegraphDuration || 0.8);
+            const progress = Math.max(0, Math.min(1, 1 - this.rhinoTelegraphTimer / duration));
+            const shake = Math.sin(progress * Math.PI * (8 + this.phase * 1.4)) * (1.2 + progress * 5.4);
+            this.x = clampX(this.rhinoChargeTelegraphX - this.rhinoChargeDir * shake);
+            this.y = groundY + Math.sin(progress * Math.PI) * (1.6 + this.phase * 0.2);
+            this.vx = 0;
+            this.rhinoMoveSpeed = 0;
+            this.facingRight = this.rhinoChargeDir > 0;
+
+            this.rhinoTelegraphTimer -= dt;
+            this.rhinoChargeFxTimer -= dt;
+            if (this.rhinoChargeFxTimer <= 0 && game && this._emitBossFx) {
+                const smokeRate = Math.max(0.02, 0.09 - progress * 0.065);
+                this.rhinoChargeFxTimer = smokeRate;
+                const feetX = this.x + this.width * 0.5 + (this.facingRight ? this.width * 0.16 : -this.width * 0.16);
+                const feetY = this.y + this.height * 0.92;
+                const count = 6 + Math.floor(progress * 7);
+                this._emitBossFx(game, feetX, feetY, count, '#f0f4f7', [34, 100], [0.14, 0.36], [1.5, 3.7]);
+            }
+
+            if (this.rhinoTelegraphTimer <= 0) {
+                this.rhinoState = 'CHARGE';
+                this.rhinoMoveSpeed = 300 + this.phase * 34;
+                this.rhinoChargeFxTimer = 0;
+                this.rhinoGallopPhase = Math.random() * Math.PI * 2;
+            }
+            return;
+        }
+
+        if (this.rhinoState === 'CHARGE') {
+            const chargeAccel = 3150 + this.phase * 260;
+            const chargeBrake = 3360 + this.phase * 280;
+            const maxChargeSpeed = 730 + this.phase * 66;
+            const minChargeSpeed = 250;
+            const distToTarget = Math.abs(this.rhinoChargeTargetX - this.x);
+            const brakeDistance = (this.rhinoMoveSpeed * this.rhinoMoveSpeed) / (2 * chargeBrake + 0.0001);
+            const desiredSpeed = distToTarget <= brakeDistance + 18 ? Math.max(minChargeSpeed, distToTarget * 11.2) : maxChargeSpeed;
+            const maxDelta = (desiredSpeed > this.rhinoMoveSpeed ? chargeAccel : chargeBrake) * dt;
+            this.rhinoMoveSpeed = approach(this.rhinoMoveSpeed, desiredSpeed, maxDelta);
+
+            const step = Math.min(distToTarget, this.rhinoMoveSpeed * dt);
+            this.x += this.rhinoChargeDir * step;
+            this.x = clampX(this.x);
+            this.vx = this.rhinoChargeDir * this.rhinoMoveSpeed;
+            this.facingRight = this.rhinoChargeDir > 0;
+
+            const strideRate = 17 + (this.rhinoMoveSpeed / Math.max(1, maxChargeSpeed)) * 16;
+            this.rhinoGallopPhase += dt * strideRate;
+            const gallopAmp = 2.4 + (this.rhinoMoveSpeed / Math.max(1, maxChargeSpeed)) * 5.8;
+            this.y = groundY + Math.sin(this.rhinoGallopPhase) * gallopAmp;
+
+            this.rhinoChargeFxTimer -= dt;
+            if (this.rhinoChargeFxTimer <= 0 && game && this._emitBossFx) {
+                this.rhinoChargeFxTimer = this._isBossVfxLite(game) ? 0.06 : 0.038;
+                const trailX = this.x + (this.rhinoChargeDir > 0 ? this.width * 0.05 : this.width * 0.95);
+                const trailY = this.y + this.height * 0.84;
+                this._emitBossFx(game, trailX, trailY, 9, '#d8eef8', [58, 166], [0.12, 0.28], [1.3, 3.1]);
+            }
+
+            if (distToTarget <= 1.2 || step >= distToTarget - 0.001) {
+                this.x = this.rhinoChargeTargetX;
+                this.y = groundY;
+                this.vx = 0;
+                this.rhinoMoveSpeed = 0;
+                this.rhinoChargeLeg++;
+                const chargeLegs = this.phase >= 3 ? 3 : 2;
+                if (this.rhinoChargeLeg >= chargeLegs) {
+                    this.rhinoState = 'IDLE';
+                    const shouldChain = (this.phase >= 3 && Math.random() < 0.42) || (this.phase >= 2 && Math.random() < 0.2);
+                    if (shouldChain) {
+                        this.rhinoNextAttack = Math.random() < 0.58 ? 'STOMP' : 'TORNADO';
+                        this.attackCooldown = 0.14 + Math.random() * 0.12;
+                    } else {
+                        this.attackCooldown = 0.42 + Math.random() * 0.34;
+                    }
+                } else {
+                    this.rhinoState = 'TURN';
+                    this.rhinoTurnTimer = 0.1 + Math.random() * 0.08;
+                    this.rhinoChargeFxTimer = 0;
+                }
+            }
+            return;
+        }
+
+        if (this.rhinoState === 'TURN') {
+            this.y = groundY;
+            this.vx = 0;
+            this.rhinoMoveSpeed = 0;
+            this.rhinoTurnTimer -= dt;
+            this.rhinoChargeFxTimer -= dt;
+            if (this.rhinoChargeFxTimer <= 0 && game && this._emitBossFx) {
+                this.rhinoChargeFxTimer = 0.075;
+                this._emitBossFx(game, this.x + this.width * 0.5, this.y + this.height * 0.92, 4, '#c8d0d6', [28, 84], [0.1, 0.22], [1.2, 2.5]);
+            }
+            if (this.rhinoTurnTimer <= 0) {
+                this.rhinoChargeDir = -this.rhinoChargeDir;
+                beginChargeTelegraph(this.rhinoChargeDir, 0.24 - this.phase * 0.03 + (Math.random() - 0.5) * 0.05);
+            }
+            return;
+        }
+
+        if (this.rhinoState === 'TORNADO_TELEGRAPH') {
+            this.y = groundY;
+            this.vx = 0;
+            this.rhinoMoveSpeed = 0;
+            this.facingRight = playerCenterX > (this.x + this.width * 0.5);
+            this.rhinoTornadoTelegraphTimer -= dt;
+            this.rhinoChargeFxTimer -= dt;
+            if (this.rhinoChargeFxTimer <= 0 && game && this._emitBossFx) {
+                this.rhinoChargeFxTimer = this._isBossVfxLite(game) ? 0.08 : 0.055;
+                const hornX = this.x + this.width * 0.5 + (this.facingRight ? this.width * 0.24 : -this.width * 0.24);
+                const hornY = this.y + this.height * 0.42;
+                this._emitBossFx(game, hornX, hornY, 7, '#d8f2ff', [36, 126], [0.12, 0.28], [1.2, 2.8]);
+            }
+            if (this.rhinoTornadoTelegraphTimer <= 0) {
+                this.rhinoState = 'TORNADO_THROW';
+                this.rhinoTornadoTimer = 0;
+            }
+            return;
+        }
+
+        if (this.rhinoState === 'TORNADO_THROW') {
+            this.y = groundY;
+            this.vx = 0;
+            this.rhinoMoveSpeed = 0;
+            this.rhinoTornadoTimer -= dt;
+            this.facingRight = this.rhinoTornadoShots === this.rhinoTornadoTotalShots
+                ? (playerCenterX > (this.x + this.width * 0.5))
+                : (this.rhinoTornadoDir > 0);
+
+            if (this.rhinoTornadoTimer <= 0 && this.rhinoTornadoShots > 0 && game && Array.isArray(game.enemyProjectiles)) {
+                const tornadoSize = 116;
+                if (this.rhinoTornadoShots === this.rhinoTornadoTotalShots) {
+                    for (let i = 0; i < game.enemyProjectiles.length; i++) {
+                        const p = game.enemyProjectiles[i];
+                        if (p && p.projectileType === 'tornado') p.markedForDeletion = true;
+                    }
+                    const bodyCenterX = this.x + this.width * 0.5;
+                    this.rhinoTornadoDir = player
+                        ? (((player.x + player.width * 0.5) >= bodyCenterX) ? 1 : -1)
+                        : (this.facingRight ? 1 : -1);
+                    this.rhinoTornadoShotSpeed = 430 + this.phase * 48;
+                }
+
+                const dir = this.rhinoTornadoDir > 0 ? 1 : -1;
+                const speed = this.rhinoTornadoShotSpeed;
+                const centerX = this.x + this.width * 0.5 + dir * this.width * 0.24;
+                const laneCenterY = this.platform.y - 64;
+                const spawnX = centerX - tornadoSize * 0.5;
+                const spawnY = laneCenterY - tornadoSize * 0.5;
+                const shot = new BossProjectile(spawnX, spawnY, dir * speed, 0, 'tornado');
+                shot.ignorePlatformTimer = Math.max(shot.ignorePlatformTimer || 0, 0.45);
+                game.enemyProjectiles.push(shot);
+                this.rhinoTornadoShots--;
+
+                const intervalBase = this.phase >= 3 ? 0.075 : (this.phase >= 2 ? 0.09 : 0.11);
+                this.rhinoTornadoTimer = Math.max(intervalBase, (tornadoSize + 26) / Math.max(180, speed));
+
+                if (game && this._emitBossFx) {
+                    this._emitBossFx(game, centerX, laneCenterY, 10, '#e5f6ff', [42, 138], [0.1, 0.24], [1.2, 2.8]);
+                }
+            }
+
+            if (this.rhinoTornadoShots <= 0 && this.rhinoTornadoTimer <= 0) {
+                this.rhinoState = 'IDLE';
+                if (this.phase >= 3 && Math.random() < 0.3) {
+                    this.rhinoNextAttack = 'CHARGE';
+                    this.attackCooldown = 0.16 + Math.random() * 0.14;
+                } else {
+                    this.attackCooldown = 0.52 + Math.random() * 0.34;
+                }
+            }
+            return;
+        }
+
+        if (this.rhinoState === 'JUMP_TELEGRAPH') {
+            const duration = Math.max(0.0001, this.phase >= 3 ? 0.38 : (this.phase >= 2 ? 0.46 : 0.55));
+            const progress = Math.max(0, Math.min(1, 1 - this.rhinoJumpTelegraphTimer / duration));
+            const shiver = Math.sin(progress * Math.PI * (6.5 + this.phase * 0.8)) * (0.8 + progress * 2.4);
+            this.x = clampX(this.rhinoChargeTelegraphX + shiver * 0.35);
+            this.y = groundY + Math.abs(Math.sin(progress * Math.PI * 3)) * (1.2 + this.phase * 0.2);
+            this.vx = 0;
+            this.rhinoMoveSpeed = 0;
+            this.facingRight = this.rhinoJumpDir > 0;
+            this.rhinoJumpTelegraphTimer -= dt;
+
+            this.rhinoChargeFxTimer -= dt;
+            if (this.rhinoChargeFxTimer <= 0 && game && this._emitBossFx) {
+                this.rhinoChargeFxTimer = this._isBossVfxLite(game) ? 0.08 : 0.058;
+                const stompX = this.x + this.width * 0.5 + (this.facingRight ? this.width * 0.14 : -this.width * 0.14);
+                const stompY = this.y + this.height * 0.92;
+                this._emitBossFx(game, stompX, stompY, 7, '#f3efe4', [34, 108], [0.1, 0.24], [1.2, 2.8]);
+            }
+
+            if (this.rhinoJumpTelegraphTimer <= 0) {
+                this.rhinoState = 'JUMP_START';
+            }
+            return;
+        }
+
+        if (this.rhinoState === 'JUMP_START') {
+            // Initiate the jump
+            this.vy = -(800 + this.phase * 65);
+            this.vx = this.rhinoJumpDir * (350 + this.phase * 45);
+            this.rhinoState = 'JUMP_AIR';
+
+            if (game && this._emitBossFx) {
+                const stompX = this.x + this.width * 0.5;
+                const stompY = this.y + this.height;
+                this._emitBossFx(game, stompX, stompY, 12, '#e8dfd0', [46, 126], [0.1, 0.28], [1.5, 3.5]);
+            }
+            return;
+        }
+
+        if (this.rhinoState === 'JUMP_AIR') {
+            this.x += this.vx * dt;
+            // Prevent jumping off platform
+            if (this.x <= left) {
+                this.x = left;
+                this.vx = -this.vx * 0.5;
+            } else if (this.x >= right) {
+                this.x = right;
+                this.vx = -this.vx * 0.5;
+            }
+
+            this.y += this.vy * dt;
+            this.vy += 1850 * dt; // Gravity
+            this.facingRight = this.vx > 0;
+
+            if (this.y >= groundY && this.vy > 0) {
+                this.y = groundY;
+                this.vy = 0;
+                this.vx = 0;
+
+                if (game && this._emitBossFx) {
+                    const stompX = this.x + this.width * 0.5;
+                    const stompY = this.y + this.height;
+                    this._emitBossFx(game, stompX, stompY, 15, '#f3efe4', [34, 108], [0.1, 0.3], [1.5, 3.8]);
+                }
+
+                this.rhinoJumpsRemaining--;
+                if (this.rhinoJumpsRemaining > 0) {
+                    this.rhinoState = 'JUMP_PAUSE';
+                    this.rhinoJumpPauseTimer = 0.2 + (Math.random() * 0.1);
+                } else {
+                    this.rhinoState = 'IDLE';
+                    if (this.phase >= 3 && Math.random() < 0.34) {
+                        this.rhinoNextAttack = Math.random() < 0.5 ? 'CHARGE' : 'TORNADO';
+                        this.attackCooldown = 0.18 + Math.random() * 0.14;
+                    } else {
+                        this.attackCooldown = 0.6 + Math.random() * 0.36;
+                    }
+                }
+            }
+            return;
+        }
+
+        if (this.rhinoState === 'JUMP_PAUSE') {
+            this.y = groundY;
+            this.vx = 0;
+            this.vy = 0;
+            this.rhinoJumpPauseTimer -= dt;
+            if (this.rhinoJumpPauseTimer <= 0) {
+                // Recalculate direction towards player for next jump
+                this.rhinoJumpDir = player ? (Math.sign(playerCenterX - (this.x + this.width * 0.5)) || (this.facingRight ? 1 : -1)) : (this.facingRight ? 1 : -1);
+                this.facingRight = this.rhinoJumpDir > 0;
+                this.rhinoState = 'JUMP_START';
+            }
+            return;
+        }
+
+        // Fallback: recover to a stable state if an unknown state slips through.
+        this.rhinoState = 'IDLE';
+        this.y = groundY;
+        this.vx = 0;
+        this.vy = 0;
+        this.rhinoMoveSpeed = 0;
+        this.rhinoTelegraphTimer = 0;
+        this.rhinoTornadoTelegraphTimer = 0;
+        this.rhinoJumpTelegraphTimer = 0;
+    }
+
     _updateMosquitoBoss(dt, game, player) {
         const left = this.platform.x + 8;
         const right = this.platform.x + this.platform.width - this.width - 8;
@@ -4605,12 +5768,38 @@ export class Boss extends Entity {
             this._updateJugglerBoss(dt, game, player);
         } else if (this.bossType === 'boss_honeybee') {
             this._updateHoneybeeBoss(dt, game, player);
+        } else if (this.bossType === 'boss_skunk') {
+            this._updateSkunkBoss(dt, game, player);
+        } else if (this.bossType === 'boss_camel') {
+            this._updateCamelBoss(dt, game, player);
+        } else if (this.bossType === 'boss_rhino') {
+            this._updateRhinoBoss(dt, game, player);
         } else {
             this._updateAerialBoss(dt, game, player);
         }
 
         if (player) {
-            this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            const camelFacingLocked = this.bossType === 'boss_camel' && (
+                this.camelTelegraphTimer > 0
+                || this.camelState === 'PYRAMID_CAST'
+                || this.camelState === 'MIRAGE_DASH'
+                || this.camelState === 'CLONE_RITUAL'
+            );
+            const rhinoFacingLocked = this.bossType === 'boss_rhino' && (
+                this.rhinoState === 'TELEGRAPH_CHARGE'
+                || this.rhinoState === 'CHARGE'
+                || this.rhinoState === 'TURN'
+                || this.rhinoState === 'TORNADO_THROW'
+                || this.rhinoState === 'STOMP_TELEGRAPH'
+                || this.rhinoState === 'STOMP_ARC'
+            );
+            const skunkFacingLocked = this.bossType === 'boss_skunk' && (
+                this.skunkTelegraphTimer > 0
+                || this.skunkState === 'DASH'
+            );
+            if (!camelFacingLocked && !rhinoFacingLocked && !skunkFacingLocked) {
+                this.facingRight = (player.x + player.width / 2) > (this.x + this.width / 2);
+            }
             const dx = player.x - this.x;
             const dy = player.y - this.y;
             this.distToPlayer = Math.hypot(dx, dy);
@@ -4666,7 +5855,25 @@ export class Boss extends Entity {
             || this.jugglerRainWaves > 0
             || this.jugglerState === 'ROLL'
             || this.honeybeeTelegraphTimer > 0
-            || this.honeybeeSwarmActiveTimer > 0;
+            || this.honeybeeSwarmActiveTimer > 0
+            || this.skunkTelegraphTimer > 0
+            || this.skunkState === 'LOB'
+            || this.skunkState === 'CARPET'
+            || this.skunkState === 'DASH'
+            || this.camelTelegraphTimer > 0
+            || this.camelState === 'PYRAMID_CAST'
+            || this.camelState === 'MIRAGE_DASH'
+            || this.camelState === 'CLONE_RITUAL'
+            || this.rhinoTelegraphTimer > 0
+            || this.rhinoTornadoTelegraphTimer > 0
+            || this.rhinoStompTelegraphTimer > 0
+            || this.rhinoState === 'CHARGE'
+            || this.rhinoState === 'MOVE_TO_END'
+            || this.rhinoState === 'TURN'
+            || this.rhinoState === 'TORNADO_TELEGRAPH'
+            || this.rhinoState === 'TORNADO_THROW'
+            || this.rhinoState === 'STOMP_TELEGRAPH'
+            || this.rhinoState === 'STOMP_ARC';
         if (game && player && player.invulnerableTimer <= 0 && !inFairWindow) {
             if (Physics.checkAABB(this, player.getHitbox())) {
                 player.takeDamage(game);
@@ -4693,7 +5900,7 @@ export class Boss extends Entity {
         ctx.translate(cx, cy);
         const useDirectFacing = this.bossType === 'boss_dragon' || this.bossType === 'boss_kangaroo';
         let shouldFlipSprite = useDirectFacing ? this.facingRight : !this.facingRight;
-        const emojiFacingInvertedBosses = new Set(['boss_monkey', 'boss_trex', 'boss_mammoth', 'boss_mosquito', 'boss_honeybee']);
+        const emojiFacingInvertedBosses = new Set(['boss_monkey', 'boss_trex', 'boss_mammoth', 'boss_mosquito', 'boss_honeybee', 'boss_rhino', 'boss_skunk', 'boss_camel']);
         if (emojiFacingInvertedBosses.has(this.bossType)) {
             shouldFlipSprite = !shouldFlipSprite;
         }
@@ -4829,7 +6036,12 @@ export class Boss extends Entity {
             || this.mosquitoTelegraphTimer > 0
             || this.beetleTelegraphTimer > 0
             || this.jugglerTelegraphTimer > 0
-            || this.honeybeeTelegraphTimer > 0;
+            || this.honeybeeTelegraphTimer > 0
+            || this.skunkTelegraphTimer > 0
+            || this.camelTelegraphTimer > 0
+            || this.rhinoTelegraphTimer > 0
+            || this.rhinoTornadoTelegraphTimer > 0
+            || this.rhinoStompTelegraphTimer > 0;
         if (isTelegraphing) {
             const pulse = 0.55 + Math.sin(this.timeAlive * 24) * 0.45;
             if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
@@ -5406,6 +6618,247 @@ export class Boss extends Entity {
                 ctx.drawImage(this._beeTellCache.canvas, bx - this._beeTellCache.width / 2, by - this._beeTellCache.height / 2);
             }
             ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_skunk' && this.skunkTelegraphTimer > 0) {
+            const pulse = 0.58 + Math.sin(this.timeAlive * 26) * 0.34;
+            const groundLocalY = this.platform
+                ? (this.platform.y - (this.y + this.height / 2))
+                : this.height * 0.5;
+            if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+            if (!this._skunkCigTellCache) this._skunkCigTellCache = getEmojiCanvas(String.fromCodePoint(0x1F6AC), 28);
+            if (!this._skunkSmokeTellCache) this._skunkSmokeTellCache = getEmojiCanvas(String.fromCodePoint(0x1F32B) + '\uFE0F', 28);
+            if (!this._skunkDashTellCache) this._skunkDashTellCache = getEmojiCanvas(String.fromCodePoint(0x1F4A8), 26);
+            if (!this._skunkSafeTellCache) this._skunkSafeTellCache = getEmojiCanvas(String.fromCodePoint(0x2705), 24);
+
+            if (this.skunkTelegraphType === 'lob') {
+                ctx.globalAlpha = alpha * (0.45 + pulse * 0.42);
+                ctx.drawImage(this._skunkCigTellCache.canvas, -this._skunkCigTellCache.width / 2, -this.height / 2 - 54);
+                for (let i = 0; i < this.skunkPreviewTargets.length; i++) {
+                    const markerX = this.skunkPreviewTargets[i] - (this.x + this.width / 2);
+                    ctx.globalAlpha = alpha * (0.42 + pulse * 0.4);
+                    ctx.drawImage(this._warnCache.canvas, markerX - this._warnCache.width / 2, groundLocalY - this._warnCache.height - 8);
+                }
+            } else if (this.skunkTelegraphType === 'carpet') {
+                for (let i = 0; i < this.skunkPreviewTargets.length; i++) {
+                    const markerX = this.skunkPreviewTargets[i] - (this.x + this.width / 2);
+                    ctx.globalAlpha = alpha * (0.38 + pulse * 0.4);
+                    ctx.drawImage(this._skunkSmokeTellCache.canvas, markerX - this._skunkSmokeTellCache.width / 2, groundLocalY - this._skunkSmokeTellCache.height - 6);
+                    ctx.globalAlpha = alpha * (0.35 + pulse * 0.4);
+                    ctx.drawImage(this._warnCache.canvas, markerX - this._warnCache.width / 2, groundLocalY - this._warnCache.height - 30);
+                }
+                if (this.skunkPreviewSafeTarget != null) {
+                    const safeX = this.skunkPreviewSafeTarget - (this.x + this.width / 2);
+                    ctx.globalAlpha = alpha * (0.42 + pulse * 0.38);
+                    ctx.drawImage(this._skunkSafeTellCache.canvas, safeX - this._skunkSafeTellCache.width / 2, groundLocalY - this._skunkSafeTellCache.height - 12);
+                }
+            } else {
+                const dir = this.facingRight ? 1 : -1;
+                for (let i = 0; i < 3; i++) {
+                    const tx = -dir * (18 + i * 24);
+                    const ty = -8 + i * 5;
+                    ctx.globalAlpha = alpha * (0.32 + pulse * 0.38);
+                    ctx.drawImage(this._skunkDashTellCache.canvas, tx - this._skunkDashTellCache.width / 2, ty - this._skunkDashTellCache.height / 2);
+                }
+                for (let i = 0; i < this.skunkPreviewTargets.length; i++) {
+                    const markerX = this.skunkPreviewTargets[i] - (this.x + this.width / 2);
+                    ctx.globalAlpha = alpha * (0.42 + pulse * 0.4);
+                    ctx.drawImage(this._warnCache.canvas, markerX - this._warnCache.width / 2, groundLocalY - this._warnCache.height - 8);
+                }
+            }
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_skunk' && this.skunkState === 'DASH') {
+            const dir = this.facingRight ? 1 : -1;
+            const streakPulse = 0.38 + Math.sin(this.timeAlive * 32) * 0.16;
+            ctx.strokeStyle = `rgba(180, 180, 180, ${streakPulse})`;
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-dir * 14, -4);
+            ctx.lineTo(-dir * 56, -12);
+            ctx.moveTo(-dir * 8, 8);
+            ctx.lineTo(-dir * 50, 12);
+            ctx.stroke();
+        }
+
+        if (this.bossType === 'boss_camel' && this.camelCloneHealth > 0) {
+            if (!this._camelGhostCache) this._camelGhostCache = getEmojiCanvas(this.emoji, Math.round(this.height * 0.95));
+            if (!this._ghostTellCache) this._ghostTellCache = getEmojiCanvas(String.fromCodePoint(0x1F47B), 24);
+            const orbit = this.camelCloneOrbitPhase || 0;
+            const radius = 56 + this.phase * 6;
+            const gx = Math.cos(orbit) * radius * 0.82;
+            const gy = -30 + Math.sin(orbit * 1.75) * (15 + this.phase * 2);
+            const ghostPulse = 0.55 + Math.sin(this.timeAlive * 18) * 0.25;
+            const flashBoost = this.camelCloneHitFlash > 0 ? (0.2 + Math.sin(this.camelCloneHitFlash * 28) * 0.08) : 0;
+            ctx.globalAlpha = alpha * (0.2 + ghostPulse * 0.34 + flashBoost);
+            ctx.drawImage(this._camelGhostCache.canvas, gx - this._camelGhostCache.width / 2, gy - this._camelGhostCache.height / 2);
+
+            const hp = Math.max(0, Math.floor(this.camelCloneHealth));
+            for (let i = 0; i < hp; i++) {
+                const t = hp <= 1 ? 0.5 : (i / (hp - 1));
+                const px = -26 + t * 52;
+                const py = -this.height / 2 - 58 - Math.sin(this.timeAlive * 7 + i) * 3;
+                ctx.globalAlpha = alpha * (0.35 + ghostPulse * 0.45);
+                ctx.drawImage(this._ghostTellCache.canvas, px - this._ghostTellCache.width / 2, py - this._ghostTellCache.height / 2);
+            }
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_camel' && this.camelTelegraphTimer > 0) {
+            const pulse = 0.58 + Math.sin(this.timeAlive * 24) * 0.34;
+            const groundLocalY = this.platform
+                ? (this.platform.y - (this.y + this.height / 2))
+                : this.height * 0.5;
+            if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+            if (this.camelTelegraphType === 'pyramid') {
+                if (!this._camelPyramidTellCache) this._camelPyramidTellCache = getEmojiCanvas(String.fromCodePoint(0x1F53A), 26);
+                for (let i = -1; i <= 1; i++) {
+                    const tx = i * 22;
+                    const ty = -this.height / 2 - 52 + Math.abs(i) * 6;
+                    ctx.globalAlpha = alpha * (0.38 + pulse * 0.44);
+                    ctx.drawImage(this._camelPyramidTellCache.canvas, tx - this._camelPyramidTellCache.width / 2, ty - this._camelPyramidTellCache.height / 2);
+                }
+            } else if (this.camelTelegraphType === 'dash') {
+                if (!this._camelWindTellCache) this._camelWindTellCache = getEmojiCanvas(String.fromCodePoint(0x1F4A8), 24);
+                const dir = this.facingRight ? 1 : -1;
+                for (let i = 0; i < 3; i++) {
+                    const tx = -dir * (18 + i * 24);
+                    const ty = -8 + i * 6;
+                    ctx.globalAlpha = alpha * (0.28 + pulse * 0.4);
+                    ctx.drawImage(this._camelWindTellCache.canvas, tx - this._camelWindTellCache.width / 2, ty - this._camelWindTellCache.height / 2);
+                }
+            } else if (this.camelTelegraphType === 'spike') {
+                if (!this._camelSpikeTellCache) this._camelSpikeTellCache = getEmojiCanvas(String.fromCodePoint(0x1F53A), 30);
+                const markerX = (this.camelSpikeTelegraphX || (this.x + this.width * 0.5)) - (this.x + this.width / 2);
+                const ringPulse = 0.78 + Math.sin(this.timeAlive * 30) * 0.22;
+                ctx.globalAlpha = alpha * (0.52 + pulse * 0.34);
+                ctx.fillStyle = '#ffe3aa';
+                ctx.beginPath();
+                ctx.ellipse(markerX, groundLocalY - 6, 56, 18, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = alpha * (0.66 + pulse * 0.3);
+                ctx.strokeStyle = '#ff7a00';
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.ellipse(markerX, groundLocalY - 6, 34 + ringPulse * 14, 10 + ringPulse * 5, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.globalAlpha = alpha * (0.82 + pulse * 0.14);
+                ctx.drawImage(this._camelSpikeTellCache.canvas, markerX - this._camelSpikeTellCache.width / 2, groundLocalY - this._camelSpikeTellCache.height - 18);
+                ctx.globalAlpha = alpha * (0.84 + pulse * 0.14);
+                ctx.drawImage(this._warnCache.canvas, markerX - this._warnCache.width / 2 - 16, groundLocalY - this._warnCache.height - 48);
+                ctx.drawImage(this._warnCache.canvas, markerX - this._warnCache.width / 2 + 16, groundLocalY - this._warnCache.height - 48);
+            } else {
+                if (!this._ghostTellCache) this._ghostTellCache = getEmojiCanvas(String.fromCodePoint(0x1F47B), 24);
+                const spinR = 32;
+                for (let i = 0; i < 3; i++) {
+                    const a = this.timeAlive * 6 + i * (Math.PI * 2 / 3);
+                    const tx = Math.cos(a) * spinR * 0.75;
+                    const ty = -30 + Math.sin(a) * spinR * 0.35;
+                    ctx.globalAlpha = alpha * (0.3 + pulse * 0.45);
+                    ctx.drawImage(this._ghostTellCache.canvas, tx - this._ghostTellCache.width / 2, ty - this._ghostTellCache.height / 2);
+                }
+            }
+            ctx.globalAlpha = alpha * (0.46 + pulse * 0.38);
+            ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2, -this.height / 2 - 56);
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_camel' && this.camelState === 'MIRAGE_DASH') {
+            const dir = this.facingRight ? 1 : -1;
+            const streakPulse = 0.4 + Math.sin(this.timeAlive * 30) * 0.16;
+            ctx.strokeStyle = `rgba(246, 226, 177, ${streakPulse})`;
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-dir * 16, -4);
+            ctx.lineTo(-dir * 62, -12);
+            ctx.moveTo(-dir * 10, 8);
+            ctx.lineTo(-dir * 54, 14);
+            ctx.stroke();
+        }
+
+        if (this.bossType === 'boss_rhino' && this.rhinoTelegraphTimer > 0) {
+            if (!this._rhinoSmokeTellCache) this._rhinoSmokeTellCache = getEmojiCanvas(String.fromCodePoint(0x1F4A8), 28);
+            const duration = Math.max(0.0001, this.rhinoTelegraphDuration || 0.8);
+            const progress = Math.max(0, Math.min(1, 1 - this.rhinoTelegraphTimer / duration));
+            const pulse = 0.54 + Math.sin(this.timeAlive * 26) * 0.34;
+            const feetY = this.height * 0.42;
+            const stride = 26;
+            const copies = 2 + Math.floor(progress * 3);
+            for (let i = 0; i < copies; i++) {
+                const side = i % 2 === 0 ? -1 : 1;
+                const ox = side * (14 + (i * 6)) + Math.sin(this.timeAlive * 14 + i) * 3;
+                const oy = feetY - i * (5 + progress * 2);
+                ctx.globalAlpha = alpha * (0.26 + pulse * 0.34 + progress * 0.18);
+                ctx.drawImage(this._rhinoSmokeTellCache.canvas, ox - this._rhinoSmokeTellCache.width / 2, oy - this._rhinoSmokeTellCache.height / 2);
+            }
+            if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+            ctx.globalAlpha = alpha * (0.4 + pulse * 0.42);
+            ctx.drawImage(this._warnCache.canvas, -this._warnCache.width / 2, -this.height / 2 - 50);
+            ctx.drawImage(this._warnCache.canvas, stride - this._warnCache.width / 2, -this.height / 2 - 44);
+            ctx.drawImage(this._warnCache.canvas, -stride - this._warnCache.width / 2, -this.height / 2 - 44);
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_rhino' && (this.rhinoState === 'TORNADO_TELEGRAPH' || this.rhinoState === 'TORNADO_THROW')) {
+            if (!this._rhinoTornadoTellCache) this._rhinoTornadoTellCache = getEmojiCanvas(String.fromCodePoint(0x1F32A) + '\uFE0F', 34);
+            const pulse = 0.56 + Math.sin(this.timeAlive * 24) * 0.34;
+            const dir = this.facingRight ? 1 : -1;
+            const baseX = dir * 34;
+            const baseY = -this.height * 0.08;
+            const spins = this.rhinoState === 'TORNADO_THROW' ? 3 : 2;
+            for (let i = 0; i < spins; i++) {
+                const orbit = 12 + i * 9;
+                const angle = this.timeAlive * (7 + i * 1.2) + i * 1.8;
+                const ox = baseX + Math.cos(angle) * orbit * 0.35;
+                const oy = baseY + Math.sin(angle) * orbit * 0.26;
+                ctx.globalAlpha = alpha * (0.28 + pulse * 0.42);
+                ctx.drawImage(this._rhinoTornadoTellCache.canvas, ox - this._rhinoTornadoTellCache.width / 2, oy - this._rhinoTornadoTellCache.height / 2);
+            }
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_rhino' && (this.rhinoStompTelegraphTimer > 0 || this.rhinoState === 'STOMP_ARC')) {
+            if (!this._rhinoStompTellCache) this._rhinoStompTellCache = getEmojiCanvas(String.fromCodePoint(0x1F463), 32);
+            const pulse = 0.58 + Math.sin(this.timeAlive * 24) * 0.32;
+            const dir = this.rhinoStompDir >= 0 ? 1 : -1;
+            const telegraphDuration = this.phase >= 3 ? 0.38 : (this.phase >= 2 ? 0.46 : 0.55);
+            const telegraphProgress = this.rhinoStompTelegraphTimer > 0
+                ? Math.max(0, Math.min(1, 1 - this.rhinoStompTelegraphTimer / Math.max(0.0001, telegraphDuration)))
+                : 1;
+            const waveCount = this.rhinoState === 'STOMP_ARC' ? 4 : 3;
+            for (let i = 0; i < waveCount; i++) {
+                const t = waveCount <= 1 ? 0.5 : (i / (waveCount - 1));
+                const laneX = dir * (34 + t * 144);
+                const laneY = -12 - Math.sin(t * Math.PI) * 68;
+                const wobbleX = Math.sin(this.timeAlive * (9 + i) + i * 0.8) * 4;
+                const wobbleY = Math.cos(this.timeAlive * (8 + i) + i * 0.9) * 3;
+                const alphaMul = this.rhinoState === 'STOMP_ARC'
+                    ? (0.36 + pulse * 0.36)
+                    : (0.2 + telegraphProgress * 0.38 + pulse * 0.22);
+                ctx.globalAlpha = alpha * alphaMul;
+                ctx.drawImage(this._rhinoStompTellCache.canvas, laneX + wobbleX - this._rhinoStompTellCache.width / 2, laneY + wobbleY - this._rhinoStompTellCache.height / 2);
+            }
+            if (!this._warnCache) this._warnCache = getEmojiCanvas(String.fromCodePoint(0x26A0) + '\uFE0F', 26);
+            ctx.globalAlpha = alpha * (0.38 + pulse * 0.38);
+            ctx.drawImage(this._warnCache.canvas, dir * 22 - this._warnCache.width / 2, -this.height / 2 - 56);
+            ctx.globalAlpha = alpha;
+        }
+
+        if (this.bossType === 'boss_rhino' && this.rhinoState === 'CHARGE') {
+            const dir = this.facingRight ? 1 : -1;
+            const streakPulse = 0.38 + Math.sin(this.timeAlive * 34) * 0.16;
+            ctx.strokeStyle = `rgba(215, 241, 255, ${streakPulse})`;
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-dir * 16, -4);
+            ctx.lineTo(-dir * 62, -14);
+            ctx.moveTo(-dir * 12, 10);
+            ctx.lineTo(-dir * 58, 16);
+            ctx.stroke();
         }
 
         ctx.restore();
