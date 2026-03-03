@@ -12,6 +12,7 @@ export class Worm extends Entity {
         this.rotation = 0;
         this.rotationSpeed = (facingRight ? 1 : -1) * (10 + Math.random() * 5);
         this._cachedEmoji = getEmojiCanvas(emoji, 30, true);
+        this._platformCandidates = [];
     }
 
     update(dt, game) {
@@ -38,7 +39,9 @@ export class Worm extends Entity {
 
         // Check if Worm hits platforms
         if (!this.markedForDeletion) {
-            const platforms = game._visiblePlatforms;
+            const platforms = (game && typeof game.queryVisiblePlatformsInAABB === 'function')
+                ? game.queryVisiblePlatformsInAABB(this.x, this.y, this.x + this.width, this.y + this.height, this._platformCandidates)
+                : game._visiblePlatforms;
             for (let i = 0; i < platforms.length; i++) {
                 if (Physics.checkAABB(this, platforms[i])) {
                     this.markedForDeletion = true;

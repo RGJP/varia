@@ -10,6 +10,7 @@ export class Peanut extends Entity {
         this.rotation = 0;
         this.rotationSpeed = (vx > 0 ? 1 : -1) * (10 + Math.random() * 8);
         this._cachedEmoji = getEmojiCanvas('🥜', 24, true);
+        this._platformCandidates = [];
     }
 
     update(dt, game) {
@@ -35,7 +36,9 @@ export class Peanut extends Entity {
 
         // Hit platforms
         if (!this.markedForDeletion) {
-            const platforms = game._visiblePlatforms;
+            const platforms = (game && typeof game.queryVisiblePlatformsInAABB === 'function')
+                ? game.queryVisiblePlatformsInAABB(this.x, this.y, this.x + this.width, this.y + this.height, this._platformCandidates)
+                : game._visiblePlatforms;
             for (let i = 0; i < platforms.length; i++) {
                 if (Physics.checkAABB(this, platforms[i])) {
                     this.markedForDeletion = true;

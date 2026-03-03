@@ -15,6 +15,7 @@ export class Bone extends Entity {
         // Default cache with bone; will be lazily updated if emojiOverride is set
         this._cachedEmoji = getEmojiCanvas('🦴', 40, true);
         this._cachedEmojiKey = '🦴';
+        this._platformCandidates = [];
     }
 
     update(dt, game) {
@@ -39,7 +40,9 @@ export class Bone extends Entity {
 
         // Check if Bone hits platforms
         if (!this.markedForDeletion) {
-            const platforms = game._visiblePlatforms;
+            const platforms = (game && typeof game.queryVisiblePlatformsInAABB === 'function')
+                ? game.queryVisiblePlatformsInAABB(this.x, this.y, this.x + this.width, this.y + this.height, this._platformCandidates)
+                : game._visiblePlatforms;
             for (let i = 0; i < platforms.length; i++) {
                 const platform = platforms[i];
                 if (Physics.checkAABB(this, platform)) {

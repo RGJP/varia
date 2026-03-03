@@ -140,6 +140,7 @@ export class Player extends Entity {
         for (let i = 0; i < 3; i++) {
             this._fireboxes.push({ x: 0, y: 0, width: 30, height: 30 });
         }
+        this._frostBlastEnemyCandidates = [];
         this.carriedShell = null;
     }
 
@@ -1239,7 +1240,16 @@ export class Player extends Entity {
             game.particles.emit(cx, cy, 20, 'rgba(180, 225, 255, 0.55)', [30, 150], [0.26, 0.5], [8, 16]);
         }
 
-        const enemies = game && game.enemies ? game.enemies : [];
+        const blastSearchRadius = this.frostBlastRadius + 140;
+        const enemies = (game && typeof game.queryEnemiesInAABB === 'function')
+            ? game.queryEnemiesInAABB(
+                cx - blastSearchRadius,
+                cy - blastSearchRadius,
+                cx + blastSearchRadius,
+                cy + blastSearchRadius,
+                this._frostBlastEnemyCandidates
+            )
+            : (game && game.enemies ? game.enemies : []);
         for (let i = 0; i < enemies.length; i++) {
             const enemy = enemies[i];
             if (!enemy || enemy.markedForDeletion) continue;

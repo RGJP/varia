@@ -105,6 +105,19 @@ export class Game {
         this._visiblePlatforms = [];
         this._visibleVines = [];
         this._visibleSwingingVines = [];
+        this._activeEnemies = [];
+        this._activeCollectibles = [];
+        this._activeSafeZones = [];
+        this._enemySpatial = new Map();
+        this._enemySpatialCellSize = 220;
+        this._enemySpatialQueryId = 1;
+        this._enemyExplosionQuery = [];
+        this._visiblePlatformSpatial = new Map();
+        this._visiblePlatformSpatialCellSize = 280;
+        this._visiblePlatformSpatialQueryId = 1;
+        this._rockSpatial = new Map();
+        this._rockSpatialCellSize = 220;
+        this._rockSpatialQueryId = 1;
         this._victoryPlatforms = [];
         this._playerCollisionContext = {
             enemies: [],
@@ -134,6 +147,64 @@ export class Game {
         this._panicRecoveryWindow = 5;
         this._topFpsStreak = 0;
         this._particlePanicMode = false;
+        this.profilerEnabled = false;
+        this._profilerSmoothing = 0.18;
+        this._profilerSpikeWindowFrames = 180;
+        this._profileMetricKeys = [
+            'frameMs',
+            'updateMs',
+            'drawMs',
+            'inputMs',
+            'prep',
+            'player',
+            'enemies',
+            'collectibles',
+            'rocks',
+            'projectiles',
+            'finalize'
+        ];
+        this._profileBuckets = {
+            prep: 0,
+            player: 0,
+            enemies: 0,
+            collectibles: 0,
+            rocks: 0,
+            projectiles: 0,
+            finalize: 0
+        };
+        this._profileDisplay = {
+            frameMs: 0,
+            updateMs: 0,
+            drawMs: 0,
+            inputMs: 0,
+            prep: 0,
+            player: 0,
+            enemies: 0,
+            collectibles: 0,
+            rocks: 0,
+            projectiles: 0,
+            finalize: 0
+        };
+        this._profileSpikes = {
+            frameMs: 0,
+            updateMs: 0,
+            drawMs: 0,
+            inputMs: 0,
+            prep: 0,
+            player: 0,
+            enemies: 0,
+            collectibles: 0,
+            rocks: 0,
+            projectiles: 0,
+            finalize: 0
+        };
+        this._profileHistory = {};
+        for (let i = 0; i < this._profileMetricKeys.length; i++) {
+            const key = this._profileMetricKeys[i];
+            this._profileHistory[key] = new Float32Array(this._profilerSpikeWindowFrames);
+        }
+        this._profileHistoryCursor = 0;
+        this._profileHistoryCount = 0;
         if (this.particles && typeof this.particles.setMobileMode === 'function') {
             this.particles.setMobileMode(this.isMobileDevice);
         }
@@ -150,6 +221,7 @@ export class Game {
         this._bossMusicEngaged = false;
         this._lastCameraBtnLeft = null;
         this.startMenuTrackNumber = 21;
+        this._mobileUI = document.getElementById('mobile-ui');
 
         // Pre-cache UI emojis
         this._heartCache = getEmojiCanvas('\u2764\uFE0F', 24);
@@ -441,6 +513,13 @@ export class Game {
         this.rocks = [];
         this.lightningOrbs = [];
         this.enemyProjectiles = [];
+        this._enemySpatial.clear();
+        this._enemySpatialQueryId = 1;
+        this._enemyExplosionQuery.length = 0;
+        this._visiblePlatformSpatial.clear();
+        this._visiblePlatformSpatialQueryId = 1;
+        this._rockSpatial.clear();
+        this._rockSpatialQueryId = 1;
         this._initPrisonerRescue(levelData.prisonerRescue);
 
         this.totalCoins = this.collectibles.length;
@@ -981,7 +1060,88 @@ export class Game {
         };
     }
 
+    _resetProfileBuckets() {
+        const b = this._profileBuckets;
+        b.prep = 0;
+        b.player = 0;
+        b.enemies = 0;
+        b.collectibles = 0;
+        b.rocks = 0;
+        b.projectiles = 0;
+        b.finalize = 0;
+    }
+
+    _resetProfilerHistory() {
+        this._profileHistoryCursor = 0;
+        this._profileHistoryCount = 0;
+        for (let i = 0; i < this._profileMetricKeys.length; i++) {
+            const key = this._profileMetricKeys[i];
+            const arr = this._profileHistory[key];
+            if (arr) arr.fill(0);
+            this._profileSpikes[key] = 0;
+        }
+    }
+
+    _recomputeProfilerSpikes() {
+        const count = this._profileHistoryCount;
+        for (let i = 0; i < this._profileMetricKeys.length; i++) {
+            const key = this._profileMetricKeys[i];
+            const arr = this._profileHistory[key];
+            let maxValue = 0;
+            for (let j = 0; j < count; j++) {
+                const v = arr[j];
+                if (v > maxValue) maxValue = v;
+            }
+            this._profileSpikes[key] = maxValue;
+        }
+    }
+
+    _recordProfilerHistory(frameMs, updateMs, drawMs, inputMs) {
+        const idx = this._profileHistoryCursor;
+        const b = this._profileBuckets;
+        this._profileHistory.frameMs[idx] = frameMs;
+        this._profileHistory.updateMs[idx] = updateMs;
+        this._profileHistory.drawMs[idx] = drawMs;
+        this._profileHistory.inputMs[idx] = inputMs;
+        this._profileHistory.prep[idx] = b.prep;
+        this._profileHistory.player[idx] = b.player;
+        this._profileHistory.enemies[idx] = b.enemies;
+        this._profileHistory.collectibles[idx] = b.collectibles;
+        this._profileHistory.rocks[idx] = b.rocks;
+        this._profileHistory.projectiles[idx] = b.projectiles;
+        this._profileHistory.finalize[idx] = b.finalize;
+
+        this._profileHistoryCursor = (idx + 1) % this._profilerSpikeWindowFrames;
+        if (this._profileHistoryCount < this._profilerSpikeWindowFrames) {
+            this._profileHistoryCount++;
+        }
+        this._recomputeProfilerSpikes();
+    }
+
+    _pushProfilerSample(frameMs, updateMs, drawMs, inputMs) {
+        const alpha = this._profilerSmoothing;
+        const display = this._profileDisplay;
+        const buckets = this._profileBuckets;
+
+        display.frameMs = display.frameMs > 0 ? (display.frameMs * (1 - alpha) + frameMs * alpha) : frameMs;
+        display.updateMs = display.updateMs > 0 ? (display.updateMs * (1 - alpha) + updateMs * alpha) : updateMs;
+        display.drawMs = display.drawMs > 0 ? (display.drawMs * (1 - alpha) + drawMs * alpha) : drawMs;
+        display.inputMs = display.inputMs > 0 ? (display.inputMs * (1 - alpha) + inputMs * alpha) : inputMs;
+        display.prep = display.prep > 0 ? (display.prep * (1 - alpha) + buckets.prep * alpha) : buckets.prep;
+        display.player = display.player > 0 ? (display.player * (1 - alpha) + buckets.player * alpha) : buckets.player;
+        display.enemies = display.enemies > 0 ? (display.enemies * (1 - alpha) + buckets.enemies * alpha) : buckets.enemies;
+        display.collectibles = display.collectibles > 0 ? (display.collectibles * (1 - alpha) + buckets.collectibles * alpha) : buckets.collectibles;
+        display.rocks = display.rocks > 0 ? (display.rocks * (1 - alpha) + buckets.rocks * alpha) : buckets.rocks;
+        display.projectiles = display.projectiles > 0 ? (display.projectiles * (1 - alpha) + buckets.projectiles * alpha) : buckets.projectiles;
+        display.finalize = display.finalize > 0 ? (display.finalize * (1 - alpha) + buckets.finalize * alpha) : buckets.finalize;
+        this._recordProfilerHistory(frameMs, updateMs, drawMs, inputMs);
+    }
+
     loop(time) {
+        const profiling = this.profilerEnabled;
+        const frameStart = profiling ? performance.now() : 0;
+        if (profiling) this._resetProfileBuckets();
+
         let dt = (time - this.lastTime) / 1000;
         const hadPreviousFrame = this.lastTime > 0;
         this.lastTime = time;
@@ -1042,16 +1202,29 @@ export class Game {
             }
         }
 
+        const updateStart = profiling ? performance.now() : 0;
         this.update(dt);
-        this.draw();
+        const updateMs = profiling ? (performance.now() - updateStart) : 0;
 
+        const drawStart = profiling ? performance.now() : 0;
+        this.draw();
+        const drawMs = profiling ? (performance.now() - drawStart) : 0;
+
+        const inputStart = profiling ? performance.now() : 0;
         this.input.update();
+        const inputMs = profiling ? (performance.now() - inputStart) : 0;
+
+        if (profiling) {
+            const frameMs = performance.now() - frameStart;
+            this._pushProfilerSample(frameMs, updateMs, drawMs, inputMs);
+        }
 
         requestAnimationFrame((time) => this.loop(time));
     }
 
     update(dt) {
-        const mobileUI = document.getElementById('mobile-ui');
+        if (!this._mobileUI) this._mobileUI = document.getElementById('mobile-ui');
+        const mobileUI = this._mobileUI;
         if (mobileUI) {
             if (this.state === GameState.PLAYING || this.state === GameState.PAUSED) {
                 mobileUI.classList.add('active');
@@ -1059,6 +1232,18 @@ export class Game {
                 mobileUI.classList.remove('active');
             }
         }
+
+        if (this.input.isJustPressed('KeyO')) {
+            this.profilerEnabled = !this.profilerEnabled;
+            this._resetProfileBuckets();
+            this._resetProfilerHistory();
+        }
+        if (this.profilerEnabled && this.input.isJustPressed('KeyI')) {
+            this._resetProfilerHistory();
+        }
+
+        const profiling = this.profilerEnabled;
+        let bucketStart = profiling ? performance.now() : 0;
 
         if (this.input.isJustPressed('KeyP')) {
             if (this.state === GameState.PLAYING) {
@@ -1076,38 +1261,53 @@ export class Game {
             return;
         }
 
-        // Update visible collections for culling
+        const cullMargin = 800;
+        const cullLeft = this.camera.x - cullMargin;
+        const cullRight = this.camera.x + this.camera.effectiveWidth + cullMargin;
+        const cullTop = this.camera.y - cullMargin;
+        const cullBottom = this.camera.y + this.camera.effectiveHeight + cullMargin;
+
+        // Update visible collections for culling.
         this._visiblePlatforms.length = 0;
         for (let i = 0; i < this.platforms.length; i++) {
-            if (this._isVisible(this.platforms[i], 800)) {
+            if (this._intersectsBounds(this.platforms[i], cullLeft, cullRight, cullTop, cullBottom)) {
                 this._visiblePlatforms.push(this.platforms[i]);
             }
         }
         this._visibleVines.length = 0;
         for (let i = 0; i < this.vines.length; i++) {
-            if (this._isVisible(this.vines[i], 800)) {
+            if (this._intersectsBounds(this.vines[i], cullLeft, cullRight, cullTop, cullBottom)) {
                 this._visibleVines.push(this.vines[i]);
             }
         }
         this._visibleSwingingVines.length = 0;
         for (let i = 0; i < this.swingingVines.length; i++) {
-            if (this._isVisible(this.swingingVines[i], 800)) {
+            if (this._intersectsBounds(this.swingingVines[i], cullLeft, cullRight, cullTop, cullBottom)) {
                 this._visibleSwingingVines.push(this.swingingVines[i]);
             }
         }
 
         const safeZones = this.safeZones;
+        this._activeSafeZones.length = 0;
         for (let i = 0; i < safeZones.length; i++) {
-            safeZones[i].update(dt);
+            const zone = safeZones[i];
+            zone.update(dt);
+            if (this._intersectsBounds(zone, cullLeft, cullRight, cullTop, cullBottom)) {
+                this._activeSafeZones.push(zone);
+            }
         }
 
         // Update moving platforms and include in visible platforms for collision
         for (let i = 0; i < this.movingPlatforms.length; i++) {
             const mp = this.movingPlatforms[i];
             mp.update(dt);
-            if (this._isVisible(mp, 800)) {
+            if (this._intersectsBounds(mp, cullLeft, cullRight, cullTop, cullBottom)) {
                 this._visiblePlatforms.push(mp);
             }
+        }
+        this._rebuildVisiblePlatformSpatialIndex();
+        if (profiling) {
+            this._profileBuckets.prep += performance.now() - bucketStart;
         }
 
         if (this.state === GameState.PLAYING) {
@@ -1133,6 +1333,7 @@ export class Game {
                 return; // Stop update of everything else
             }
 
+            if (profiling) bucketStart = performance.now();
             this._spawnNearbyBosses();
             const collisionContext = this._buildPlayerCollisionContext();
             this.player.update(dt, this.input, this._visiblePlatforms, this, collisionContext);
@@ -1142,13 +1343,19 @@ export class Game {
             for (let i = 0; i < svines.length; i++) {
                 svines[i].update(dt);
             }
+            if (profiling) {
+                this._profileBuckets.player += performance.now() - bucketStart;
+            }
 
+            if (profiling) bucketStart = performance.now();
             const enemies = this.enemies;
             const updateMargin = 1000;
             const updateLeft = this.camera.x - updateMargin;
             const updateRight = this.camera.x + this.camera.effectiveWidth + updateMargin;
             const updateTop = this.camera.y - updateMargin;
             const updateBottom = this.camera.y + this.camera.effectiveHeight + updateMargin;
+            this._activeEnemies.length = 0;
+            let activeBoss = null;
             for (let i = 0; i < enemies.length; i++) {
                 const enemy = enemies[i];
                 if (
@@ -1157,12 +1364,15 @@ export class Game {
                     enemy.y + enemy.height > updateTop &&
                     enemy.y < updateBottom
                 ) {
-                    enemies[i].update(dt, this);
+                    enemy.update(dt, this);
+                    this._activeEnemies.push(enemy);
+                    if (!activeBoss && enemy instanceof Boss && !enemy.markedForDeletion && enemy.activated) {
+                        activeBoss = enemy;
+                    }
                 }
             }
 
             // Fairness: when dropping to 1 HP during an active boss fight, spawn up to 2 hearts per boss.
-            const activeBoss = this.enemies.find(e => e instanceof Boss && !e.markedForDeletion && e.activated);
             if (activeBoss && this.player) {
                 if (typeof activeBoss._pityHeartSpawns !== 'number') activeBoss._pityHeartSpawns = 0;
                 if (typeof activeBoss._pityHeartLastHealth !== 'number') activeBoss._pityHeartLastHealth = this.player.health;
@@ -1175,10 +1385,15 @@ export class Game {
 
                 activeBoss._pityHeartLastHealth = this.player.health;
             }
+            if (profiling) {
+                this._profileBuckets.enemies += performance.now() - bucketStart;
+            }
 
+            if (profiling) bucketStart = performance.now();
             const collectibles = this.collectibles;
             this._updatePendingBossStarDrops(dt);
             this._updatePrisonerRescue(dt);
+            this._activeCollectibles.length = 0;
             for (let i = 0; i < collectibles.length; i++) {
                 const collectible = collectibles[i];
                 if (
@@ -1187,15 +1402,27 @@ export class Game {
                     collectible.y + collectible.height > updateTop &&
                     collectible.y < updateBottom
                 ) {
-                    collectibles[i].update(dt);
+                    collectible.update(dt);
+                    this._activeCollectibles.push(collectible);
                 }
             }
 
+            this._rebuildEnemySpatialIndex();
+            if (profiling) {
+                this._profileBuckets.collectibles += performance.now() - bucketStart;
+            }
+
+            if (profiling) bucketStart = performance.now();
             const rocks = this.rocks;
             for (let i = 0; i < rocks.length; i++) {
                 rocks[i].update(dt, this);
             }
+            this._rebuildRockSpatialIndex();
+            if (profiling) {
+                this._profileBuckets.rocks += performance.now() - bucketStart;
+            }
 
+            if (profiling) bucketStart = performance.now();
             const lightningOrbs = this.lightningOrbs;
             for (let i = 0; i < lightningOrbs.length; i++) {
                 lightningOrbs[i].update(dt, this);
@@ -1205,7 +1432,11 @@ export class Game {
             for (let i = 0; i < enemyProjectiles.length; i++) {
                 enemyProjectiles[i].update(dt, this);
             }
+            if (profiling) {
+                this._profileBuckets.projectiles += performance.now() - bucketStart;
+            }
 
+            if (profiling) bucketStart = performance.now();
             this.enemies = filterInPlace(this.enemies);
             this.collectibles = filterInPlace(this.collectibles);
             this.rocks = filterInPlace(this.rocks);
@@ -1220,6 +1451,9 @@ export class Game {
 
             this.camera.update(this.player, dt);
             this.particles.update(dt);
+            if (profiling) {
+                this._profileBuckets.finalize += performance.now() - bucketStart;
+            }
         }
     }
 
@@ -1402,18 +1636,192 @@ export class Game {
         return ctx;
     }
 
-    // Check if an entity is within the visible viewport (with margin)
-    _isVisible(entity, margin = 200) {
-        const left = this.camera.x - margin;
-        const right = this.camera.x + this.camera.effectiveWidth + margin;
-        const top = this.camera.y - margin;
-        const bottom = this.camera.y + this.camera.effectiveHeight + margin;
+    _insertEntityIntoSpatialGrid(grid, cellSize, entity) {
+        const minCellX = Math.floor(entity.x / cellSize);
+        const maxCellX = Math.floor((entity.x + entity.width) / cellSize);
+        const minCellY = Math.floor(entity.y / cellSize);
+        const maxCellY = Math.floor((entity.y + entity.height) / cellSize);
+
+        for (let cy = minCellY; cy <= maxCellY; cy++) {
+            for (let cx = minCellX; cx <= maxCellX; cx++) {
+                const key = `${cx},${cy}`;
+                let bucket = grid.get(key);
+                if (!bucket) {
+                    bucket = [];
+                    grid.set(key, bucket);
+                }
+                bucket.push(entity);
+            }
+        }
+    }
+
+    _querySpatialGrid(grid, cellSize, left, top, right, bottom, out, queryId, markField, skipMarkedForDeletion = false) {
+        const minCellX = Math.floor(left / cellSize);
+        const maxCellX = Math.floor(right / cellSize);
+        const minCellY = Math.floor(top / cellSize);
+        const maxCellY = Math.floor(bottom / cellSize);
+
+        for (let cy = minCellY; cy <= maxCellY; cy++) {
+            for (let cx = minCellX; cx <= maxCellX; cx++) {
+                const bucket = grid.get(`${cx},${cy}`);
+                if (!bucket) continue;
+
+                for (let i = 0; i < bucket.length; i++) {
+                    const item = bucket[i];
+                    if (!item) continue;
+                    if (skipMarkedForDeletion && item.markedForDeletion) continue;
+                    if (item[markField] === queryId) continue;
+                    item[markField] = queryId;
+                    if (!this._intersectsBounds(item, left, right, top, bottom)) continue;
+                    out.push(item);
+                }
+            }
+        }
+        return out;
+    }
+
+    _rebuildVisiblePlatformSpatialIndex() {
+        const grid = this._visiblePlatformSpatial;
+        grid.clear();
+        const platforms = this._visiblePlatforms;
+        const cellSize = this._visiblePlatformSpatialCellSize;
+        for (let i = 0; i < platforms.length; i++) {
+            const platform = platforms[i];
+            if (!platform) continue;
+            this._insertEntityIntoSpatialGrid(grid, cellSize, platform);
+        }
+    }
+
+    _rebuildEnemySpatialIndex() {
+        const grid = this._enemySpatial;
+        grid.clear();
+        const enemies = this.enemies;
+        const cellSize = this._enemySpatialCellSize;
+        for (let i = 0; i < enemies.length; i++) {
+            const enemy = enemies[i];
+            if (!enemy || enemy.markedForDeletion) continue;
+            this._insertEntityIntoSpatialGrid(grid, cellSize, enemy);
+        }
+    }
+
+    _rebuildRockSpatialIndex() {
+        const grid = this._rockSpatial;
+        grid.clear();
+        const rocks = this.rocks;
+        const cellSize = this._rockSpatialCellSize;
+        for (let i = 0; i < rocks.length; i++) {
+            const rock = rocks[i];
+            if (!rock || rock.markedForDeletion) continue;
+            this._insertEntityIntoSpatialGrid(grid, cellSize, rock);
+        }
+    }
+
+    queryVisiblePlatformsInAABB(left, top, right, bottom, out = []) {
+        out.length = 0;
+        const grid = this._visiblePlatformSpatial;
+        if (!grid || grid.size === 0) {
+            const platforms = this._visiblePlatforms;
+            for (let i = 0; i < platforms.length; i++) {
+                const platform = platforms[i];
+                if (!platform) continue;
+                if (!this._intersectsBounds(platform, left, right, top, bottom)) continue;
+                out.push(platform);
+            }
+            return out;
+        }
+
+        const queryId = this._visiblePlatformSpatialQueryId++;
+        if (this._visiblePlatformSpatialQueryId >= 0x7fffffff) this._visiblePlatformSpatialQueryId = 1;
+        return this._querySpatialGrid(
+            grid,
+            this._visiblePlatformSpatialCellSize,
+            left,
+            top,
+            right,
+            bottom,
+            out,
+            queryId,
+            '_platformSpatialQueryMark',
+            false
+        );
+    }
+
+    queryEnemiesInAABB(left, top, right, bottom, out = []) {
+        out.length = 0;
+        const grid = this._enemySpatial;
+        if (!grid || grid.size === 0) {
+            const enemies = this.enemies;
+            for (let i = 0; i < enemies.length; i++) {
+                const enemy = enemies[i];
+                if (!enemy || enemy.markedForDeletion) continue;
+                if (!this._intersectsBounds(enemy, left, right, top, bottom)) continue;
+                out.push(enemy);
+            }
+            return out;
+        }
+
+        const queryId = this._enemySpatialQueryId++;
+        if (this._enemySpatialQueryId >= 0x7fffffff) this._enemySpatialQueryId = 1;
+        return this._querySpatialGrid(
+            grid,
+            this._enemySpatialCellSize,
+            left,
+            top,
+            right,
+            bottom,
+            out,
+            queryId,
+            '_enemySpatialQueryMark',
+            true
+        );
+    }
+
+    queryRocksInAABB(left, top, right, bottom, out = []) {
+        out.length = 0;
+        const grid = this._rockSpatial;
+        if (!grid || grid.size === 0) {
+            const rocks = this.rocks;
+            for (let i = 0; i < rocks.length; i++) {
+                const rock = rocks[i];
+                if (!rock) continue;
+                if (!this._intersectsBounds(rock, left, right, top, bottom)) continue;
+                out.push(rock);
+            }
+            return out;
+        }
+
+        const queryId = this._rockSpatialQueryId++;
+        if (this._rockSpatialQueryId >= 0x7fffffff) this._rockSpatialQueryId = 1;
+        return this._querySpatialGrid(
+            grid,
+            this._rockSpatialCellSize,
+            left,
+            top,
+            right,
+            bottom,
+            out,
+            queryId,
+            '_rockSpatialQueryMark',
+            true
+        );
+    }
+
+    _intersectsBounds(entity, left, right, top, bottom) {
         return (
             entity.x + entity.width > left &&
             entity.x < right &&
             entity.y + entity.height > top &&
             entity.y < bottom
         );
+    }
+
+    // Check if an entity is within the visible viewport (with margin)
+    _isVisible(entity, margin = 200) {
+        const left = this.camera.x - margin;
+        const right = this.camera.x + this.camera.effectiveWidth + margin;
+        const top = this.camera.y - margin;
+        const bottom = this.camera.y + this.camera.effectiveHeight + margin;
+        return this._intersectsBounds(entity, left, right, top, bottom);
     }
 
     _getMenuOverlayScale(state = this.state) {
@@ -1653,6 +2061,12 @@ export class Game {
             this.ctx.scale(this.camera.zoom, this.camera.zoom);
             this.ctx.translate(-this.camera.x, -this.camera.y);
 
+            const drawMargin = 200;
+            const drawLeft = this.camera.x - drawMargin;
+            const drawRight = this.camera.x + this.camera.effectiveWidth + drawMargin;
+            const drawTop = this.camera.y - drawMargin;
+            const drawBottom = this.camera.y + this.camera.effectiveHeight + drawMargin;
+
             // Viewport culling: only draw entities visible on screen
             const vines = this._visibleVines;
             for (let i = 0; i < vines.length; i++) {
@@ -1669,69 +2083,58 @@ export class Game {
             }
             this._drawDeathTrapLine(this.ctx);
 
-            const collectibles = this.collectibles;
-            const drawMargin = 200;
-            const drawLeft = this.camera.x - drawMargin;
-            const drawRight = this.camera.x + this.camera.effectiveWidth + drawMargin;
-            const drawTop = this.camera.y - drawMargin;
-            const drawBottom = this.camera.y + this.camera.effectiveHeight + drawMargin;
+            const collectibles = this._activeCollectibles;
             for (let i = 0; i < collectibles.length; i++) {
                 const collectible = collectibles[i];
-                if (
-                    collectible.x + collectible.width > drawLeft &&
-                    collectible.x < drawRight &&
-                    collectible.y + collectible.height > drawTop &&
-                    collectible.y < drawBottom
-                ) {
+                if (this._intersectsBounds(collectible, drawLeft, drawRight, drawTop, drawBottom)) {
                     collectible.draw(this.ctx);
                 }
             }
             this._drawPrisonerRescue(this.ctx);
 
-            const safeZones = this.safeZones;
+            const safeZones = this._activeSafeZones;
             for (let i = 0; i < safeZones.length; i++) {
                 const zone = safeZones[i];
-                if (
-                    zone.x + zone.width > drawLeft &&
-                    zone.x < drawRight &&
-                    zone.y + zone.height > drawTop &&
-                    zone.y < drawBottom
-                ) {
+                if (this._intersectsBounds(zone, drawLeft, drawRight, drawTop, drawBottom)) {
                     zone.draw(this.ctx);
                 }
             }
 
-            const enemies = this.enemies;
+            const enemies = this._activeEnemies;
             for (let i = 0; i < enemies.length; i++) {
                 const enemy = enemies[i];
-                if (
-                    enemy.x + enemy.width > drawLeft &&
-                    enemy.x < drawRight &&
-                    enemy.y + enemy.height > drawTop &&
-                    enemy.y < drawBottom
-                ) {
+                if (this._intersectsBounds(enemy, drawLeft, drawRight, drawTop, drawBottom)) {
                     enemy.draw(this.ctx);
                 }
             }
 
             const rocks = this.rocks;
             for (let i = 0; i < rocks.length; i++) {
-                rocks[i].draw(this.ctx);
+                const rock = rocks[i];
+                if (this._intersectsBounds(rock, drawLeft, drawRight, drawTop, drawBottom)) {
+                    rock.draw(this.ctx);
+                }
             }
 
             const lightningOrbs = this.lightningOrbs;
             for (let i = 0; i < lightningOrbs.length; i++) {
-                lightningOrbs[i].draw(this.ctx);
+                const orb = lightningOrbs[i];
+                if (this._intersectsBounds(orb, drawLeft, drawRight, drawTop, drawBottom)) {
+                    orb.draw(this.ctx);
+                }
             }
 
             const projectiles = this.enemyProjectiles;
             for (let i = 0; i < projectiles.length; i++) {
-                projectiles[i].draw(this.ctx);
+                const projectile = projectiles[i];
+                if (this._intersectsBounds(projectile, drawLeft, drawRight, drawTop, drawBottom)) {
+                    projectile.draw(this.ctx);
+                }
             }
 
             this.player.draw(this.ctx, this);
             this._drawLightningLinks(this.ctx);
-            this.particles.draw(this.ctx);
+            this.particles.draw(this.ctx, drawLeft - 160, drawRight + 160, drawTop - 160, drawBottom + 160);
             this.ctx.restore();
         } else if (this.state === GameState.PAUSED) {
             // Draw frozen game state
@@ -1739,60 +2142,75 @@ export class Game {
             this.ctx.scale(this.camera.zoom, this.camera.zoom);
             this.ctx.translate(-this.camera.x, -this.camera.y);
 
+            const pauseMargin = 300;
+            const pauseLeft = this.camera.x - pauseMargin;
+            const pauseRight = this.camera.x + this.camera.effectiveWidth + pauseMargin;
+            const pauseTop = this.camera.y - pauseMargin;
+            const pauseBottom = this.camera.y + this.camera.effectiveHeight + pauseMargin;
+
             const vines = this.vines;
             for (let i = 0; i < vines.length; i++) {
-                if (this._isVisible(vines[i], 300)) vines[i].draw(this.ctx);
+                if (this._intersectsBounds(vines[i], pauseLeft, pauseRight, pauseTop, pauseBottom)) vines[i].draw(this.ctx);
             }
             const svines = this.swingingVines;
             for (let i = 0; i < svines.length; i++) {
-                if (this._isVisible(svines[i], 300)) svines[i].draw(this.ctx);
+                if (this._intersectsBounds(svines[i], pauseLeft, pauseRight, pauseTop, pauseBottom)) svines[i].draw(this.ctx);
             }
 
             const platforms = this.platforms;
             for (let i = 0; i < platforms.length; i++) {
-                if (this._isVisible(platforms[i], 300)) platforms[i].draw(this.ctx);
+                if (this._intersectsBounds(platforms[i], pauseLeft, pauseRight, pauseTop, pauseBottom)) platforms[i].draw(this.ctx);
             }
             this._drawDeathTrapLine(this.ctx);
 
             const mps = this.movingPlatforms;
             for (let i = 0; i < mps.length; i++) {
-                if (this._isVisible(mps[i], 300)) mps[i].draw(this.ctx);
+                if (this._intersectsBounds(mps[i], pauseLeft, pauseRight, pauseTop, pauseBottom)) mps[i].draw(this.ctx);
             }
 
             const collectibles = this.collectibles;
             for (let i = 0; i < collectibles.length; i++) {
-                if (this._isVisible(collectibles[i])) collectibles[i].draw(this.ctx);
+                if (this._intersectsBounds(collectibles[i], pauseLeft, pauseRight, pauseTop, pauseBottom)) collectibles[i].draw(this.ctx);
             }
             this._drawPrisonerRescue(this.ctx);
 
             const safeZones = this.safeZones;
             for (let i = 0; i < safeZones.length; i++) {
-                if (this._isVisible(safeZones[i])) safeZones[i].draw(this.ctx);
+                if (this._intersectsBounds(safeZones[i], pauseLeft, pauseRight, pauseTop, pauseBottom)) safeZones[i].draw(this.ctx);
             }
 
             const enemies = this.enemies;
             for (let i = 0; i < enemies.length; i++) {
-                if (this._isVisible(enemies[i])) enemies[i].draw(this.ctx);
+                if (this._intersectsBounds(enemies[i], pauseLeft, pauseRight, pauseTop, pauseBottom)) enemies[i].draw(this.ctx);
             }
 
             const rocks = this.rocks;
             for (let i = 0; i < rocks.length; i++) {
-                rocks[i].draw(this.ctx);
+                const rock = rocks[i];
+                if (this._intersectsBounds(rock, pauseLeft, pauseRight, pauseTop, pauseBottom)) {
+                    rock.draw(this.ctx);
+                }
             }
 
             const lightningOrbs = this.lightningOrbs;
             for (let i = 0; i < lightningOrbs.length; i++) {
-                lightningOrbs[i].draw(this.ctx);
+                const orb = lightningOrbs[i];
+                if (this._intersectsBounds(orb, pauseLeft, pauseRight, pauseTop, pauseBottom)) {
+                    orb.draw(this.ctx);
+                }
             }
 
             const projectiles = this.enemyProjectiles;
             for (let i = 0; i < projectiles.length; i++) {
-                projectiles[i].draw(this.ctx);
+                const projectile = projectiles[i];
+                if (this._intersectsBounds(projectile, pauseLeft, pauseRight, pauseTop, pauseBottom)) {
+                    projectile.draw(this.ctx);
+                }
             }
 
             this.player.draw(this.ctx, this);
             this._drawLightningLinks(this.ctx);
-            this.particles.draw(this.ctx);
+            this.particles.draw(this.ctx, pauseLeft - 160, pauseRight + 160, pauseTop - 160, pauseBottom + 160);
 
             this.ctx.restore();
         }
@@ -1800,6 +2218,9 @@ export class Game {
         this.drawUI();
         if (this.state !== GameState.START_MENU) {
             this.drawFpsCounter();
+        }
+        if (this.profilerEnabled) {
+            this.drawProfilerOverlay();
         }
     }
 
@@ -1811,6 +2232,75 @@ export class Game {
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
         this.ctx.fillText(`${Math.round(this.fpsDisplay)} ${this.layoutVariantLabel}`, this.viewportWidth / 2, this.viewportHeight - 8);
         this.ctx.restore();
+    }
+
+    drawProfilerOverlay() {
+        const p = this._profileDisplay;
+        const s = this._profileSpikes;
+        const spikeBuckets = [
+            ['prep', s.prep],
+            ['player', s.player],
+            ['enemy', s.enemies],
+            ['items', s.collectibles],
+            ['rocks', s.rocks],
+            ['proj', s.projectiles],
+            ['final', s.finalize]
+        ];
+        let worstBucketLabel = spikeBuckets[0][0];
+        let worstBucketValue = spikeBuckets[0][1];
+        for (let i = 1; i < spikeBuckets.length; i++) {
+            const entry = spikeBuckets[i];
+            if (entry[1] > worstBucketValue) {
+                worstBucketLabel = entry[0];
+                worstBucketValue = entry[1];
+            }
+        }
+        const lines = [
+            'Profiler (toggle: O, clear spikes: I)',
+            `frame  ${p.frameMs.toFixed(2)} ms`,
+            `update ${p.updateMs.toFixed(2)} ms`,
+            `draw   ${p.drawMs.toFixed(2)} ms`,
+            `input  ${p.inputMs.toFixed(2)} ms`,
+            `prep   ${p.prep.toFixed(2)} ms`,
+            `player ${p.player.toFixed(2)} ms`,
+            `enemy  ${p.enemies.toFixed(2)} ms`,
+            `items  ${p.collectibles.toFixed(2)} ms`,
+            `rocks  ${p.rocks.toFixed(2)} ms`,
+            `proj   ${p.projectiles.toFixed(2)} ms`,
+            `final  ${p.finalize.toFixed(2)} ms`,
+            `spike window ${this._profileHistoryCount}/${this._profilerSpikeWindowFrames} f`,
+            `spk frame ${s.frameMs.toFixed(2)} ms`,
+            `spk upd   ${s.updateMs.toFixed(2)} ms`,
+            `spk draw  ${s.drawMs.toFixed(2)} ms`,
+            `spk hot   ${worstBucketLabel} ${worstBucketValue.toFixed(2)} ms`
+        ];
+
+        const ctx = this.ctx;
+        ctx.save();
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.font = '12px monospace';
+
+        const lineHeight = 14;
+        const paddingX = 10;
+        const paddingY = 8;
+        const panelWidth = 236;
+        const panelHeight = paddingY * 2 + lines.length * lineHeight;
+        const x = this.viewportWidth - panelWidth - 14;
+        const y = 14;
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.58)';
+        ctx.fillRect(x, y, panelWidth, panelHeight);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 0.5, y + 0.5, panelWidth - 1, panelHeight - 1);
+
+        ctx.fillStyle = '#c8f7d8';
+        for (let i = 0; i < lines.length; i++) {
+            ctx.fillText(lines[i], x + paddingX, y + paddingY + i * lineHeight);
+        }
+
+        ctx.restore();
     }
 
     drawUI() {

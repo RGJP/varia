@@ -15,6 +15,8 @@ export class Fireball extends Entity {
         this.emojiOverride = null;
         this._cachedEmojiKey = '🔥';
         this._cachedEmoji = getEmojiCanvas('🔥', 40, true);
+        this._rockCandidates = [];
+        this._platformCandidates = [];
     }
 
     update(dt, game) {
@@ -55,7 +57,9 @@ export class Fireball extends Entity {
 
         // Check if hit by player Rock
         if (!this.markedForDeletion && game && game.rocks) {
-            const rocks = game.rocks;
+            const rocks = (typeof game.queryRocksInAABB === 'function')
+                ? game.queryRocksInAABB(this.x, this.y, this.x + this.width, this.y + this.height, this._rockCandidates)
+                : game.rocks;
             for (let i = 0; i < rocks.length; i++) {
                 const rock = rocks[i];
                 if (!rock.markedForDeletion && Physics.checkAABB(this, rock)) {
@@ -79,7 +83,9 @@ export class Fireball extends Entity {
         }
 
         if (!this.markedForDeletion && game && game._visiblePlatforms) {
-            const platforms = game._visiblePlatforms;
+            const platforms = (typeof game.queryVisiblePlatformsInAABB === 'function')
+                ? game.queryVisiblePlatformsInAABB(this.x, this.y, this.x + this.width, this.y + this.height, this._platformCandidates)
+                : game._visiblePlatforms;
             for (let i = 0; i < platforms.length; i++) {
                 if (Physics.checkAABB(this, platforms[i])) {
                     this.markedForDeletion = true;

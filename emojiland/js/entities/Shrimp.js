@@ -12,6 +12,7 @@ export class Shrimp extends Entity {
         this.rotation = 0;
         this.rotationSpeed = (facingRight ? 1 : -1) * (15 + Math.random() * 10);
         this._cachedEmoji = getEmojiCanvas('🦐', 24, true);
+        this._platformCandidates = [];
     }
 
     update(dt, game) {
@@ -38,7 +39,9 @@ export class Shrimp extends Entity {
 
         // Check if Shrimp hits platforms
         if (!this.markedForDeletion) {
-            const platforms = game._visiblePlatforms;
+            const platforms = (game && typeof game.queryVisiblePlatformsInAABB === 'function')
+                ? game.queryVisiblePlatformsInAABB(this.x, this.y, this.x + this.width, this.y + this.height, this._platformCandidates)
+                : game._visiblePlatforms;
             for (let i = 0; i < platforms.length; i++) {
                 if (Physics.checkAABB(this, platforms[i])) {
                     this.markedForDeletion = true;

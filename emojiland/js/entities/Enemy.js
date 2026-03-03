@@ -189,6 +189,7 @@ export class Enemy extends Entity {
         const emojiRenderSize = this.type === TYPE_SHOOTER ? Math.round(this.height * 1.25) : this.height;
         this._cachedEmoji = getEmojiCanvas(this.emoji, emojiRenderSize);
         this._tongueRect = { x: 0, y: 0, width: 0, height: 0 };
+        this._nearbyEnemyScratch = [];
     }
 
     isFacingWorldX(worldX) {
@@ -766,8 +767,17 @@ export class Enemy extends Entity {
             Math.abs(this.vx) > 1;
         if (!isSlidingShell || !game || !game.enemies || this.shellHitCooldownTimer > 0) return;
 
-        for (let i = 0; i < game.enemies.length; i++) {
-            const target = game.enemies[i];
+        const nearbyEnemies = (typeof game.queryEnemiesInAABB === 'function')
+            ? game.queryEnemiesInAABB(
+                this.x - 8,
+                this.y - 8,
+                this.x + this.width + 8,
+                this.y + this.height + 8,
+                this._nearbyEnemyScratch
+            )
+            : game.enemies;
+        for (let i = 0; i < nearbyEnemies.length; i++) {
+            const target = nearbyEnemies[i];
             if (!target || target === this || target.markedForDeletion || !target.takeDamage) continue;
             if (!Physics.checkAABB(this, target)) continue;
             target.takeDamage(1, game);

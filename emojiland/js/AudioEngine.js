@@ -26,6 +26,16 @@ export class AudioEngine {
         this.isMusicMuted = false;
         this.defaultMusicLevel = 0.26;
         this._musicUserVolume = 0;
+        this.defaultMusicTrackGain = 1;
+        // Fixed per-track linear gains (1.0 = unchanged). Keys can be:
+        // - full normalized path (js/music/00.mp3)
+        // - file name (00.mp3, boss2.mp3)
+        // - bare track id (00, boss2)
+        // Add/adjust values here by ear for rough loudness matching.
+        this.musicTrackGains = {
+            // 'js/music/00.mp3': 0.92,
+            // 'boss2.mp3': 0.88
+        };
         this.musicNodeChain = null;
         this._musicLoudnessInterval = null;
         this._musicLoudnessState = null;
@@ -306,6 +316,46 @@ export class AudioEngine {
         }
     }
 
+    _dbToLinear(db) {
+        return Math.pow(10, db / 20);
+    }
+
+    _resolveFixedTrackGain(trackKey) {
+        const safeDefault = this._clamp(Number(this.defaultMusicTrackGain) || 1, 0.05, 4);
+        const key = this._musicTrackCacheKey(trackKey);
+        const fileName = key.split('/').pop() || '';
+        const bareId = fileName.replace(/\.mp3$/i, '');
+
+        const pickConfiguredGain = () => {
+            const configured = [
+                this.musicTrackGains[key],
+                this.musicTrackGains[fileName],
+                this.musicTrackGains[bareId]
+            ];
+            for (let i = 0; i < configured.length; i++) {
+                const value = configured[i];
+                if (typeof value === 'number' && Number.isFinite(value)) {
+                    return value;
+                }
+            }
+            return null;
+        };
+
+        let gain = pickConfiguredGain();
+
+        // Compatibility fallback: reuse previously saved per-track dB offsets.
+        // This keeps existing user-tuned loudness data useful without runtime analysis.
+        if (gain === null && this.musicNormalizationCache && typeof this.musicNormalizationCache === 'object') {
+            const cachedDb = this.musicNormalizationCache[key];
+            if (typeof cachedDb === 'number' && Number.isFinite(cachedDb)) {
+                gain = this._dbToLinear(cachedDb);
+            }
+        }
+
+        if (gain === null) return safeDefault;
+        return this._clamp(gain, 0.05, 4);
+    }
+
     _persistNormalizationSample(force = false) {
         // Disabled: keep music gain flat over time.
         return;
@@ -320,8 +370,9 @@ export class AudioEngine {
     }
 
     _applyCachedTrackNormalization(trackKey) {
-        // Disabled: keep music gain flat over time.
-        return;
+        if (!this.musicNodeChain || !this.musicNodeChain.trackGain || !this.ctx) return;
+        const gain = this._resolveFixedTrackGain(trackKey);
+        this.musicNodeChain.trackGain.gain.setValueAtTime(gain, this.ctx.currentTime);
     }
 
     _startMusicLoudnessMonitor(trackKey) {
@@ -334,6 +385,7 @@ export class AudioEngine {
         if (!this.musicNodeChain) return;
         const chain = this.musicNodeChain;
         try { chain.source.disconnect(); } catch (e) { }
+        try { chain.trackGain.disconnect(); } catch (e) { }
         try { chain.analyser.disconnect(); } catch (e) { }
         try { chain.normalizerGain.disconnect(); } catch (e) { }
         try { chain.compressor.disconnect(); } catch (e) { }
@@ -353,15 +405,19 @@ export class AudioEngine {
 
         if (!this.musicNodeChain) {
             const source = this.ctx.createMediaElementSource(audioElement);
+            const trackGain = this.ctx.createGain();
+            trackGain.gain.value = this.defaultMusicTrackGain;
             const userGain = this.ctx.createGain();
             userGain.gain.value = this._musicUserVolume;
 
-            source.connect(userGain);
+            source.connect(trackGain);
+            trackGain.connect(userGain);
             userGain.connect(this.masterGain);
 
             this.musicNodeChain = {
                 audioElement,
                 source,
+                trackGain,
                 userGain,
                 trackKey: ''
             };

@@ -11,6 +11,7 @@ export class Barrel extends Entity {
         this.rotation = 0;
         this.facingRight = facingRight;
         this._cachedEmoji = getEmojiCanvas('🛢️', 40);
+        this._platformCandidates = [];
     }
 
     update(dt, game) {
@@ -30,7 +31,9 @@ export class Barrel extends Entity {
         this.rotation += (this.vx * dt) / radius;
 
         // Collision with platforms
-        const platforms = game._visiblePlatforms;
+        const platforms = (game && typeof game.queryVisiblePlatformsInAABB === 'function')
+            ? game.queryVisiblePlatformsInAABB(this.x, this.y, this.x + this.width, this.y + this.height, this._platformCandidates)
+            : game._visiblePlatforms;
         let onGround = false;
 
         for (let i = 0; i < platforms.length; i++) {

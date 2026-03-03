@@ -13,6 +13,7 @@ export class Laser extends Entity {
         this.rotation = angle + Math.PI / 2;
         this.emoji = '⚡';
         this._cachedEmoji = getEmojiCanvas(this.emoji, 44, true);
+        this._platformCandidates = [];
     }
 
     update(dt, game) {
@@ -31,7 +32,9 @@ export class Laser extends Entity {
 
         // Check hit platforms (can optionally make lasers go through walls)
         if (!this.markedForDeletion) {
-            const platforms = game._visiblePlatforms;
+            const platforms = (game && typeof game.queryVisiblePlatformsInAABB === 'function')
+                ? game.queryVisiblePlatformsInAABB(this.x, this.y, this.x + this.width, this.y + this.height, this._platformCandidates)
+                : game._visiblePlatforms;
             for (let i = 0; i < platforms.length; i++) {
                 if (Physics.checkAABB(this, platforms[i])) {
                     this.markedForDeletion = true;

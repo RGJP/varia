@@ -15,6 +15,8 @@ export class Rock extends Entity {
         this.damage = options.damage || 1;
         this.phaseThroughSurfaces = !!options.phaseThroughSurfaces;
         this.reflectedByEnemy = false;
+        this._enemyCandidates = [];
+        this._platformCandidates = [];
         this._cachedEmoji = getEmojiCanvas('\u{1FAA8}', Math.round(24 * sizeMultiplier));
     }
 
@@ -22,10 +24,12 @@ export class Rock extends Entity {
         this.x += this.vx * dt;
         this.rotation += (this.vx > 0 ? 10 : -10) * dt;
 
-        // Check if Rock hits an enemy
-        const enemies = game.enemies;
-        for (let i = 0; i < enemies.length; i++) {
-            const enemy = enemies[i];
+        // Check if Rock hits a nearby enemy
+        const enemyCandidates = (game && typeof game.queryEnemiesInAABB === 'function')
+            ? game.queryEnemiesInAABB(this.x, this.y, this.x + this.width, this.y + this.height, this._enemyCandidates)
+            : game.enemies;
+        for (let i = 0; i < enemyCandidates.length; i++) {
+            const enemy = enemyCandidates[i];
             if (enemy.markedForDeletion || this.markedForDeletion || !Physics.checkAABB(this, enemy)) continue;
 
             if (enemy.shouldReflectRock && enemy.shouldReflectRock(this, game)) {
@@ -73,7 +77,9 @@ export class Rock extends Entity {
 
         // Check if Rock hits platforms (mostly walls or ground)
         if (!this.markedForDeletion && !this.phaseThroughSurfaces) {
-            const platforms = game._visiblePlatforms;
+            const platforms = (game && typeof game.queryVisiblePlatformsInAABB === 'function')
+                ? game.queryVisiblePlatformsInAABB(this.x, this.y, this.x + this.width, this.y + this.height, this._platformCandidates)
+                : game._visiblePlatforms;
             for (let i = 0; i < platforms.length; i++) {
                 const platform = platforms[i];
                 if (Physics.checkAABB(this, platform)) {

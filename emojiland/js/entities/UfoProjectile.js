@@ -21,6 +21,7 @@ export class UfoProjectile extends Entity {
         // Rotation for visual variety, especially for triangle and square
         this.rotation = 0;
         this.rotationSpeed = (Math.random() - 0.5) * 10;
+        this._platformCandidates = [];
     }
 
     update(dt, game) {
@@ -41,7 +42,9 @@ export class UfoProjectile extends Entity {
 
         // Check hit platforms
         if (!this.markedForDeletion && game._visiblePlatforms) {
-            const platforms = game._visiblePlatforms;
+            const platforms = (typeof game.queryVisiblePlatformsInAABB === 'function')
+                ? game.queryVisiblePlatformsInAABB(this.x, this.y, this.x + this.width, this.y + this.height, this._platformCandidates)
+                : game._visiblePlatforms;
             for (let i = 0; i < platforms.length; i++) {
                 if (Physics.checkAABB(this, platforms[i])) {
                     this.markedForDeletion = true;

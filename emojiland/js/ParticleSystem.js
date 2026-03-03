@@ -360,7 +360,7 @@ export class ParticleSystem {
         this.particles.length = writeIdx;
     }
 
-    draw(ctx) {
+    draw(ctx, cullLeft = -Infinity, cullRight = Infinity, cullTop = -Infinity, cullBottom = Infinity) {
         const byColor = this._byColor;
         for (const arr of byColor.values()) {
             arr.length = 0; // Clear without deallocating
@@ -368,6 +368,14 @@ export class ParticleSystem {
 
         for (let i = 0; i < this.particles.length; i++) {
             const p = this.particles[i];
+            if (
+                p.x + p.size < cullLeft ||
+                p.x - p.size > cullRight ||
+                p.y + p.size < cullTop ||
+                p.y - p.size > cullBottom
+            ) {
+                continue;
+            }
             let arr = byColor.get(p.color);
             if (!arr) {
                 arr = [];

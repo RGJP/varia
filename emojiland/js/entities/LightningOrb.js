@@ -16,6 +16,7 @@ export class LightningOrb extends Entity {
         this.targetEnemy = null;
         this.hitEnemies = new Set();
         this.fxTimer = 0;
+        this._enemyCandidates = [];
 
         this._baseEmoji = getEmojiCanvas('\u26A1', 50);
         this._rotEmoji = this._buildRotatedEmoji(this._baseEmoji);
@@ -39,8 +40,20 @@ export class LightningOrb extends Entity {
         let bestDistSq = Infinity;
         const cx = this.x + this.width / 2;
         const cy = this.y + this.height / 2;
-        for (let i = 0; i < game.enemies.length; i++) {
-            const enemy = game.enemies[i];
+        const localSearchRadius = 950;
+        const nearbyEnemies = (typeof game.queryEnemiesInAABB === 'function')
+            ? game.queryEnemiesInAABB(
+                cx - localSearchRadius,
+                cy - localSearchRadius,
+                cx + localSearchRadius,
+                cy + localSearchRadius,
+                this._enemyCandidates
+            )
+            : game.enemies;
+        const searchPool = nearbyEnemies.length > 0 ? nearbyEnemies : game.enemies;
+
+        for (let i = 0; i < searchPool.length; i++) {
+            const enemy = searchPool[i];
             if (!enemy || enemy.markedForDeletion || this.hitEnemies.has(enemy)) continue;
             const ex = enemy.x + enemy.width / 2;
             const ey = enemy.y + enemy.height / 2;

@@ -193,6 +193,7 @@ export class BossProjectile extends Entity {
         else if (this.projectileType === 'cigarette') cacheSize = 56;
         else if (this.projectileType === 'smoke_cloud') cacheSize = 74;
         this._cachedEmoji = getEmojiCanvas(this.emoji, cacheSize);
+        this._platformCandidates = [];
     }
 
     update(dt, game) {
@@ -328,7 +329,17 @@ export class BossProjectile extends Entity {
         }
 
         // Platform collision
-        const platforms = game._visiblePlatforms;
+        const platformQueryTop = Math.min(prevY, this.y) - 4;
+        const platformQueryBottom = Math.max(prevY + this.height, this.y + this.height) + 4;
+        const platforms = (game && typeof game.queryVisiblePlatformsInAABB === 'function')
+            ? game.queryVisiblePlatformsInAABB(
+                this.x,
+                platformQueryTop,
+                this.x + this.width,
+                platformQueryBottom,
+                this._platformCandidates
+            )
+            : game._visiblePlatforms;
         for (let i = 0; i < platforms.length; i++) {
             const p = platforms[i];
             if (this.ignorePlatformTimer > 0) continue;
@@ -481,7 +492,17 @@ export class BossProjectile extends Entity {
         }
 
         if (this.webState === 'AIRBORNE') {
-            const platforms = game._visiblePlatforms;
+            const queryTop = Math.min(prevBottom - this.height, this.y) - 4;
+            const queryBottom = Math.max(prevBottom, this.y + this.height) + 4;
+            const platforms = (game && typeof game.queryVisiblePlatformsInAABB === 'function')
+                ? game.queryVisiblePlatformsInAABB(
+                    this.x,
+                    queryTop,
+                    this.x + this.width,
+                    queryBottom,
+                    this._platformCandidates
+                )
+                : game._visiblePlatforms;
             for (let i = 0; i < platforms.length; i++) {
                 const p = platforms[i];
                 const overlapsX = this.x + this.width > p.x && this.x < p.x + p.width;
