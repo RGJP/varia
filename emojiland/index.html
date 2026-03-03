@@ -19,6 +19,15 @@
         <button id="btn-camera" class="ui-btn ui-btn-camera">🎦</button>
         <button id="btn-layout-reset" class="ui-btn ui-btn-layout-reset">🔄️ Reset controls</button>
         <div id="layout-edit-hint">Layout Edit Mode - Drag circled controls to reposition</div>
+        <div id="layout-reset-confirm" aria-hidden="true">
+            <div class="layout-reset-confirm-panel" role="dialog" aria-modal="true" aria-label="Reset controls confirmation">
+                <div class="layout-reset-confirm-text">Reset controls to default positions?</div>
+                <div class="layout-reset-confirm-actions">
+                    <button id="btn-layout-reset-no" class="layout-reset-confirm-btn" type="button">No</button>
+                    <button id="btn-layout-reset-yes" class="layout-reset-confirm-btn is-danger" type="button">Yes, reset</button>
+                </div>
+            </div>
+        </div>
         <button id="btn-layout" class="ui-btn ui-btn-layout">⚙️</button>
         <button id="btn-pause" class="ui-btn ui-btn-pause">⏯️</button>
         <div id="joystick-zone" class="joystick-zone">

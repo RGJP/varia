@@ -15,3 +15,5 @@ xcopy "%SRC%" "%DST%" /e /i /h /k /y
 
 echo Done.
 endlocal
+
+C:\Users\rapha\AppData\Local\GitHubDesktop\GitHubDesktop.exe

@@ -119,6 +119,7 @@ export class InputHandler {
         this._lastAttackToggleTouchTs = 0;
         this._lastLayoutToggleTouchTs = 0;
         this._lastLayoutResetTouchTs = 0;
+        this._lastLayoutResetConfirmTouchTs = 0;
         this._mobileControlLayoutMode = false;
         const layoutStorageKey = 'emojiland_mobile_control_layout_v1';
         const movableControlIds = [
@@ -134,6 +135,8 @@ export class InputHandler {
         let mobileLayout = {};
         let layoutSaveTimerId = null;
         let layoutHintTimerId = null;
+        let isResetConfirmOpen = false;
+        let resetConfirmResolver = null;
 
         const loadLayout = () => {
             try {
@@ -284,6 +287,7 @@ export class InputHandler {
                     el.dataset.layoutTouchBound = '1';
                     el.addEventListener('touchstart', (e) => {
                         if (!isLayoutEditMode()) return;
+                        if (isResetConfirmOpen) return;
                         e.preventDefault();
                         e.stopPropagation();
                         primeControlForLayout(el);
@@ -409,6 +413,34 @@ export class InputHandler {
             }, durationMs);
         };
 
+        const setLayoutResetConfirmOpen = (isOpen) => {
+            const dialog = document.getElementById('layout-reset-confirm');
+            isResetConfirmOpen = !!isOpen;
+            if (!dialog) return;
+            dialog.classList.toggle('is-open', isResetConfirmOpen);
+            dialog.setAttribute('aria-hidden', isResetConfirmOpen ? 'false' : 'true');
+        };
+
+        const resolveLayoutResetConfirm = (confirmed) => {
+            const resolve = resetConfirmResolver;
+            resetConfirmResolver = null;
+            setLayoutResetConfirmOpen(false);
+            if (resolve) resolve(confirmed === true);
+        };
+
+        const requestLayoutResetConfirmation = () => {
+            const dialog = document.getElementById('layout-reset-confirm');
+            if (!dialog) return Promise.resolve(true);
+            if (resetConfirmResolver) return Promise.resolve(false);
+            dragStateByTouchId.clear();
+            this.clearAllInputs();
+            resetJoystick();
+            setLayoutResetConfirmOpen(true);
+            return new Promise((resolve) => {
+                resetConfirmResolver = resolve;
+            });
+        };
+
         const setLayoutEditMode = (enabled) => {
             const wasLayoutEditMode = this._mobileControlLayoutMode === true;
             this._mobileControlLayoutMode = !!enabled;
@@ -416,6 +448,10 @@ export class InputHandler {
             const layoutBtn = document.getElementById('btn-layout');
             if (mobileUI) mobileUI.classList.toggle('layout-edit-mode', this._mobileControlLayoutMode);
             if (layoutBtn) layoutBtn.classList.toggle('is-active', this._mobileControlLayoutMode);
+            if (!this._mobileControlLayoutMode) {
+                dragStateByTouchId.clear();
+                resolveLayoutResetConfirm(false);
+            }
             if (wasLayoutEditMode !== this._mobileControlLayoutMode) {
                 window.dispatchEvent(new CustomEvent('emojiland:layout-edit-mode-change', {
                     detail: { enabled: this._mobileControlLayoutMode }
@@ -436,7 +472,7 @@ export class InputHandler {
         };
 
         window.addEventListener('touchmove', (e) => {
-            if (!isLayoutEditMode()) return;
+            if (!isLayoutEditMode() || isResetConfirmOpen) return;
             let handled = false;
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
@@ -456,7 +492,7 @@ export class InputHandler {
         }, { passive: false });
 
         const endLayoutDragTouch = (e) => {
-            if (!isLayoutEditMode()) return;
+            if (!isLayoutEditMode() || isResetConfirmOpen) return;
             let handled = false;
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const touch = e.changedTouches[i];
@@ -630,11 +666,16 @@ export class InputHandler {
 
         setTimeout(() => {
             const layoutResetBtn = document.getElementById('btn-layout-reset');
+            const layoutResetDialog = document.getElementById('layout-reset-confirm');
+            const layoutResetNoBtn = document.getElementById('btn-layout-reset-no');
+            const layoutResetYesBtn = document.getElementById('btn-layout-reset-yes');
             if (!layoutResetBtn) return;
 
-            const triggerReset = () => {
+            const triggerReset = async () => {
                 if (!isLayoutEditMode()) return;
-                if (!window.confirm('Reset controls to default positions?')) return;
+                if (isResetConfirmOpen) return;
+                const confirmed = await requestLayoutResetConfirmation();
+                if (!confirmed || !isLayoutEditMode()) return;
                 resetControlLayoutToDefault();
             };
 
@@ -642,13 +683,72 @@ export class InputHandler {
                 e.preventDefault();
                 e.stopPropagation();
                 this._lastLayoutResetTouchTs = performance.now();
-                triggerReset();
+                void triggerReset();
             }, { passive: false });
 
             layoutResetBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 if (performance.now() - this._lastLayoutResetTouchTs < 500) return;
-                triggerReset();
+                void triggerReset();
+            });
+
+            if (layoutResetDialog) {
+                layoutResetDialog.addEventListener('touchstart', (e) => {
+                    if (!isResetConfirmOpen) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, { passive: false });
+
+                layoutResetDialog.addEventListener('click', (e) => {
+                    if (!isResetConfirmOpen) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.target === layoutResetDialog) {
+                        resolveLayoutResetConfirm(false);
+                    }
+                });
+            }
+
+            if (layoutResetNoBtn) {
+                layoutResetNoBtn.addEventListener('touchstart', (e) => {
+                    if (!isResetConfirmOpen) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._lastLayoutResetConfirmTouchTs = performance.now();
+                    resolveLayoutResetConfirm(false);
+                }, { passive: false });
+
+                layoutResetNoBtn.addEventListener('click', (e) => {
+                    if (!isResetConfirmOpen) return;
+                    e.preventDefault();
+                    if (performance.now() - this._lastLayoutResetConfirmTouchTs < 500) return;
+                    resolveLayoutResetConfirm(false);
+                });
+            }
+
+            if (layoutResetYesBtn) {
+                layoutResetYesBtn.addEventListener('touchstart', (e) => {
+                    if (!isResetConfirmOpen) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._lastLayoutResetConfirmTouchTs = performance.now();
+                    resolveLayoutResetConfirm(true);
+                }, { passive: false });
+
+                layoutResetYesBtn.addEventListener('click', (e) => {
+                    if (!isResetConfirmOpen) return;
+                    e.preventDefault();
+                    if (performance.now() - this._lastLayoutResetConfirmTouchTs < 500) return;
+                    resolveLayoutResetConfirm(true);
+                });
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (!isResetConfirmOpen) return;
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    resolveLayoutResetConfirm(false);
+                }
             });
         }, 0);
 
