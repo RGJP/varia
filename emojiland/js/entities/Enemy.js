@@ -970,8 +970,8 @@ export class Enemy extends Entity {
                     game.enemyProjectiles.push(laser);
                 }
 
-                // Blowfish fires less frequently: random between 3 and 6 seconds
-                this.attackCooldown = 3 + Math.random() * 3;
+                // Blowfish fires a bit more often: random between 2.5 and 5.0 seconds
+                this.attackCooldown = 2.5 + Math.random() * 2.5;
                 this.stateTimer = 0.5;
             } else if (this.stateTimer > 0) {
                 this.stateTimer -= dt;

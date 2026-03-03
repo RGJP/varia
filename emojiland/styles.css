@@ -200,7 +200,6 @@ canvas {
     .action-buttons {
         width: 178px;
         height: 178px;
-        transform: translate(-4px, -6px);
     }
 }
 
@@ -263,6 +262,7 @@ canvas {
     line-height: 1;
     background: none;
     border: none;
+    border-radius: 0;
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -272,6 +272,101 @@ canvas {
 #btn-pause:active {
     background: none;
     transform: scale(1.2);
+    opacity: 1;
+}
+
+#btn-layout {
+    position: absolute;
+    top: 20px;
+    right: 68px;
+    z-index: 170;
+    font-size: 32px;
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    line-height: 1;
+    background: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    opacity: 0.5;
+}
+
+#btn-layout:active,
+#btn-layout.is-active {
+    background: none;
+    transform: scale(1.2);
+    opacity: 1;
+}
+
+#btn-layout-reset {
+    display: none;
+    position: fixed;
+    left: 50%;
+    top: max(14px, env(safe-area-inset-top));
+    right: auto;
+    min-height: 38px;
+    width: auto;
+    margin: 0;
+    padding: 0 16px;
+    line-height: 1;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    background: rgba(0, 0, 0, 0.72);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+    color: rgba(255, 255, 255, 0.98);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    white-space: nowrap;
+    opacity: 0.96;
+    transform: translateX(-50%);
+    z-index: 160;
+}
+
+#mobile-ui.layout-edit-mode #btn-layout-reset {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#btn-layout-reset:active {
+    transform: translateX(-50%) scale(0.97);
+    opacity: 1;
+}
+
+#layout-edit-hint {
+    display: none;
+    position: fixed;
+    left: 50%;
+    top: calc(50% - 52px);
+    transform: translate(-50%, -50%);
+    max-width: min(82vw, 360px);
+    padding: 8px 14px;
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.66);
+    border: 1px solid rgba(255, 255, 255, 0.46);
+    color: rgba(255, 255, 255, 0.96);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.01em;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 161;
+    transition: opacity 0.18s ease;
+}
+
+#mobile-ui.layout-edit-mode #layout-edit-hint {
+    display: block;
     opacity: 1;
 }
 
@@ -287,6 +382,7 @@ canvas {
     line-height: 1;
     background: none;
     border: none;
+    border-radius: 0;
     box-shadow: none;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -297,6 +393,17 @@ canvas {
 #btn-camera:active {
     background: none;
     transform: scale(1.3);
+    opacity: 1;
+}
+
+#mobile-ui.layout-edit-mode #joystick-zone,
+#mobile-ui.layout-edit-mode #btn-jump,
+#mobile-ui.layout-edit-mode #btn-attack,
+#mobile-ui.layout-edit-mode #btn-charge-toggle,
+#mobile-ui.layout-edit-mode #btn-bomb,
+#mobile-ui.layout-edit-mode #btn-portal {
+    outline: 2px dashed rgba(255, 255, 255, 0.55);
+    outline-offset: 2px;
     opacity: 1;
 }
 

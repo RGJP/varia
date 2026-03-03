@@ -1545,7 +1545,9 @@ export class Player extends Entity {
 
         const isMobileViewport = typeof window !== 'undefined' &&
             (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 800);
-        const emojiFacesLeft = this._emojiFacesLeft || (isMobileViewport && this.emoji === '🐧');
+        const isGameRunning = !game || (game.state === 1 && !game.gameOverTriggered);
+        const golferNeedsMobileFlip = isMobileViewport && isGameRunning && this.emoji === '🏌️‍♂️';
+        const emojiFacesLeft = this._emojiFacesLeft || (isMobileViewport && this.emoji === '🐧') || golferNeedsMobileFlip;
         const shouldMirrorForFacing = (!game || !game.gameOverTriggered) && (emojiFacesLeft ? this.facingRight : !this.facingRight);
         if (shouldMirrorForFacing) {
             ctx.scale(-1, 1);

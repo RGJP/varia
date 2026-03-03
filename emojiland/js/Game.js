@@ -48,6 +48,7 @@ export class Game {
             const camBtn = document.getElementById('btn-camera');
             if (camBtn) {
                 camBtn.addEventListener('touchstart', (e) => {
+                    if (this._mobileUI && this._mobileUI.classList.contains('layout-edit-mode')) return;
                     e.preventDefault();
                     e.stopPropagation();
                     const newLabel = this.camera.cycleZoom();
@@ -95,6 +96,7 @@ export class Game {
             const requestFullscreenOnPauseBtnGesture = (e) => {
                 if (!this.isMobileDevice) return;
                 if (this.state !== GameState.PAUSED && this.state !== GameState.PLAYING) return;
+                if (this._mobileUI && this._mobileUI.classList.contains('layout-edit-mode')) return;
                 if (e && e.cancelable) e.preventDefault();
                 this._requestFullscreenBestEffort();
             };
@@ -392,36 +394,59 @@ export class Game {
         });
 
         window.addEventListener('blur', () => {
-            if (this.state === GameState.PLAYING) {
-                this.state = GameState.PAUSED;
-                this._autoPausedByVisibility = true;
-                if (this.audio && this.audio.pauseBackgroundMusic) {
-                    this.audio.pauseBackgroundMusic();
-                }
-                if (this.audio && this.audio.pauseLightningBuzz) {
-                    this.audio.pauseLightningBuzz();
-                }
-            }
+            if (this._pauseGameplay()) this._autoPausedByVisibility = true;
         });
 
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
-                if (this.state === GameState.PLAYING) {
-                    this.state = GameState.PAUSED;
-                    this._autoPausedByVisibility = true;
-                    if (this.audio && this.audio.pauseBackgroundMusic) {
-                        this.audio.pauseBackgroundMusic();
-                    }
-                    if (this.audio && this.audio.pauseLightningBuzz) {
-                        this.audio.pauseLightningBuzz();
-                    }
-                }
+                if (this._pauseGameplay()) this._autoPausedByVisibility = true;
             } else if (this._autoPausedByVisibility && this.state === GameState.PAUSED) {
                 // Do not auto-resume after app/tab return; require explicit user unpause.
                 this._autoPausedByVisibility = false;
                 this.lastTime = 0;
             }
         });
+
+        window.addEventListener('emojiland:layout-edit-mode-change', (e) => {
+            const enabled = !!(e && e.detail && e.detail.enabled);
+            if (!enabled) return;
+            if (this.state !== GameState.PLAYING) return;
+            this._togglePauseGameplay();
+        });
+    }
+
+    _pauseGameplay() {
+        if (this.state !== GameState.PLAYING) return false;
+        this.state = GameState.PAUSED;
+        if (this.audio && this.audio.pauseBackgroundMusic) {
+            this.audio.pauseBackgroundMusic();
+        }
+        if (this.audio && this.audio.pauseLightningBuzz) {
+            this.audio.pauseLightningBuzz();
+        }
+        return true;
+    }
+
+    _resumeGameplay() {
+        if (this.state !== GameState.PAUSED) return false;
+        this.state = GameState.PLAYING;
+        if (this.audio && this.audio.resumeBackgroundMusic) {
+            this.audio.resumeBackgroundMusic();
+        }
+        if (this.audio && this.audio.resumeLightningBuzz) {
+            this.audio.resumeLightningBuzz();
+        }
+        return true;
+    }
+
+    _togglePauseGameplay() {
+        if (this.state === GameState.PLAYING) {
+            this._pauseGameplay();
+            return;
+        }
+        if (this.state === GameState.PAUSED) {
+            this._resumeGameplay();
+        }
     }
 
     _installGlobalFullscreenGestureHooks() {
@@ -1245,17 +1270,7 @@ export class Game {
         const profiling = this.profilerEnabled;
         let bucketStart = profiling ? performance.now() : 0;
 
-        if (this.input.isJustPressed('KeyP')) {
-            if (this.state === GameState.PLAYING) {
-                this.state = GameState.PAUSED;
-                this.audio.pauseBackgroundMusic && this.audio.pauseBackgroundMusic();
-                this.audio.pauseLightningBuzz && this.audio.pauseLightningBuzz();
-            } else if (this.state === GameState.PAUSED) {
-                this.state = GameState.PLAYING;
-                this.audio.resumeBackgroundMusic && this.audio.resumeBackgroundMusic();
-                this.audio.resumeLightningBuzz && this.audio.resumeLightningBuzz();
-            }
-        }
+        if (this.input.isJustPressed('KeyP')) this._togglePauseGameplay();
 
         if (this.state === GameState.PAUSED) {
             return;
