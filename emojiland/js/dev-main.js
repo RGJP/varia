@@ -27,6 +27,7 @@ const DEV_TARGETS = [
     { id: 'enemy:spider', label: 'Enemy - Spider (🕷️)', kind: 'enemy', type: 'spider', emoji: '🕷️' },
     { id: 'enemy:peacock', label: 'Enemy - Peacock (🦚)', kind: 'enemy', type: 'peacock', emoji: '🦚' },
     { id: 'enemy:enraged', label: 'Enemy - Enraged (😡)', kind: 'enemy', type: 'enraged', emoji: '😡' },
+    { id: 'enemy:hedgehog', label: 'Enemy - Hedgehog (🦔)', kind: 'enemy', type: 'hedgehog', emoji: '🦔' },
     { id: 'enemy:jellyfish', label: 'Enemy - Jellyfish (🪼)', kind: 'enemy_custom', type: 'jellyfish', emoji: '🪼' },
     { id: 'boss:boss_chick', label: 'Boss - Chick', kind: 'boss', bossType: 'boss_chick' },
     { id: 'boss:boss_moai', label: 'Boss - Moai', kind: 'boss', bossType: 'boss_moai' },

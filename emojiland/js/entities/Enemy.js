@@ -7,6 +7,7 @@ import { Worm } from './Worm.js';
 import { Shrimp } from './Shrimp.js';
 import { Peanut } from './Peanut.js';
 import { UfoProjectile } from './UfoProjectile.js';
+import { HedgehogSpike } from './HedgehogSpike.js';
 import { Barrel } from './Barrel.js';
 import { triggerBombExplosionAt } from './Bomb.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
@@ -40,6 +41,7 @@ const TYPE_JELLYFISH = 'jellyfish'; // 🪼
 const TYPE_LOBSTER_MINION = 'lobster_minion'; // 🦞
 const TYPE_PEACOCK = 'peacock'; // 🦚
 const TYPE_ENRAGED = 'enraged'; // 😡
+const TYPE_HEDGEHOG = 'hedgehog'; // 🦔
 
 export class Enemy extends Entity {
     constructor(x, y, platform) {
@@ -67,6 +69,7 @@ export class Enemy extends Entity {
             { type: TYPE_SPIDER, width: 70, height: 70, emoji: '🕷️', baseSpeed: 100, health: 4 },
             { type: TYPE_PEACOCK, width: 66, height: 66, emoji: '🦚', baseSpeed: 70, health: 3 },
             { type: TYPE_ENRAGED, width: 55, height: 55, emoji: '😡', baseSpeed: 95, health: 3 },
+            { type: TYPE_HEDGEHOG, width: 54, height: 54, emoji: '🦔', baseSpeed: 65, health: 3 },
         ];
 
         const pick = ENEMY_POOL[Math.floor(Math.random() * ENEMY_POOL.length)];
@@ -181,8 +184,15 @@ export class Enemy extends Entity {
             this.kamikazeCountdownDuration = 3.0;
             this.kamikazeCountdown = 0;
         }
+        if (this.type === TYPE_HEDGEHOG) {
+            this.state = 'PATROL';
+            this.stateTimer = 0.2 + Math.random() * 0.25;
+        }
         if (this.type === TYPE_SHOOTER) {
             this.attackCooldown = 0.35 + Math.random() * 1.25;
+        }
+        if (this.type === TYPE_HEDGEHOG) {
+            this.attackCooldown = 1.0 + Math.random() * 1.2;
         }
 
         // Keep shooter visually larger without changing gameplay hitbox/mechanics.
@@ -397,6 +407,7 @@ export class Enemy extends Entity {
             case TYPE_LOBSTER_MINION: this.updateLobsterMinion(dt); break;
             case TYPE_PEACOCK: this.updatePatrol(dt); break;
             case TYPE_ENRAGED: this.updateEnraged(dt, game); break;
+            case TYPE_HEDGEHOG: this.updateHedgehog(dt, game, player, distToPlayer, distToPlayerX); break;
         }
 
         if (this.type === TYPE_TROLL && game) {
@@ -1205,6 +1216,60 @@ export class Enemy extends Entity {
         }
     }
 
+    updateHedgehog(dt, game, player, dist, distX) {
+        if (this.stateTimer > 0) this.stateTimer -= dt;
+
+        const centerX = this.x + this.width / 2;
+        const centerY = this.y + this.height / 2;
+        const hasPlayer = !!player;
+        const playerCenterX = hasPlayer ? (player.x + player.width / 2) : centerX;
+        if (Math.abs(playerCenterX - centerX) > 16) {
+            this.facingRight = playerCenterX > centerX;
+        }
+
+        const playerInThreatWindow = hasPlayer &&
+            dist < 580 &&
+            (player.y + player.height) > (this.y - 220);
+
+        if (game && game.enemyProjectiles && this.attackCooldown <= 0 && playerInThreatWindow) {
+            this.state = 'ATTACK';
+            this.vx = 0;
+            this.vy = 0;
+            this.stateTimer = 0.38;
+
+            // Upward fan attack with slight horizontal bias toward player.
+            const spikeCount = 6;
+            const totalSpread = Math.PI * (0.74 + Math.random() * 0.07); // ~133°..146°
+            const aimBias = Math.max(-0.24, Math.min(0.24, (playerCenterX - centerX) / 340));
+            const centerAngle = -Math.PI / 2 + aimBias;
+            const startAngle = centerAngle - totalSpread / 2;
+            const spawnRadius = this.width * 0.42;
+            const spikeOriginY = this.y + this.height * 0.34;
+
+            for (let i = 0; i < spikeCount; i++) {
+                const t = spikeCount <= 1 ? 0.5 : (i / (spikeCount - 1));
+                const angle = startAngle + totalSpread * t;
+                const speed = 280 + Math.random() * 55;
+                const spawnX = centerX + Math.cos(angle) * spawnRadius;
+                const spawnY = spikeOriginY + Math.sin(angle) * spawnRadius;
+                game.enemyProjectiles.push(new HedgehogSpike(spawnX, spawnY, angle, speed));
+            }
+
+            this.attackCooldown = 2.35 + Math.random() * 1.25;
+            if (game.particles) game.particles.emitHit(centerX, centerY, '#d9b78f');
+            return;
+        }
+
+        if (this.state === 'ATTACK' && this.stateTimer > 0) {
+            this.vx = 0;
+            return;
+        }
+
+        this.state = 'PATROL';
+        this.speed = this.baseSpeed;
+        this.vx = this.facingRight ? this.speed : -this.speed;
+    }
+
     updateLizard(dt, game, player, dist, distX) {
         if (this.tongueState === 'IDLE') {
             this.speed = this.baseSpeed;
@@ -1783,9 +1848,9 @@ export class Boss extends Entity {
         this.dragonFireTelegraphTimer = 0;
         this.dragonFireTelegraphDuration = 0.5;
         this.dragonFireActiveTimer = 0;
-        this.dragonFireDuration = 0.8;
+        this.dragonFireDuration = 3.0 + Math.random() * 1.0;
         this.dragonFireRange = 370;
-        this.dragonFireHalfAngle = Math.PI * 0.32;
+        this.dragonFireHalfAngle = Math.PI * 0.125; // ~45° total cone
         this.dragonFireHitTimer = 0;
         this.dragonConeAimOffset = 0;
         this.dragonConeSweepDir = Math.random() > 0.5 ? 1 : -1;
@@ -2869,6 +2934,7 @@ export class Boss extends Entity {
                     this.dragonVolleyTimer = 0;
                     this.dragonVolleyLaneY = this._getDragonMouthPosition().y;
                 } else {
+                    this.dragonFireDuration = 3.0 + Math.random() * 1.0;
                     this.dragonFireActiveTimer = this.dragonFireDuration;
                     this.dragonFireHitTimer = 0;
                 }
@@ -2932,7 +2998,7 @@ export class Boss extends Entity {
             this.dragonAttackPattern = Math.random() < (this.phase >= 2 ? 0.45 : 0.35) ? 'volley' : 'cone';
             this.dragonConeSweepDir = Math.random() > 0.5 ? 1 : -1;
             this.dragonConeAimOffset = 0;
-            const coneTelegraph = this.phase >= 3 ? 0.35 : (this.phase >= 2 ? 0.42 : this.dragonFireTelegraphDuration);
+            const coneTelegraph = this.phase >= 3 ? 0.58 : (this.phase >= 2 ? 0.68 : 0.78);
             const volleyTelegraph = this.phase >= 3 ? 0.26 : (this.phase >= 2 ? 0.32 : 0.38);
             this.dragonFireTelegraphTimer = this.dragonAttackPattern === 'volley'
                 ? (volleyTelegraph + Math.random() * 0.08)
@@ -5941,34 +6007,118 @@ export class Boss extends Entity {
             const mouthOffset = this._getDragonMouthOffset();
             const mouthX = -mouthOffset.x;
             const mouthY = mouthOffset.y;
+            const dragonMirrorX = this.facingRight ? -1 : 1;
+            const projectDragonConePoint = (worldAngle, radius) => ({
+                x: mouthX + Math.cos(worldAngle) * radius * dragonMirrorX,
+                y: mouthY + Math.sin(worldAngle) * radius
+            });
 
             if (this.dragonAttackPattern === 'cone' && (this.dragonFireTelegraphTimer > 0 || this.dragonFireActiveTimer > 0)) {
                 const half = this.dragonFireHalfAngle;
                 const fireRange = this.dragonFireRange;
+                const coneCenterAngle = (this.facingRight ? 0 : Math.PI) + this.dragonConeAimOffset;
+                const coneStartAngle = coneCenterAngle - half;
+                const coneSpan = half * 2;
                 const rows = lowVfx
-                    ? (this.dragonFireTelegraphTimer > 0 ? 2 : 3)
-                    : (this.dragonFireTelegraphTimer > 0 ? 4 : 6);
+                    ? (this.dragonFireTelegraphTimer > 0 ? 3 : 5)
+                    : (this.dragonFireTelegraphTimer > 0 ? 5 : 8);
                 const telePulse = 0.45 + Math.sin(this.timeAlive * 20) * 0.3;
+                const flicker = 0.7 + Math.sin(this.timeAlive * 16) * 0.3;
+                const coneFillAlpha = this.dragonFireTelegraphTimer > 0
+                    ? (0.06 + telePulse * 0.06)
+                    : (0.10 + flicker * 0.045);
+                const coneStrokeAlpha = this.dragonFireTelegraphTimer > 0
+                    ? (0.17 + telePulse * 0.14)
+                    : (0.24 + flicker * 0.07);
+
+                // Draw the exact damage wedge used by dragon spitfire (same range and angular limits as hit logic).
+                const coneSegments = lowVfx ? 22 : 38;
+                ctx.beginPath();
+                ctx.moveTo(mouthX, mouthY);
+                for (let s = 0; s <= coneSegments; s++) {
+                    const t = s / coneSegments;
+                    const worldAngle = coneStartAngle + coneSpan * t;
+                    const p = projectDragonConePoint(worldAngle, fireRange);
+                    ctx.lineTo(p.x, p.y);
+                }
+                ctx.closePath();
+                ctx.globalAlpha = alpha * coneFillAlpha;
+                ctx.fillStyle = '#ff9128';
+                ctx.fill();
+
+                ctx.globalAlpha = alpha * coneStrokeAlpha;
+                ctx.strokeStyle = '#ffb55a';
+                ctx.lineWidth = this.dragonFireTelegraphTimer > 0 ? 2.2 : 2.8;
+                ctx.lineJoin = 'round';
+                ctx.stroke();
+
+                const coneEdgeA = projectDragonConePoint(coneStartAngle, fireRange);
+                const coneEdgeB = projectDragonConePoint(coneStartAngle + coneSpan, fireRange);
+                ctx.beginPath();
+                ctx.moveTo(mouthX, mouthY);
+                ctx.lineTo(coneEdgeA.x, coneEdgeA.y);
+                ctx.moveTo(mouthX, mouthY);
+                ctx.lineTo(coneEdgeB.x, coneEdgeB.y);
+                ctx.strokeStyle = '#ffc372';
+                ctx.lineWidth = this.dragonFireTelegraphTimer > 0 ? 1.8 : 2.2;
+                ctx.stroke();
+
                 for (let r = 1; r <= rows; r++) {
-                    const t = r / (rows + 0.7);
-                    const radius = fireRange * t * (0.84 + Math.sin(this.timeAlive * 5 + r) * 0.08);
-                    const rowHalf = half * t;
+                    const t = r / rows;
+                    // Keep inner rows close to mouth while ensuring outer rows nearly reach max cone range.
+                    const radiusT = 0.2 + t * 0.8;
+                    const radius = fireRange * radiusT * (0.96 + Math.sin(this.timeAlive * 5 + r) * 0.04);
                     const embers = lowVfx
-                        ? Math.max(1, Math.floor(1 + r * 1.1))
-                        : Math.max(2, Math.floor(2 + r * 1.8));
+                        ? Math.max(2, Math.floor(2 + r * 1.4))
+                        : Math.max(3, Math.floor(3 + r * 2.0));
                     for (let i = 0; i < embers; i++) {
                         const blend = embers <= 1 ? 0.5 : i / (embers - 1);
-                        const a = (-rowHalf + blend * rowHalf * 2) + this.dragonConeAimOffset * (0.7 + 0.3 * t);
-                        const fx = mouthX + Math.cos(a) * radius * -1;
-                        const fy = mouthY + Math.sin(a) * radius * 0.9;
-                        const flicker = 0.75 + Math.sin(this.timeAlive * 11 + r * 0.8 + i) * 0.25;
-                        const alphaMul = this.dragonFireTelegraphTimer > 0 ? (0.14 + telePulse * 0.3) : Math.min(1, 0.94 + 0.06 * flicker);
-                        ctx.globalAlpha = this.dragonFireActiveTimer > 0 ? 1 : (alpha * alphaMul);
-                        ctx.drawImage(this._fireTellCache.canvas, fx - this._fireTellCache.width / 2, fy - this._fireTellCache.height / 2);
+                        const jitter = Math.sin(this.timeAlive * 11 + r * 0.8 + i) *
+                            (this.dragonFireTelegraphTimer > 0 ? 0.02 : 0.038) *
+                            Math.max(0.18, 1 - t);
+                        const worldAngle = Math.max(
+                            coneStartAngle + 0.012,
+                            Math.min(coneStartAngle + coneSpan - 0.012, coneStartAngle + coneSpan * blend + jitter)
+                        );
+                        const p = projectDragonConePoint(worldAngle, radius);
+                        const emberFlicker = 0.75 + Math.sin(this.timeAlive * 11 + r * 0.8 + i) * 0.25;
+                        const alphaMul = this.dragonFireTelegraphTimer > 0
+                            ? (0.24 + telePulse * 0.3)
+                            : Math.min(1, 0.84 + 0.16 * emberFlicker);
+                        ctx.globalAlpha = alpha * alphaMul;
+                        ctx.drawImage(this._fireTellCache.canvas, p.x - this._fireTellCache.width / 2, p.y - this._fireTellCache.height / 2);
                     }
                 }
-                ctx.globalAlpha = this.dragonFireActiveTimer > 0 ? 1 : alpha;
-                ctx.drawImage(this._fireTellCache.canvas, mouthX - this._fireTellCache.width * 0.35, mouthY - this._fireTellCache.height / 2);
+
+                // Ensure flame emojis visibly reach the exact cone damage perimeter.
+                const edgeFlames = lowVfx ? 7 : 11;
+                for (let i = 0; i < edgeFlames; i++) {
+                    const blend = edgeFlames <= 1 ? 0.5 : i / (edgeFlames - 1);
+                    const worldAngle = coneStartAngle + coneSpan * blend;
+                    const p = projectDragonConePoint(worldAngle, fireRange);
+                    const edgePulse = 0.82 + Math.sin(this.timeAlive * 13 + i * 0.7) * 0.18;
+                    const edgeAlpha = this.dragonFireTelegraphTimer > 0
+                        ? alpha * (0.28 + telePulse * 0.24)
+                        : alpha * (0.66 + edgePulse * 0.26);
+                    ctx.globalAlpha = edgeAlpha;
+                    ctx.drawImage(this._fireTellCache.canvas, p.x - this._fireTellCache.width / 2, p.y - this._fireTellCache.height / 2);
+                }
+
+                // Boundary cue flames on both cone sides at max range.
+                const boundaryA = projectDragonConePoint(coneStartAngle, fireRange);
+                const boundaryB = projectDragonConePoint(coneStartAngle + coneSpan, fireRange);
+                ctx.globalAlpha = this.dragonFireTelegraphTimer > 0 ? alpha * (0.34 + telePulse * 0.22) : alpha * 0.9;
+                ctx.drawImage(this._fireTellCache.canvas, boundaryA.x - this._fireTellCache.width / 2, boundaryA.y - this._fireTellCache.height / 2);
+                ctx.drawImage(this._fireTellCache.canvas, boundaryB.x - this._fireTellCache.width / 2, boundaryB.y - this._fireTellCache.height / 2);
+
+                const mouthBurstCount = this.dragonFireActiveTimer > 0 ? 3 : 2;
+                for (let i = 0; i < mouthBurstCount; i++) {
+                    const spread = (i - (mouthBurstCount - 1) / 2) * 0.12;
+                    const burstP = projectDragonConePoint(coneCenterAngle + spread, 14 + i * 4);
+                    ctx.globalAlpha = alpha * (this.dragonFireActiveTimer > 0 ? 0.92 : (0.45 + telePulse * 0.25));
+                    ctx.drawImage(this._fireTellCache.canvas, burstP.x - this._fireTellCache.width / 2, burstP.y - this._fireTellCache.height / 2);
+                }
+                ctx.globalAlpha = alpha;
             } else if (this.dragonAttackPattern === 'volley' && this.dragonFireTelegraphTimer > 0) {
                 const pulse = 0.6 + Math.sin(this.timeAlive * 24) * 0.4;
                 const lineLen = this.dragonFireRange * 0.82;
