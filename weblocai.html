@@ -47,6 +47,8 @@
             min-height: 100vh;
             min-height: -webkit-fill-available;
             overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         /* --- Background Animation --- */
@@ -106,8 +108,8 @@
             z-index: 1;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            height: -webkit-fill-available;
+            flex: 1;
+            width: 100%;
         }
 
         .header {
@@ -422,8 +424,9 @@
         /* --- Status Bar --- */
         .status-bar {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.35rem;
             padding: 0.5rem 1rem;
             background: var(--bg-input);
             border-top: 1px solid var(--border);
@@ -432,10 +435,45 @@
             flex-shrink: 0;
         }
 
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
         .status-indicator {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+        }
+
+        .status-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .model-name {
+            color: var(--primary-light);
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.75rem;
+            text-align: right;
+        }
+
+        .page-footer {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            padding: 0 1rem 1rem;
+            text-align: center;
+        }
+
+        .page-footer .model-name {
+            display: inline-block;
+            text-align: center;
         }
 
         .status-dot {
@@ -620,6 +658,7 @@
             .prompt-input { padding: 1rem 1.5rem; max-height: 200px; }
             .send-button { width: 52px; height: 52px; }
             .status-bar { padding: 0.75rem 1.5rem; font-size: 0.875rem; }
+            .page-footer { padding: 0 2rem 1.25rem; }
             
             /* Better table display on desktop */
             .message-content table { display: table; }
@@ -737,15 +776,22 @@
             </section>
 
             <footer class="status-bar">
-                <div class="status-indicator">
-                    <div class="status-dot" id="statusDot"></div>
-                    <span id="statusText">Ready</span>
-                    <span id="responseTime" style="margin-left: 0.5rem;"></span>
+                <div class="status-row">
+                    <div class="status-indicator">
+                        <div class="status-dot" id="statusDot"></div>
+                        <span id="statusText">Ready</span>
+                        <span id="responseTime" style="margin-left: 0.5rem;"></span>
+                    </div>
+                    <div class="status-meta">
+                        <div id="tokenCount">0 tokens</div>
+                    </div>
                 </div>
-                <div id="tokenCount">0 tokens</div>
             </footer>
         </main>
     </div>
+    <footer class="page-footer">
+        <div id="modelName" class="model-name"></div>
+    </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -762,7 +808,7 @@
         });
 
         const OLLAMA_API_URL = 'https://43b6-174-95-2-90.ngrok-free.app/api/chat';
-        const OLLAMA_MODEL = 'ministral-3:3b';
+        const OLLAMA_MODEL = 'llama3.2:3b-instruct-q4_K_M';
 
         class LLMChat {
             #elements = {};
@@ -775,6 +821,7 @@
                 this.#initializeElements();
                 this.#bindEvents();
                 this.#configureMarkdown();
+                this.#renderModelName();
                 this.#updateStatus('Ready', 'success');
             }
 
@@ -786,9 +833,15 @@
                     statusDot: document.getElementById('statusDot'),
                     statusText: document.getElementById('statusText'),
                     tokenCount: document.getElementById('tokenCount'),
+                    modelName: document.getElementById('modelName'),
                     emptyState: document.getElementById('emptyState'),
                     responseTime: document.getElementById('responseTime')
                 };
+            }
+
+            #renderModelName() {
+                if (!this.#elements.modelName) return;
+                this.#elements.modelName.textContent = `${OLLAMA_MODEL}`;
             }
 
             #bindEvents() {
