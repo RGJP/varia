@@ -470,6 +470,15 @@
         novembre: 10,
         decembre: 11
       };
+      var BATH_TYPE_COLOR_MAP = {
+        tous: { bg: "hsl(210, 86%, 91%)", border: "hsl(210, 70%, 68%)", text: "hsl(210, 84%, 24%)" },
+        longueurs: { bg: "hsl(160, 72%, 89%)", border: "hsl(160, 56%, 62%)", text: "hsl(160, 78%, 22%)" },
+        adultes: { bg: "hsl(278, 70%, 91%)", border: "hsl(278, 52%, 70%)", text: "hsl(278, 76%, 25%)" },
+        aines: { bg: "hsl(32, 86%, 90%)", border: "hsl(32, 70%, 66%)", text: "hsl(32, 84%, 24%)" },
+        enfants: { bg: "hsl(340, 88%, 92%)", border: "hsl(340, 70%, 72%)", text: "hsl(340, 86%, 26%)" },
+        famille: { bg: "hsl(124, 58%, 90%)", border: "hsl(124, 44%, 68%)", text: "hsl(124, 74%, 24%)" },
+        aquajogging: { bg: "hsl(16, 84%, 90%)", border: "hsl(16, 68%, 67%)", text: "hsl(16, 86%, 26%)" }
+      };
 
       var state = {
         selectedDay: getTodayLabel(),
@@ -1073,12 +1082,12 @@
 
         if (state.errors.length > 0) {
           dom.statusBadge.className = "status warning";
-          dom.statusBadge.textContent = "Plages chargées avec erreurs, actualiser les horaires";
+          dom.statusBadge.textContent = "⚠️ Plages chargées avec erreurs, actualiser les horaires";
           return;
         }
 
         dom.statusBadge.className = "status";
-        dom.statusBadge.textContent = "Plages chargées avec succès";
+        dom.statusBadge.textContent = "✅ Plages chargées avec succès";
       }
 
       function getTodayLabel() {
@@ -1119,6 +1128,12 @@
         var rawKey = cleanText(type).toLowerCase();
         var normalizedKey = normalizeToken(type);
         var key = normalizedKey || rawKey || "tous";
+        var mappedKey = normalizeBathTypeKey(key);
+
+        if (BATH_TYPE_COLOR_MAP[mappedKey]) {
+          return BATH_TYPE_COLOR_MAP[mappedKey];
+        }
+
         var hash = hashString(key);
         var hue = hash % 360;
 
@@ -1127,6 +1142,36 @@
           border: "hsl(" + hue + ", 66%, 72%)",
           text: "hsl(" + hue + ", 80%, 26%)"
         };
+      }
+
+      function normalizeBathTypeKey(key) {
+        if (!key) {
+          return "tous";
+        }
+
+        if (key.indexOf("longueur") !== -1 || key.indexOf("longeur") !== -1) {
+          return "longueurs";
+        }
+        if (key.indexOf("tous") !== -1) {
+          return "tous";
+        }
+        if (key.indexOf("adulte") !== -1) {
+          return "adultes";
+        }
+        if (key.indexOf("aine") !== -1) {
+          return "aines";
+        }
+        if (key.indexOf("enfant") !== -1) {
+          return "enfants";
+        }
+        if (key.indexOf("famil") !== -1) {
+          return "famille";
+        }
+        if (key.indexOf("aquajog") !== -1) {
+          return "aquajogging";
+        }
+
+        return key;
       }
 
       function hashString(value) {
