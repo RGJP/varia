@@ -7,17 +7,17 @@
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%8A%3C/text%3E%3C/svg%3E">
   <style>
     :root {
-      --bg-start: #eef8f7;
-      --bg-end: #f8fbfd;
+      --bg-start: #eaf4ff;
+      --bg-end: #f6fbff;
       --card: #ffffff;
-      --ink: #103936;
-      --muted: #5f7471;
-      --accent: #0b7d73;
-      --accent-strong: #045149;
-      --border: #c7dad7;
+      --ink: #0f2f57;
+      --muted: #4c6584;
+      --accent: #0d6fd8;
+      --accent-strong: #0a4fa8;
+      --border: #c9d9ee;
       --warning: #915900;
       --danger: #9f2d2d;
-      --shadow: 0 18px 36px rgba(8, 52, 47, 0.09);
+      --shadow: 0 18px 36px rgba(14, 45, 92, 0.12);
     }
 
     * {
@@ -29,8 +29,8 @@
       color: var(--ink);
       font-family: "Poppins", "Trebuchet MS", sans-serif;
       background:
-        radial-gradient(circle at 18% 10%, #d6f0e8 0%, rgba(214, 240, 232, 0) 38%),
-        radial-gradient(circle at 90% -5%, #dbe9ff 0%, rgba(219, 233, 255, 0) 34%),
+        radial-gradient(circle at 18% 10%, #cce4ff 0%, rgba(204, 228, 255, 0) 38%),
+        radial-gradient(circle at 90% -5%, #b9d9ff 0%, rgba(185, 217, 255, 0) 34%),
         linear-gradient(180deg, var(--bg-start), var(--bg-end));
       min-height: 100vh;
     }
@@ -84,7 +84,7 @@
       border: 1px solid var(--border);
       padding: 8px 12px;
       font-size: 0.9rem;
-      background: #f8fcfb;
+      background: #f4f8ff;
       color: var(--ink);
       position: relative;
     }
@@ -188,7 +188,7 @@
     }
 
     .day-btn:hover {
-      border-color: #8dc2bc;
+      border-color: #8ebaf0;
     }
 
     .day-btn.active {
@@ -238,34 +238,42 @@
     td {
       text-align: left;
       padding: 11px 12px;
-      border-bottom: 1px solid #dde9e7;
+      border-bottom: 1px solid #d8e5f5;
       vertical-align: top;
       font-size: 0.92rem;
     }
 
     th {
-      background: #f4faf9;
+      background: #edf5ff;
       font-size: 0.83rem;
       letter-spacing: 0.02em;
       text-transform: uppercase;
-      color: #2e5d58;
+      color: #355881;
       position: sticky;
       top: 0;
       z-index: 1;
     }
 
     tbody tr:hover {
-      background: #f7fdfc;
+      background: #f4f9ff;
     }
 
     .pill {
       display: inline-block;
       border-radius: 999px;
       padding: 4px 8px;
-      background: #eaf7f5;
-      border: 1px solid #c8e4df;
+      background: #e8f2ff;
+      border: 1px solid #c7dcf6;
+      color: #184b8d;
       font-size: 0.8rem;
       white-space: nowrap;
+    }
+
+    .pill-type {
+      background: var(--pill-bg, #e8f2ff);
+      border-color: var(--pill-border, #c7dcf6);
+      color: var(--pill-text, #184b8d);
+      font-weight: 800;
     }
 
     .time-value {
@@ -276,7 +284,7 @@
     }
 
     tbody a {
-      color: #005b8f;
+      color: #0a4fa8;
       text-decoration: none;
     }
 
@@ -320,11 +328,11 @@
 
       tbody tr {
         display: block;
-        border: 1px solid #d4e6e3;
+        border: 1px solid #cfdef1;
         border-radius: 12px;
         background: #fff;
         overflow: hidden;
-        box-shadow: 0 8px 18px rgba(8, 52, 47, 0.06);
+        box-shadow: 0 8px 18px rgba(14, 45, 92, 0.08);
       }
 
       tbody tr:hover {
@@ -336,7 +344,7 @@
         grid-template-columns: minmax(92px, 38%) 1fr;
         gap: 10px;
         padding: 9px 11px;
-        border-bottom: 1px dashed #e1ecea;
+        border-bottom: 1px dashed #dbe7f6;
       }
 
       td:last-child {
@@ -349,7 +357,7 @@
         font-weight: 700;
         letter-spacing: 0.03em;
         text-transform: uppercase;
-        color: #3f6560;
+        color: #466489;
       }
 
       .time-value {
@@ -1031,7 +1039,7 @@
             "<tr>",
             "<td data-label=\"Piscine\">", escapeHtml(entry.poolName), "</td>",
             "<td data-label=\"Horaire / Bassin\">", escapeHtml(entry.scheduleLabel), "</td>",
-            "<td data-label=\"Type de bain\"><span class=\"pill\">", escapeHtml(entry.bathType), "</span></td>",
+            "<td data-label=\"Type de bain\"><span class=\"pill pill-type\"", bathTypeStyleAttr(entry.bathType), ">", escapeHtml(entry.bathType), "</span></td>",
             "<td data-label=\"Heure\"><span class=\"time-value\">", escapeHtml(entry.timeRange), "</span></td>",
             "<td data-label=\"Période\">", escapeHtml(entry.period || "-"), "</td>",
             "<td data-label=\"Source\"><a href=\"", escapeHtml(entry.sourceUrl), "\" target=\"_blank\" rel=\"noopener noreferrer\">Ouvrir</a></td>",
@@ -1100,6 +1108,34 @@
           .replace(/\u00a0/g, " ")
           .replace(/\s+/g, " ")
           .trim();
+      }
+
+      function bathTypeStyleAttr(type) {
+        var colors = bathTypeColors(type);
+        return " style=\"--pill-bg:" + colors.bg + ";--pill-border:" + colors.border + ";--pill-text:" + colors.text + ";\"";
+      }
+
+      function bathTypeColors(type) {
+        var rawKey = cleanText(type).toLowerCase();
+        var normalizedKey = normalizeToken(type);
+        var key = normalizedKey || rawKey || "tous";
+        var hash = hashString(key);
+        var hue = hash % 360;
+
+        return {
+          bg: "hsl(" + hue + ", 84%, 91%)",
+          border: "hsl(" + hue + ", 66%, 72%)",
+          text: "hsl(" + hue + ", 80%, 26%)"
+        };
+      }
+
+      function hashString(value) {
+        var hash = 0;
+        for (var i = 0; i < value.length; i += 1) {
+          hash = ((hash << 5) - hash) + value.charCodeAt(i);
+          hash |= 0;
+        }
+        return Math.abs(hash);
       }
 
       function getText(node) {
