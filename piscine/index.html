@@ -86,15 +86,28 @@
       font-size: 0.9rem;
       background: #f8fcfb;
       color: var(--ink);
+      position: relative;
     }
 
     .status.loading {
-      border-color: #1e6dff;
-      background: #e8f1ff;
-      color: #0e4cb6;
-      font-weight: 700;
-      animation: loadingPulse 1.4s ease-in-out infinite;
-      box-shadow: 0 0 0 0 rgba(30, 109, 255, 0.45);
+      border-color: #0065ff;
+      background: linear-gradient(90deg, #cfe2ff 0%, #e8f1ff 45%, #c5dbff 100%);
+      color: #003ea8;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      animation: loadingPulse 0.95s ease-in-out infinite;
+      box-shadow: 0 0 0 0 rgba(0, 101, 255, 0.68), 0 0 18px rgba(0, 101, 255, 0.35);
+    }
+
+    .status.loading::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      margin-right: 8px;
+      background: #0057f7;
+      box-shadow: 0 0 12px rgba(0, 101, 255, 0.8);
+      animation: loadingDot 0.7s ease-in-out infinite;
     }
 
     .status.warning {
@@ -105,16 +118,28 @@
 
     @keyframes loadingPulse {
       0% {
-        box-shadow: 0 0 0 0 rgba(30, 109, 255, 0.45);
+        box-shadow: 0 0 0 0 rgba(0, 101, 255, 0.68), 0 0 12px rgba(0, 101, 255, 0.28);
         transform: scale(1);
       }
       50% {
-        box-shadow: 0 0 0 10px rgba(30, 109, 255, 0);
-        transform: scale(1.03);
+        box-shadow: 0 0 0 14px rgba(0, 101, 255, 0), 0 0 30px rgba(0, 101, 255, 0.55);
+        transform: scale(1.08);
       }
       100% {
-        box-shadow: 0 0 0 0 rgba(30, 109, 255, 0);
+        box-shadow: 0 0 0 0 rgba(0, 101, 255, 0), 0 0 12px rgba(0, 101, 255, 0.25);
         transform: scale(1);
+      }
+    }
+
+    @keyframes loadingDot {
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      50% {
+        transform: scale(1.5);
+        opacity: 0.55;
       }
     }
 
@@ -243,6 +268,13 @@
       white-space: nowrap;
     }
 
+    .time-value {
+      font-weight: 900;
+      font-size: 1.04rem;
+      letter-spacing: 0.01em;
+      color: #0a336f;
+    }
+
     tbody a {
       color: #005b8f;
       text-decoration: none;
@@ -319,6 +351,10 @@
         text-transform: uppercase;
         color: #3f6560;
       }
+
+      .time-value {
+        font-size: 1.08rem;
+      }
     }
   </style>
 </head>
@@ -327,7 +363,7 @@
     <header class="card">
       <h1>Natation Québec</h1>
       <p class="subtitle">Agrégation des horaires des piscines intérieures de la Ville de Québec.</p>
-      <p class="subtitle-note"><strong>Vérifiez toujours la page source pour confirmer l'heure et vous assurer qu'aucune annulation n'a été signalée avant de vous déplacer.</strong></p>
+      <p class="subtitle-note"><strong>Vérifiez la page source pour vous assurer qu'aucune annulation n'a été signalée avant de vous déplacer.</strong></p>
       <div class="toolbar">
         <button id="reloadBtn" class="btn btn-refresh" type="button">Actualiser les horaires</button>
         <span id="statusBadge" class="status">Initialisation...</span>
@@ -351,6 +387,7 @@
               <th>Heure</th>
               <th>Période</th>
               <th>Source</th>
+              <th>Adresse</th>
               <th>Carte</th>
             </tr>
           </thead>
@@ -612,6 +649,7 @@
         var doc = parser.parseFromString(html, "text/html");
         var poolName = extractPoolName(doc, sourceUrl);
         var mapUrl = extractMapUrl(doc, sourceUrl);
+        var poolAddress = extractPoolAddress(doc);
         var tables = Array.prototype.slice.call(
           doc.querySelectorAll("table.tableau_horaire_loisirs, table[class*='tableau_horaire']")
         );
@@ -648,6 +686,7 @@
                 periodStartKey: periodRange.startKey,
                 periodEndKey: periodRange.endKey,
                 sourceUrl: sourceUrl,
+                address: poolAddress,
                 mapUrl: mapUrl
               });
             }
@@ -696,6 +735,38 @@
         } catch (error) {
           return "";
         }
+      }
+
+      function extractPoolAddress(doc) {
+        var candidate = doc.querySelector(
+          "span#ctl00_ctl00_contenu_texte_page_InstallationDetails1_lblAdresse, span[id*='lblAdresse']"
+        );
+        if (!candidate) {
+          return "";
+        }
+
+        var fromInnerText = normalizeAddressText(candidate.innerText || "");
+        if (fromInnerText) {
+          return fromInnerText;
+        }
+
+        var clone = candidate.cloneNode(true);
+        var brs = clone.querySelectorAll("br");
+        for (var i = 0; i < brs.length; i += 1) {
+          brs[i].replaceWith("\n");
+        }
+        return normalizeAddressText(clone.textContent || "");
+      }
+
+      function normalizeAddressText(value) {
+        return String(value || "")
+          .replace(/\u00a0/g, " ")
+          .split(/\n+/)
+          .map(function (line) {
+            return line.replace(/\s+/g, " ").trim();
+          })
+          .filter(Boolean)
+          .join("\n");
       }
 
       function tableContext(table, index) {
@@ -961,9 +1032,10 @@
             "<td data-label=\"Piscine\">", escapeHtml(entry.poolName), "</td>",
             "<td data-label=\"Horaire / Bassin\">", escapeHtml(entry.scheduleLabel), "</td>",
             "<td data-label=\"Type de bain\"><span class=\"pill\">", escapeHtml(entry.bathType), "</span></td>",
-            "<td data-label=\"Heure\">", escapeHtml(entry.timeRange), "</td>",
+            "<td data-label=\"Heure\"><span class=\"time-value\">", escapeHtml(entry.timeRange), "</span></td>",
             "<td data-label=\"Période\">", escapeHtml(entry.period || "-"), "</td>",
             "<td data-label=\"Source\"><a href=\"", escapeHtml(entry.sourceUrl), "\" target=\"_blank\" rel=\"noopener noreferrer\">Ouvrir</a></td>",
+            "<td data-label=\"Adresse\">", (entry.address ? formatAddressHtml(entry.address) : "-"), "</td>",
             "<td data-label=\"Carte\">", (entry.mapUrl
               ? "<a href=\"" + escapeHtml(entry.mapUrl) + "\" target=\"_blank\" rel=\"noopener noreferrer\">Carte</a>"
               : "-"), "</td>",
@@ -1041,6 +1113,10 @@
           .replace(/>/g, "&gt;")
           .replace(/"/g, "&quot;")
           .replace(/'/g, "&#39;");
+      }
+
+      function formatAddressHtml(value) {
+        return escapeHtml(value).replace(/\n/g, "<br>");
       }
     })();
   </script>
