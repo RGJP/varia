@@ -379,33 +379,44 @@
             cursor: not-allowed;
         }
 
-        /* --- SPINNER STYLES --- */
+        /* --- Send/Stop Icon States --- */
         .send-button .send-icon {
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        .send-button .loader {
+        .send-button .stop-icon {
             display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-button .stop-square {
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 3px;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
         }
 
         .send-button.loading .send-icon {
             display: none;
         }
 
-        .send-button.loading .loader {
-            display: block;
-            width: 24px;
-            height: 24px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        .send-button.loading {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            box-shadow: 0 10px 30px rgba(239, 68, 68, 0.45);
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .send-button.loading .stop-icon {
+            display: flex;
+            animation: stopPulse 1.1s ease-in-out infinite;
+        }
+
+        @keyframes stopPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(0.9); }
         }
 
         /* --- Status Bar --- */
@@ -690,7 +701,7 @@
 
     <div id="overlay" class="overlay">
         <div class="overlay-content">
-            <p>WebLocAI is an AI interface experiment.</p>
+            <p>WebLocAI is an experimental AI interface that uses a webpage to interact with a locally hosted LLM.</p>
         </div>
     </div>
 
@@ -720,7 +731,7 @@
                                 <path d="M7 11L12 6L17 11M12 18V7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                         </span>
-                        <span class="loader"></span>
+                        <span class="stop-icon" aria-hidden="true"><span class="stop-square"></span></span>
                     </button>
                 </div>
             </section>
@@ -756,6 +767,9 @@
         class LLMChat {
             #elements = {};
             #isProcessing = false;
+            #abortController = null;
+            #streamReader = null;
+            #pendingUserAbort = false;
 
             constructor() {
                 this.#initializeElements();
@@ -779,7 +793,13 @@
 
             #bindEvents() {
                 // Send button click
-                this.#elements.sendButton.addEventListener('click', () => this.#sendMessage());
+                this.#elements.sendButton.addEventListener('click', () => {
+                    if (this.#isProcessing) {
+                        this.#cancelActiveRequest();
+                        return;
+                    }
+                    this.#sendMessage();
+                });
 
                 // Enter key (submit) / Shift+Enter (newline)
                 this.#elements.promptInput.addEventListener('keydown', (e) => {
@@ -852,6 +872,22 @@
                 this.#isProcessing = isLoading;
                 this.#elements.promptInput.disabled = isLoading;
                 this.#elements.sendButton.classList.toggle('loading', isLoading);
+                this.#elements.sendButton.setAttribute('aria-label', isLoading ? 'Stop Generation' : 'Send Message');
+                this.#elements.sendButton.title = isLoading ? 'Stop' : 'Send';
+            }
+
+            #cancelActiveRequest() {
+                if (!this.#isProcessing) return;
+
+                this.#pendingUserAbort = true;
+                this.#updateStatus('Cancelling...', 'processing');
+
+                if (this.#streamReader) {
+                    this.#streamReader.cancel('user_cancelled').catch(() => {});
+                }
+                if (this.#abortController) {
+                    this.#abortController.abort();
+                }
             }
 
             async #sendMessage() {
@@ -875,6 +911,11 @@
                 const startTime = performance.now();
                 const streamingMessage = this.#createStreamingMessage();
                 let aiText = '';
+                const abortController = new AbortController();
+
+                this.#pendingUserAbort = false;
+                this.#abortController = abortController;
+                this.#streamReader = null;
 
                 try {
                     const response = await fetch(OLLAMA_API_URL, {
@@ -882,6 +923,7 @@
                         headers: {
                             'Content-Type': 'application/json'
                         },
+                        signal: abortController.signal,
                         body: JSON.stringify({
                             model: OLLAMA_MODEL,
                             messages: [{ role: 'user', content: prompt }],
@@ -900,6 +942,7 @@
                     this.#updateStatus('Streaming...', 'processing');
 
                     const reader = response.body.getReader();
+                    this.#streamReader = reader;
                     const decoder = new TextDecoder();
                     let buffer = '';
                     let streamDone = false;
@@ -973,6 +1016,20 @@
                     this.#updateStatus('Ready', 'success');
 
                 } catch (error) {
+                    const wasCancelled = this.#pendingUserAbort || abortController.signal.aborted || error?.name === 'AbortError';
+
+                    if (wasCancelled) {
+                        if (!aiText.trim()) {
+                            this.#removeStreamingMessage(streamingMessage);
+                        } else {
+                            this.#finalizeStreamingMessage(streamingMessage, aiText.trim());
+                        }
+                        const duration = ((performance.now() - startTime) / 1000).toFixed(2);
+                        this.#elements.responseTime.textContent = `(${duration}s)`;
+                        this.#updateStatus('Cancelled', 'success');
+                        return;
+                    }
+
                     console.error('Fetch error:', error);
                     if (!aiText) {
                         this.#removeStreamingMessage(streamingMessage);
@@ -982,6 +1039,9 @@
                     this.#addMessage(`**Error:** ${error.message}`, 'ai');
                     this.#updateStatus('Error', 'error');
                 } finally {
+                    this.#streamReader = null;
+                    this.#abortController = null;
+                    this.#pendingUserAbort = false;
                     this.#toggleLoading(false);
                 }
             }
