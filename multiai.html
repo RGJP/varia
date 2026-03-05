@@ -1,798 +1,1184 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-AI</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Compare multiple AI models side by side with streaming responses.">
+  <meta name="theme-color" content="#0f172a">
+  <title>Multi AI</title>
 
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>⚡</text></svg>">
-    
-    <style>
-        :root {
-            /* Palette */
-            --bg-body: #030305;
-            --bg-gradient: radial-gradient(circle at 50% 0%, #1a1b26, #030305 60%);
-            
-            --glass-panel: rgba(20, 20, 23, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-highlight: rgba(255, 255, 255, 0.03);
-            
-            --input-bg: rgba(10, 10, 12, 0.8);
-            
-            --accent-primary: #6366f1; /* Indigo */
-            --accent-glow: rgba(99, 102, 241, 0.4);
-            --accent-hover: #4f46e5;
-            
-            --text-main: #f8fafc;
-            --text-secondary: #94a3b8;
-            --text-tertiary: #64748b;
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-            --status-thinking: #eab308;
-            --status-done: #10b981;
-            --status-error: #ef4444;
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://js.puter.com/v2/"></script>
 
-            /* Spacing & Layout */
-            --radius-lg: 16px;
-            --radius-md: 12px;
-            --radius-sm: 8px;
-            
-            --font-sans: 'Inter', system-ui, sans-serif;
-            --font-mono: 'JetBrains Mono', 'Menlo', monospace;
-        }
+  <style>
+    :root {
+      --bg-0: #071017;
+      --bg-1: #0b1621;
+      --bg-2: #142738;
+      --panel: rgba(8, 15, 23, 0.82);
+      --panel-hover: rgba(13, 23, 34, 0.92);
+      --panel-border: rgba(154, 175, 198, 0.2);
+      --panel-strong-border: rgba(86, 149, 189, 0.58);
+      --text-main: #e9f2ff;
+      --text-secondary: #a6bdd9;
+      --text-muted: #71839a;
+      --accent: #2dd4bf;
+      --accent-2: #f59e0b;
+      --ok: #10b981;
+      --warn: #f59e0b;
+      --error: #ef4444;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 9px;
+      --shadow-1: 0 20px 60px rgba(0, 0, 0, 0.35);
+      --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-        body {
-            font-family: var(--font-sans);
-            background-color: var(--bg-body);
-            background-image: var(--bg-gradient);
-            color: var(--text-main);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            -webkit-font-smoothing: antialiased;
-        }
+    html,
+    body {
+      height: 100%;
+    }
 
-        /* --- Layout Structures --- */
-        
-        .app-container {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            max-width: 1600px;
-            margin: 0 auto;
-            width: 100%;
-        }
+    body {
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      color: var(--text-main);
+      background:
+        radial-gradient(80rem 50rem at -10% -10%, rgba(45, 212, 191, 0.18), transparent 55%),
+        radial-gradient(56rem 40rem at 110% -15%, rgba(245, 158, 11, 0.14), transparent 50%),
+        linear-gradient(170deg, var(--bg-2), var(--bg-0));
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
 
-        /* --- Header Area --- */
-        header {
-            flex-shrink: 0;
-            padding: 1.5rem 2rem 1rem 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-            z-index: 50;
-        }
+    .app {
+      height: 100%;
+      width: min(1700px, 100%);
+      margin: 0 auto;
+      padding: 1.2rem;
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+      gap: 1rem;
+    }
 
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    .glass {
+      background: var(--panel);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-2);
+    }
 
-        .brand {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-shadow: 0 0 20px rgba(255,255,255,0.1);
-        }
+    .top {
+      padding: 0.95rem 1.1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.8rem;
+    }
 
-        .brand span { 
-            color: var(--accent-primary);
-            filter: drop-shadow(0 0 8px var(--accent-glow));
-        }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      line-height: 1.15;
+    }
 
-        /* Status / Login Link */
-        .auth-status {
-            font-size: 0.85rem;
-            font-weight: 500;
-            padding: 6px 12px;
-            border-radius: 20px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid var(--glass-border);
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
+    .brand-mark {
+      width: 2.1rem;
+      height: 2.1rem;
+      border-radius: 0.7rem;
+      display: grid;
+      place-items: center;
+      font-size: 1.2rem;
+      background: linear-gradient(160deg, rgba(45, 212, 191, 0.24), rgba(245, 158, 11, 0.2));
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: inset 0 0 18px rgba(45, 212, 191, 0.22);
+    }
 
-        .auth-status:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: rgba(255,255,255,0.2);
-        }
+    .brand h1 {
+      font-size: clamp(1.05rem, 2.2vw, 1.5rem);
+      letter-spacing: 0.01em;
+    }
 
-        /* --- Input Area --- */
-        .input-wrapper {
-            position: relative;
-            background: var(--glass-panel);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-lg);
-            padding: 6px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-            transition: box-shadow 0.3s ease, border-color 0.3s ease;
-        }
+    .brand p {
+      color: var(--text-secondary);
+      font-size: 0.86rem;
+      margin-top: 0.12rem;
+    }
 
-        .input-wrapper:focus-within {
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 1px var(--accent-primary), 0 10px 40px -10px rgba(0,0,0,0.5);
-        }
+    .auth-btn {
+      border-radius: 999px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-main);
+      padding: 0.4rem 0.8rem;
+      font-size: 0.82rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: 180ms ease;
+      max-width: 45ch;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
 
-        textarea {
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: var(--text-main);
-            padding: 14px 18px;
-            font-size: 1rem;
-            font-family: var(--font-sans);
-            resize: none;
-            height: 80px;
-            outline: none;
-            line-height: 1.5;
-        }
+    .auth-btn:hover,
+    .auth-btn:focus-visible {
+      border-color: rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.08);
+      outline: none;
+    }
 
-        textarea::placeholder {
-            color: var(--text-tertiary);
-        }
+    .composer {
+      padding: 0.9rem;
+      display: grid;
+      gap: 0.8rem;
+    }
 
-        .controls-row {
-            display: flex;
-            justify-content: flex-end;
-            padding: 0 10px 10px 0;
-        }
+    .textarea-wrap {
+      border-radius: var(--radius-md);
+      border: 1px solid var(--panel-border);
+      background: rgba(0, 0, 0, 0.25);
+      transition: 200ms ease;
+      display: grid;
+    }
 
-        button#sendBtn {
-            background: var(--accent-primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius-md);
-            padding: 0 24px;
-            height: 40px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-            display: flex;
-            align-items: center;
-       
-        }
+    .textarea-wrap:focus-within {
+      border-color: var(--panel-strong-border);
+      box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.45), inset 0 0 0 1px rgba(45, 212, 191, 0.2);
+    }
 
-        button#sendBtn:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
-        }
+    #promptInput {
+      border: none;
+      outline: none;
+      width: 100%;
+      min-height: 74px;
+      max-height: 220px;
+      resize: none;
+      overflow: auto;
+      background: transparent;
+      color: var(--text-main);
+      font: 500 0.97rem/1.55 "Space Grotesk", system-ui, sans-serif;
+      padding: 0.78rem 0.92rem;
+    }
 
-        button#sendBtn:active {
-            transform: translateY(0);
-        }
+    #promptInput::placeholder {
+      color: var(--text-muted);
+    }
 
-        button#sendBtn:disabled {
-            background: var(--glass-border);
-            color: var(--text-tertiary);
-            cursor: not-allowed;
-            box-shadow: none;
-        }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.6rem;
+    }
 
-        /* --- Main Grid --- */
-        main {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 0 2rem 2rem 2rem;
-            scrollbar-width: thin;
-            scrollbar-color: #333 transparent;
-        }
+    .left-controls,
+    .right-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.52rem;
+    }
 
-        .grid-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
-            height: 100%;
-            padding-bottom: 2rem;
-        }
+    .btn {
+      border-radius: 10px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      height: 2.1rem;
+      padding: 0 0.75rem;
+      font: 600 0.83rem/1 "Space Grotesk", system-ui, sans-serif;
+      cursor: pointer;
+      transition: 160ms ease;
+    }
 
-        @media (min-width: 1024px) {
-            .grid-container {
-                grid-template-columns: 1fr 1fr;
-                grid-template-rows: repeat(2, minmax(350px, 1fr)); 
-            }
-        }
+    .btn:hover,
+    .btn:focus-visible {
+      transform: translateY(-1px);
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.4);
+      outline: none;
+    }
 
-        /* --- Model Cards --- */
-        .model-card {
-            background: var(--glass-panel);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-lg);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-        
-        /* Card Hover Effect */
-        .model-card:hover {
-            border-color: rgba(255,255,255,0.15);
-            background: rgba(30, 30, 35, 0.8);
-        }
+    .btn[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
 
-        /* Streaming State */
-        .model-card.streaming {
-            border-color: var(--accent-primary);
-            box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.05);
-        }
+    .btn-primary {
+      border-color: rgba(45, 212, 191, 0.48);
+      background: linear-gradient(160deg, rgba(45, 212, 191, 0.36), rgba(24, 36, 58, 0.55));
+      box-shadow: inset 0 0 0 1px rgba(45, 212, 191, 0.2);
+    }
 
-        .card-header {
-            padding: 14px 20px;
-            background: rgba(255, 255, 255, 0.02);
-            border-bottom: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+    .btn-danger {
+      border-color: rgba(239, 68, 68, 0.44);
+      background: rgba(127, 29, 29, 0.28);
+    }
 
-        .model-name {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-            font-size: 0.9rem;
-            letter-spacing: 0.02em;
-            color: var(--text-main);
-        }
+    .hint {
+      color: var(--text-muted);
+      font-size: 0.77rem;
+    }
 
-        .vendor-tag {
-            font-size: 0.75rem;
-            color: var(--text-tertiary);
-            font-weight: 500;
-            padding: 2px 8px;
-            border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            background: rgba(255, 255, 255, 0.02);
-            margin-left: 4px;
-        }
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+    }
 
-        .model-icon { 
-            font-size: 1.1em; 
-            filter: grayscale(0.2);
-        }
+    .switch input {
+      accent-color: var(--accent);
+    }
 
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.42rem;
+    }
 
-        /* Status Badge */
-        .status-badge {
-            font-size: 0.7rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            padding: 4px 10px;
-            border-radius: 20px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--glass-border);
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            min-width: 80px;
-            justify-content: center;
-        }
+    .chip {
+      border-radius: 999px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-secondary);
+      font: 500 0.76rem/1 "Space Grotesk", system-ui, sans-serif;
+      padding: 0.38rem 0.66rem;
+      cursor: pointer;
+      transition: 140ms ease;
+    }
 
-        .status-dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background-color: var(--text-tertiary);
-            transition: background-color 0.3s;
-        }
+    .chip:hover,
+    .chip:focus-visible {
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.42);
+      background: rgba(255, 255, 255, 0.11);
+      outline: none;
+    }
 
-        .model-card.streaming .status-dot {
-            background-color: var(--status-thinking);
-            box-shadow: 0 0 8px var(--status-thinking);
-            animation: pulse 1.5s infinite;
-        }
-        
-        .model-card.done .status-dot { 
-            background-color: var(--status-done);
-            box-shadow: 0 0 8px var(--status-done); 
-        }
+    .cards {
+      overflow: auto;
+      padding-right: 0.2rem;
+    }
 
-        /* Copy Button */
-        .copy-btn {
-            background: transparent;
-            border: 1px solid transparent;
-            color: var(--text-secondary);
-            font-size: 0.75rem;
-            padding: 4px 8px;
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all 0.2s;
-            display: none; /* Hidden by default */
-            align-items: center;
-            gap: 6px;
-            font-family: var(--font-sans);
-        }
+    .grid {
+      min-height: 100%;
+      display: grid;
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+      gap: 1rem;
+    }
 
-        .copy-btn:hover {
-            background: rgba(255,255,255,0.05);
-            color: var(--text-main);
-        }
+    .card {
+      min-height: 320px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--panel-border);
+      background: var(--panel);
+      box-shadow: var(--shadow-2);
+      overflow: hidden;
+      position: relative;
+      transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
+    }
 
-        /* Output Area - UPDATED FOR MARKDOWN */
-        .card-body {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
-            font-family: var(--font-sans);
-            font-size: 0.95rem;
-            line-height: 1.6;
-            color: #e2e8f0;
-        }
+    .card:hover {
+      background: var(--panel-hover);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
 
-        /* Markdown Styles within Card Body */
-        .card-body p { margin-bottom: 1em; }
-        .card-body p:last-child { margin-bottom: 0; }
-        
-        .card-body strong { 
-            font-weight: 700; 
-            color: #fff;
-        }
-        
-        .card-body em { 
-            color: var(--text-secondary); 
-        }
+    .card.running {
+      border-color: rgba(45, 212, 191, 0.55);
+      box-shadow: 0 0 0 1px rgba(45, 212, 191, 0.35), var(--shadow-2);
+    }
 
-        .card-body code {
-            font-family: var(--font-mono);
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-size: 0.85em;
-            color: #e2e8f0;
-        }
+    .card.error {
+      border-color: rgba(239, 68, 68, 0.64);
+    }
 
-        .card-body pre {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--glass-border);
-            overflow-x: auto;
-            margin: 1em 0;
-        }
+    .card.disabled {
+      opacity: 0.56;
+      filter: grayscale(0.25);
+    }
 
-        .card-body pre code {
-            background: transparent;
-            padding: 0;
-            border-radius: 0;
-            color: #a5b4fc; /* Light indigo for code blocks */
-        }
+    .card-head {
+      padding: 0.72rem 0.82rem;
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(255, 255, 255, 0.02);
+    }
 
-        .card-body ul, .card-body ol {
-            margin-left: 1.5em;
-            margin-bottom: 1em;
-        }
-        
-        .card-body li {
-            margin-bottom: 0.5em;
-        }
+    .model-title {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      min-width: 0;
+    }
 
-        .card-body h1, .card-body h2, .card-body h3 {
-            color: white;
-            margin-top: 1.5em;
-            margin-bottom: 0.5em;
-            font-weight: 600;
-        }
-        
-        .card-body h1 { font-size: 1.4em; }
-        .card-body h2 { font-size: 1.2em; }
-        .card-body h3 { font-size: 1.1em; }
-        
-        .card-body a {
-            color: var(--accent-primary);
-            text-decoration: none;
-            border-bottom: 1px solid rgba(99, 102, 241, 0.3);
-        }
-        .card-body a:hover {
-            border-bottom-color: var(--accent-primary);
-        }
+    .model-icon {
+      width: 1.45rem;
+      height: 1.45rem;
+      border-radius: 0.45rem;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.17);
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
 
-        /* Custom Scrollbars */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.1);
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255,255,255,0.2);
-        }
+    .model-name {
+      font-size: 0.84rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
 
-        .error-block {
-            color: #fca5a5;
-            background: rgba(127, 29, 29, 0.2);
-            border: 1px solid #7f1d1d;
-            padding: 12px;
-            border-radius: var(--radius-sm);
-            margin-top: 10px;
-            font-size: 0.85rem;
-        }
+    .vendor {
+      font-size: 0.69rem;
+      color: var(--text-muted);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 999px;
+      padding: 0.15rem 0.38rem;
+      flex-shrink: 0;
+    }
 
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.4; }
-            100% { opacity: 1; }
-        }
+    .head-right {
+      display: flex;
+      align-items: center;
+      gap: 0.42rem;
+      flex-shrink: 0;
+    }
 
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            header { padding: 1rem; }
-            main { padding: 1rem; }
-            .grid-container { 
-                display: flex; 
-                flex-direction: column; 
-                height: auto;
-            }
-            .model-card { min-height: 350px; }
-            body { overflow-y: auto; height: auto; }
-            .app-container { height: auto; }
-        }
-    </style>
+    .enable-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .status {
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 999px;
+      padding: 0.16rem 0.5rem;
+      font: 600 0.66rem/1 "IBM Plex Mono", monospace;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      min-width: 8ch;
+      text-align: center;
+    }
+
+    .status.running {
+      color: var(--warn);
+      border-color: rgba(245, 158, 11, 0.5);
+    }
+
+    .status.done {
+      color: var(--ok);
+      border-color: rgba(16, 185, 129, 0.5);
+    }
+
+    .status.error {
+      color: var(--error);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+
+    .status.cancelled {
+      color: var(--text-muted);
+    }
+
+    .card-body {
+      padding: 0.92rem;
+      overflow: auto;
+      color: var(--text-main);
+      line-height: 1.58;
+      font-size: 0.95rem;
+    }
+
+    .placeholder {
+      color: var(--text-muted);
+      font-size: 0.86rem;
+      border: 1px dashed rgba(255, 255, 255, 0.16);
+      border-radius: 10px;
+      padding: 0.7rem;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .card-body p,
+    .card-body ul,
+    .card-body ol,
+    .card-body pre,
+    .card-body blockquote,
+    .card-body table,
+    .card-body h1,
+    .card-body h2,
+    .card-body h3,
+    .card-body h4 {
+      margin-bottom: 0.82rem;
+    }
+
+    .card-body h1,
+    .card-body h2,
+    .card-body h3,
+    .card-body h4 {
+      line-height: 1.28;
+      margin-top: 1.1rem;
+      color: #ffffff;
+    }
+
+    .card-body h1 { font-size: 1.2rem; }
+    .card-body h2 { font-size: 1.1rem; }
+    .card-body h3 { font-size: 1.02rem; }
+    .card-body h4 { font-size: 0.95rem; }
+
+    .card-body code {
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 0.85em;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.09rem 0.35rem;
+      border-radius: 6px;
+      color: #dff6ff;
+    }
+
+    .card-body pre {
+      border: 1px solid rgba(255, 255, 255, 0.17);
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.36);
+      overflow: auto;
+      padding: 0.64rem;
+    }
+
+    .card-body pre code {
+      background: transparent;
+      padding: 0;
+    }
+
+    .card-body a {
+      color: #7ae2ff;
+      text-underline-offset: 3px;
+    }
+
+    .card-body blockquote {
+      border-left: 3px solid rgba(45, 212, 191, 0.7);
+      padding-left: 0.56rem;
+      color: #c9def6;
+      opacity: 0.9;
+    }
+
+    .card-foot {
+      border-top: 1px solid var(--panel-border);
+      padding: 0.58rem 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.65rem;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .metrics {
+      color: var(--text-muted);
+      font: 500 0.72rem/1 "IBM Plex Mono", monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      flex-shrink: 0;
+    }
+
+    .mini-btn {
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text-secondary);
+      border-radius: 8px;
+      height: 1.8rem;
+      font: 600 0.72rem/1 "Space Grotesk", system-ui, sans-serif;
+      padding: 0 0.5rem;
+      cursor: pointer;
+      transition: 140ms ease;
+    }
+
+    .mini-btn:hover,
+    .mini-btn:focus-visible {
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.42);
+      background: rgba(255, 255, 255, 0.11);
+      outline: none;
+    }
+
+    .mini-btn[disabled] {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.22);
+      border-radius: 999px;
+    }
+
+    @media (min-width: 980px) {
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        overflow: auto;
+      }
+
+      .app {
+        height: auto;
+        min-height: 100%;
+        padding: 0.7rem;
+      }
+
+      .top {
+        padding: 0.78rem;
+      }
+
+      .cards {
+        overflow: visible;
+      }
+
+      .grid {
+        min-height: auto;
+      }
+
+      .card {
+        min-height: 310px;
+      }
+
+      .hint {
+        display: none;
+      }
+
+      .auth-btn {
+        max-width: 28ch;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
 </head>
 <body>
+  <main class="app" aria-label="Multi model comparison console">
+    <section class="top glass" aria-label="Header and account">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">AI</div>
+        <div>
+          <h1>Multi AI</h1>
+     
+        </div>
+      </div>
+      <a id="authBtn" class="auth-btn" href="#" role="button" aria-live="polite">Checking account...</a>
+    </section>
 
-    <div class="app-container">
-        <header>
-            <div class="top-bar">
-                <div class="brand">
-                    <span>⚡</span> Multi-AI
-                </div>
-                <a id="puterStatusLink" href="#" class="auth-status" onclick="handleAuthClick(event)">
-                    Checking...
-                </a>
+    <section class="composer glass" aria-label="Prompt composer">
+      <div class="textarea-wrap">
+        <label for="promptInput" class="sr-only">Prompt</label>
+        <textarea id="promptInput" placeholder="Ask anything..."></textarea>
+      </div>
+
+      <div class="controls">
+        <div class="left-controls">
+          <button id="sendBtn" class="btn btn-primary" type="button">Run</button>
+          <button id="stopBtn" class="btn btn-danger" type="button" disabled>Stop</button>
+          <button id="clearBtn" class="btn" type="button">Clear</button>
+          <button id="copyAllBtn" class="btn" type="button" disabled>Copy all</button>
+        </div>
+
+        <div class="right-controls">
+          <span class="hint"> </span>
+        </div>
+      </div>
+
+    </section>
+
+    <section class="cards" aria-label="Model responses">
+      <div id="grid" class="grid"></div>
+    </section>
+
+    <p id="a11yStatus" class="sr-only" aria-live="polite"></p>
+  </main>
+
+  <script>
+    const MODELS = [
+      { id: "openai/gpt-5.3-chat", domId: "gpt53", name: "GPT 5.3", icon: "OA", vendor: "OpenAI" },
+      { id: "anthropic/claude-sonnet-4-6", domId: "claude", name: "Claude Sonnet 4.6", icon: "AN", vendor: "Anthropic" },
+      { id: "google/gemini-3.1-flash-lite-preview", domId: "gemini", name: "Gemini 3.1 Flash Lite", icon: "GO", vendor: "Google" },
+      { id: "mistralai/mistral-large-2512", domId: "mistral", name: "Mistral Large 3", icon: "MI", vendor: "Mistral AI" }
+    ];
+
+    const STORAGE_KEY = "multiai-settings-v2";
+
+    const state = {
+      runToken: 0,
+      isRunning: false,
+      rawByModel: {},
+      startedAtByModel: {},
+      modelEnabled: Object.fromEntries(MODELS.map(m => [m.domId, true]))
+    };
+
+    const els = {
+      authBtn: document.getElementById("authBtn"),
+      promptInput: document.getElementById("promptInput"),
+      sendBtn: document.getElementById("sendBtn"),
+      stopBtn: document.getElementById("stopBtn"),
+      clearBtn: document.getElementById("clearBtn"),
+      copyAllBtn: document.getElementById("copyAllBtn"),
+      grid: document.getElementById("grid"),
+      a11yStatus: document.getElementById("a11yStatus")
+    };
+
+    function loadSettings() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+        if (saved.modelEnabled && typeof saved.modelEnabled === "object") {
+          for (const model of MODELS) {
+            if (typeof saved.modelEnabled[model.domId] === "boolean") {
+              state.modelEnabled[model.domId] = saved.modelEnabled[model.domId];
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to load saved settings", err);
+      }
+    }
+
+    function saveSettings() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        modelEnabled: state.modelEnabled
+      }));
+    }
+
+    function announce(message) {
+      els.a11yStatus.textContent = message;
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+
+    function sanitizeHtml(dirtyHtml) {
+      const template = document.createElement("template");
+      template.innerHTML = dirtyHtml;
+
+      template.content.querySelectorAll("script,style,iframe,object,embed,meta,link,svg,math,form,input,button,textarea,select").forEach(node => node.remove());
+
+      const all = template.content.querySelectorAll("*");
+      for (const node of all) {
+        const attrs = [...node.attributes];
+        for (const attr of attrs) {
+          const name = attr.name.toLowerCase();
+          const val = attr.value;
+
+          if (name.startsWith("on")) {
+            node.removeAttribute(attr.name);
+            continue;
+          }
+
+          if ((name === "href" || name === "src") && val) {
+            const trimmed = val.trim().toLowerCase();
+            const safe = trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("mailto:") || trimmed.startsWith("tel:") || trimmed.startsWith("#");
+            if (!safe) {
+              node.removeAttribute(attr.name);
+            }
+          }
+
+          if (name === "target" && val === "_blank") {
+            node.setAttribute("rel", "noopener noreferrer");
+          }
+        }
+      }
+
+      return template.innerHTML;
+    }
+
+    function getChunkText(part) {
+      if (typeof part === "string") {
+        return part;
+      }
+      if (part?.text) {
+        return part.text;
+      }
+      if (Array.isArray(part?.content)) {
+        return part.content.map(item => item?.text || "").join("");
+      }
+      return "";
+    }
+
+    function markdownToSafeHtml(markdown) {
+      let rendered;
+      try {
+        rendered = marked.parse(markdown, { gfm: true, breaks: true });
+      } catch (err) {
+        return `<pre>${escapeHtml(markdown)}</pre>`;
+      }
+      return sanitizeHtml(rendered);
+    }
+
+    function cardEl(domId, suffix) {
+      return document.getElementById(`${suffix}-${domId}`);
+    }
+
+    function setCardStatus(domId, stateName, label) {
+      const card = cardEl(domId, "card");
+      const status = cardEl(domId, "status");
+      if (!card || !status) return;
+
+      card.classList.remove("running", "error");
+      status.classList.remove("running", "done", "error", "cancelled");
+
+      if (stateName === "running") {
+        card.classList.add("running");
+        status.classList.add("running");
+      } else if (stateName === "done") {
+        status.classList.add("done");
+      } else if (stateName === "error") {
+        card.classList.add("error");
+        status.classList.add("error");
+      } else if (stateName === "cancelled") {
+        status.classList.add("cancelled");
+      }
+
+      status.textContent = label;
+    }
+
+    function setCardDisabled(domId, disabled) {
+      const card = cardEl(domId, "card");
+      if (!card) return;
+      card.classList.toggle("disabled", disabled);
+    }
+
+    function setCardOutput(domId, markdownText) {
+      const body = cardEl(domId, "body");
+      if (!body) return;
+
+      if (!markdownText.trim()) {
+        body.innerHTML = '<div class="placeholder">Waiting for prompt.</div>';
+        return;
+      }
+
+      body.innerHTML = markdownToSafeHtml(markdownText);
+      body.scrollTop = body.scrollHeight;
+    }
+
+    function setCardMetrics(domId, metricsText) {
+      const metrics = cardEl(domId, "metrics");
+      if (metrics) {
+        metrics.textContent = metricsText;
+      }
+    }
+
+    function setModelCopyEnabled(domId, enabled) {
+      const btn = cardEl(domId, "copy");
+      if (btn) btn.disabled = !enabled;
+    }
+
+    function renderCards() {
+      const html = MODELS.map(model => `
+        <article class="card" id="card-${model.domId}">
+          <header class="card-head">
+            <div class="model-title">
+              <div class="model-icon" aria-hidden="true">${model.icon}</div>
+              <div class="model-name" title="${model.name}">${model.name}</div>
+              <span class="vendor">${model.vendor}</span>
             </div>
 
-            <div class="input-wrapper">
-                <textarea id="promptInput" placeholder="Ask anything... "></textarea>
-                <div class="controls-row">
-                    <button id="sendBtn" onclick="broadcastPrompt()">
-                        <span></span>
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"></path></svg>
-                    </button>
-                </div>
+            <div class="head-right">
+              <label class="enable-wrap" for="enable-${model.domId}">
+                On
+                <input id="enable-${model.domId}" data-model-id="${model.domId}" type="checkbox" ${state.modelEnabled[model.domId] ? "checked" : ""} aria-label="Enable ${model.name}">
+              </label>
+              <div id="status-${model.domId}" class="status">idle</div>
             </div>
-        </header>
+          </header>
 
-        <main>
-            <div class="grid-container" id="gridContainer">
-                </div>
-        </main>
-    </div>
+          <section id="body-${model.domId}" class="card-body" aria-live="off">
+            <div class="placeholder">Waiting for prompt.</div>
+          </section>
 
-    <script src="https://js.puter.com/v2/"></script>
+          <footer class="card-foot">
+            <div id="metrics-${model.domId}" class="metrics">chars: 0 | time: -</div>
+            <div class="card-actions">
+              <button id="copy-${model.domId}" class="mini-btn" type="button" data-copy-model="${model.domId}" disabled>Copy</button>
+            </div>
+          </footer>
+        </article>
+      `).join("");
 
-    <script>
-             // --- Configuration ---
-        const models = [
-            { id: 'gemini-3-pro-preview', name: 'GEMINI 3', icon: '🔵', vendor: 'Google' },
-            { id: 'gpt-5.2-2025-12-11', name: 'GPT 5.2', icon: '🟢', vendor: 'OpenAI' },
-            { id: 'claude-opus-4-5-20251101', name: 'CLAUDE 4.5', icon: '🟠', vendor: 'Anthropic' },
-            { id: 'openrouter:x-ai/grok-4.1-fast', name: 'GROK 4.1', icon: '⚫', vendor: 'xAI' }
-        ];
+      els.grid.innerHTML = html;
 
-        // --- Global State ---
-        // NEW: Store raw markdown text here to enable "Copy as Markdown"
-        const rawResponseCache = {}; 
-        
-        const gridContainer = document.getElementById('gridContainer');
-        const promptInput = document.getElementById('promptInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const statusLink = document.getElementById('puterStatusLink');
-        
-        let wakeLock = null;
+      for (const model of MODELS) {
+        setCardDisabled(model.domId, !state.modelEnabled[model.domId]);
+      }
 
-        marked.setOptions({
-            gfm: true,
-            breaks: true,
+      els.grid.querySelectorAll("input[data-model-id]").forEach(input => {
+        input.addEventListener("change", () => {
+          const domId = input.getAttribute("data-model-id");
+          state.modelEnabled[domId] = input.checked;
+          setCardDisabled(domId, !input.checked);
+          saveSettings();
         });
+      });
 
-        // --- CORE LOGIC FOR FRESH START ---
-        async function enforceFreshStart() {
-            try {
-                if (typeof puter !== 'undefined' && puter.auth) {
-                    await puter.auth.signOut();
-                }
-            } catch (err) {
-                console.log("Sign out attempt:", err);
-            }
-            localStorage.clear();
-            sessionStorage.clear();
+      els.grid.querySelectorAll("button[data-copy-model]").forEach(btn => {
+        btn.addEventListener("click", () => copyModel(btn.getAttribute("data-copy-model")));
+      });
+    }
+
+    function autosizeTextarea() {
+      els.promptInput.style.height = "0px";
+      const next = Math.min(220, Math.max(74, els.promptInput.scrollHeight));
+      els.promptInput.style.height = `${next}px`;
+    }
+
+    function setRunningUI(running) {
+      state.isRunning = running;
+      els.sendBtn.disabled = running;
+      els.stopBtn.disabled = !running;
+      els.clearBtn.disabled = running;
+      els.promptInput.disabled = running;
+
+      if (running) {
+        els.sendBtn.textContent = "Running...";
+      } else {
+        els.sendBtn.textContent = "Run";
+      }
+    }
+
+    function updateGlobalActions() {
+      const hasAny = MODELS.some(m => (state.rawByModel[m.domId] || "").trim().length > 0);
+      els.copyAllBtn.disabled = !hasAny;
+    }
+
+    async function updateAuthStatus() {
+      try {
+        const user = await puter.auth.getUser();
+        if (user) {
+          els.authBtn.textContent = `Connected: ${user.username || "account"}`;
+          els.authBtn.href = "https://puter.com";
+          els.authBtn.target = "_blank";
+          els.authBtn.onclick = null;
+          els.authBtn.style.borderColor = "rgba(16, 185, 129, 0.7)";
+          els.authBtn.style.color = "#6ee7b7";
+          return;
+        }
+      } catch (err) {
+        console.warn("Auth status check failed", err);
+      }
+
+      els.authBtn.textContent = "Connect account";
+      els.authBtn.href = "#";
+      els.authBtn.target = "_self";
+      els.authBtn.style.borderColor = "";
+      els.authBtn.style.color = "";
+      els.authBtn.onclick = async (event) => {
+        event.preventDefault();
+        await connectAccount();
+      };
+    }
+
+    async function connectAccount() {
+      els.authBtn.textContent = "Connecting...";
+      try {
+        await puter.auth.signIn({ attempt_temp_user_creation: true });
+      } catch (err) {
+        console.error("Sign-in failed or dismissed", err);
+      }
+      await updateAuthStatus();
+      try {
+        const user = await puter.auth.getUser();
+        return Boolean(user);
+      } catch {
+        return false;
+      }
+    }
+
+    async function ensureSignedIn(interactive = false) {
+      try {
+        const user = await puter.auth.getUser();
+        if (user) return true;
+      } catch (err) {
+        console.warn("Auth check failed", err);
+      }
+      if (!interactive) return false;
+      return connectAccount();
+    }
+
+    function resetCardsForRun() {
+      for (const model of MODELS) {
+        const domId = model.domId;
+        state.rawByModel[domId] = "";
+        state.startedAtByModel[domId] = performance.now();
+        setCardOutput(domId, "");
+        setCardMetrics(domId, "chars: 0 | time: -");
+        setModelCopyEnabled(domId, false);
+
+        if (state.modelEnabled[domId]) {
+          setCardStatus(domId, "running", "running");
+        } else {
+          setCardStatus(domId, "cancelled", "off");
+        }
+      }
+
+      updateGlobalActions();
+    }
+
+    function stopRun() {
+      if (!state.isRunning) return;
+      state.runToken += 1;
+      setRunningUI(false);
+      announce("Run stopped");
+    }
+
+    async function runForModel(model, prompt, tokenAtStart) {
+      const domId = model.domId;
+      if (!state.modelEnabled[domId]) {
+        return;
+      }
+
+      try {
+        const stream = await puter.ai.chat(prompt, { model: model.id, stream: true });
+
+        for await (const part of stream) {
+          if (tokenAtStart !== state.runToken) {
+            throw new Error("__cancelled__");
+          }
+
+          const chunk = getChunkText(part);
+          if (!chunk) continue;
+
+          state.rawByModel[domId] += chunk;
+          setCardOutput(domId, state.rawByModel[domId]);
+
+          const secs = (performance.now() - state.startedAtByModel[domId]) / 1000;
+          const chars = state.rawByModel[domId].length;
+          setCardMetrics(domId, `chars: ${chars} | time: ${secs.toFixed(1)}s`);
         }
 
-        // --- UI Setup ---
-        function initUI() {
-            gridContainer.innerHTML = '';
-            models.forEach(model => {
-                const card = document.createElement('div');
-                card.className = 'model-card';
-                card.id = `card-${model.id}`;
-                
-                card.innerHTML = `
-                    <div class="card-header">
-                        <div class="model-name">
-                            <span class="model-icon">${model.icon}</span>
-                            <span>${model.name}</span>
-                            <span class="vendor-tag">${model.vendor}</span>
-                        </div>
-                        <div class="header-actions">
-                            <button class="copy-btn" id="copy-${model.id}" onclick="copyResult('${model.id}')" title="Copy text">
-                                📋 Copy
-                            </button>
-                            <div class="status-badge" id="status-${model.id}">
-                                <div class="status-dot"></div>
-                                <span class="status-text">Idle</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body" id="output-${model.id}"></div>
-                `;
-                gridContainer.appendChild(card);
-            });
+        if (tokenAtStart !== state.runToken) {
+          throw new Error("__cancelled__");
         }
 
-        // --- Puter Status Check Logic ---
-        async function checkPuterStatus() {
-            try {
-                const user = await puter.auth.getUser();
-
-                if (user) {
-                    statusLink.innerHTML = `Session ID: ${user.username}`;
-                    statusLink.style.borderColor = 'var(--status-done)';
-                    statusLink.style.color = 'var(--status-done)';
-                        statusLink.style.opacity = '0.3';
-                    statusLink.title = "You are logged in";
-                    statusLink.href = "https://puter.com";
-                    statusLink.target = "_blank";
-                    statusLink.onclick = null;
-                } else {
-                    statusLink.innerHTML = '⚡ Connect Account';
-                    statusLink.style.borderColor = 'var(--accent-primary)';
-                    statusLink.style.color = 'var(--accent-primary)';
-                    statusLink.title = "Click to log in";
-                    statusLink.href = "#";
-                    statusLink.target = "_self";
-                    statusLink.onclick = handleAuthClick;
-                }
-            } catch (err) {
-                console.warn("Puter auth check failed:", err);
-                statusLink.innerHTML = 'Auth Error';
-                statusLink.style.color = 'var(--status-error)';
-            }
+        setCardStatus(domId, "done", "done");
+        setModelCopyEnabled(domId, state.rawByModel[domId].trim().length > 0);
+      } catch (err) {
+        if (tokenAtStart !== state.runToken || err.message === "__cancelled__") {
+          setCardStatus(domId, "cancelled", "stopped");
+          return;
         }
 
-        // --- Auth Handler ---
-        async function handleAuthClick(e) {
-            e.preventDefault();
-            const originalText = statusLink.innerText;
-            statusLink.innerText = "Connecting...";
+        console.error(`Model failed: ${model.id}`, err);
+        const message = err?.message || "Unknown error";
+        state.rawByModel[domId] += `\n\n[System Error]\n${message}`;
+        setCardOutput(domId, state.rawByModel[domId]);
+        setCardStatus(domId, "error", "error");
+        setCardMetrics(domId, `chars: ${state.rawByModel[domId].length} | failed`);
+        setModelCopyEnabled(domId, state.rawByModel[domId].trim().length > 0);
+      }
+    }
 
-            try {
-                await puter.auth.signIn({ attempt_temp_user_creation: true });
-                await checkPuterStatus();
-            } catch (err) {
-                console.error("Sign in failed or cancelled", err);
-                statusLink.innerText = originalText;
-                checkPuterStatus();
-            }
+    async function broadcastPrompt() {
+      const prompt = els.promptInput.value.trim();
+      if (!prompt) {
+        els.promptInput.focus();
+        announce("Prompt required");
+        return;
+      }
+
+      const selectedCount = MODELS.filter(m => state.modelEnabled[m.domId]).length;
+      if (selectedCount === 0) {
+        announce("Enable at least one model");
+        return;
+      }
+
+      const signed = await ensureSignedIn(true);
+      if (!signed) {
+        announce("Sign in failed");
+        return;
+      }
+
+      const token = state.runToken + 1;
+      state.runToken = token;
+      setRunningUI(true);
+      resetCardsForRun();
+      announce(`Running ${selectedCount} model${selectedCount > 1 ? "s" : ""}`);
+
+      const tasks = MODELS.map(async (model, index) => {
+        await new Promise(resolve => setTimeout(resolve, index * 120));
+        if (token !== state.runToken) return;
+        await runForModel(model, prompt, token);
+      });
+
+      await Promise.allSettled(tasks);
+
+      if (token === state.runToken) {
+        setRunningUI(false);
+        announce("Run completed");
+      }
+
+      updateGlobalActions();
+      updateAuthStatus();
+    }
+
+    async function copyModel(domId) {
+      const text = (state.rawByModel[domId] || "").trim();
+      if (!text) return;
+
+      try {
+        await navigator.clipboard.writeText(text);
+        const btn = cardEl(domId, "copy");
+        if (!btn) return;
+        const original = btn.textContent;
+        btn.textContent = "Copied";
+        setTimeout(() => {
+          btn.textContent = original;
+        }, 1000);
+      } catch (err) {
+        console.error("Copy failed", err);
+      }
+    }
+
+    async function copyAll() {
+      const entries = MODELS
+        .map(m => {
+          const text = (state.rawByModel[m.domId] || "").trim();
+          if (!text) return "";
+          return `## ${m.name}\n\n${text}`;
+        })
+        .filter(Boolean)
+        .join("\n\n---\n\n");
+
+      if (!entries) return;
+
+      try {
+        await navigator.clipboard.writeText(entries);
+        const original = els.copyAllBtn.textContent;
+        els.copyAllBtn.textContent = "Copied";
+        setTimeout(() => {
+          els.copyAllBtn.textContent = original;
+        }, 1200);
+      } catch (err) {
+        console.error("Copy all failed", err);
+      }
+    }
+
+    function clearAll() {
+      if (state.isRunning) return;
+      for (const model of MODELS) {
+        state.rawByModel[model.domId] = "";
+        setCardOutput(model.domId, "");
+        setCardStatus(model.domId, "idle", state.modelEnabled[model.domId] ? "idle" : "off");
+        setCardMetrics(model.domId, "chars: 0 | time: -");
+        setModelCopyEnabled(model.domId, false);
+      }
+      updateGlobalActions();
+      announce("Cleared");
+    }
+
+    function bindEvents() {
+      els.sendBtn.addEventListener("click", broadcastPrompt);
+      els.stopBtn.addEventListener("click", stopRun);
+      els.clearBtn.addEventListener("click", clearAll);
+      els.copyAllBtn.addEventListener("click", copyAll);
+
+      els.promptInput.addEventListener("input", autosizeTextarea);
+      els.promptInput.addEventListener("keydown", (event) => {
+        const runShortcut = (event.ctrlKey || event.metaKey) && event.key === "Enter";
+        if (runShortcut) {
+          event.preventDefault();
+          broadcastPrompt();
         }
+      });
 
-        // --- Wake Lock Logic ---
-        async function requestWakeLock() {
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                }
-            } catch (err) {
-                console.warn(`Wake Lock request failed: ${err.name}, ${err.message}`);
-            }
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          stopRun();
         }
+      });
 
-        async function releaseWakeLock() {
-            if (wakeLock !== null) {
-                try {
-                    await wakeLock.release();
-                    wakeLock = null;
-                } catch (err) {
-                    console.warn(`Wake Lock release failed: ${err.name}, ${err.message}`);
-                }
-            }
-        }
+      window.addEventListener("focus", updateAuthStatus);
+      window.addEventListener("beforeunload", () => {
+        state.runToken += 1;
+      });
+    }
 
-        // --- Main Execution Logic ---
-        async function broadcastPrompt() {
-            const prompt = promptInput.value.trim();
-            if (!prompt) {
-                promptInput.focus();
-                return;
-            }
+    async function init() {
+      loadSettings();
+      renderCards();
+      bindEvents();
 
-            // Lock Interface
-            sendBtn.disabled = true;
-            sendBtn.innerHTML = '<span>Processing...</span>';
+      autosizeTextarea();
+      setRunningUI(false);
 
-            await requestWakeLock();
+      for (const model of MODELS) {
+        setCardStatus(model.domId, "idle", state.modelEnabled[model.domId] ? "idle" : "off");
+      }
 
-            // Reset all cards visual state
-            models.forEach(model => {
-                const outputDiv = document.getElementById(`output-${model.id}`);
-                const statusBadge = document.getElementById(`status-${model.id}`);
-                const card = document.getElementById(`card-${model.id}`);
-                const copyBtn = document.getElementById(`copy-${model.id}`);
-                
-                outputDiv.innerText = '';
-                // NEW: Clear cache for this model
-                rawResponseCache[model.id] = "";
-                
-                statusBadge.querySelector('.status-text').innerText = 'Processing';
-                card.classList.remove('done');
-                card.classList.add('streaming');
-                
-                copyBtn.style.display = 'none';
-                copyBtn.innerHTML = '📋 Copy';
-            });
+      await updateAuthStatus();
+    }
 
-            // --- STAGGERED START FIX ---
-    // Instead of launching all at once, we add a tiny delay between each start
-    const promises = models.map(async (model, index) => {
-        await new Promise(resolve => setTimeout(resolve, index * 200)); // 200ms gap
-        return streamModel(model, prompt);
+    init().catch(err => {
+      console.error("Initialization failed", err);
+      announce("Initialization failed");
     });
-
-            try {
-                await Promise.all(promises);
-            } catch (e) {
-                console.error("Global processing error", e);
-            } finally {
-                sendBtn.disabled = false;
-                sendBtn.innerHTML = `<span></span><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"></path></svg>`;
-                await releaseWakeLock();
-            }
-        }
-
-        async function streamModel(model, prompt) {
-            const outputDiv = document.getElementById(`output-${model.id}`);
-            const statusBadge = document.getElementById(`status-${model.id}`);
-            const card = document.getElementById(`card-${model.id}`);
-            const statusText = statusBadge.querySelector('.status-text');
-            const copyBtn = document.getElementById(`copy-${model.id}`);
-
-            let fullTextAccumulated = "";
-
-            try {
-                const response = await puter.ai.chat(prompt, { 
-                    model: model.id, 
-                    stream: true 
-                });
-
-                for await (const part of response) {
-                    if (part?.text) {
-                        fullTextAccumulated += part.text;
-                        
-                        // NEW: Update cache with RAW markdown
-                        rawResponseCache[model.id] = fullTextAccumulated;
-
-                        // Render HTML for display
-                        outputDiv.innerHTML = marked.parse(fullTextAccumulated);
-                        outputDiv.scrollTop = outputDiv.scrollHeight;
-                    }
-                }
-
-                statusText.innerText = 'Done';
-                card.classList.remove('streaming');
-                card.classList.add('done');
-                copyBtn.style.display = 'flex';
-                
-                checkPuterStatus();
-
-            } catch (error) {
-                console.error(`Error with ${model.name}:`, error);
-                
-                outputDiv.innerHTML += `
-                    <div class="error-block">
-                        <strong>[System Error]</strong><br>
-                        ${error.message || 'Unknown error occurred'}
-                    </div>
-                `;
-
-                statusText.innerText = '-';
-                statusBadge.style.color = '#ef4444';
-                card.classList.remove('streaming');
-            }
-        }
-
-        // NEW: Copy logic now uses cache
-        async function copyResult(modelId) {
-            const copyBtn = document.getElementById(`copy-${modelId}`);
-            
-            // Grab from cache (Markdown) fallback to visible text (Plain)
-            const textToCopy = rawResponseCache[modelId] || document.getElementById(`output-${modelId}`).innerText;
-
-            if (!textToCopy) return;
-
-            try {
-                await navigator.clipboard.writeText(textToCopy);
-                
-                const originalText = copyBtn.innerHTML;
-                copyBtn.innerText = '✅ Markdown!'; // Visual feedback changed
-                copyBtn.style.borderColor = 'var(--status-done)';
-                copyBtn.style.color = 'var(--status-done)';
-
-                setTimeout(() => {
-                    copyBtn.innerHTML = originalText;
-                    copyBtn.style.borderColor = '';
-                    copyBtn.style.color = '';
-                }, 2000);
-            } catch (err) {
-                console.error('Failed to copy text: ', err);
-                copyBtn.innerText = '❌ Error';
-            }
-        }
-
-        promptInput.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'Enter') {
-                broadcastPrompt();
-            }
-        });
-
-        // --- APP ENTRY POINT ---
-        (async () => {
-            initUI();
-            
-            try {
-                let user = await puter.auth.getUser();
-                
-                if (!user) {
-                    statusLink.innerText = "Initializing...";
-                    user = await puter.auth.signIn({ attempt_temp_user_creation: true });
-                }
-                
-                await checkPuterStatus();
-                
-            } catch (err) {
-                console.error("Initialization failed:", err);
-                statusLink.innerHTML = '🪪';
-            }
-
-            window.addEventListener('focus', checkPuterStatus);
-        })();
-    </script>
+  </script>
 </body>
 </html>
