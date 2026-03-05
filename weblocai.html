@@ -4,14 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
-    <title>LUMINAIRA</title>
+    <title>WebLocAI</title>
     <link rel="icon" href="luminairaicon.png" type="image/png">
     <link rel="apple-touch-icon" href="luminairaicon.png">
     <meta name="theme-color" content="#0f0f23">
     <meta name="color-scheme" content="dark">
 
-    <script src="https://js.puter.com/v2/"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <style>
@@ -692,14 +690,14 @@
 
     <div id="overlay" class="overlay">
         <div class="overlay-content">
-            <p>LUMINAIRA is an AI interface experiment.</p>
+            <p>WebLocAI is an AI interface experiment.</p>
         </div>
     </div>
 
     <div class="container">
         <header class="header">
-            <img src="luminairaicon.png" alt="Luminaira Icon" class="header-icon">
-            <h1 class="title" id="clickableTitle">LUMIN<span class="highlight-ai">AI</span>RA</h1>
+            <img src="luminairaicon.png" alt="WebLocAI Icon" class="header-icon">
+            <h1 class="title" id="clickableTitle">WebLoc<span class="highlight-ai">AI</span></h1>
           
         </header>
 
@@ -751,6 +749,9 @@
             overlay.addEventListener('click', () => overlay.classList.remove('visible'));
             reloadButton.addEventListener('click', () => location.reload());
         });
+
+        const OLLAMA_API_URL = 'https://43b6-174-95-2-90.ngrok-free.app/api/chat';
+        const OLLAMA_MODEL = 'ministral-3:3b';
 
         class LLMChat {
             #elements = {};
@@ -872,32 +873,170 @@
                 this.#updateTokenCount();
 
                 const startTime = performance.now();
+                const streamingMessage = this.#createStreamingMessage();
+                let aiText = '';
 
                 try {
-                    //  Fetch using Puter's network layer
-                    const response = await puter.net.fetch(`https://818233.xyz/${encodeURIComponent(prompt)}`);
+                    const response = await fetch(OLLAMA_API_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            model: OLLAMA_MODEL,
+                            messages: [{ role: 'user', content: prompt }],
+                            stream: true
+                        })
+                    });
 
                     if (!response.ok) {
                         throw new Error(`Server returned ${response.status}`);
                     }
 
-                    // 3. Get text response
-                    const text = await response.text();
+                    if (!response.body) {
+                        throw new Error('Missing response body for streaming');
+                    }
+
+                    this.#updateStatus('Streaming...', 'processing');
+
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+                    let streamDone = false;
+
+                    while (!streamDone) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop() || '';
+
+                        for (const line of lines) {
+                            const trimmed = line.trim();
+                            if (!trimmed) continue;
+
+                            try {
+                                const payload = trimmed.startsWith('data:')
+                                    ? trimmed.slice(5).trim()
+                                    : trimmed;
+
+                                if (!payload || payload === '[DONE]') {
+                                    streamDone = true;
+                                    break;
+                                }
+
+                                const parsed = JSON.parse(payload);
+                                const token = parsed.message?.content || '';
+                                if (token) {
+                                    aiText += token;
+                                    this.#updateStreamingMessage(streamingMessage, aiText);
+                                }
+
+                                if (parsed.done) {
+                                    streamDone = true;
+                                    break;
+                                }
+                            } catch (_error) {
+                                // Ignore partial/invalid JSON chunks.
+                            }
+                        }
+                    }
+
+                    if (!streamDone && buffer.trim()) {
+                        try {
+                            const payload = buffer.trim().startsWith('data:')
+                                ? buffer.trim().slice(5).trim()
+                                : buffer.trim();
+                            const parsed = JSON.parse(payload);
+                            const token = parsed.message?.content || '';
+                            if (token) {
+                                aiText += token;
+                                this.#updateStreamingMessage(streamingMessage, aiText);
+                            }
+                        } catch (_error) {
+                            // Ignore trailing non-JSON buffer.
+                        }
+                    }
+
+                    const text = aiText.trim();
+                    if (!text) {
+                        throw new Error('No content returned from model');
+                    }
 
                     // 4. Calculate time and display
                     const duration = ((performance.now() - startTime) / 1000).toFixed(2);
                     this.#elements.responseTime.textContent = `(${duration}s)`;
 
-                    // 5. Add AI Message
-                    this.#addMessage(text.trim(), 'ai');
+                    // 5. Finalize AI Message with markdown rendering
+                    this.#finalizeStreamingMessage(streamingMessage, text);
                     this.#updateStatus('Ready', 'success');
 
                 } catch (error) {
                     console.error('Fetch error:', error);
+                    if (!aiText) {
+                        this.#removeStreamingMessage(streamingMessage);
+                    } else {
+                        this.#finalizeStreamingMessage(streamingMessage, aiText);
+                    }
                     this.#addMessage(`**Error:** ${error.message}`, 'ai');
                     this.#updateStatus('Error', 'error');
                 } finally {
                     this.#toggleLoading(false);
+                }
+            }
+
+            #createStreamingMessage() {
+                if (this.#elements.emptyState) {
+                    this.#elements.emptyState.remove();
+                    this.#elements.emptyState = null;
+                }
+
+                const messageWrapper = document.createElement('div');
+                messageWrapper.className = 'message ai-message';
+                messageWrapper.innerHTML = `
+    <div class="message-content-wrapper">
+        <div class="message-actions">
+            <button class="copy-message-btn" title="Copy message">Copy</button>
+        </div>
+        <div class="message-content" data-raw=""></div>
+    </div>
+`;
+
+                this.#elements.outputArea.appendChild(messageWrapper);
+                this.#scrollToBottom();
+
+                return {
+                    wrapper: messageWrapper,
+                    contentDiv: messageWrapper.querySelector('.message-content')
+                };
+            }
+
+            #updateStreamingMessage(streamingMessage, content) {
+                if (!streamingMessage?.contentDiv) return;
+
+                const safeHtml = this.#escapeHtml(content).replace(/\n/g, '<br>');
+                streamingMessage.contentDiv.innerHTML = `<p>${safeHtml}</p>`;
+                streamingMessage.contentDiv.setAttribute('data-raw', content);
+                this.#scrollToBottom();
+            }
+
+            #finalizeStreamingMessage(streamingMessage, content) {
+                if (!streamingMessage?.contentDiv) return;
+
+                let finalContent = `<p>${this.#escapeHtml(content).replace(/\n/g, '<br>')}</p>`;
+                if (typeof marked !== 'undefined') {
+                    finalContent = marked.parse(content);
+                }
+
+                streamingMessage.contentDiv.innerHTML = finalContent;
+                streamingMessage.contentDiv.setAttribute('data-raw', content);
+                this.#scrollToBottom();
+            }
+
+            #removeStreamingMessage(streamingMessage) {
+                if (streamingMessage?.wrapper?.parentNode) {
+                    streamingMessage.wrapper.remove();
                 }
             }
 
@@ -915,13 +1054,13 @@
                 
                 if (role === 'user') {
                      // Simple escape for user messages
-                     finalContent = `<p>${content.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`;
+                     finalContent = `<p>${this.#escapeHtml(content).replace(/\n/g, '<br>')}</p>`;
                 } else if (typeof marked !== 'undefined') {
                     // Parse Markdown using marked.js
                     finalContent = marked.parse(content);
                 } else {
                     // Fallback if marked didn't load (unlikely)
-                    finalContent = `<p>${content.replace(/</g, '&lt;')}</p>`;
+                    finalContent = `<p>${this.#escapeHtml(content).replace(/\n/g, '<br>')}</p>`;
                 }
 
               messageWrapper.innerHTML = `
@@ -936,9 +1075,7 @@
                 this.#elements.outputArea.appendChild(messageWrapper);
                 
                 // Scroll to bottom
-                setTimeout(() => {
-                    this.#elements.statusText.scrollIntoView({ behavior: 'smooth', block: 'end' });
-                }, 100);
+                this.#scrollToBottom();
             }
 
             /* --- Utilities: Resize, Token Count --- */
@@ -954,6 +1091,17 @@
             #updateTokenCount() {
                 const text = this.#elements.promptInput.value;
                 this.#elements.tokenCount.textContent = `${Math.ceil(text.length / 4)} tokens`;
+            }
+
+            #escapeHtml(text) {
+                return text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+            }
+
+            #scrollToBottom() {
+                this.#elements.outputArea.scrollTop = this.#elements.outputArea.scrollHeight;
             }
 
         #handleCopyMessageClick(button) {
