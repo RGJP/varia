@@ -1,0 +1,1048 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Natation Québec</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%8A%3C/text%3E%3C/svg%3E">
+  <style>
+    :root {
+      --bg-start: #eef8f7;
+      --bg-end: #f8fbfd;
+      --card: #ffffff;
+      --ink: #103936;
+      --muted: #5f7471;
+      --accent: #0b7d73;
+      --accent-strong: #045149;
+      --border: #c7dad7;
+      --warning: #915900;
+      --danger: #9f2d2d;
+      --shadow: 0 18px 36px rgba(8, 52, 47, 0.09);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Poppins", "Trebuchet MS", sans-serif;
+      background:
+        radial-gradient(circle at 18% 10%, #d6f0e8 0%, rgba(214, 240, 232, 0) 38%),
+        radial-gradient(circle at 90% -5%, #dbe9ff 0%, rgba(219, 233, 255, 0) 34%),
+        linear-gradient(180deg, var(--bg-start), var(--bg-end));
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 22px 14px 40px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    header {
+      padding: 22px 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.9rem, 4.2vw, 2.8rem);
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.98rem;
+    }
+
+    .subtitle-note {
+      margin: 8px 0 0;
+      font-size: 0.95rem;
+    }
+
+    .toolbar {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      background: #f8fcfb;
+      color: var(--ink);
+    }
+
+    .status.loading {
+      border-color: #1e6dff;
+      background: #e8f1ff;
+      color: #0e4cb6;
+      font-weight: 700;
+      animation: loadingPulse 1.4s ease-in-out infinite;
+      box-shadow: 0 0 0 0 rgba(30, 109, 255, 0.45);
+    }
+
+    .status.warning {
+      border-color: #e5cfaa;
+      background: #fff8ee;
+      color: var(--warning);
+    }
+
+    @keyframes loadingPulse {
+      0% {
+        box-shadow: 0 0 0 0 rgba(30, 109, 255, 0.45);
+        transform: scale(1);
+      }
+      50% {
+        box-shadow: 0 0 0 10px rgba(30, 109, 255, 0);
+        transform: scale(1.03);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(30, 109, 255, 0);
+        transform: scale(1);
+      }
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 9px 15px;
+      font: inherit;
+      font-size: 0.93rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-refresh {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-refresh:hover {
+      background: var(--accent-strong);
+    }
+
+    nav {
+      margin-top: 14px;
+      padding: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .day-btn {
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .day-btn:hover {
+      border-color: #8dc2bc;
+    }
+
+    .day-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    main {
+      margin-top: 14px;
+      padding: 16px;
+    }
+
+    .section-title {
+      margin: 4px 0 2px;
+      font-size: clamp(1.2rem, 2.2vw, 1.55rem);
+    }
+
+    .section-hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .error-list {
+      margin: 12px 0 0;
+      padding-left: 18px;
+      color: var(--danger);
+      font-size: 0.9rem;
+    }
+
+    .table-wrap {
+      margin-top: 14px;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 760px;
+      background: #fff;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 11px 12px;
+      border-bottom: 1px solid #dde9e7;
+      vertical-align: top;
+      font-size: 0.92rem;
+    }
+
+    th {
+      background: #f4faf9;
+      font-size: 0.83rem;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: #2e5d58;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    tbody tr:hover {
+      background: #f7fdfc;
+    }
+
+    .pill {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 4px 8px;
+      background: #eaf7f5;
+      border: 1px solid #c8e4df;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+    tbody a {
+      color: #005b8f;
+      text-decoration: none;
+    }
+
+    tbody a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 760px) {
+      header {
+        padding: 18px 15px;
+      }
+
+      nav {
+        padding: 10px;
+      }
+
+      .day-btn {
+        font-size: 0.9rem;
+        padding: 8px 12px;
+      }
+
+      main {
+        padding: 14px 11px;
+      }
+
+      .table-wrap {
+        border: 0;
+        overflow: visible;
+      }
+
+      table {
+        min-width: 0;
+        border-collapse: separate;
+        border-spacing: 0 10px;
+        background: transparent;
+      }
+
+      thead {
+        display: none;
+      }
+
+      tbody tr {
+        display: block;
+        border: 1px solid #d4e6e3;
+        border-radius: 12px;
+        background: #fff;
+        overflow: hidden;
+        box-shadow: 0 8px 18px rgba(8, 52, 47, 0.06);
+      }
+
+      tbody tr:hover {
+        background: #fff;
+      }
+
+      td {
+        display: grid;
+        grid-template-columns: minmax(92px, 38%) 1fr;
+        gap: 10px;
+        padding: 9px 11px;
+        border-bottom: 1px dashed #e1ecea;
+      }
+
+      td:last-child {
+        border-bottom: 0;
+      }
+
+      td::before {
+        content: attr(data-label);
+        font-size: 0.74rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: #3f6560;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="card">
+      <h1>Natation Québec</h1>
+      <p class="subtitle">Agrégation des horaires des piscines intérieures de la Ville de Québec.</p>
+      <p class="subtitle-note"><strong>Vérifiez toujours la page source pour confirmer l'heure et vous assurer qu'aucune annulation n'a été signalée avant de vous déplacer.</strong></p>
+      <div class="toolbar">
+        <button id="reloadBtn" class="btn btn-refresh" type="button">Actualiser les horaires</button>
+        <span id="statusBadge" class="status">Initialisation...</span>
+      </div>
+    </header>
+
+    <nav id="daysNav" class="card" aria-label="Navigation par jour"></nav>
+
+    <main class="card">
+      <h2 id="dayTitle" class="section-title"></h2>
+      <p id="sectionHint" class="section-hint"></p>
+      <ul id="errorList" class="error-list"></ul>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Piscine</th>
+              <th>Horaire / Bassin</th>
+              <th>Type de bain</th>
+              <th>Heure</th>
+              <th>Période</th>
+              <th>Source</th>
+              <th>Carte</th>
+            </tr>
+          </thead>
+          <tbody id="scheduleBody"></tbody>
+        </table>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="https://js.puter.com/v2/"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      var POOL_URLS = [
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=163",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=165",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=320",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=166",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=167",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=168",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=169",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=712",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=171",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=175",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=172",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=331",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=173",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=333",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=176",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=177",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=178",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=179",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=793",
+        "https://www.ville.quebec.qc.ca/citoyens/loisirs_sports/installations_sportives/piscines_interieures/piscines_interieures_fiche.aspx?entID=164"
+      ];
+
+      var DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+      var MAX_FETCH_ATTEMPTS = 3;
+      var REQUEST_TIMEOUT_MS = 12000;
+      var RETRY_DELAY_MS = 2200;
+      var RETRY_JITTER_MS = 900;
+      var INTER_REQUEST_DELAY_MS = 200;
+      var DAY_KEYS = {
+        lundi: "Lundi",
+        mardi: "Mardi",
+        mercredi: "Mercredi",
+        jeudi: "Jeudi",
+        vendredi: "Vendredi",
+        samedi: "Samedi",
+        dimanche: "Dimanche",
+        monday: "Lundi",
+        tuesday: "Mardi",
+        wednesday: "Mercredi",
+        thursday: "Jeudi",
+        friday: "Vendredi",
+        saturday: "Samedi",
+        sunday: "Dimanche"
+      };
+      var MONTHS_FR = {
+        janvier: 0,
+        fevrier: 1,
+        mars: 2,
+        avril: 3,
+        mai: 4,
+        juin: 5,
+        juillet: 6,
+        aout: 7,
+        septembre: 8,
+        octobre: 9,
+        novembre: 10,
+        decembre: 11
+      };
+
+      var state = {
+        selectedDay: getTodayLabel(),
+        loading: false,
+        loadedCount: 0,
+        entries: [],
+        errors: []
+      };
+
+      var dom = {
+        daysNav: document.getElementById("daysNav"),
+        reloadBtn: document.getElementById("reloadBtn"),
+        statusBadge: document.getElementById("statusBadge"),
+        scheduleBody: document.getElementById("scheduleBody"),
+        dayTitle: document.getElementById("dayTitle"),
+        sectionHint: document.getElementById("sectionHint"),
+        errorList: document.getElementById("errorList")
+      };
+
+      init();
+
+      function init() {
+        renderDayButtons();
+        bindEvents();
+        renderTable();
+        loadAllSchedules();
+      }
+
+      function bindEvents() {
+        dom.reloadBtn.addEventListener("click", loadAllSchedules);
+      }
+
+      async function loadAllSchedules() {
+        if (state.loading) {
+          return;
+        }
+
+        state.loading = true;
+        state.loadedCount = 0;
+        state.entries = [];
+        state.errors = [];
+        updateStatus();
+        renderErrors();
+        renderTable();
+
+        for (var i = 0; i < POOL_URLS.length; i += 1) {
+          var url = POOL_URLS[i];
+          try {
+            var html = await fetchPageWithRetry(url);
+            var parsedEntries = parsePoolPage(html, url);
+            state.entries = state.entries.concat(parsedEntries);
+          } catch (error) {
+            state.errors.push("Erreur " + shortPoolId(url) + " : " + (error && error.message ? error.message : "échec de chargement"));
+          } finally {
+            state.loadedCount += 1;
+            updateStatus();
+          }
+
+          if (i < POOL_URLS.length - 1) {
+            await sleep(computeInterRequestDelay());
+          }
+        }
+
+        state.loading = false;
+        updateStatus();
+        renderErrors();
+        renderTable();
+      }
+
+      async function fetchPageWithRetry(url) {
+        var attempt = 0;
+        var lastError = null;
+
+        while (attempt < MAX_FETCH_ATTEMPTS) {
+          attempt += 1;
+          try {
+            return await fetchPage(url);
+          } catch (error) {
+            lastError = error;
+            if (attempt >= MAX_FETCH_ATTEMPTS || !isRetryableError(error)) {
+              break;
+            }
+
+            var waitMs = computeRetryDelay(attempt);
+            await sleep(waitMs);
+          }
+        }
+
+        var details = lastError && lastError.message ? lastError.message : "échec de chargement";
+        throw new Error(details + " (après " + MAX_FETCH_ATTEMPTS + " tentatives)");
+      }
+
+      async function fetchPage(url) {
+        var fetchFn = (window.puter && window.puter.net && typeof window.puter.net.fetch === "function")
+          ? window.puter.net.fetch.bind(window.puter.net)
+          : window.fetch.bind(window);
+
+        var response = await fetchWithTimeout(function () {
+          return fetchFn(url);
+        }, REQUEST_TIMEOUT_MS);
+
+        if (!response || !response.ok) {
+          var status = response ? response.status : 0;
+          var httpError = new Error("HTTP " + (status || "inconnu"));
+          httpError.status = status;
+          httpError.retryable = status === 0 || status === 408 || status === 425 || status === 429 || status >= 500;
+          throw httpError;
+        }
+
+        return response.text();
+      }
+
+      async function fetchWithTimeout(fetchCall, timeoutMs) {
+        return new Promise(function (resolve, reject) {
+          var settled = false;
+          var timer = setTimeout(function () {
+            if (settled) {
+              return;
+            }
+            settled = true;
+            var timeoutError = new Error("délai dépassé");
+            timeoutError.retryable = true;
+            reject(timeoutError);
+          }, timeoutMs);
+
+          Promise.resolve()
+            .then(fetchCall)
+            .then(function (response) {
+              if (settled) {
+                return;
+              }
+              settled = true;
+              clearTimeout(timer);
+              resolve(response);
+            })
+            .catch(function (error) {
+              if (settled) {
+                return;
+              }
+              settled = true;
+              clearTimeout(timer);
+              if (error && typeof error === "object" && typeof error.retryable === "undefined") {
+                error.retryable = true;
+              }
+              reject(error);
+            });
+        });
+      }
+
+      function isRetryableError(error) {
+        if (!error) {
+          return true;
+        }
+
+        if (error.retryable === true) {
+          return true;
+        }
+
+        if (typeof error.status === "number") {
+          return error.status === 0 || error.status === 408 || error.status === 425 || error.status === 429 || error.status >= 500;
+        }
+
+        var message = String(error.message || "").toLowerCase();
+        return /timeout|network|failed to fetch|echec|gateway|temporar|cors|d[ée]lai/.test(message);
+      }
+
+      function computeRetryDelay(attempt) {
+        var base = RETRY_DELAY_MS + ((attempt - 1) * 500);
+        var jitter = Math.floor(Math.random() * RETRY_JITTER_MS);
+        return base + jitter;
+      }
+
+      function computeInterRequestDelay() {
+        return INTER_REQUEST_DELAY_MS;
+      }
+
+      function sleep(ms) {
+        return new Promise(function (resolve) {
+          setTimeout(resolve, ms);
+        });
+      }
+
+      function parsePoolPage(html, sourceUrl) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(html, "text/html");
+        var poolName = extractPoolName(doc, sourceUrl);
+        var mapUrl = extractMapUrl(doc, sourceUrl);
+        var tables = Array.prototype.slice.call(
+          doc.querySelectorAll("table.tableau_horaire_loisirs, table[class*='tableau_horaire']")
+        );
+        var entries = [];
+
+        for (var i = 0; i < tables.length; i += 1) {
+          var table = tables[i];
+          var context = tableContext(table, i + 1);
+          var periodRange = parsePeriodRange(context.period);
+          var rows = table.querySelectorAll("tr");
+
+          for (var r = 0; r < rows.length; r += 1) {
+            var row = rows[r];
+            var dayText = normalizeDay(cleanText(getText(row.querySelector("th"))));
+            if (!dayText) {
+              continue;
+            }
+
+            var cell = row.querySelector("td");
+            if (!cell) {
+              continue;
+            }
+
+            var slots = parseCellSlots(cell);
+            for (var s = 0; s < slots.length; s += 1) {
+              entries.push({
+                day: dayText,
+                poolName: poolName,
+                scheduleLabel: context.label,
+                period: context.period,
+                bathType: slots[s].type,
+                timeRange: slots[s].timeRange,
+                startMinute: startMinute(slots[s].timeRange),
+                periodStartKey: periodRange.startKey,
+                periodEndKey: periodRange.endKey,
+                sourceUrl: sourceUrl,
+                mapUrl: mapUrl
+              });
+            }
+          }
+        }
+
+        return entries;
+      }
+
+      function extractPoolName(doc, sourceUrl) {
+        var h2s = Array.prototype.slice.call(doc.querySelectorAll("h2"));
+        for (var i = 0; i < h2s.length; i += 1) {
+          var text = cleanText(h2s[i].textContent);
+          if (text && !/description de l'installation/i.test(text) && !/loisirs et sports/i.test(text)) {
+            return text;
+          }
+        }
+
+        var titleCandidate = cleanText(getText(doc.querySelector("title")));
+        if (titleCandidate && !/description de l'installation/i.test(titleCandidate)) {
+          return titleCandidate.split("|")[0].trim();
+        }
+
+        return "Piscine " + shortPoolId(sourceUrl);
+      }
+
+      function extractMapUrl(doc, sourceUrl) {
+        var candidate = doc.querySelector(
+          "a#ctl00_ctl00_contenu_texte_page_InstallationDetails1_hlGoogleMaps, a[id*='hlGoogleMaps'], a.picto-carte-google, a[href*='maps.google.']"
+        );
+        if (!candidate) {
+          return "";
+        }
+
+        var href = cleanText(candidate.getAttribute("href"));
+        if (!href) {
+          return "";
+        }
+
+        try {
+          var absolute = new URL(href, sourceUrl).href;
+          if (!/^https?:\/\//i.test(absolute)) {
+            return "";
+          }
+          return absolute.replace(/^http:\/\//i, "https://");
+        } catch (error) {
+          return "";
+        }
+      }
+
+      function tableContext(table, index) {
+        var label = "Horaire " + index;
+        var period = "";
+        var previous = table.previousElementSibling;
+        var scanLimit = 0;
+
+        while (previous && scanLimit < 8) {
+          var text = cleanText(previous.textContent);
+          if (!period && /du\s+\d|au\s+\d/i.test(text)) {
+            period = text;
+          }
+          if (!/horaire/i.test(label) && /^horaire/i.test(text)) {
+            label = text;
+          }
+          if (/^horaire/i.test(text)) {
+            label = text;
+          }
+          if (label && period) {
+            break;
+          }
+          previous = previous.previousElementSibling;
+          scanLimit += 1;
+        }
+
+        return {
+          label: label,
+          period: period
+        };
+      }
+
+      function parsePeriodRange(periodText) {
+        var text = cleanText(periodText);
+        if (!text) {
+          return { startKey: null, endKey: null };
+        }
+
+        var rangeMatch = /du\s+(.+?)\s+au\s+(.+)/i.exec(text);
+        if (!rangeMatch) {
+          return { startKey: null, endKey: null };
+        }
+
+        var endDate = parseFrenchDate(rangeMatch[2], null);
+        var startFallbackYear = endDate ? endDate.getFullYear() : null;
+        var startDate = parseFrenchDate(rangeMatch[1], startFallbackYear);
+        if (!endDate && startDate) {
+          endDate = parseFrenchDate(rangeMatch[2], startDate.getFullYear());
+        }
+
+        if (!startDate && !endDate) {
+          return { startKey: null, endKey: null };
+        }
+
+        var startKey = startDate ? toDayKey(startDate) : null;
+        var endKey = endDate ? toDayKey(endDate) : null;
+        return { startKey: startKey, endKey: endKey };
+      }
+
+      function parseFrenchDate(text, fallbackYear) {
+        var cleaned = cleanText(text).toLowerCase();
+        var match = /(\d{1,2})(?:\s*er)?\s+([a-zA-Z\u00C0-\u017F]+)\s*(\d{4})?/i.exec(cleaned);
+        if (!match) {
+          return null;
+        }
+
+        var day = Number(match[1]);
+        var monthKey = normalizeToken(match[2]);
+        var monthIndex = MONTHS_FR[monthKey];
+        var year = match[3] ? Number(match[3]) : fallbackYear;
+
+        if (typeof monthIndex !== "number" || !year) {
+          return null;
+        }
+
+        var date = new Date(year, monthIndex, day);
+        if (
+          date.getFullYear() !== year ||
+          date.getMonth() !== monthIndex ||
+          date.getDate() !== day
+        ) {
+          return null;
+        }
+
+        return date;
+      }
+
+      function toDayKey(date) {
+        return date.getFullYear() * 10000 + (date.getMonth() + 1) * 100 + date.getDate();
+      }
+
+      function isEntryActiveForDate(entry, dayKey) {
+        if (entry.periodStartKey != null && dayKey < entry.periodStartKey) {
+          return false;
+        }
+        if (entry.periodEndKey != null && dayKey > entry.periodEndKey) {
+          return false;
+        }
+        return true;
+      }
+
+      function getLocalToday() {
+        var now = new Date();
+        return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      }
+
+      function formatDateFr(date) {
+        return new Intl.DateTimeFormat("fr-CA", {
+          day: "numeric",
+          month: "long",
+          year: "numeric"
+        }).format(date);
+      }
+
+      function parseCellSlots(cell) {
+        var slots = [];
+        var paragraphs = Array.prototype.slice.call(cell.querySelectorAll(":scope > p"));
+
+        if (paragraphs.length > 0) {
+          for (var i = 0; i < paragraphs.length; i += 1) {
+            var paragraph = paragraphs[i];
+            var bathType = cleanText(getText(paragraph.querySelector("strong"))) || "Tous";
+            var clone = paragraph.cloneNode(true);
+            var strongs = clone.querySelectorAll("strong");
+            for (var j = 0; j < strongs.length; j += 1) {
+              strongs[j].remove();
+            }
+
+            var ranges = extractRanges(cleanText(clone.textContent));
+            if (ranges.length === 0) {
+              var fallbackValue = cleanText(clone.textContent);
+              if (fallbackValue) {
+                slots.push({ type: bathType, timeRange: fallbackValue });
+              }
+              continue;
+            }
+
+            for (var r = 0; r < ranges.length; r += 1) {
+              slots.push({ type: bathType, timeRange: ranges[r] });
+            }
+          }
+
+          return slots;
+        }
+
+        var lines = [];
+        if (cell.innerText) {
+          lines = cell.innerText.split(/\n+/).map(cleanText).filter(Boolean);
+        } else {
+          lines = cleanText(cell.textContent).split(/ {2,}/).map(cleanText).filter(Boolean);
+        }
+
+        var currentType = "Tous";
+        for (var k = 0; k < lines.length; k += 1) {
+          var line = lines[k];
+          var lineRanges = extractRanges(line);
+
+          if (lineRanges.length > 0) {
+            var inferredType = inferType(line, currentType);
+            for (var m = 0; m < lineRanges.length; m += 1) {
+              slots.push({ type: inferredType, timeRange: lineRanges[m] });
+            }
+          } else if (!/\d/.test(line)) {
+            currentType = line;
+          }
+        }
+
+        return slots;
+      }
+
+      function extractRanges(text) {
+        var normalized = cleanText(text);
+        if (!normalized) {
+          return [];
+        }
+
+        var rangeRegex = /(\d{1,2}\s*h(?:\s*\d{1,2})?)\s*(?:à|-|au)\s*(\d{1,2}\s*h(?:\s*\d{1,2})?)/gi;
+        var ranges = [];
+        var match = rangeRegex.exec(normalized);
+
+        while (match) {
+          ranges.push(cleanText(match[1]) + " à " + cleanText(match[2]));
+          match = rangeRegex.exec(normalized);
+        }
+
+        return ranges;
+      }
+
+      function inferType(line, fallbackType) {
+        var withoutTimes = cleanText(
+          line.replace(/(\d{1,2}\s*h(?:\s*\d{1,2})?)\s*(?:à|-|au)\s*(\d{1,2}\s*h(?:\s*\d{1,2})?)/gi, "")
+        );
+        return withoutTimes && !/^\d/.test(withoutTimes) ? withoutTimes : (fallbackType || "Tous");
+      }
+
+      function normalizeDay(value) {
+        var key = normalizeToken(value);
+        return DAY_KEYS[key] || "";
+      }
+
+      function startMinute(range) {
+        var match = /(\d{1,2})\s*h(?:\s*(\d{1,2}))?/i.exec(range || "");
+        if (!match) {
+          return 24 * 60 + 1;
+        }
+        var hour = Number(match[1]);
+        var minute = Number(match[2] || 0);
+        return (hour * 60) + minute;
+      }
+
+      function renderDayButtons() {
+        dom.daysNav.innerHTML = "";
+
+        for (var i = 0; i < DAYS.length; i += 1) {
+          (function (day) {
+            var button = document.createElement("button");
+            button.type = "button";
+            button.className = "day-btn" + (state.selectedDay === day ? " active" : "");
+            button.textContent = day;
+            button.setAttribute("aria-pressed", state.selectedDay === day ? "true" : "false");
+            button.addEventListener("click", function () {
+              state.selectedDay = day;
+              renderDayButtons();
+              renderTable();
+            });
+            dom.daysNav.appendChild(button);
+          })(DAYS[i]);
+        }
+      }
+
+      function renderTable() {
+        var today = getLocalToday();
+        var todayKey = toDayKey(today);
+        var todayText = formatDateFr(today);
+
+        dom.dayTitle.textContent = "Bains disponibles - " + state.selectedDay;
+
+        if (state.loading) {
+          dom.sectionHint.textContent = "Chargement en cours. Les lignes apparaîtront quand les pages seront traitées.";
+        } else {
+          dom.sectionHint.textContent = "Affichage agrégé de toutes les piscines pour la journée sélectionnée (périodes actives au " + todayText + ").";
+        }
+
+        var dayEntries = state.entries
+          .filter(function (entry) {
+            return entry.day === state.selectedDay && isEntryActiveForDate(entry, todayKey);
+          })
+          .sort(function (a, b) {
+            if (a.startMinute !== b.startMinute) {
+              return a.startMinute - b.startMinute;
+            }
+            return a.poolName.localeCompare(b.poolName, "fr");
+          });
+
+        if (dayEntries.length === 0) {
+          dom.scheduleBody.innerHTML = "";
+          return;
+        }
+
+        dom.scheduleBody.innerHTML = dayEntries.map(function (entry) {
+          return [
+            "<tr>",
+            "<td data-label=\"Piscine\">", escapeHtml(entry.poolName), "</td>",
+            "<td data-label=\"Horaire / Bassin\">", escapeHtml(entry.scheduleLabel), "</td>",
+            "<td data-label=\"Type de bain\"><span class=\"pill\">", escapeHtml(entry.bathType), "</span></td>",
+            "<td data-label=\"Heure\">", escapeHtml(entry.timeRange), "</td>",
+            "<td data-label=\"Période\">", escapeHtml(entry.period || "-"), "</td>",
+            "<td data-label=\"Source\"><a href=\"", escapeHtml(entry.sourceUrl), "\" target=\"_blank\" rel=\"noopener noreferrer\">Ouvrir</a></td>",
+            "<td data-label=\"Carte\">", (entry.mapUrl
+              ? "<a href=\"" + escapeHtml(entry.mapUrl) + "\" target=\"_blank\" rel=\"noopener noreferrer\">Carte</a>"
+              : "-"), "</td>",
+            "</tr>"
+          ].join("");
+        }).join("");
+      }
+
+      function renderErrors() {
+        dom.errorList.innerHTML = "";
+        if (state.errors.length === 0) {
+          return;
+        }
+        for (var i = 0; i < state.errors.length; i += 1) {
+          var li = document.createElement("li");
+          li.textContent = state.errors[i];
+          dom.errorList.appendChild(li);
+        }
+      }
+
+      function updateStatus() {
+        if (state.loading) {
+          dom.statusBadge.className = "status loading";
+          dom.statusBadge.textContent = "Chargement " + state.loadedCount + " / " + POOL_URLS.length;
+          return;
+        }
+
+        if (state.errors.length > 0) {
+          dom.statusBadge.className = "status warning";
+          dom.statusBadge.textContent = "Plages chargées avec erreurs, actualiser les horaires";
+          return;
+        }
+
+        dom.statusBadge.className = "status";
+        dom.statusBadge.textContent = "Plages chargées avec succès";
+      }
+
+      function getTodayLabel() {
+        var map = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+        var now = new Date();
+        return map[now.getDay()] || "Lundi";
+      }
+
+      function shortPoolId(url) {
+        try {
+          return (new URL(url)).searchParams.get("entID") || url;
+        } catch (error) {
+          return url;
+        }
+      }
+
+      function normalizeToken(value) {
+        return (value || "")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z]/g, "");
+      }
+
+      function cleanText(value) {
+        return (value || "")
+          .replace(/\u00a0/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function getText(node) {
+        return node ? node.textContent : "";
+      }
+
+      function escapeHtml(value) {
+        return String(value == null ? "" : value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+    })();
+  </script>
+</body>
+</html>
