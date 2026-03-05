@@ -809,6 +809,7 @@
 
         const OLLAMA_API_URL = 'https://43b6-174-95-2-90.ngrok-free.app/api/chat';
         const OLLAMA_MODEL = 'llama3.2:3b-instruct-q4_K_M';
+        const MAX_CONTEXT_MESSAGES = 10;
 
         class LLMChat {
             #elements = {};
@@ -816,6 +817,7 @@
             #abortController = null;
             #streamReader = null;
             #pendingUserAbort = false;
+            #history = [];
 
             constructor() {
                 this.#initializeElements();
@@ -960,11 +962,13 @@
                 this.#elements.promptInput.value = '';
                 this.#autoResizeTextarea();
                 this.#updateTokenCount();
+                this.#history.push({ role: 'user', content: prompt });
 
                 const startTime = performance.now();
                 const streamingMessage = this.#createStreamingMessage();
                 let aiText = '';
                 const abortController = new AbortController();
+                const requestMessages = this.#getRequestMessages();
 
                 this.#pendingUserAbort = false;
                 this.#abortController = abortController;
@@ -979,13 +983,13 @@
                         signal: abortController.signal,
                         body: JSON.stringify({
                             model: OLLAMA_MODEL,
-                            messages: [{ role: 'user', content: prompt }],
+                            messages: requestMessages,
                             stream: true
                         })
                     });
 
                     if (!response.ok) {
-                        throw new Error(`Server returned ${response.status}`);
+                        throw await this.#createDetailedError(response);
                     }
 
                     if (!response.body) {
@@ -1060,6 +1064,8 @@
                         throw new Error('No content returned from model');
                     }
 
+                    this.#history.push({ role: 'assistant', content: text });
+
                     // 4. Calculate time and display
                     const duration = ((performance.now() - startTime) / 1000).toFixed(2);
                     this.#elements.responseTime.textContent = `(${duration}s)`;
@@ -1075,7 +1081,9 @@
                         if (!aiText.trim()) {
                             this.#removeStreamingMessage(streamingMessage);
                         } else {
-                            this.#finalizeStreamingMessage(streamingMessage, aiText.trim());
+                            const partialText = aiText.trim();
+                            this.#finalizeStreamingMessage(streamingMessage, partialText);
+                            this.#history.push({ role: 'assistant', content: partialText });
                         }
                         const duration = ((performance.now() - startTime) / 1000).toFixed(2);
                         this.#elements.responseTime.textContent = `(${duration}s)`;
@@ -1089,7 +1097,8 @@
                     } else {
                         this.#finalizeStreamingMessage(streamingMessage, aiText);
                     }
-                    this.#addMessage(`**Error:** ${error.message}`, 'ai');
+                    this.#history.pop();
+                    this.#addMessage(this.#formatErrorMessage(error), 'ai');
                     this.#updateStatus('Error', 'error');
                 } finally {
                     this.#streamReader = null;
@@ -1150,6 +1159,69 @@
             #removeStreamingMessage(streamingMessage) {
                 if (streamingMessage?.wrapper?.parentNode) {
                     streamingMessage.wrapper.remove();
+                }
+            }
+
+            #getRequestMessages() {
+                return this.#history.slice(-MAX_CONTEXT_MESSAGES);
+            }
+
+            async #createDetailedError(response) {
+                const rawBody = await response.text();
+                let parsedBody = null;
+
+                if (rawBody) {
+                    try {
+                        parsedBody = JSON.parse(rawBody);
+                    } catch (_error) {
+                        parsedBody = null;
+                    }
+                }
+
+                const details = parsedBody ?? rawBody;
+                const message = parsedBody?.error
+                    || parsedBody?.message
+                    || parsedBody?.detail
+                    || response.statusText
+                    || `HTTP ${response.status}`;
+
+                const error = new Error(message);
+                error.name = 'ModelRequestError';
+                error.status = response.status;
+                error.statusText = response.statusText;
+                error.details = details;
+                return error;
+            }
+
+            #formatErrorMessage(error) {
+                const statusLine = error?.status
+                    ? `- Status: \`${error.status}${error.statusText ? ` ${error.statusText}` : ''}\``
+                    : '- Status: `Request failed before a valid response was received`';
+
+                const detailText = this.#stringifyErrorDetails(error?.details);
+                const detailBlock = detailText
+                    ? `\n- Details:\n\`\`\`text\n${detailText}\n\`\`\``
+                    : '';
+
+                return [
+                    '## Request Failed',
+                    '',
+                    `- Message: ${error?.message || 'Unknown error'}`,
+                    statusLine,
+                    detailBlock,
+                    '',
+                    'This chat keeps memory on the page and resends recent turns with each request. If the model hit its context limit or the server rejected the payload, start a new chat or reduce the context window.'
+                ].join('\n');
+            }
+
+            #stringifyErrorDetails(details) {
+                if (!details) return '';
+                if (typeof details === 'string') return details.trim().slice(0, 4000);
+
+                try {
+                    return JSON.stringify(details, null, 2).slice(0, 4000);
+                } catch (_error) {
+                    return String(details).slice(0, 4000);
                 }
             }
 
