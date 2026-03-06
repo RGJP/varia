@@ -483,26 +483,6 @@
             flex-wrap: wrap;
         }
 
-        .model-name {
-            color: var(--primary-light);
-            font-family: 'Fira Code', 'Courier New', monospace;
-            font-size: 0.75rem;
-            text-align: right;
-        }
-
-        .page-footer {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            padding: 0 1rem 1rem;
-            text-align: center;
-        }
-
-        .page-footer .model-name {
-            display: inline-block;
-            text-align: center;
-        }
-
         .status-dot {
             width: 8px;
             height: 8px;
@@ -686,8 +666,6 @@
             .prompt-input { padding: 1rem 1.5rem; max-height: 200px; }
             .send-button { width: 52px; height: 52px; }
             .status-bar { padding: 0.75rem 1.5rem; font-size: 0.875rem; }
-            .page-footer { padding: 0 2rem 1.25rem; }
-            
             /* Better table display on desktop */
             .message-content table { display: table; }
         }
@@ -819,10 +797,6 @@
                 </div>
             </footer>
         </main>
-    </div>
-    <footer class="page-footer">
-        <div id="modelName" class="model-name"></div>
-    </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -865,7 +839,6 @@
                 this.#initializeElements();
                 this.#bindEvents();
                 this.#configureMarkdown();
-                this.#renderModelName();
                 this.#updateStatus('Ready', 'success');
             }
 
@@ -877,7 +850,6 @@
                     statusDot: document.getElementById('statusDot'),
                     statusText: document.getElementById('statusText'),
                     tokenCount: document.getElementById('tokenCount'),
-                    modelName: document.getElementById('modelName'),
                     modelSelect: document.getElementById('modelSelect'),
                     emptyState: document.getElementById('emptyState'),
                     responseTime: document.getElementById('responseTime')
@@ -921,11 +893,6 @@
                 }
             }
 
-            #renderModelName() {
-                if (!this.#elements.modelName) return;
-                this.#elements.modelName.textContent = `Current model: ${this.#selectedModel}`;
-            }
-
             #bindEvents() {
                 // Send button click
                 this.#elements.sendButton.addEventListener('click', () => {
@@ -954,7 +921,6 @@
                 this.#elements.modelSelect?.addEventListener('change', (event) => {
                     this.#selectedModel = event.target.value;
                     window.localStorage.setItem(MODEL_STORAGE_KEY, this.#selectedModel);
-                    this.#renderModelName();
                 });
 
                 // Copy buttons delegation
