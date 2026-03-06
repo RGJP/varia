@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -777,11 +778,7 @@
             <h1 class="title" id="clickableTitle">WebLoc<span class="highlight-ai">AI</span></h1>
             <div class="model-selector">
                 <label for="modelSelect">Model</label>
-                <select id="modelSelect" aria-label="Select model">
-                    <option value="Impulse2000/smollm3:latest">Impulse2000/smollm3:latest</option>
-                    <option value="llama3.2:3b-instruct-q4_K_M">llama3.2:3b-instruct-q4_K_M</option>
-                    <option value="phi4-mini:latest" selected>phi4-mini:latest</option>
-                </select>
+                <select id="modelSelect" aria-label="Select model"></select>
             </div>
         </header>
 
@@ -843,6 +840,14 @@
 
         const OLLAMA_API_URL = 'https://43b6-174-95-2-90.ngrok-free.app/api/chat';
         const SMOL_OLLAMA_MODEL = 'Impulse2000/smollm3:latest';
+        const LEGACY_GEMMA_MODEL = 'gemma3:4b';
+        const CURRENT_GEMMA_MODEL = 'gemma3n:e2b';
+        const AVAILABLE_OLLAMA_MODELS = [
+            SMOL_OLLAMA_MODEL,
+            'llama3.2:3b-instruct-q4_K_M',
+            'phi4-mini:latest',
+            CURRENT_GEMMA_MODEL
+        ];
         const DEFAULT_OLLAMA_MODEL = 'phi4-mini:latest';
         const MODEL_STORAGE_KEY = 'weblocai-selected-model';
         const MAX_CONTEXT_MESSAGES = 10;
@@ -878,7 +883,9 @@
                     responseTime: document.getElementById('responseTime')
                 };
 
-                const savedModel = window.localStorage.getItem(MODEL_STORAGE_KEY);
+                this.#populateModelOptions();
+
+                const savedModel = this.#getNormalizedSavedModel();
                 if (savedModel && this.#elements.modelSelect) {
                     const matchingOption = Array.from(this.#elements.modelSelect.options)
                         .some((option) => option.value === savedModel);
@@ -889,6 +896,28 @@
 
                 if (this.#elements.modelSelect?.value) {
                     this.#selectedModel = this.#elements.modelSelect.value;
+                }
+            }
+
+            #getNormalizedSavedModel() {
+                const savedModel = window.localStorage.getItem(MODEL_STORAGE_KEY);
+                if (savedModel === LEGACY_GEMMA_MODEL) {
+                    window.localStorage.setItem(MODEL_STORAGE_KEY, CURRENT_GEMMA_MODEL);
+                    return CURRENT_GEMMA_MODEL;
+                }
+
+                return savedModel;
+            }
+
+            #populateModelOptions() {
+                if (!this.#elements.modelSelect) return;
+
+                this.#elements.modelSelect.innerHTML = AVAILABLE_OLLAMA_MODELS
+                    .map((model) => `<option value="${model}">${model}</option>`)
+                    .join('');
+
+                if (AVAILABLE_OLLAMA_MODELS.includes(DEFAULT_OLLAMA_MODEL)) {
+                    this.#elements.modelSelect.value = DEFAULT_OLLAMA_MODEL;
                 }
             }
 
