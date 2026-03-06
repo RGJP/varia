@@ -834,6 +834,9 @@
             #pendingUserAbort = false;
             #history = [];
             #selectedModel = DEFAULT_OLLAMA_MODEL;
+            #wakeLock = null;
+            #wakeLockSupported = 'wakeLock' in navigator;
+            #wakeLockReacquirePending = false;
 
             constructor() {
                 this.#initializeElements();
@@ -923,6 +926,10 @@
                     window.localStorage.setItem(MODEL_STORAGE_KEY, this.#selectedModel);
                 });
 
+                document.addEventListener('visibilitychange', () => {
+                    this.#handleVisibilityChange();
+                });
+
                 // Copy buttons delegation
                 this.#elements.outputArea.addEventListener('click', (e) => {
                     const button = e.target.closest('button');
@@ -997,6 +1004,73 @@
                 }
             }
 
+            async #requestWakeLock() {
+                if (!this.#wakeLockSupported || !this.#isProcessing || document.visibilityState !== 'visible') {
+                    return;
+                }
+
+                try {
+                    if (this.#wakeLock) {
+                        return;
+                    }
+
+                    const sentinel = await navigator.wakeLock.request('screen');
+                    this.#wakeLock = sentinel;
+                    this.#wakeLockReacquirePending = false;
+
+                    sentinel.addEventListener('release', () => {
+                        if (this.#wakeLock === sentinel) {
+                            this.#wakeLock = null;
+                        }
+
+                        if (this.#isProcessing && document.visibilityState === 'visible') {
+                            this.#wakeLockReacquirePending = true;
+                            queueMicrotask(() => {
+                                if (this.#wakeLockReacquirePending) {
+                                    this.#requestWakeLock().catch(() => {});
+                                }
+                            });
+                        }
+                    });
+                } catch (error) {
+                    this.#wakeLock = null;
+                    this.#wakeLockReacquirePending = false;
+                    console.warn('Wake lock request failed:', error);
+                }
+            }
+
+            async #releaseWakeLock() {
+                this.#wakeLockReacquirePending = false;
+
+                if (!this.#wakeLock) {
+                    return;
+                }
+
+                const sentinel = this.#wakeLock;
+                this.#wakeLock = null;
+
+                try {
+                    await sentinel.release();
+                } catch (_error) {
+                    // Ignore release failures; the browser may have already released it.
+                }
+            }
+
+            #handleVisibilityChange() {
+                if (!this.#wakeLockSupported) {
+                    return;
+                }
+
+                if (document.visibilityState === 'visible') {
+                    if (this.#isProcessing) {
+                        this.#requestWakeLock().catch(() => {});
+                    }
+                    return;
+                }
+
+                this.#releaseWakeLock().catch(() => {});
+            }
+
             async #sendMessage() {
                 const prompt = this.#elements.promptInput.value.trim();
                 
@@ -1027,6 +1101,8 @@
                 this.#streamReader = null;
 
                 try {
+                    await this.#requestWakeLock();
+
                     const response = await fetch(OLLAMA_API_URL, {
                         method: 'POST',
                         headers: {
@@ -1153,6 +1229,7 @@
                     this.#addMessage(this.#formatErrorMessage(error), 'ai');
                     this.#updateStatus('Error', 'error');
                 } finally {
+                    await this.#releaseWakeLock();
                     this.#streamReader = null;
                     this.#abortController = null;
                     this.#pendingUserAbort = false;
