@@ -155,6 +155,32 @@
             font-weight: 300;
         }
 
+        .model-selector {
+            margin-top: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.55rem 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: rgba(22, 33, 62, 0.75);
+            backdrop-filter: blur(8px);
+        }
+
+        .model-selector label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .model-selector select {
+            background: var(--bg-input);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.45rem 0.7rem;
+            font: inherit;
+        }
+
         .chat-container {
             display: flex;
             flex-direction: column;
@@ -650,6 +676,7 @@
             .header { margin-bottom: 2rem; }
             .header-icon { width: 100px; }
             .title { font-size: 3.5rem; }
+            .model-selector label { font-size: 0.95rem; }
             .subtitle { font-size: 1.1rem; }
             .output-area { padding: 2rem; }
             .message-content { padding: 1rem 1.5rem; }
@@ -748,7 +775,13 @@
         <header class="header">
             <img src="luminairaicon.png" alt="WebLocAI Icon" class="header-icon">
             <h1 class="title" id="clickableTitle">WebLoc<span class="highlight-ai">AI</span></h1>
-          
+            <div class="model-selector">
+                <label for="modelSelect">Model</label>
+                <select id="modelSelect" aria-label="Select model">
+                    <option value="Impulse2000/smollm3:latest">Impulse2000/smollm3:latest</option>
+                    <option value="llama3.2:3b-instruct-q4_K_M" selected>llama3.2:3b-instruct-q4_K_M</option>
+                </select>
+            </div>
         </header>
 
         <main class="chat-container">
@@ -808,7 +841,9 @@
         });
 
         const OLLAMA_API_URL = 'https://43b6-174-95-2-90.ngrok-free.app/api/chat';
-        const OLLAMA_MODEL = 'llama3.2:3b-instruct-q4_K_M';
+        const SMOL_OLLAMA_MODEL = 'Impulse2000/smollm3:latest';
+        const DEFAULT_OLLAMA_MODEL = 'llama3.2:3b-instruct-q4_K_M';
+        const MODEL_STORAGE_KEY = 'weblocai-selected-model';
         const MAX_CONTEXT_MESSAGES = 10;
 
         class LLMChat {
@@ -818,6 +853,7 @@
             #streamReader = null;
             #pendingUserAbort = false;
             #history = [];
+            #selectedModel = DEFAULT_OLLAMA_MODEL;
 
             constructor() {
                 this.#initializeElements();
@@ -836,14 +872,28 @@
                     statusText: document.getElementById('statusText'),
                     tokenCount: document.getElementById('tokenCount'),
                     modelName: document.getElementById('modelName'),
+                    modelSelect: document.getElementById('modelSelect'),
                     emptyState: document.getElementById('emptyState'),
                     responseTime: document.getElementById('responseTime')
                 };
+
+                const savedModel = window.localStorage.getItem(MODEL_STORAGE_KEY);
+                if (savedModel && this.#elements.modelSelect) {
+                    const matchingOption = Array.from(this.#elements.modelSelect.options)
+                        .some((option) => option.value === savedModel);
+                    if (matchingOption) {
+                        this.#elements.modelSelect.value = savedModel;
+                    }
+                }
+
+                if (this.#elements.modelSelect?.value) {
+                    this.#selectedModel = this.#elements.modelSelect.value;
+                }
             }
 
             #renderModelName() {
                 if (!this.#elements.modelName) return;
-                this.#elements.modelName.textContent = `${OLLAMA_MODEL}`;
+                this.#elements.modelName.textContent = `Current model: ${this.#selectedModel}`;
             }
 
             #bindEvents() {
@@ -869,6 +919,12 @@
                 this.#elements.promptInput.addEventListener('input', () => {
                     this.#updateTokenCount();
                     this.#autoResizeTextarea();
+                });
+
+                this.#elements.modelSelect?.addEventListener('change', (event) => {
+                    this.#selectedModel = event.target.value;
+                    window.localStorage.setItem(MODEL_STORAGE_KEY, this.#selectedModel);
+                    this.#renderModelName();
                 });
 
                 // Copy buttons delegation
@@ -982,7 +1038,7 @@
                         },
                         signal: abortController.signal,
                         body: JSON.stringify({
-                            model: OLLAMA_MODEL,
+                            model: this.#selectedModel,
                             messages: requestMessages,
                             options: {
                                 num_ctx: 8192
@@ -1166,7 +1222,20 @@
             }
 
             #getRequestMessages() {
-                return this.#history.slice(-MAX_CONTEXT_MESSAGES);
+                const messages = this.#history.slice(-MAX_CONTEXT_MESSAGES);
+
+                if (this.#shouldDisableThinkingForSelectedModel()) {
+                    return [
+                        { role: 'system', content: '/no_think' },
+                        ...messages
+                    ];
+                }
+
+                return messages;
+            }
+
+            #shouldDisableThinkingForSelectedModel() {
+                return this.#selectedModel === SMOL_OLLAMA_MODEL;
             }
 
             async #createDetailedError(response) {
@@ -1323,3 +1392,5 @@
     </script>
 </body>
 </html>
+
+
