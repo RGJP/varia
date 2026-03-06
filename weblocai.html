@@ -779,7 +779,8 @@
                 <label for="modelSelect">Model</label>
                 <select id="modelSelect" aria-label="Select model">
                     <option value="Impulse2000/smollm3:latest">Impulse2000/smollm3:latest</option>
-                    <option value="llama3.2:3b-instruct-q4_K_M" selected>llama3.2:3b-instruct-q4_K_M</option>
+                    <option value="llama3.2:3b-instruct-q4_K_M">llama3.2:3b-instruct-q4_K_M</option>
+                    <option value="phi4-mini:latest" selected>phi4-mini:latest</option>
                 </select>
             </div>
         </header>
@@ -842,7 +843,7 @@
 
         const OLLAMA_API_URL = 'https://43b6-174-95-2-90.ngrok-free.app/api/chat';
         const SMOL_OLLAMA_MODEL = 'Impulse2000/smollm3:latest';
-        const DEFAULT_OLLAMA_MODEL = 'llama3.2:3b-instruct-q4_K_M';
+        const DEFAULT_OLLAMA_MODEL = 'phi4-mini:latest';
         const MODEL_STORAGE_KEY = 'weblocai-selected-model';
         const MAX_CONTEXT_MESSAGES = 10;
 
@@ -1040,9 +1041,6 @@
                         body: JSON.stringify({
                             model: this.#selectedModel,
                             messages: requestMessages,
-                            options: {
-                                num_ctx: 8192
-                            },
                             stream: true
                         })
                     });
