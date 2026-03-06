@@ -123,7 +123,7 @@
         }
 
         .title {
-            font-family: Georgia, "Times New Roman", serif;
+            font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
             font-size: clamp(2.4rem, 8vw, 4.4rem);
             font-weight: 800;
             letter-spacing: -0.06em;
@@ -140,7 +140,7 @@
             display: inline-block;
             font-weight: 950;
             letter-spacing: -0.09em;
-            margin: 0 -0.01em;
+            margin: 0 0.06em 0 -0.01em;
             color: #eef5ff;
             background: linear-gradient(180deg, #ffffff 0%, #c7ddf5 52%, #5d8dc8 100%);
             -webkit-background-clip: text;
@@ -754,7 +754,7 @@
 
     <div id="overlay" class="overlay">
         <div class="overlay-content">
-            <p>POTAITO is an experiment that uses a webpage to interact with locally hosted models running on an old “potato” laptop 🥔</p>
+            <p>POTAITO is a webpage that interacts with private<br>(100% locally hosted models)<br>running on an old Dell 🥔 (i5-4310M, 8GB RAM, No GPU, CPU only).</p>
         </div>
     </div>
 
@@ -801,7 +801,7 @@
                     <div class="status-meta">
                         <div id="tokenCount">0 tokens</div>
                     </div>
-                    <div class="status-version" aria-label="Version 1.02">1.02</div>
+                    <div class="status-version" aria-label="Version">1.04</div>
                 </div>
             </footer>
         </main>
@@ -1361,7 +1361,7 @@
                     statusLine,
                     detailBlock,
                     '',
-                    'This chat keeps memory on the page and resends recent turns with each request. If the model hit its context limit or the server rejected the payload, start a new chat or reduce the context window.'
+                    '🔄️ Try starting a new chat.'
                 ].join('\n');
             }
 
