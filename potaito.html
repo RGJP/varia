@@ -821,7 +821,10 @@
 
             clickableTitle.addEventListener('click', () => overlay.classList.add('visible'));
             overlay.addEventListener('click', () => overlay.classList.remove('visible'));
-            reloadButton.addEventListener('click', () => location.reload());
+            reloadButton.addEventListener('click', () => {
+                window.localStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
+                location.reload();
+            });
         });
 
         const OLLAMA_API_URL = 'https://2821-174-95-2-90.ngrok-free.app/api/chat';
@@ -832,6 +835,7 @@
             SMOL_OLLAMA_MODEL,
             'llama3.2:3b-instruct-q4_K_M',
             'phi4-mini:latest',
+            'gpt-oss:120b-cloud',
             CURRENT_GEMMA_MODEL
         ];
         const DEFAULT_OLLAMA_MODEL = 'phi4-mini:latest';
