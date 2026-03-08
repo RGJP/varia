@@ -254,6 +254,10 @@
             line-height: 1.6;
         }
 
+        .message-content.streaming {
+            white-space: pre-wrap;
+        }
+
         .message-content a {
             color: var(--primary-light);
             text-decoration: underline;
@@ -832,7 +836,9 @@
         ];
         const DEFAULT_OLLAMA_MODEL = 'phi4-mini:latest';
         const MODEL_STORAGE_KEY = 'weblocai-selected-model';
+        const CHAT_HISTORY_STORAGE_KEY = 'potaito-chat-history';
         const MAX_CONTEXT_MESSAGES = 10;
+        const MAX_SAVED_HISTORY_MESSAGES = 100;
 
         class LLMChat {
             #elements = {};
@@ -845,9 +851,12 @@
             #wakeLock = null;
             #wakeLockSupported = 'wakeLock' in navigator;
             #wakeLockReacquirePending = false;
+            #streamRenderScheduled = false;
+            #streamScrollScheduled = false;
 
             constructor() {
                 this.#initializeElements();
+                this.#restoreHistory();
                 this.#bindEvents();
                 this.#configureMarkdown();
                 this.#updateStatus('Ready', 'success');
@@ -879,6 +888,41 @@
 
                 if (this.#elements.modelSelect?.value) {
                     this.#selectedModel = this.#elements.modelSelect.value;
+                }
+            }
+
+            #restoreHistory() {
+                const rawHistory = window.localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
+                if (!rawHistory) return;
+
+                try {
+                    const parsedHistory = JSON.parse(rawHistory);
+                    if (!Array.isArray(parsedHistory)) return;
+
+                    const validHistory = parsedHistory
+                        .filter((message) => message && (message.role === 'user' || message.role === 'assistant') && typeof message.content === 'string')
+                        .slice(-MAX_SAVED_HISTORY_MESSAGES);
+
+                    if (!validHistory.length) return;
+
+                    this.#history = validHistory;
+                    validHistory.forEach((message) => {
+                        this.#addMessage(message.content, message.role, { scroll: false });
+                    });
+                    this.#scrollToBottom();
+                } catch (_error) {
+                    window.localStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
+                }
+            }
+
+            #persistHistory() {
+                try {
+                    window.localStorage.setItem(
+                        CHAT_HISTORY_STORAGE_KEY,
+                        JSON.stringify(this.#history.slice(-MAX_SAVED_HISTORY_MESSAGES))
+                    );
+                } catch (_error) {
+                    // Ignore storage failures.
                 }
             }
 
@@ -1097,6 +1141,7 @@
                 this.#autoResizeTextarea();
                 this.#updateTokenCount();
                 this.#history.push({ role: 'user', content: prompt });
+                this.#persistHistory();
 
                 const startTime = performance.now();
                 const streamingMessage = this.#createStreamingMessage();
@@ -1202,6 +1247,7 @@
                     }
 
                     this.#history.push({ role: 'assistant', content: text });
+                    this.#persistHistory();
 
                     // 4. Calculate time and display
                     const duration = ((performance.now() - startTime) / 1000).toFixed(2);
@@ -1221,6 +1267,7 @@
                             const partialText = aiText.trim();
                             this.#finalizeStreamingMessage(streamingMessage, partialText);
                             this.#history.push({ role: 'assistant', content: partialText });
+                            this.#persistHistory();
                         }
                         const duration = ((performance.now() - startTime) / 1000).toFixed(2);
                         this.#elements.responseTime.textContent = `(${duration}s)`;
@@ -1235,6 +1282,7 @@
                         this.#finalizeStreamingMessage(streamingMessage, aiText);
                     }
                     this.#history.pop();
+                    this.#persistHistory();
                     this.#addMessage(this.#formatErrorMessage(error), 'ai');
                     this.#updateStatus('Error', 'error');
                 } finally {
@@ -1268,17 +1316,31 @@
 
                 return {
                     wrapper: messageWrapper,
-                    contentDiv: messageWrapper.querySelector('.message-content')
+                    contentDiv: messageWrapper.querySelector('.message-content'),
+                    pendingText: '',
+                    lastRenderedText: ''
                 };
             }
 
             #updateStreamingMessage(streamingMessage, content) {
                 if (!streamingMessage?.contentDiv) return;
 
-                const safeHtml = this.#escapeHtml(content).replace(/\n/g, '<br>');
-                streamingMessage.contentDiv.innerHTML = `<p>${safeHtml}</p>`;
+                streamingMessage.pendingText = content;
+                streamingMessage.contentDiv.classList.add('streaming');
                 streamingMessage.contentDiv.setAttribute('data-raw', content);
-                this.#scrollToBottom();
+
+                if (this.#streamRenderScheduled) return;
+
+                this.#streamRenderScheduled = true;
+                requestAnimationFrame(() => {
+                    this.#streamRenderScheduled = false;
+                    if (!streamingMessage?.contentDiv) return;
+                    if (streamingMessage.lastRenderedText === streamingMessage.pendingText) return;
+
+                    streamingMessage.lastRenderedText = streamingMessage.pendingText;
+                    streamingMessage.contentDiv.textContent = streamingMessage.pendingText;
+                    this.#scheduleScrollToBottom();
+                });
             }
 
             #finalizeStreamingMessage(streamingMessage, content) {
@@ -1289,6 +1351,7 @@
                     finalContent = marked.parse(content);
                 }
 
+                streamingMessage.contentDiv.classList.remove('streaming');
                 streamingMessage.contentDiv.innerHTML = finalContent;
                 streamingMessage.contentDiv.setAttribute('data-raw', content);
                 this.#scrollToBottom();
@@ -1376,7 +1439,9 @@
                 }
             }
 
-            #addMessage(content, role) {
+            #addMessage(content, role, options = {}) {
+                const { scroll = true } = options;
+
                 if (this.#elements.emptyState) {
                     this.#elements.emptyState.remove();
                     this.#elements.emptyState = null;
@@ -1410,8 +1475,9 @@
 
                 this.#elements.outputArea.appendChild(messageWrapper);
                 
-                // Scroll to bottom
-                this.#scrollToBottom();
+                if (scroll) {
+                    this.#scrollToBottom();
+                }
             }
 
             /* --- Utilities: Resize, Token Count --- */
@@ -1438,6 +1504,16 @@
 
             #scrollToBottom() {
                 this.#elements.outputArea.scrollTop = this.#elements.outputArea.scrollHeight;
+            }
+
+            #scheduleScrollToBottom() {
+                if (this.#streamScrollScheduled) return;
+
+                this.#streamScrollScheduled = true;
+                requestAnimationFrame(() => {
+                    this.#streamScrollScheduled = false;
+                    this.#scrollToBottom();
+                });
             }
 
         #handleCopyMessageClick(button) {
