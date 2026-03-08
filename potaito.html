@@ -210,6 +210,7 @@
             flex-grow: 1;
             padding: 1.5rem;
             overflow-y: auto;
+            overflow-anchor: auto;
             border-bottom: 1px solid var(--border);
             background: linear-gradient(to bottom, rgba(255, 255, 255, 0.01), rgba(79, 125, 183, 0.03));
             scroll-behavior: auto;
@@ -235,6 +236,13 @@
             max-width: 100%;
             animation: messageSlide 0.5s ease-out;
             position: relative;
+            content-visibility: auto;
+            contain-intrinsic-size: auto 80px;
+            contain: layout style;
+        }
+
+        .output-area.many-messages .message {
+            animation: none;
         }
 
         @keyframes messageSlide {
@@ -858,6 +866,10 @@
         const CHAT_HISTORY_STORAGE_KEY = 'potaito-chat-history';
         const MAX_CONTEXT_MESSAGES = 10;
         const MAX_SAVED_HISTORY_MESSAGES = 100;
+        const STREAM_SCROLL_THROTTLE_MS = 120;
+        const STREAM_DOM_UPDATE_MS = 100;
+        const MANY_MESSAGES_THRESHOLD = 12;
+        const RESTORE_BATCH_SIZE = 8;
 
         class LLMChat {
             #elements = {};
@@ -872,6 +884,8 @@
             #wakeLockReacquirePending = false;
             #streamRenderScheduled = false;
             #streamScrollScheduled = false;
+            #streamLastScrollTime = 0;
+            #streamLastDomUpdateTime = 0;
 
             constructor() {
                 this.#initializeElements();
@@ -910,6 +924,11 @@
                 }
             }
 
+            #updateManyMessagesClass() {
+                const count = this.#elements.outputArea.querySelectorAll('.message').length;
+                this.#elements.outputArea.classList.toggle('many-messages', count >= MANY_MESSAGES_THRESHOLD);
+            }
+
             #restoreHistory() {
                 const rawHistory = window.localStorage.getItem(CHAT_HISTORY_STORAGE_KEY);
                 if (!rawHistory) return;
@@ -925,10 +944,42 @@
                     if (!validHistory.length) return;
 
                     this.#history = validHistory;
-                    validHistory.forEach((message) => {
-                        this.#addMessage(message.content, message.role, { scroll: false });
-                    });
-                    this.#scrollToBottom();
+
+                    if (validHistory.length <= RESTORE_BATCH_SIZE) {
+                        if (this.#elements.emptyState) {
+                            this.#elements.emptyState.remove();
+                            this.#elements.emptyState = null;
+                        }
+                        const fragment = document.createDocumentFragment();
+                        for (const message of validHistory) {
+                            fragment.appendChild(this.#createMessageElement(message.content, message.role));
+                        }
+                        this.#elements.outputArea.appendChild(fragment);
+                        this.#updateManyMessagesClass();
+                        this.#scrollToBottom();
+                        return;
+                    }
+
+                    if (this.#elements.emptyState) {
+                        this.#elements.emptyState.remove();
+                        this.#elements.emptyState = null;
+                    }
+
+                    let index = 0;
+                    const scheduleBatch = () => {
+                        const batch = validHistory.slice(index, index + RESTORE_BATCH_SIZE);
+                        index += RESTORE_BATCH_SIZE;
+                        for (const message of batch) {
+                            this.#elements.outputArea.appendChild(this.#createMessageElement(message.content, message.role));
+                        }
+                        this.#updateManyMessagesClass();
+                        if (index < validHistory.length) {
+                            requestIdleCallback(scheduleBatch, { timeout: 50 });
+                        } else {
+                            this.#scrollToBottom();
+                        }
+                    };
+                    requestIdleCallback(scheduleBatch, { timeout: 100 });
                 } catch (_error) {
                     window.localStorage.removeItem(CHAT_HISTORY_STORAGE_KEY);
                 }
@@ -1363,9 +1414,16 @@
                     if (!streamingMessage?.contentDiv || streamingMessage.isFinalized) return;
                     if (streamingMessage.lastRenderedText === streamingMessage.pendingText) return;
 
+                    const now = performance.now();
+                    if (now - this.#streamLastDomUpdateTime < STREAM_DOM_UPDATE_MS) {
+                        this.#streamRenderScheduled = true;
+                        requestAnimationFrame(() => this.#updateStreamingMessage(streamingMessage, streamingMessage.pendingText));
+                        return;
+                    }
+                    this.#streamLastDomUpdateTime = now;
                     streamingMessage.lastRenderedText = streamingMessage.pendingText;
                     streamingMessage.contentDiv.textContent = streamingMessage.pendingText;
-                    this.#scheduleScrollToBottom();
+                    this.#scheduleScrollToBottom(streamingMessage);
                 });
             }
 
@@ -1469,6 +1527,31 @@
                 }
             }
 
+            #createMessageElement(content, role) {
+                const messageWrapper = document.createElement('div');
+                messageWrapper.className = `message ${role}-message`;
+
+                let finalContent = content;
+                if (role === 'user') {
+                    finalContent = `<p>${this.#escapeHtml(content).replace(/\n/g, '<br>')}</p>`;
+                } else if (typeof marked !== 'undefined') {
+                    finalContent = this.#sanitizeMarkdownHtml(content);
+                } else {
+                    finalContent = `<p>${this.#escapeHtml(content).replace(/\n/g, '<br>')}</p>`;
+                }
+
+                const safeDataRaw = this.#escapeAttribute(content);
+                messageWrapper.innerHTML = `
+    <div class="message-content-wrapper">
+        <div class="message-actions">
+            <button class="copy-message-btn" title="Copy message">Copy</button>
+        </div>
+        <div class="message-content" data-raw="${safeDataRaw}">${finalContent}</div>
+    </div>
+`;
+                return messageWrapper;
+            }
+
             #addMessage(content, role, options = {}) {
                 const { scroll = true } = options;
 
@@ -1477,35 +1560,9 @@
                     this.#elements.emptyState = null;
                 }
 
-                const messageWrapper = document.createElement('div');
-                messageWrapper.className = `message ${role}-message`;
+                this.#elements.outputArea.appendChild(this.#createMessageElement(content, role));
+                this.#updateManyMessagesClass();
 
-                // Use Marked.js if available for AI messages, otherwise fallback to simple text
-                let finalContent = content;
-                
-                if (role === 'user') {
-                     // Simple escape for user messages
-                     finalContent = `<p>${this.#escapeHtml(content).replace(/\n/g, '<br>')}</p>`;
-                } else if (typeof marked !== 'undefined') {
-                    // Parse Markdown and sanitize to prevent XSS
-                    finalContent = this.#sanitizeMarkdownHtml(content);
-                } else {
-                    // Fallback if marked didn't load (unlikely)
-                    finalContent = `<p>${this.#escapeHtml(content).replace(/\n/g, '<br>')}</p>`;
-                }
-
-                const safeDataRaw = this.#escapeAttribute(content);
-              messageWrapper.innerHTML = `
-    <div class="message-content-wrapper">
-        <div class="message-actions">
-            <button class="copy-message-btn" title="Copy message">Copy</button>
-        </div>
-        <div class="message-content" data-raw="${safeDataRaw}">${finalContent}</div>
-    </div>
-`;
-
-                this.#elements.outputArea.appendChild(messageWrapper);
-                
                 if (scroll) {
                     this.#scrollToBottom();
                 }
@@ -1559,15 +1616,28 @@
             }
 
             #scrollToBottom() {
-                this.#elements.outputArea.scrollTop = this.#elements.outputArea.scrollHeight;
+                const el = this.#elements.outputArea;
+                el.scrollTop = el.scrollHeight;
             }
 
-            #scheduleScrollToBottom() {
+            #isUserNearBottom() {
+                const el = this.#elements.outputArea;
+                const threshold = 120;
+                return el.scrollHeight - el.scrollTop - el.clientHeight <= threshold;
+            }
+
+            #scheduleScrollToBottom(streamingMessage) {
                 if (this.#streamScrollScheduled) return;
+                const el = this.#elements.outputArea;
+                const now = performance.now();
+                if (now - this.#streamLastScrollTime < STREAM_SCROLL_THROTTLE_MS) return;
+                if (!this.#isUserNearBottom()) return;
 
                 this.#streamScrollScheduled = true;
+                this.#streamLastScrollTime = now;
                 requestAnimationFrame(() => {
                     this.#streamScrollScheduled = false;
+                    if (streamingMessage?.isFinalized) return;
                     this.#scrollToBottom();
                 });
             }
