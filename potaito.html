@@ -1322,12 +1322,13 @@
                     wrapper: messageWrapper,
                     contentDiv: messageWrapper.querySelector('.message-content'),
                     pendingText: '',
-                    lastRenderedText: ''
+                    lastRenderedText: '',
+                    isFinalized: false
                 };
             }
 
             #updateStreamingMessage(streamingMessage, content) {
-                if (!streamingMessage?.contentDiv) return;
+                if (!streamingMessage?.contentDiv || streamingMessage.isFinalized) return;
 
                 streamingMessage.pendingText = content;
                 streamingMessage.contentDiv.classList.add('streaming');
@@ -1338,7 +1339,7 @@
                 this.#streamRenderScheduled = true;
                 requestAnimationFrame(() => {
                     this.#streamRenderScheduled = false;
-                    if (!streamingMessage?.contentDiv) return;
+                    if (!streamingMessage?.contentDiv || streamingMessage.isFinalized) return;
                     if (streamingMessage.lastRenderedText === streamingMessage.pendingText) return;
 
                     streamingMessage.lastRenderedText = streamingMessage.pendingText;
@@ -1349,6 +1350,10 @@
 
             #finalizeStreamingMessage(streamingMessage, content) {
                 if (!streamingMessage?.contentDiv) return;
+
+                streamingMessage.isFinalized = true;
+                streamingMessage.pendingText = content;
+                streamingMessage.lastRenderedText = content;
 
                 let finalContent = `<p>${this.#escapeHtml(content).replace(/\n/g, '<br>')}</p>`;
                 if (typeof marked !== 'undefined') {
