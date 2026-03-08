@@ -832,19 +832,22 @@
         const QWEN_3_5_2B_MODEL = 'qwen3.5:2b';
         const LEGACY_GEMMA_MODEL = 'gemma3:4b';
         const CURRENT_GEMMA_MODEL = 'gemma3n:e2b';
+        const GEMMA3_1B_MODEL = 'gemma3:1b';
         const AVAILABLE_OLLAMA_MODELS = [
             SMOL_OLLAMA_MODEL,
             'llama3.2:3b-instruct-q4_K_M',
             'phi4-mini:latest',
             QWEN_3_5_2B_MODEL,
-            CURRENT_GEMMA_MODEL
+            CURRENT_GEMMA_MODEL,
+            GEMMA3_1B_MODEL
         ];
         const MODEL_FRIENDLY_NAMES = {
             [SMOL_OLLAMA_MODEL]: 'SmolLM3',
             'llama3.2:3b-instruct-q4_K_M': 'Llama-3.2-3B',
             'phi4-mini:latest': 'Phi4-mini',
             [QWEN_3_5_2B_MODEL]: 'Qwen 3.5 2B',
-            [CURRENT_GEMMA_MODEL]: 'Gemma3n-e2b'
+            [CURRENT_GEMMA_MODEL]: 'Gemma3n-e2b',
+            [GEMMA3_1B_MODEL]: 'Gemma3 1B'
         };
         const DEFAULT_OLLAMA_MODEL = 'phi4-mini:latest';
         const MODEL_STORAGE_KEY = 'weblocai-selected-model';
