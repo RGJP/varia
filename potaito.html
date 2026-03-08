@@ -866,8 +866,8 @@
         const CHAT_HISTORY_STORAGE_KEY = 'potaito-chat-history';
         const MAX_CONTEXT_MESSAGES = 10;
         const MAX_SAVED_HISTORY_MESSAGES = 100;
-        const STREAM_SCROLL_THROTTLE_MS = 120;
-        const STREAM_DOM_UPDATE_MS = 100;
+        const STREAM_SCROLL_THROTTLE_MS = 80;
+        const STREAM_DOM_UPDATE_MS = 33;
         const MANY_MESSAGES_THRESHOLD = 12;
         const RESTORE_BATCH_SIZE = 8;
 
@@ -882,10 +882,6 @@
             #wakeLock = null;
             #wakeLockSupported = 'wakeLock' in navigator;
             #wakeLockReacquirePending = false;
-            #streamRenderScheduled = false;
-            #streamScrollScheduled = false;
-            #streamLastScrollTime = 0;
-            #streamLastDomUpdateTime = 0;
 
             constructor() {
                 this.#initializeElements();
@@ -1301,6 +1297,8 @@
                         }
                     }
 
+                    buffer += decoder.decode();
+
                     if (!streamDone && buffer.trim()) {
                         try {
                             const payload = buffer.trim().startsWith('data:')
@@ -1387,15 +1385,29 @@
     </div>
 `;
 
+                const contentDiv = messageWrapper.querySelector('.message-content');
+                const textNode = document.createTextNode('');
+                contentDiv.appendChild(textNode);
+                contentDiv.__rawContent = '';
+
                 this.#elements.outputArea.appendChild(messageWrapper);
                 this.#scrollToBottom();
 
                 return {
                     wrapper: messageWrapper,
-                    contentDiv: messageWrapper.querySelector('.message-content'),
+                    contentDiv,
+                    textNode,
                     pendingText: '',
                     lastRenderedText: '',
-                    isFinalized: false
+                    isFinalized: false,
+                    renderScheduled: false,
+                    renderTimerId: null,
+                    renderFrameId: null,
+                    lastDomUpdateTime: 0,
+                    scrollScheduled: false,
+                    scrollTimerId: null,
+                    scrollFrameId: null,
+                    lastScrollTime: 0
                 };
             }
 
@@ -1404,27 +1416,77 @@
 
                 streamingMessage.pendingText = content;
                 streamingMessage.contentDiv.classList.add('streaming');
-                streamingMessage.contentDiv.setAttribute('data-raw', content);
+                this.#scheduleStreamingRender(streamingMessage);
+            }
 
-                if (this.#streamRenderScheduled) return;
+            #scheduleStreamingRender(streamingMessage) {
+                if (!streamingMessage?.contentDiv || streamingMessage.isFinalized || streamingMessage.renderScheduled) {
+                    return;
+                }
 
-                this.#streamRenderScheduled = true;
-                requestAnimationFrame(() => {
-                    this.#streamRenderScheduled = false;
-                    if (!streamingMessage?.contentDiv || streamingMessage.isFinalized) return;
-                    if (streamingMessage.lastRenderedText === streamingMessage.pendingText) return;
+                streamingMessage.renderScheduled = true;
+                const elapsed = performance.now() - streamingMessage.lastDomUpdateTime;
+                const delay = Math.max(0, STREAM_DOM_UPDATE_MS - elapsed);
 
-                    const now = performance.now();
-                    if (now - this.#streamLastDomUpdateTime < STREAM_DOM_UPDATE_MS) {
-                        this.#streamRenderScheduled = true;
-                        requestAnimationFrame(() => this.#updateStreamingMessage(streamingMessage, streamingMessage.pendingText));
-                        return;
+                streamingMessage.renderTimerId = window.setTimeout(() => {
+                    streamingMessage.renderTimerId = null;
+                    streamingMessage.renderFrameId = requestAnimationFrame(() => {
+                        streamingMessage.renderFrameId = null;
+                        streamingMessage.renderScheduled = false;
+                        this.#flushStreamingMessage(streamingMessage);
+                    });
+                }, delay);
+            }
+
+            #flushStreamingMessage(streamingMessage) {
+                if (!streamingMessage?.contentDiv || streamingMessage.isFinalized) return;
+                if (streamingMessage.lastRenderedText === streamingMessage.pendingText) return;
+
+                const nextText = streamingMessage.pendingText;
+                const previousText = streamingMessage.lastRenderedText;
+
+                streamingMessage.lastDomUpdateTime = performance.now();
+                if (streamingMessage.textNode && nextText.startsWith(previousText)) {
+                    const delta = nextText.slice(previousText.length);
+                    if (delta) {
+                        streamingMessage.textNode.appendData(delta);
                     }
-                    this.#streamLastDomUpdateTime = now;
-                    streamingMessage.lastRenderedText = streamingMessage.pendingText;
-                    streamingMessage.contentDiv.textContent = streamingMessage.pendingText;
-                    this.#scheduleScrollToBottom(streamingMessage);
-                });
+                } else if (streamingMessage.textNode) {
+                    streamingMessage.textNode.data = nextText;
+                } else {
+                    streamingMessage.contentDiv.textContent = nextText;
+                }
+
+                streamingMessage.lastRenderedText = nextText;
+                streamingMessage.contentDiv.__rawContent = nextText;
+                this.#scheduleScrollToBottom(streamingMessage);
+            }
+
+            #disposeStreamingMessage(streamingMessage) {
+                if (!streamingMessage) return;
+
+                if (streamingMessage.renderTimerId !== null) {
+                    clearTimeout(streamingMessage.renderTimerId);
+                    streamingMessage.renderTimerId = null;
+                }
+
+                if (streamingMessage.renderFrameId !== null) {
+                    cancelAnimationFrame(streamingMessage.renderFrameId);
+                    streamingMessage.renderFrameId = null;
+                }
+
+                if (streamingMessage.scrollTimerId !== null) {
+                    clearTimeout(streamingMessage.scrollTimerId);
+                    streamingMessage.scrollTimerId = null;
+                }
+
+                if (streamingMessage.scrollFrameId !== null) {
+                    cancelAnimationFrame(streamingMessage.scrollFrameId);
+                    streamingMessage.scrollFrameId = null;
+                }
+
+                streamingMessage.renderScheduled = false;
+                streamingMessage.scrollScheduled = false;
             }
 
             #finalizeStreamingMessage(streamingMessage, content) {
@@ -1433,6 +1495,7 @@
                 streamingMessage.isFinalized = true;
                 streamingMessage.pendingText = content;
                 streamingMessage.lastRenderedText = content;
+                this.#disposeStreamingMessage(streamingMessage);
 
                 let finalContent = `<p>${this.#escapeHtml(content).replace(/\n/g, '<br>')}</p>`;
                 if (typeof marked !== 'undefined') {
@@ -1441,11 +1504,13 @@
 
                 streamingMessage.contentDiv.classList.remove('streaming');
                 streamingMessage.contentDiv.innerHTML = finalContent;
+                streamingMessage.contentDiv.__rawContent = content;
                 streamingMessage.contentDiv.setAttribute('data-raw', content);
                 this.#scrollToBottom();
             }
 
             #removeStreamingMessage(streamingMessage) {
+                this.#disposeStreamingMessage(streamingMessage);
                 if (streamingMessage?.wrapper?.parentNode) {
                     streamingMessage.wrapper.remove();
                 }
@@ -1549,6 +1614,7 @@
         <div class="message-content" data-raw="${safeDataRaw}">${finalContent}</div>
     </div>
 `;
+                messageWrapper.querySelector('.message-content').__rawContent = content;
                 return messageWrapper;
             }
 
@@ -1627,36 +1693,40 @@
             }
 
             #scheduleScrollToBottom(streamingMessage) {
-                if (this.#streamScrollScheduled) return;
-                const el = this.#elements.outputArea;
-                const now = performance.now();
-                if (now - this.#streamLastScrollTime < STREAM_SCROLL_THROTTLE_MS) return;
                 if (!this.#isUserNearBottom()) return;
+                if (!streamingMessage || streamingMessage.scrollScheduled || streamingMessage.isFinalized) return;
 
-                this.#streamScrollScheduled = true;
-                this.#streamLastScrollTime = now;
-                requestAnimationFrame(() => {
-                    this.#streamScrollScheduled = false;
-                    if (streamingMessage?.isFinalized) return;
-                    this.#scrollToBottom();
-                });
+                streamingMessage.scrollScheduled = true;
+                const elapsed = performance.now() - streamingMessage.lastScrollTime;
+                const delay = Math.max(0, STREAM_SCROLL_THROTTLE_MS - elapsed);
+
+                streamingMessage.scrollTimerId = window.setTimeout(() => {
+                    streamingMessage.scrollTimerId = null;
+                    streamingMessage.scrollFrameId = requestAnimationFrame(() => {
+                        streamingMessage.scrollFrameId = null;
+                        streamingMessage.scrollScheduled = false;
+                        if (streamingMessage?.isFinalized) return;
+                        streamingMessage.lastScrollTime = performance.now();
+                        this.#scrollToBottom();
+                    });
+                }, delay);
             }
 
-        #handleCopyMessageClick(button) {
-    // Look for the data-raw attribute we just added
-    const contentDiv = button.closest('.message-content-wrapper').querySelector('.message-content');
-    const rawContent = contentDiv.getAttribute('data-raw') || contentDiv.innerText;
+            #handleCopyMessageClick(button) {
+                // Prefer the raw text buffer so copying a streaming message keeps markdown intact.
+                const contentDiv = button.closest('.message-content-wrapper').querySelector('.message-content');
+                const rawContent = contentDiv.__rawContent || contentDiv.getAttribute('data-raw') || contentDiv.innerText;
 
-    navigator.clipboard.writeText(rawContent).then(() => {
-        const originalText = button.innerText;
-        button.innerText = 'Copied!';
-        button.classList.add('copied');
-        setTimeout(() => {
-            button.innerText = originalText;
-            button.classList.remove('copied');
-        }, 2000);
-    });
-}
+                navigator.clipboard.writeText(rawContent).then(() => {
+                    const originalText = button.innerText;
+                    button.innerText = 'Copied!';
+                    button.classList.add('copied');
+                    setTimeout(() => {
+                        button.innerText = originalText;
+                        button.classList.remove('copied');
+                    }, 2000);
+                });
+            }
 
             #handleCopyCodeClick(button) {
                 const code = button.closest('pre').querySelector('code').innerText;
@@ -1673,5 +1743,3 @@
     </script>
 </body>
 </html>
-
-
