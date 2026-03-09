@@ -8,59 +8,51 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap"
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap"
         rel="stylesheet">
     <style>
         :root {
-            --card-width: 320px;
-            --card-height: 520px;
-            --card-radius: 24px;
-            --text-color: #ecf0f1;
-            --accent-color: #ba64ff;
-            /* Soft lavender/purple for a magical feel */
-            --bg-gradient: linear-gradient(-45deg, #1a1a2e, #16213e, #0f3460);
-            /* Deep night theme */
+            --card-width: 340px;
+            --card-height: 480px;
+            --card-radius: 20px;
+            --text-primary: #f0f0f2;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent: #c4a77d;
+            --accent-soft: rgba(196, 167, 125, 0.25);
+            --surface: rgba(28, 28, 32, 0.92);
+            --surface-border: rgba(255, 255, 255, 0.06);
+            --bg-base: #141418;
+            --bg-gradient: linear-gradient(165deg, #141418 0%, #1a1a20 40%, #16161a 100%);
+        }
+
+        * {
+            box-sizing: border-box;
         }
 
         body {
             margin: 0;
-            padding: 0;
-            /* Soothing Dark Gradient */
+            padding: 24px;
+            min-height: 100vh;
             background: var(--bg-gradient);
-            background-size: 400% 400%;
-            animation: gradientBG 20s ease infinite;
-            font-family: 'Inter', sans-serif;
-            height: 100vh;
+            font-family: 'DM Sans', system-ui, sans-serif;
+            color: var(--text-primary);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
-            perspective: 1000px;
-            color: var(--text-color);
+            overflow-x: hidden;
+            perspective: 1200px;
+            -webkit-font-smoothing: antialiased;
         }
 
-        @keyframes gradientBG {
-            0% {
-                background-position: 0% 50%;
-            }
-
-            50% {
-                background-position: 100% 50%;
-            }
-
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
-        /* Card Container */
+        /* Card container */
         .card-container {
             width: var(--card-width);
             height: var(--card-height);
             position: relative;
             transform-style: preserve-3d;
-            transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
         }
@@ -69,7 +61,6 @@
             transform: rotateY(180deg);
         }
 
-        /* Card Faces */
         .card-face {
             position: absolute;
             width: 100%;
@@ -82,169 +73,138 @@
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 5px 15px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--surface-border);
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.1);
         }
 
-        /* Front (Logo side) */
         .card-front {
-            background: rgba(20, 20, 30, 0.6);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+            background: var(--surface);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
         }
 
-        /* Decorative circle on front */
         .card-logo {
-            width: 80px;
-            height: 80px;
+            width: 72px;
+            height: 72px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--accent-soft);
+            border: 1px solid rgba(196, 167, 125, 0.35);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5rem;
-            color: var(--accent-color);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-shadow: 0 0 15px rgba(186, 100, 255, 0.6);
+            font-size: 1.75rem;
+            color: var(--accent);
+            font-weight: 500;
         }
 
         .tap-hint {
             position: absolute;
-            bottom: 40px;
-            font-size: 0.85rem;
-            letter-spacing: 2px;
+            bottom: 36px;
+            font-size: 0.8rem;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.5);
+            color: var(--text-muted);
             font-weight: 500;
-            animation: pulse 3s infinite;
+            animation: pulse 4s ease-in-out infinite;
         }
 
         @keyframes pulse {
-
-            0%,
-            100% {
-                opacity: 0.4;
-                transform: scale(1);
-            }
-
-            50% {
-                opacity: 0.8;
-                transform: scale(1.05);
-            }
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 0.9; }
         }
 
-        /* Back (Content side) */
         .card-back {
-            background: rgba(30, 30, 40, 0.85);
-            /* Darker card background */
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
+            background: var(--surface);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
             transform: rotateY(180deg);
-            padding: 40px;
-            box-sizing: border-box;
+            padding: 36px 32px;
             text-align: center;
         }
 
         .card-content {
-            font-family: 'Merriweather', serif;
-            font-size: 1.5rem;
-            line-height: 1.6;
-            color: #ecf0f1;
-            /* Light grey text */
-            max-height: 75%;
+            font-family: 'Lora', Georgia, serif;
+            font-size: 1.35rem;
+            line-height: 1.65;
+            color: var(--text-primary);
+            font-weight: 400;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            max-height: 78%;
             overflow-y: auto;
-            /* Scrollbar styling */
             scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+            scrollbar-color: var(--text-muted) transparent;
         }
 
         .card-content::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
         }
 
         .card-content::-webkit-scrollbar-thumb {
-            background-color: rgba(255, 255, 255, 0.1);
+            background: var(--text-muted);
             border-radius: 3px;
         }
 
         .card-author {
-            margin-top: auto;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-            color: #7f8c8d;
-            /* Muted grey */
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--surface-border);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
             font-style: italic;
-            border-top: 2px solid rgba(255, 255, 255, 0.1);
-            padding-top: 15px;
-            width: 60%;
-            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.02em;
+            font-family: 'DM Sans', sans-serif;
         }
 
-        /* Controls */
         .controls {
-            margin-top: 50px;
+            margin-top: 40px;
             display: flex;
-            gap: 20px;
+            gap: 12px;
             z-index: 10;
         }
 
         button {
-            background: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: rgba(255, 255, 255, 0.8);
-            padding: 12px 28px;
-            border-radius: 30px;
+            background: transparent;
+            border: 1px solid var(--surface-border);
+            color: var(--text-secondary);
+            padding: 12px 22px;
+            border-radius: 12px;
             cursor: pointer;
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 500;
-            transition: all 0.3s ease;
-            display: flex;
+            transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+            display: inline-flex;
             align-items: center;
-            gap: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            font-family: 'Inter', sans-serif;
+            gap: 8px;
+            font-family: 'DM Sans', sans-serif;
         }
 
         button:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-            color: #fff;
-            border-color: rgba(255, 255, 255, 0.3);
+            color: var(--text-primary);
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.04);
         }
 
         button:active {
-            transform: scale(0.95);
+            transform: scale(0.98);
         }
 
-        /* Shuffling Animation */
+        button span {
+            opacity: 0.8;
+        }
+
         @keyframes shuffle {
-            0% {
-                transform: translateX(0) rotateY(0);
-            }
-
-            25% {
-                transform: translateX(-30px) rotateY(-5deg);
-            }
-
-            50% {
-                transform: translateX(30px) rotateY(5deg);
-            }
-
-            75% {
-                transform: translateX(-15px) rotateY(-2deg);
-            }
-
-            100% {
-                transform: translateX(0) rotateY(0);
-            }
+            0% { transform: translateX(0) rotateY(0); }
+            25% { transform: translateX(-20px) rotateY(-4deg); }
+            50% { transform: translateX(20px) rotateY(4deg); }
+            75% { transform: translateX(-10px) rotateY(-2deg); }
+            100% { transform: translateX(0) rotateY(0); }
         }
 
         .shuffling {
-            animation: shuffle 0.5s ease-in-out;
+            animation: shuffle 0.45s ease-in-out;
         }
     </style>
 </head>
