@@ -25,6 +25,7 @@
             --primary-dark: #1d4ed8;
             --secondary: #0ea5e9;
             --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            --bg-fallback: #e2e8f0; /* Added to match the bottom of the light gradient */
             --card-bg: rgba(255, 255, 255, 0.8);
             --text-main: #1e293b;
             --text-muted: #64748b;
@@ -32,21 +33,26 @@
             --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
             --glass-blur: blur(12px);
             --accent-gradient: linear-gradient(90deg, #3b82f6, #0ea5e9);
+            color-scheme: light; /* Tells mobile browsers to use light scrollbars/overscroll */
         }
 
         [data-theme="dark"] {
             --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --bg-fallback: #1e293b; /* Added to match the bottom of the dark gradient */
             --card-bg: rgba(30, 41, 59, 0.7);
             --text-main: #f1f5f9;
             --text-muted: #94a3b8;
             --border: rgba(51, 65, 85, 0.5);
             --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
             --primary: #60a5fa;
+            color-scheme: dark; /* Tells mobile browsers to use dark scrollbars/overscroll */
         }
 
         html {
-            background: var(--bg-gradient);
-            background-attachment: fixed;
+            background-color: var(--bg-fallback);
+            background-image: var(--bg-gradient);
+            min-height: 100vh;
+            transition: background-color 0.3s ease;
         }
 
         body {
@@ -56,7 +62,7 @@
             background: transparent;
             min-height: 100vh;
             color: var(--text-main);
-            transition: background 0.3s ease, color 0.3s ease;
+            transition: color 0.3s ease;
         }
 
         h1,
@@ -81,7 +87,7 @@
             margin-bottom: 25px;
             border: 1px solid var(--border);
             box-shadow: var(--shadow);
-            transition: transform 0.3s ease, box-shadow 0.3s xase;
+            transition: transform 0.3s ease, box-shadow 0.3s ease; /* Fixed 'xase' typo here */
         }
 
         .card:hover {
