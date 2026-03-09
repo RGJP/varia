@@ -843,6 +843,7 @@
         const LEGACY_GEMMA_MODEL = 'gemma3:4b';
         const CURRENT_GEMMA_MODEL = 'gemma3n:e2b';
         const GEMMA3_1B_MODEL = 'gemma3:1b';
+        const LFM2_5_THINKING_1_2B_MODEL = 'bcluzel/LFM2.5-1.2B-Instruct:Q4_K_M';
         const AVAILABLE_OLLAMA_MODELS = [
             SMOL_OLLAMA_MODEL,
             'llama3.2:3b-instruct-q4_K_M',
@@ -850,7 +851,8 @@
             QWEN_3_5_2B_MODEL,
             QWEN_3_5_0_8B_MODEL,
             CURRENT_GEMMA_MODEL,
-            GEMMA3_1B_MODEL
+            GEMMA3_1B_MODEL,
+            LFM2_5_THINKING_1_2B_MODEL
         ];
         const MODEL_FRIENDLY_NAMES = {
             [SMOL_OLLAMA_MODEL]: 'SmolLM3',
@@ -859,7 +861,8 @@
             [QWEN_3_5_2B_MODEL]: 'Qwen 3.5 2B',
             [QWEN_3_5_0_8B_MODEL]: 'Qwen 3.5 0.8B',
             [CURRENT_GEMMA_MODEL]: 'Gemma3n-e2b',
-            [GEMMA3_1B_MODEL]: 'Gemma3 1B'
+            [GEMMA3_1B_MODEL]: 'Gemma3 1B',
+            [LFM2_5_THINKING_1_2B_MODEL]: 'LFM 2.5 1.2B'
         };
         const DEFAULT_OLLAMA_MODEL = 'phi4-mini:latest';
         const MODEL_STORAGE_KEY = 'weblocai-selected-model';
@@ -1238,6 +1241,7 @@
                             messages: requestMessages,
                             stream: true,
                             ...([QWEN_3_5_2B_MODEL, QWEN_3_5_0_8B_MODEL].includes(this.#selectedModel) && { think: false }),
+                            ...(this.#selectedModel === LFM2_5_THINKING_1_2B_MODEL && { thinking: false }),
                             keep_alive: -1
                         })
                     });
