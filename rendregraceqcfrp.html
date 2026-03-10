@@ -23,16 +23,6 @@
             --shadow: 0 10px 30px rgba(0,0,0,0.05);
         }
 
-        [data-theme="dark"] {
-            --bg-color: #0B132B;
-            --text-color: #FDFBF7;
-            --accent-color: #D4AF37;
-            --highlight-color: #800020;
-            --panel-bg: #142042;
-            --border-color: #2A3B69;
-            --shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
         /* =========================================================
            RESET & BASE
            ========================================================= */
@@ -79,22 +69,6 @@
             font-size: 1.1rem;
             font-style: italic;
             opacity: 0.8;
-        }
-
-        .theme-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: none;
-            border: 1px solid var(--border-color);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            color: var(--text-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         /* =========================================================
@@ -194,8 +168,6 @@
     </style>
 </head>
 <body>
-
-    <button class="theme-toggle" id="theme-btn">🌙</button>
 
     <header>
         <div class="logo">✟ Rendre Grâce</div>
@@ -308,20 +280,6 @@
                         panel.classList.add('active');
                     }
                 });
-            });
-
-            // 3. Gestion du Thème
-            const themeBtn = document.getElementById('theme-btn');
-            const htmlTag = document.documentElement;
-            
-            themeBtn.addEventListener('click', () => {
-                if (htmlTag.getAttribute('data-theme') === 'dark') {
-                    htmlTag.removeAttribute('data-theme');
-                    themeBtn.textContent = '🌙';
-                } else {
-                    htmlTag.setAttribute('data-theme', 'dark');
-                    themeBtn.textContent = '☀️';
-                }
             });
         });
     </script>
