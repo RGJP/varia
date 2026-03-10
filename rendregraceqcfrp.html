@@ -288,8 +288,20 @@
             const selector = document.getElementById('content-selector');
             const panels = document.querySelectorAll('.panel');
 
+            // Options qui refusent l'iframe → ouvrir dans un nouvel onglet
+            const openInNewTab = {
+                'panel-meditation': 'https://www.regnumchristi.fr/meditation-du-jour/',
+                'panel-youtube': 'https://www.youtube.com/playlist?list=PLgzgcyL6piaOWIAEI1B2zeSIw6YDDUuk1',
+                'panel-oratoire': 'https://www.youtube.com/@oratoirestjosephmtl/streams'
+            };
+
             selector.addEventListener('change', (e) => {
                 const targetId = e.target.value;
+                if (openInNewTab[targetId]) {
+                    window.open(openInNewTab[targetId], '_blank', 'noopener,noreferrer');
+                    selector.value = document.querySelector('.panel.active').id;
+                    return;
+                }
                 panels.forEach(panel => {
                     panel.classList.remove('active');
                     if (panel.id === targetId) {
