@@ -35,6 +35,20 @@ export class Player extends Entity {
         this.attackTimer = 0;
         this.isAttacking = false;
         this.attackDuration = 0.05; // 50ms
+        this.rollTimer = 0;
+        this.rollDuration = 0.34;
+        this.rollCooldownTimer = 0;
+        this.rollCooldown = 0.3;
+        this.rollRecoveryTimer = 0;
+        this.rollRecoveryDuration = 0.14;
+        this.rollSpeed = 380;
+        this.rollSpinSpeed = Math.PI * 8.5;
+        this.rollDirection = 1;
+        this.rollDistance = 150;
+        this.rollDistanceTraveled = 0;
+        this.rollDamage = 2;
+        this.rollTrailTimer = 0;
+        this.isRolling = false;
 
         this.coyoteTime = 0.13;
         this.coyoteTimer = 0;
@@ -141,6 +155,8 @@ export class Player extends Entity {
             this._fireboxes.push({ x: 0, y: 0, width: 30, height: 30 });
         }
         this._frostBlastEnemyCandidates = [];
+        this._rollEnemyHitCooldowns = new Map();
+        this._blockedOnXAxisThisFrame = false;
         this.carriedShell = null;
     }
 
@@ -153,6 +169,32 @@ export class Player extends Entity {
         }
         if (this.damageGlowTimer > 0) {
             this.damageGlowTimer -= dt;
+        }
+        if (this.rollCooldownTimer > 0) {
+            this.rollCooldownTimer = Math.max(0, this.rollCooldownTimer - dt);
+        }
+        if (this.rollRecoveryTimer > 0) {
+            this.rollRecoveryTimer = Math.max(0, this.rollRecoveryTimer - dt);
+        }
+        if (this.isRolling) {
+            this.rollTimer = Math.max(0, this.rollTimer - dt);
+            this.rollTrailTimer -= dt;
+            if (this.rollTimer <= 0) {
+                this._endRoll();
+            }
+        } else {
+            this.rollTrailTimer = 0;
+        }
+        if (this._rollEnemyHitCooldowns.size > 0) {
+            for (const [enemy, timer] of this._rollEnemyHitCooldowns.entries()) {
+                if (!enemy || enemy.markedForDeletion) {
+                    this._rollEnemyHitCooldowns.delete(enemy);
+                    continue;
+                }
+                const nextTimer = timer - dt;
+                if (nextTimer <= 0) this._rollEnemyHitCooldowns.delete(enemy);
+                else this._rollEnemyHitCooldowns.set(enemy, nextTimer);
+            }
         }
         this._updateHitbox();
         if (this.knockbackTimer > 0) {
@@ -264,6 +306,7 @@ export class Player extends Entity {
                     this.currentVine = null;
                     this.vx = 0;
                     this.vy = 0;
+                    this._endRoll();
                     this.isChargingAttack = false;
                     this.attackChargeTimer = 0;
                     // Snap immediately so the player is fully "inside" this frame.
@@ -389,6 +432,13 @@ export class Player extends Entity {
         }
 
         this.pulseTimer += dt;
+        if (this.isRolling && game?.particles && this.rollTrailTimer <= 0) {
+            this.rollTrailTimer = 0.03;
+            const trailX = this.x + this.width / 2 - this.rollDirection * (this.width * 0.26);
+            const trailY = this.y + this.height * 0.72;
+            game.particles.emit(trailX, trailY, 4, 'rgba(255, 220, 140, 0.65)', [22, 72], [0.08, 0.18], [2, 5]);
+            game.particles.emit(trailX, trailY, 3, 'rgba(255, 255, 255, 0.35)', [16, 48], [0.05, 0.12], [1.5, 3]);
+        }
         this.catProtectorBob += dt;
         if (this.letterCelebrationTimer > 0) {
             this.letterCelebrationTimer -= dt;
@@ -447,9 +497,12 @@ export class Player extends Entity {
         if (!this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0 && this.tornadoTrapTimer <= 0 && input.isJustPressed('KeyW')) {
             this._spawnPortals(game);
         }
+        if (this._canStartRoll(game) && input.isJustPressed('KeyF')) {
+            this._startRoll(game);
+        }
 
         // Attack charge and release
-        const canChargeAttack = !this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0 && this.tornadoTrapTimer <= 0;
+        const canChargeAttack = !this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0 && this.tornadoTrapTimer <= 0 && !this.isRolling;
         if (!canChargeAttack) {
             this.attackChargeTimer = 0;
             this.isChargingAttack = false;
@@ -511,7 +564,7 @@ export class Player extends Entity {
         }
 
         // Vine Collision Logic
-        if (!isFlying && !this.isClimbing && this.ignoreVineTimer <= 0 && this.knockbackTimer <= 0) {
+        if (!isFlying && !this.isRolling && !this.isClimbing && this.ignoreVineTimer <= 0 && this.knockbackTimer <= 0) {
             // Check static vines
             const nearbyVines = (collisionContext && collisionContext.vines) ? collisionContext.vines : game.vines;
             if (nearbyVines) {
@@ -631,6 +684,9 @@ export class Player extends Entity {
             } else if (input.isDown('ArrowDown')) {
                 this.vy = this.flightSpeed;
             }
+        } else if (this.isRolling) {
+            this.vx = this.rollDirection * this.rollSpeed;
+            this.facingRight = this.rollDirection >= 0;
         } else if (this.knockbackTimer > 0) {
             // Apply standard friction during knockback so player slides a bit from the hit
             if (this.vx > 0) {
@@ -666,7 +722,7 @@ export class Player extends Entity {
         }
 
         // Jump
-        if (!isPortalTraveling && !this.inSafeBubble && !isFlying && !game.gameOverTriggered && this.stunTimer <= 0 && this.tornadoTrapTimer <= 0 && this.jumpBufferTimer > 0 && !this.isClimbing) {
+        if (!isPortalTraveling && !this.inSafeBubble && !isFlying && !this.isRolling && !game.gameOverTriggered && this.stunTimer <= 0 && this.tornadoTrapTimer <= 0 && this.jumpBufferTimer > 0 && !this.isClimbing) {
             if (this.coyoteTimer > 0) {
                 this.vy = this.jumpForce;
                 this.grounded = false;
@@ -712,6 +768,8 @@ export class Player extends Entity {
 
         if (this.tornadoTrapTimer > 0) {
             // Keep custom tornado spin pose set above.
+        } else if (this.isRolling) {
+            this.rotation += this.rollDirection * this.rollSpinSpeed * dt;
         } else if (!isFlying && !this.grounded && !this.isClimbing && this.isSpinning) {
             const spinSpeed = Math.PI * 4;
             const increment = spinSpeed * dt;
@@ -840,15 +898,24 @@ export class Player extends Entity {
             }
 
             // X Collision
+            this._blockedOnXAxisThisFrame = false;
+            const prevX = this.x;
             this.x += this.vx * dt;
 
             // Invisible wall at the start of the level to prevent walking off-screen
             if (this.x < 0) {
                 this.x = 0;
                 this.vx = 0;
+                if (this.isRolling) this._blockedOnXAxisThisFrame = true;
             }
 
             this.resolveCollision(platforms, 'x', game);
+            if (this.isRolling) {
+                this.rollDistanceTraveled += Math.abs(this.x - prevX);
+                if (this._blockedOnXAxisThisFrame || this.rollDistanceTraveled >= this.rollDistance) {
+                    this._endRoll();
+                }
+            }
 
             // Y Collision
             this.y += this.vy * dt;
@@ -906,6 +973,8 @@ export class Player extends Entity {
                         if (game.particles) game.particles.emitHit(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, '#FF4500');
                         if (game && typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(enemy);
                     }
+                } else if (this.isRolling && Physics.checkAABB(hitbox, enemy)) {
+                    this._damageEnemyWithRoll(enemy, game);
                 } else if (!isFlying && Physics.checkAABB(hitbox, enemy)) {
                     const isTurtleEnemy = enemy.type === 'patrol' && enemy.emoji === '🐢';
                     const isTurtleShell = enemy.type === 'patrol' &&
@@ -985,6 +1054,9 @@ export class Player extends Entity {
                 }
             }
         }
+        if (this.isRolling) {
+            this._breakRollObstacles(game);
+        }
 
         // Collectibles
         const nearbyCollectibles = (collisionContext && collisionContext.collectibles) ? collisionContext.collectibles : game.collectibles;
@@ -1035,6 +1107,7 @@ export class Player extends Entity {
                     game.particles.emit(centerX, centerY, 24, '#ffe066', [70, 220], [0.2, 0.55], [2, 5]);
                 } else if (collectible.type === 'wing_powerup') {
                     this.flightTimer = this.flightPowerUpDuration;
+                    this._endRoll();
                     this.isClimbing = false;
                     this.currentVine = null;
                     this.vx = 0;
@@ -1120,10 +1193,12 @@ export class Player extends Entity {
                         this.x = platform.x - this.width;
                         this.vx = 0;
                         this.touchingWall = true;
+                        if (this.isRolling) this._blockedOnXAxisThisFrame = true;
                     } else if (this.vx < 0) {
                         this.x = platform.x + platform.width;
                         this.vx = 0;
                         this.touchingWall = true;
+                        if (this.isRolling) this._blockedOnXAxisThisFrame = true;
                     } else {
                         // If vx is 0 (e.g. key released mid-collision), push out based on centers
                         if (this.x + this.width / 2 < platform.x + platform.width / 2) {
@@ -1132,6 +1207,7 @@ export class Player extends Entity {
                             this.x = platform.x + platform.width;
                         }
                         this.touchingWall = true;
+                        if (this.isRolling) this._blockedOnXAxisThisFrame = true;
                     }
                 } else if (axis === 'y') {
                     // If we are more "beside" the platform than "above/below" it, skip Y resolution.
@@ -1454,10 +1530,108 @@ export class Player extends Entity {
         ctx.restore();
     }
 
+    _canStartRoll(game) {
+        return (
+            !this.isRolling &&
+            this.rollCooldownTimer <= 0 &&
+            this.rollRecoveryTimer <= 0 &&
+            this.grounded &&
+            !this.inSafeBubble &&
+            !game?.gameOverTriggered &&
+            this.stunTimer <= 0 &&
+            this.tornadoTrapTimer <= 0 &&
+            !this.isClimbing &&
+            this.flightTimer <= 0 &&
+            !this.carriedShell
+        );
+    }
+
+    _startRoll(game) {
+        const moveDir = this.vx !== 0 ? Math.sign(this.vx) : (this.facingRight ? 1 : -1);
+        this.isRolling = true;
+        this.rollTimer = this.rollDuration;
+        this.rollCooldownTimer = this.rollCooldown;
+        this.rollRecoveryTimer = this.rollRecoveryDuration;
+        this.rollDirection = moveDir || 1;
+        this.rollDistanceTraveled = 0;
+        this.rollTrailTimer = 0;
+        this.isChargingAttack = false;
+        this.attackChargeTimer = 0;
+        this.isAttacking = false;
+        this.attackTimer = 0;
+        this.isJumping = false;
+        this.forceFullJump = false;
+        this.spinDirection = this.rollDirection;
+        if (game?.audio) game.audio.playJump();
+        if (game?.particles) {
+            game.particles.emitJump(this.x + this.width / 2, this.y + this.height, game.currentTheme?.particleColor || '#ffffff');
+        }
+    }
+
+    _endRoll() {
+        if (!this.isRolling) return;
+        this.isRolling = false;
+        this.rollTimer = 0;
+        this.rollDistanceTraveled = 0;
+        this.vx = 0;
+    }
+
+    _damageEnemyWithRoll(enemy, game) {
+        if (!enemy || enemy.markedForDeletion || this._rollEnemyHitCooldowns.has(enemy)) return;
+
+        const damage = enemy.bossType ? 1 : this.rollDamage;
+        if (enemy.takeDamage) {
+            const isTurtle = enemy.type === 'patrol' && enemy.emoji === '🐢';
+            if (isTurtle && typeof enemy.stomp === 'function') enemy.stomp(game);
+            else enemy.takeDamage(damage, game);
+        } else {
+            enemy.markedForDeletion = true;
+            this.score += 50;
+            if (game && typeof game.registerEnemyDefeat === 'function') game.registerEnemyDefeat(enemy);
+        }
+
+        this._rollEnemyHitCooldowns.set(enemy, enemy.bossType ? 0.28 : 0.18);
+        if (game?.particles) {
+            game.particles.emitHit(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, '#ffd27a');
+        }
+        if (game?.audio) {
+            game.audio.playHit();
+        }
+    }
+
+    _breakRollObstacles(game) {
+        if (!game || !Array.isArray(game.enemyProjectiles)) return;
+        const hitbox = this.getHitbox();
+        const projectiles = game.enemyProjectiles;
+        for (let i = 0; i < projectiles.length; i++) {
+            const projectile = projectiles[i];
+            if (!projectile || projectile.markedForDeletion) continue;
+            if (!Physics.checkAABB(hitbox, projectile)) continue;
+
+            const typeName = projectile.constructor ? projectile.constructor.name : '';
+            const isBreakable = typeName === 'Barrel' ||
+                typeName === 'Worm' ||
+                typeName === 'Fireball' ||
+                typeName === 'Laser' ||
+                typeName === 'UfoProjectile' ||
+                typeName === 'HedgehogSpike';
+            if (!isBreakable) continue;
+
+            projectile.markedForDeletion = true;
+            if (game.particles) {
+                game.particles.emitHit(projectile.x + projectile.width / 2, projectile.y + projectile.height / 2, '#ffe3a3');
+            }
+            if (game.audio) {
+                game.audio.playHit();
+            }
+        }
+    }
+
     takeDamage(game) {
         if (this.inSafeBubble) return;
         if (this.flightTimer > 0) return;
         if (this.firePowerUpTimer > 0) return;
+        if (this.isRolling) return;
         if (this.hasCatProtector) {
             this.hasCatProtector = false;
             this.invulnerableTimer = 0.6;
@@ -1500,6 +1674,7 @@ export class Player extends Entity {
         this.grounded = false;
         this.isClimbing = false;
         this.currentVine = null;
+        this._endRoll();
         this.vx = 0;
         this.vy = 0;
         this.isJumping = false;
@@ -1625,7 +1800,6 @@ export class Player extends Entity {
                 ctx.restore();
             }
         }
-
         let cached = this._cachedEmoji;
         let yOffset = 5;
         let locomotionOffsetX = 0;
@@ -1660,6 +1834,13 @@ export class Player extends Entity {
                 const squash = Math.sin(stepPhase + Math.PI / 2) * (0.022 + speedRatio * 0.048);
                 locomotionScaleX = 1 + squash;
                 locomotionScaleY = 1 - squash * 0.85;
+            }
+            if (this.isRolling) {
+                const rollPhase = this.pulseTimer * 20;
+                locomotionOffsetY += Math.abs(Math.sin(rollPhase)) * 4.8;
+                locomotionTilt += Math.sin(rollPhase * 0.5) * 0.05;
+                locomotionScaleX = 1.18 + Math.sin(rollPhase + Math.PI * 0.15) * 0.1;
+                locomotionScaleY = 0.82 - Math.sin(rollPhase + Math.PI * 0.15) * 0.07;
             }
 
             // Wind rumble while flying to avoid the "perfectly stable hover" look.
@@ -1698,24 +1879,6 @@ export class Player extends Entity {
             ctx.lineWidth = 4;
             ctx.strokeText('×_×', 0, -cached.height / 2 - 20 + wobble);
             ctx.fillText('×_×', 0, -cached.height / 2 - 20 + wobble);
-            ctx.restore();
-        }
-
-        if (!game?.gameOverTriggered && this.health === 1) {
-            if (!this._lowHealthWarningEmoji) {
-                this._lowHealthWarningEmoji = getEmojiCanvas('⚠️', 34);
-            }
-            const warning = this._lowHealthWarningEmoji;
-            const bob = Math.sin(this.pulseTimer * 7.5) * 3;
-            const pulse = 0.9 + (Math.sin(this.pulseTimer * 12) + 1) * 0.09;
-
-            ctx.save();
-            if (shouldMirrorForFacing) ctx.scale(-1, 1);
-            if (this.rotation !== 0) ctx.rotate(-this.rotation);
-            ctx.globalAlpha = 0.86 + (Math.sin(this.pulseTimer * 15) + 1) * 0.07;
-            ctx.translate(0, -this.height / 2 - 72 + bob);
-            ctx.scale(pulse, pulse);
-            ctx.drawImage(warning.canvas, -warning.width / 2, -warning.height / 2);
             ctx.restore();
         }
 
@@ -1775,6 +1938,24 @@ export class Player extends Entity {
             ctx.restore();
         }
         ctx.restore();
+
+        if (!game?.gameOverTriggered && this.health === 1) {
+            if (!this._lowHealthWarningEmoji) {
+                this._lowHealthWarningEmoji = getEmojiCanvas('⚠️', 34);
+            }
+            const warning = this._lowHealthWarningEmoji;
+            const bob = Math.sin(this.pulseTimer * 7.5) * 3;
+            const pulse = 0.9 + (Math.sin(this.pulseTimer * 12) + 1) * 0.09;
+
+            ctx.save();
+            if (shouldMirrorForFacing) ctx.scale(-1, 1);
+            if (this.rotation !== 0) ctx.rotate(-this.rotation);
+            ctx.globalAlpha = 0.86 + (Math.sin(this.pulseTimer * 15) + 1) * 0.07;
+            ctx.translate(0, -this.height / 2 - 72 + bob);
+            ctx.scale(pulse, pulse);
+            ctx.drawImage(warning.canvas, -warning.width / 2, -warning.height / 2);
+            ctx.restore();
+        }
 
         if (this.stunTimer > 0 && (!game || !game.gameOverTriggered)) {
             if (!this._stunEmoji) {

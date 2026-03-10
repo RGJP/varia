@@ -2542,16 +2542,17 @@ export class Game {
             this.ctx.fillStyle = '#ffd54f';
             this.ctx.fillText('CONTROLS', cardX + 40, cardY + 40);
 
-            this.ctx.font = '20px "Outfit", sans-serif';
+            this.ctx.font = '18px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
 
             let ly = cardY + 74;
-            const yStep = 30;
+            const yStep = 27;
             this.ctx.fillText('KB Arrows • Joystick : Move Player', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('A •🦘 Jump', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('D • 🪨⬆️ Attack / Charge', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('A • 🦘 Jump', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('D • 🪨⬆️ Throw rock / Charge', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('F • 🌀 Roll attack', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('S • 💣 Drop a bomb from above', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('W • 🌀 Spawn a portal', cardX + 40, ly); ly += yStep;
+            this.ctx.fillText('W • 🕳️ Spawn a portal', cardX + 40, ly); ly += yStep;
             this.ctx.fillText('P • ⏯️ Pause/Unpause', cardX + 40, ly);
 
             // Vertical Divider

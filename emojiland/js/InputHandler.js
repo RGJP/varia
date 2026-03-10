@@ -3,9 +3,7 @@ export class InputHandler {
         this.keys = new Set();
         this.justPressed = new Set();
         this.justReleased = new Set();
-        this.aliasByCode = {
-            Space: ['KeyA']
-        };
+        this.aliasByCode = {};
         this.preventDefaultCodes = new Set([
             'ArrowLeft',
             'ArrowRight',
@@ -13,6 +11,7 @@ export class InputHandler {
             'ArrowDown',
             'KeyA',
             'KeyD',
+            'KeyF',
             'KeyS',
             'KeyW',
             'KeyP',
@@ -126,6 +125,7 @@ export class InputHandler {
             'joystick-zone',
             'btn-jump',
             'btn-attack',
+            'btn-roll',
             'btn-bomb',
             'btn-charge-toggle',
             'btn-portal'
@@ -588,14 +588,14 @@ export class InputHandler {
                         el.addEventListener('touchmove', (e) => {
                             e.preventDefault();
                             if (isLayoutEditMode()) return;
-                            if (!this.keys.has('KeyD')) return;
+                            if (!this.keys.has('Space')) return;
                             tryThumbJumpFromTouches(e.touches);
                         }, { passive: false });
 
                         el.addEventListener('touchstart', (e) => {
                             e.preventDefault();
                             if (isLayoutEditMode()) return;
-                            if (!this.keys.has('KeyD')) return;
+                            if (!this.keys.has('Space')) return;
                             tryThumbJumpFromTouches(e.touches);
                         }, { passive: false });
                     }
@@ -613,6 +613,7 @@ export class InputHandler {
         attachButton('btn-jump', 'KeyA');
         attachButton('btn-attack', 'KeyD');
         attachButton('btn-bomb', 'KeyS');
+        attachButton('btn-roll', 'KeyF');
         attachButton('btn-portal', 'KeyW');
         attachButton('btn-pause', 'KeyP');
 

@@ -127,8 +127,8 @@ canvas {
 
 .action-buttons {
     position: relative;
-    width: 170px;
-    height: 170px;
+    width: 214px;
+    height: 182px;
     margin-bottom: 0;
     margin-right: 0;
 }
@@ -144,6 +144,13 @@ canvas {
     position: absolute;
     bottom: 0;
     right: 0;
+    margin: 0;
+}
+
+#btn-roll {
+    position: absolute;
+    bottom: 8px;
+    right: 76px;
     margin: 0;
 }
 
@@ -177,8 +184,8 @@ canvas {
 
 #btn-portal {
     position: absolute;
-    bottom: 66px;
-    right: -16px;
+    bottom: 92px;
+    right: -6px;
     margin: 0;
     font-size: 24px;
 }
@@ -198,8 +205,8 @@ canvas {
     }
 
     .action-buttons {
-        width: 178px;
-        height: 178px;
+        width: 222px;
+        height: 186px;
     }
 }
 
@@ -211,13 +218,18 @@ canvas {
     }
 
     .action-buttons {
-        width: 176px;
-        height: 176px;
+        width: 228px;
+        height: 190px;
     }
 
     #btn-jump {
         right: 0;
         bottom: 0;
+    }
+
+    #btn-roll {
+        right: 88px;
+        bottom: 8px;
     }
 
     #btn-attack {
@@ -237,8 +249,8 @@ canvas {
     }
 
     #btn-portal {
-        bottom: 78px;
-        right: -20px;
+        bottom: 98px;
+        right: -8px;
         font-size: 26px;
     }
 
@@ -464,6 +476,7 @@ canvas {
 
 #mobile-ui.layout-edit-mode #joystick-zone,
 #mobile-ui.layout-edit-mode #btn-jump,
+#mobile-ui.layout-edit-mode #btn-roll,
 #mobile-ui.layout-edit-mode #btn-attack,
 #mobile-ui.layout-edit-mode #btn-charge-toggle,
 #mobile-ui.layout-edit-mode #btn-bomb,
