@@ -1,4 +1,4 @@
-import { InputHandler } from './InputHandler.js';
+import { CONTROL_ACTIONS, InputHandler } from './InputHandler.js';
 import { Camera } from './Camera.js';
 import { Player } from './entities/Player.js';
 import { Boss } from './entities/Enemy.js';
@@ -149,64 +149,6 @@ export class Game {
         this._panicRecoveryWindow = 5;
         this._topFpsStreak = 0;
         this._particlePanicMode = false;
-        this.profilerEnabled = false;
-        this._profilerSmoothing = 0.18;
-        this._profilerSpikeWindowFrames = 180;
-        this._profileMetricKeys = [
-            'frameMs',
-            'updateMs',
-            'drawMs',
-            'inputMs',
-            'prep',
-            'player',
-            'enemies',
-            'collectibles',
-            'rocks',
-            'projectiles',
-            'finalize'
-        ];
-        this._profileBuckets = {
-            prep: 0,
-            player: 0,
-            enemies: 0,
-            collectibles: 0,
-            rocks: 0,
-            projectiles: 0,
-            finalize: 0
-        };
-        this._profileDisplay = {
-            frameMs: 0,
-            updateMs: 0,
-            drawMs: 0,
-            inputMs: 0,
-            prep: 0,
-            player: 0,
-            enemies: 0,
-            collectibles: 0,
-            rocks: 0,
-            projectiles: 0,
-            finalize: 0
-        };
-        this._profileSpikes = {
-            frameMs: 0,
-            updateMs: 0,
-            drawMs: 0,
-            inputMs: 0,
-            prep: 0,
-            player: 0,
-            enemies: 0,
-            collectibles: 0,
-            rocks: 0,
-            projectiles: 0,
-            finalize: 0
-        };
-        this._profileHistory = {};
-        for (let i = 0; i < this._profileMetricKeys.length; i++) {
-            const key = this._profileMetricKeys[i];
-            this._profileHistory[key] = new Float32Array(this._profilerSpikeWindowFrames);
-        }
-        this._profileHistoryCursor = 0;
-        this._profileHistoryCount = 0;
         if (this.particles && typeof this.particles.setMobileMode === 'function') {
             this.particles.setMobileMode(this.isMobileDevice);
         }
@@ -231,6 +173,15 @@ export class Game {
         this._unmuteCache = getEmojiCanvas('\u{1F50A}', 24);
         this._bombUICache = getEmojiCanvas('\u{1F4A3}', 24);
         this._deathGearCache = getEmojiCanvas('\u{1F525}', 26);
+        this._desktopUI = document.getElementById('desktop-ui');
+        this._desktopSettingsButton = document.getElementById('desktop-settings-button');
+        this._desktopSettingsMenu = document.getElementById('desktop-settings-menu');
+        this._desktopSettingsRows = document.getElementById('desktop-settings-rows');
+        this._desktopSettingsHint = document.getElementById('desktop-settings-hint');
+        this._desktopSettingsCloseButton = document.getElementById('desktop-settings-close');
+        this._desktopSettingsResetButton = document.getElementById('desktop-settings-reset');
+        this._desktopSettingsWasPlaying = false;
+        this._setupDesktopSettingsUI();
 
         const startGameHandler = (e) => {
             if (this.state === GameState.START_MENU || ((this.state === GameState.GAME_OVER || this.state === GameState.VICTORY) && this.canRestart !== false)) {
@@ -421,6 +372,113 @@ export class Game {
         return true;
     }
 
+    _setupDesktopSettingsUI() {
+        if (!this._desktopUI || !this._desktopSettingsButton || !this._desktopSettingsMenu || !this._desktopSettingsRows) return;
+
+        this._desktopSettingsRows.innerHTML = CONTROL_ACTIONS.map(({ id, label }) => `
+            <div class="desktop-settings-row">
+                <span class="desktop-settings-label">${label}</span>
+                <button type="button" class="desktop-settings-bind" data-action="${id}"></button>
+            </div>
+        `).join('');
+
+        this._desktopSettingsButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (this._isDesktopSettingsMenuOpen()) this._closeDesktopSettingsMenu(true);
+            else this._openDesktopSettingsMenu();
+        });
+
+        this._desktopSettingsRows.addEventListener('click', (e) => {
+            const btn = e.target.closest('.desktop-settings-bind');
+            if (!btn) return;
+            const { action } = btn.dataset;
+            if (!action) return;
+            const capturingAction = this.input.getCapturingAction();
+            if (capturingAction === action) {
+                this.input.cancelBindingCapture();
+                this._renderDesktopSettingsMenu();
+                return;
+            }
+            this.input.beginBindingCapture(action, () => {
+                this._renderDesktopSettingsMenu();
+            });
+            this._renderDesktopSettingsMenu();
+        });
+
+        if (this._desktopSettingsCloseButton) {
+            this._desktopSettingsCloseButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                this._closeDesktopSettingsMenu(true);
+            });
+        }
+
+        if (this._desktopSettingsResetButton) {
+            this._desktopSettingsResetButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.input.resetBindings();
+                this._renderDesktopSettingsMenu();
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (!this._isDesktopSettingsMenuOpen()) return;
+            if (this.input.getCapturingAction()) return;
+            if (e.code !== 'Escape') return;
+            e.preventDefault();
+            this._closeDesktopSettingsMenu(true);
+        });
+
+        this._renderDesktopSettingsMenu();
+    }
+
+    _renderDesktopSettingsMenu() {
+        if (!this._desktopSettingsRows) return;
+        const capturingAction = this.input.getCapturingAction();
+        const buttons = this._desktopSettingsRows.querySelectorAll('.desktop-settings-bind');
+        for (let i = 0; i < buttons.length; i++) {
+            const btn = buttons[i];
+            const action = btn.dataset.action;
+            const isCapturing = action === capturingAction;
+            btn.textContent = isCapturing ? 'Press any key...' : this.input.getBindingLabel(action);
+            btn.classList.toggle('is-listening', isCapturing);
+        }
+        if (this._desktopSettingsHint) {
+            this._desktopSettingsHint.textContent = capturingAction
+                ? 'Press a key to bind it. Esc cancels. Delete clears the current action.'
+                : 'Click any action to remap it. Duplicate assignments move the key to the latest action.';
+        }
+    }
+
+    _isDesktopSettingsMenuOpen() {
+        return !!(this._desktopSettingsMenu && this._desktopSettingsMenu.classList.contains('is-open'));
+    }
+
+    _openDesktopSettingsMenu() {
+        if (this.isMobileDevice) return;
+        if (this.state !== GameState.PLAYING && this.state !== GameState.PAUSED) return;
+        this._desktopSettingsWasPlaying = this.state === GameState.PLAYING;
+        if (this._desktopSettingsWasPlaying) this._pauseGameplay();
+        this.input.clearAllInputs();
+        this._desktopSettingsMenu.classList.add('is-open');
+        this._desktopSettingsButton.classList.add('is-active');
+        this._renderDesktopSettingsMenu();
+    }
+
+    _closeDesktopSettingsMenu(shouldResume) {
+        if (!this._desktopSettingsMenu) return;
+        this.input.cancelBindingCapture();
+        this._desktopSettingsMenu.classList.remove('is-open');
+        if (this._desktopSettingsButton) this._desktopSettingsButton.classList.remove('is-active');
+        this.input.clearAllInputs();
+        const shouldResumeGameplay = shouldResume && this._desktopSettingsWasPlaying && this.state === GameState.PAUSED;
+        this._desktopSettingsWasPlaying = false;
+        if (shouldResumeGameplay) {
+            this._resumeGameplay();
+            this.lastTime = 0;
+        }
+        this._renderDesktopSettingsMenu();
+    }
+
     _resumeGameplay() {
         if (this.state !== GameState.PAUSED) return false;
         this.state = GameState.PLAYING;
@@ -480,6 +538,7 @@ export class Game {
     }
 
     initLevel() {
+        this._closeDesktopSettingsMenu(false);
         clearEmojiCache();
         this._bossMusicEngaged = false;
         this._topFpsStreak = 0;
@@ -1059,88 +1118,7 @@ export class Game {
         };
     }
 
-    _resetProfileBuckets() {
-        const b = this._profileBuckets;
-        b.prep = 0;
-        b.player = 0;
-        b.enemies = 0;
-        b.collectibles = 0;
-        b.rocks = 0;
-        b.projectiles = 0;
-        b.finalize = 0;
-    }
-
-    _resetProfilerHistory() {
-        this._profileHistoryCursor = 0;
-        this._profileHistoryCount = 0;
-        for (let i = 0; i < this._profileMetricKeys.length; i++) {
-            const key = this._profileMetricKeys[i];
-            const arr = this._profileHistory[key];
-            if (arr) arr.fill(0);
-            this._profileSpikes[key] = 0;
-        }
-    }
-
-    _recomputeProfilerSpikes() {
-        const count = this._profileHistoryCount;
-        for (let i = 0; i < this._profileMetricKeys.length; i++) {
-            const key = this._profileMetricKeys[i];
-            const arr = this._profileHistory[key];
-            let maxValue = 0;
-            for (let j = 0; j < count; j++) {
-                const v = arr[j];
-                if (v > maxValue) maxValue = v;
-            }
-            this._profileSpikes[key] = maxValue;
-        }
-    }
-
-    _recordProfilerHistory(frameMs, updateMs, drawMs, inputMs) {
-        const idx = this._profileHistoryCursor;
-        const b = this._profileBuckets;
-        this._profileHistory.frameMs[idx] = frameMs;
-        this._profileHistory.updateMs[idx] = updateMs;
-        this._profileHistory.drawMs[idx] = drawMs;
-        this._profileHistory.inputMs[idx] = inputMs;
-        this._profileHistory.prep[idx] = b.prep;
-        this._profileHistory.player[idx] = b.player;
-        this._profileHistory.enemies[idx] = b.enemies;
-        this._profileHistory.collectibles[idx] = b.collectibles;
-        this._profileHistory.rocks[idx] = b.rocks;
-        this._profileHistory.projectiles[idx] = b.projectiles;
-        this._profileHistory.finalize[idx] = b.finalize;
-
-        this._profileHistoryCursor = (idx + 1) % this._profilerSpikeWindowFrames;
-        if (this._profileHistoryCount < this._profilerSpikeWindowFrames) {
-            this._profileHistoryCount++;
-        }
-        this._recomputeProfilerSpikes();
-    }
-
-    _pushProfilerSample(frameMs, updateMs, drawMs, inputMs) {
-        const alpha = this._profilerSmoothing;
-        const display = this._profileDisplay;
-        const buckets = this._profileBuckets;
-
-        display.frameMs = display.frameMs > 0 ? (display.frameMs * (1 - alpha) + frameMs * alpha) : frameMs;
-        display.updateMs = display.updateMs > 0 ? (display.updateMs * (1 - alpha) + updateMs * alpha) : updateMs;
-        display.drawMs = display.drawMs > 0 ? (display.drawMs * (1 - alpha) + drawMs * alpha) : drawMs;
-        display.inputMs = display.inputMs > 0 ? (display.inputMs * (1 - alpha) + inputMs * alpha) : inputMs;
-        display.prep = display.prep > 0 ? (display.prep * (1 - alpha) + buckets.prep * alpha) : buckets.prep;
-        display.player = display.player > 0 ? (display.player * (1 - alpha) + buckets.player * alpha) : buckets.player;
-        display.enemies = display.enemies > 0 ? (display.enemies * (1 - alpha) + buckets.enemies * alpha) : buckets.enemies;
-        display.collectibles = display.collectibles > 0 ? (display.collectibles * (1 - alpha) + buckets.collectibles * alpha) : buckets.collectibles;
-        display.rocks = display.rocks > 0 ? (display.rocks * (1 - alpha) + buckets.rocks * alpha) : buckets.rocks;
-        display.projectiles = display.projectiles > 0 ? (display.projectiles * (1 - alpha) + buckets.projectiles * alpha) : buckets.projectiles;
-        display.finalize = display.finalize > 0 ? (display.finalize * (1 - alpha) + buckets.finalize * alpha) : buckets.finalize;
-        this._recordProfilerHistory(frameMs, updateMs, drawMs, inputMs);
-    }
-
     loop(time) {
-        const profiling = this.profilerEnabled;
-        const frameStart = profiling ? performance.now() : 0;
-        if (profiling) this._resetProfileBuckets();
-
         let dt = (time - this.lastTime) / 1000;
         const hadPreviousFrame = this.lastTime > 0;
         this.lastTime = time;
@@ -1201,22 +1179,9 @@ export class Game {
             }
         }
 
-        const updateStart = profiling ? performance.now() : 0;
         this.update(dt);
-        const updateMs = profiling ? (performance.now() - updateStart) : 0;
-
-        const drawStart = profiling ? performance.now() : 0;
         this.draw();
-        const drawMs = profiling ? (performance.now() - drawStart) : 0;
-
-        const inputStart = profiling ? performance.now() : 0;
         this.input.update();
-        const inputMs = profiling ? (performance.now() - inputStart) : 0;
-
-        if (profiling) {
-            const frameMs = performance.now() - frameStart;
-            this._pushProfilerSample(frameMs, updateMs, drawMs, inputMs);
-        }
 
         requestAnimationFrame((time) => this.loop(time));
     }
@@ -1231,20 +1196,15 @@ export class Game {
                 mobileUI.classList.remove('active');
             }
         }
-
-        if (this.input.isJustPressed('KeyO')) {
-            this.profilerEnabled = !this.profilerEnabled;
-            this._resetProfileBuckets();
-            this._resetProfilerHistory();
-        }
-        if (this.profilerEnabled && this.input.isJustPressed('KeyI')) {
-            this._resetProfilerHistory();
+        if (this._desktopUI) {
+            const showDesktopUI = !this.isMobileDevice && (this.state === GameState.PLAYING || this.state === GameState.PAUSED);
+            this._desktopUI.classList.toggle('active', showDesktopUI);
+            if (!showDesktopUI && this._desktopSettingsMenu && this._desktopSettingsMenu.classList.contains('is-open')) {
+                this._closeDesktopSettingsMenu(false);
+            }
         }
 
-        const profiling = this.profilerEnabled;
-        let bucketStart = profiling ? performance.now() : 0;
-
-        if (this.input.isJustPressed('KeyP')) this._togglePauseGameplay();
+        if (!this._isDesktopSettingsMenuOpen() && this.input.isActionJustPressed('pause')) this._togglePauseGameplay();
 
         if (this.state === GameState.PAUSED) {
             return;
@@ -1295,9 +1255,6 @@ export class Game {
             }
         }
         this._rebuildVisiblePlatformSpatialIndex();
-        if (profiling) {
-            this._profileBuckets.prep += performance.now() - bucketStart;
-        }
 
         if (this.state === GameState.PLAYING) {
             if (this.player.health <= 0 || (this.player.y + this.player.height) > this.lowestY) {
@@ -1322,7 +1279,6 @@ export class Game {
                 return; // Stop update of everything else
             }
 
-            if (profiling) bucketStart = performance.now();
             this._spawnNearbyBosses();
             const collisionContext = this._buildPlayerCollisionContext();
             this.player.update(dt, this.input, this._visiblePlatforms, this, collisionContext);
@@ -1332,11 +1288,7 @@ export class Game {
             for (let i = 0; i < svines.length; i++) {
                 svines[i].update(dt);
             }
-            if (profiling) {
-                this._profileBuckets.player += performance.now() - bucketStart;
-            }
 
-            if (profiling) bucketStart = performance.now();
             const enemies = this.enemies;
             const updateMargin = 1000;
             const updateLeft = this.camera.x - updateMargin;
@@ -1374,11 +1326,6 @@ export class Game {
 
                 activeBoss._pityHeartLastHealth = this.player.health;
             }
-            if (profiling) {
-                this._profileBuckets.enemies += performance.now() - bucketStart;
-            }
-
-            if (profiling) bucketStart = performance.now();
             const collectibles = this.collectibles;
             this._updatePendingBossStarDrops(dt);
             this._updatePrisonerRescue(dt);
@@ -1397,21 +1344,12 @@ export class Game {
             }
 
             this._rebuildEnemySpatialIndex();
-            if (profiling) {
-                this._profileBuckets.collectibles += performance.now() - bucketStart;
-            }
-
-            if (profiling) bucketStart = performance.now();
             const rocks = this.rocks;
             for (let i = 0; i < rocks.length; i++) {
                 rocks[i].update(dt, this);
             }
             this._rebuildRockSpatialIndex();
-            if (profiling) {
-                this._profileBuckets.rocks += performance.now() - bucketStart;
-            }
 
-            if (profiling) bucketStart = performance.now();
             const lightningOrbs = this.lightningOrbs;
             for (let i = 0; i < lightningOrbs.length; i++) {
                 lightningOrbs[i].update(dt, this);
@@ -1421,11 +1359,7 @@ export class Game {
             for (let i = 0; i < enemyProjectiles.length; i++) {
                 enemyProjectiles[i].update(dt, this);
             }
-            if (profiling) {
-                this._profileBuckets.projectiles += performance.now() - bucketStart;
-            }
 
-            if (profiling) bucketStart = performance.now();
             this.enemies = filterInPlace(this.enemies);
             this.collectibles = filterInPlace(this.collectibles);
             this.rocks = filterInPlace(this.rocks);
@@ -1440,9 +1374,6 @@ export class Game {
 
             this.camera.update(this.player, dt);
             this.particles.update(dt);
-            if (profiling) {
-                this._profileBuckets.finalize += performance.now() - bucketStart;
-            }
         }
     }
 
@@ -2208,9 +2139,6 @@ export class Game {
         if (this.state !== GameState.START_MENU) {
             this.drawFpsCounter();
         }
-        if (this.profilerEnabled) {
-            this.drawProfilerOverlay();
-        }
     }
 
     drawFpsCounter() {
@@ -2221,75 +2149,6 @@ export class Game {
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
         this.ctx.fillText(`${Math.round(this.fpsDisplay)} ${this.layoutVariantLabel}`, this.viewportWidth / 2, this.viewportHeight - 8);
         this.ctx.restore();
-    }
-
-    drawProfilerOverlay() {
-        const p = this._profileDisplay;
-        const s = this._profileSpikes;
-        const spikeBuckets = [
-            ['prep', s.prep],
-            ['player', s.player],
-            ['enemy', s.enemies],
-            ['items', s.collectibles],
-            ['rocks', s.rocks],
-            ['proj', s.projectiles],
-            ['final', s.finalize]
-        ];
-        let worstBucketLabel = spikeBuckets[0][0];
-        let worstBucketValue = spikeBuckets[0][1];
-        for (let i = 1; i < spikeBuckets.length; i++) {
-            const entry = spikeBuckets[i];
-            if (entry[1] > worstBucketValue) {
-                worstBucketLabel = entry[0];
-                worstBucketValue = entry[1];
-            }
-        }
-        const lines = [
-            'Profiler (toggle: O, clear spikes: I)',
-            `frame  ${p.frameMs.toFixed(2)} ms`,
-            `update ${p.updateMs.toFixed(2)} ms`,
-            `draw   ${p.drawMs.toFixed(2)} ms`,
-            `input  ${p.inputMs.toFixed(2)} ms`,
-            `prep   ${p.prep.toFixed(2)} ms`,
-            `player ${p.player.toFixed(2)} ms`,
-            `enemy  ${p.enemies.toFixed(2)} ms`,
-            `items  ${p.collectibles.toFixed(2)} ms`,
-            `rocks  ${p.rocks.toFixed(2)} ms`,
-            `proj   ${p.projectiles.toFixed(2)} ms`,
-            `final  ${p.finalize.toFixed(2)} ms`,
-            `spike window ${this._profileHistoryCount}/${this._profilerSpikeWindowFrames} f`,
-            `spk frame ${s.frameMs.toFixed(2)} ms`,
-            `spk upd   ${s.updateMs.toFixed(2)} ms`,
-            `spk draw  ${s.drawMs.toFixed(2)} ms`,
-            `spk hot   ${worstBucketLabel} ${worstBucketValue.toFixed(2)} ms`
-        ];
-
-        const ctx = this.ctx;
-        ctx.save();
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        ctx.font = '12px monospace';
-
-        const lineHeight = 14;
-        const paddingX = 10;
-        const paddingY = 8;
-        const panelWidth = 236;
-        const panelHeight = paddingY * 2 + lines.length * lineHeight;
-        const x = this.viewportWidth - panelWidth - 14;
-        const y = 14;
-
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.58)';
-        ctx.fillRect(x, y, panelWidth, panelHeight);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x + 0.5, y + 0.5, panelWidth - 1, panelHeight - 1);
-
-        ctx.fillStyle = '#c8f7d8';
-        for (let i = 0; i < lines.length; i++) {
-            ctx.fillText(lines[i], x + paddingX, y + paddingY + i * lineHeight);
-        }
-
-        ctx.restore();
     }
 
     drawUI() {
@@ -2542,18 +2401,22 @@ export class Game {
             this.ctx.fillStyle = '#ffd54f';
             this.ctx.fillText('CONTROLS', cardX + 40, cardY + 40);
 
-            this.ctx.font = '18px "Outfit", sans-serif';
+            this.ctx.font = '20px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
 
             let ly = cardY + 74;
-            const yStep = 27;
-            this.ctx.fillText('KB Arrows • Joystick : Move Player', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('A • 🦘 Jump', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('D • 🪨⬆️ Throw rock / Charge', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('F • 🌀 Roll attack', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('S • 💣 Drop a bomb from above', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('W • 🕳️ Spawn a portal', cardX + 40, ly); ly += yStep;
-            this.ctx.fillText('P • ⏯️ Pause/Unpause', cardX + 40, ly);
+            const yStep = 33;
+            const controlHintLines = [
+                'Once you are in-game, open the',
+                'top-right Gear ⚙️ menu to view',
+                'the controls or remap them',
+                'exactly how you like on',
+                'desktop or mobile.'
+            ];
+            for (let i = 0; i < controlHintLines.length; i++) {
+                this.ctx.fillText(controlHintLines[i], cardX + 40, ly);
+                ly += yStep;
+            }
 
             // Vertical Divider
             this.ctx.beginPath();
@@ -2569,11 +2432,12 @@ export class Game {
             this.ctx.font = '20px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
             let ry = cardY + 74;
-            this.ctx.fillText('🪙 Achieve 100% level completion', 40, ry); ry += yStep;
-            this.ctx.fillText('☠️ Defeat All Enemies', 40, ry); ry += yStep;
-            this.ctx.fillText('⛑️ Save the Prisoner', 40, ry); ry += yStep;
-            this.ctx.fillText('🚩 Reach the end with the best score', 40, ry); ry += yStep;
-            this.ctx.fillText('🎰 Experiment, Explore, Enjoy', 40, ry); ry += yStep;
+            const yStepRight = 27;
+            this.ctx.fillText('🪙 Achieve 100% level completion', 40, ry); ry += yStepRight;
+            this.ctx.fillText('☠️ Defeat All Enemies', 40, ry); ry += yStepRight;
+            this.ctx.fillText('⛑️ Save the Prisoner', 40, ry); ry += yStepRight;
+            this.ctx.fillText('🚩 Reach the end with the best score', 40, ry); ry += yStepRight;
+            this.ctx.fillText('🎰 Experiment, Explore, Enjoy', 40, ry); ry += yStepRight;
             this.ctx.fillText('🎲 Levels are always unique', 40, ry);
 
             for (let i = 0; i < buttons.length; i++) {

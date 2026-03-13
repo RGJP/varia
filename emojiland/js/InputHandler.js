@@ -1,22 +1,68 @@
+export const CONTROL_ACTIONS = [
+    { id: 'left', label: 'Left' },
+    { id: 'right', label: 'Right' },
+    { id: 'up', label: 'Up' },
+    { id: 'down', label: 'Down' },
+    { id: 'jump', label: 'Jump' },
+    { id: 'attack', label: 'Throw / Charge Rock' },
+    { id: 'roll', label: 'Roll Attack' },
+    { id: 'bomb', label: 'Bomb Drop Attack' },
+    { id: 'portal', label: 'Spawn Portal' },
+    { id: 'pause', label: 'Pause' }
+];
+
+export const DEFAULT_KEY_BINDINGS = Object.freeze({
+    left: 'ArrowLeft',
+    right: 'ArrowRight',
+    up: 'ArrowUp',
+    down: 'ArrowDown',
+    jump: 'KeyA',
+    attack: 'KeyD',
+    roll: 'Space',
+    bomb: 'KeyS',
+    portal: 'KeyW',
+    pause: 'KeyP'
+});
+
+const KEY_BINDINGS_STORAGE_KEY = 'emojiland_key_bindings_v1';
+const ACTION_TOKEN_PREFIX = 'action:';
+function getActionToken(actionId) {
+    return `${ACTION_TOKEN_PREFIX}${actionId}`;
+}
+
+function formatKeyCode(code) {
+    if (!code) return 'Unbound';
+    if (code.startsWith('Key')) return code.slice(3);
+    if (code.startsWith('Digit')) return code.slice(5);
+    if (code.startsWith('Numpad')) return `Numpad ${code.slice(6)}`;
+    if (code.startsWith('Arrow')) return `${code.slice(5)} Arrow`;
+    if (code === 'Space') return 'Space';
+    if (code === 'Escape') return 'Esc';
+    if (code === 'Backspace') return 'Backspace';
+    if (code === 'Delete') return 'Delete';
+    if (code === 'Enter') return 'Enter';
+    if (code === 'Tab') return 'Tab';
+    if (code === 'CapsLock') return 'Caps Lock';
+    if (code === 'PageUp') return 'Page Up';
+    if (code === 'PageDown') return 'Page Down';
+    if (code === 'ScrollLock') return 'Scroll Lock';
+    if (code === 'NumLock') return 'Num Lock';
+    return code
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/Left$/, ' Left')
+        .replace(/Right$/, ' Right');
+}
+
 export class InputHandler {
     constructor() {
         this.keys = new Set();
         this.justPressed = new Set();
         this.justReleased = new Set();
-        this.aliasByCode = {};
-        this.preventDefaultCodes = new Set([
-            'ArrowLeft',
-            'ArrowRight',
-            'ArrowUp',
-            'ArrowDown',
-            'KeyA',
-            'KeyD',
-            'KeyF',
-            'KeyS',
-            'KeyW',
-            'KeyP',
-            'Space'
-        ]);
+        this._bindingCapture = null;
+        this.bindings = this._loadBindings();
+        this.boundActionsByCode = new Map();
+        this.preventDefaultCodes = new Set(['Space']);
+        this._rebuildBindingMaps();
 
         const pressCode = (code) => {
             if (!this.keys.has(code)) {
@@ -34,6 +80,22 @@ export class InputHandler {
         };
 
         window.addEventListener('keydown', (e) => {
+            if (this._bindingCapture) {
+                if (e.cancelable) e.preventDefault();
+                if (e.repeat) return;
+                if (e.code === 'Escape') {
+                    this._finishBindingCapture({ action: this._bindingCapture.action, cancelled: true });
+                    return;
+                }
+                if (e.code === 'Backspace' || e.code === 'Delete') {
+                    this.clearBinding(this._bindingCapture.action);
+                    this._finishBindingCapture({ action: this._bindingCapture.action, cleared: true, code: null });
+                    return;
+                }
+                this.setBinding(this._bindingCapture.action, e.code);
+                this._finishBindingCapture({ action: this._bindingCapture.action, code: e.code });
+                return;
+            }
             const target = e.target;
             const isEditableTarget = !!(
                 target &&
@@ -44,13 +106,13 @@ export class InputHandler {
                 )
             );
             if (isEditableTarget) return;
-            if (this.preventDefaultCodes.has(e.code) && e.cancelable) {
+            if (this._shouldPreventDefaultForCode(e.code) && e.cancelable) {
                 e.preventDefault();
             }
             pressCode(e.code);
-            const aliases = this.aliasByCode[e.code];
-            if (aliases) {
-                for (let i = 0; i < aliases.length; i++) pressCode(aliases[i]);
+            const actions = this.boundActionsByCode.get(e.code);
+            if (actions) {
+                for (let i = 0; i < actions.length; i++) pressCode(actions[i]);
             }
         });
 
@@ -65,13 +127,13 @@ export class InputHandler {
                 )
             );
             if (isEditableTarget) return;
-            if (this.preventDefaultCodes.has(e.code) && e.cancelable) {
+            if (this._shouldPreventDefaultForCode(e.code) && e.cancelable) {
                 e.preventDefault();
             }
             releaseCode(e.code);
-            const aliases = this.aliasByCode[e.code];
-            if (aliases) {
-                for (let i = 0; i < aliases.length; i++) releaseCode(aliases[i]);
+            const actions = this.boundActionsByCode.get(e.code);
+            if (actions) {
+                for (let i = 0; i < actions.length; i++) releaseCode(actions[i]);
             }
         });
 
@@ -109,6 +171,132 @@ export class InputHandler {
         });
 
         this.setupVirtualControls();
+    }
+
+    _loadBindings() {
+        try {
+            const raw = localStorage.getItem(KEY_BINDINGS_STORAGE_KEY);
+            if (!raw) return { ...DEFAULT_KEY_BINDINGS };
+            const parsed = JSON.parse(raw);
+            return this._normalizeBindings(parsed);
+        } catch {
+            return { ...DEFAULT_KEY_BINDINGS };
+        }
+    }
+
+    _normalizeBindings(candidate) {
+        const normalized = {};
+        for (let i = 0; i < CONTROL_ACTIONS.length; i++) {
+            const { id } = CONTROL_ACTIONS[i];
+            if (candidate && Object.prototype.hasOwnProperty.call(candidate, id) && typeof candidate[id] === 'string') {
+                normalized[id] = candidate[id].trim();
+            } else {
+                normalized[id] = DEFAULT_KEY_BINDINGS[id];
+            }
+        }
+        return normalized;
+    }
+
+    _saveBindings() {
+        try {
+            localStorage.setItem(KEY_BINDINGS_STORAGE_KEY, JSON.stringify(this.bindings));
+        } catch {
+            // Ignore storage failures.
+        }
+    }
+
+    _rebuildBindingMaps() {
+        this.boundActionsByCode.clear();
+        this.preventDefaultCodes.clear();
+        this.preventDefaultCodes.add('Space');
+        for (let i = 0; i < CONTROL_ACTIONS.length; i++) {
+            const action = CONTROL_ACTIONS[i].id;
+            const code = this.bindings[action];
+            if (!code) continue;
+            if (!this.boundActionsByCode.has(code)) this.boundActionsByCode.set(code, []);
+            this.boundActionsByCode.get(code).push(getActionToken(action));
+            this.preventDefaultCodes.add(code);
+        }
+    }
+
+    _shouldPreventDefaultForCode(code) {
+        return this.preventDefaultCodes.has(code);
+    }
+
+    _finishBindingCapture(result) {
+        const capture = this._bindingCapture;
+        this._bindingCapture = null;
+        if (capture && typeof capture.onFinish === 'function') {
+            capture.onFinish(result);
+        }
+    }
+
+    getBindingCode(action) {
+        return this.bindings[action] || '';
+    }
+
+    getBindingLabel(action) {
+        return formatKeyCode(this.getBindingCode(action));
+    }
+
+    setBinding(action, code) {
+        if (!Object.prototype.hasOwnProperty.call(DEFAULT_KEY_BINDINGS, action)) return;
+        const nextCode = typeof code === 'string' ? code.trim() : '';
+        for (let i = 0; i < CONTROL_ACTIONS.length; i++) {
+            const otherAction = CONTROL_ACTIONS[i].id;
+            if (otherAction !== action && this.bindings[otherAction] === nextCode) {
+                this.bindings[otherAction] = '';
+            }
+        }
+        this.bindings[action] = nextCode;
+        this._rebuildBindingMaps();
+        this._saveBindings();
+        this.clearAllInputs();
+    }
+
+    clearBinding(action) {
+        if (!Object.prototype.hasOwnProperty.call(DEFAULT_KEY_BINDINGS, action)) return;
+        this.bindings[action] = '';
+        this._rebuildBindingMaps();
+        this._saveBindings();
+        this.clearAllInputs();
+    }
+
+    resetBindings() {
+        this.bindings = { ...DEFAULT_KEY_BINDINGS };
+        this._rebuildBindingMaps();
+        this._saveBindings();
+        this.clearAllInputs();
+    }
+
+    beginBindingCapture(action, onFinish) {
+        if (!Object.prototype.hasOwnProperty.call(DEFAULT_KEY_BINDINGS, action)) return false;
+        this._bindingCapture = { action, onFinish };
+        this.clearAllInputs();
+        return true;
+    }
+
+    cancelBindingCapture() {
+        if (!this._bindingCapture) return false;
+        this._finishBindingCapture({ action: this._bindingCapture.action, cancelled: true });
+        this.clearAllInputs();
+        return true;
+    }
+
+    getCapturingAction() {
+        return this._bindingCapture ? this._bindingCapture.action : null;
+    }
+
+    isActionDown(action) {
+        return this.isDown(getActionToken(action));
+    }
+
+    isActionJustPressed(action) {
+        return this.isJustPressed(getActionToken(action));
+    }
+
+    isActionJustReleased(action) {
+        return this.isJustReleased(getActionToken(action));
     }
 
     setupVirtualControls() {
@@ -184,7 +372,7 @@ export class InputHandler {
             const now = performance.now();
             if (now - this._lastVirtualJumpPress < 70) return;
             this._lastVirtualJumpPress = now;
-            this.justPressed.add('KeyA');
+            this.justPressed.add(getActionToken('jump'));
         };
 
         const setAttackToggleVisual = (isActive) => {
@@ -193,17 +381,19 @@ export class InputHandler {
             toggleBtn.classList.toggle('is-active', isActive);
         };
 
-        const pressVirtualKey = (code) => {
-            if (!this.keys.has(code)) {
-                this.justPressed.add(code);
+        const pressVirtualKey = (action) => {
+            const token = getActionToken(action);
+            if (!this.keys.has(token)) {
+                this.justPressed.add(token);
             }
-            this.keys.add(code);
+            this.keys.add(token);
         };
 
-        const releaseVirtualKey = (code) => {
-            this.justReleased.add(code);
-            this.keys.delete(code);
-            this.justPressed.delete(code);
+        const releaseVirtualKey = (action) => {
+            const token = getActionToken(action);
+            this.justReleased.add(token);
+            this.keys.delete(token);
+            this.justPressed.delete(token);
         };
 
         const getViewportSize = () => ({
@@ -384,10 +574,10 @@ export class InputHandler {
         const resetJoystick = () => {
             const joyKnob = document.getElementById('joystick-knob');
             if (joyKnob) joyKnob.style.transform = 'translate(-50%, -50%)';
-            this.keys.delete('ArrowLeft');
-            this.keys.delete('ArrowRight');
-            this.keys.delete('ArrowUp');
-            this.keys.delete('ArrowDown');
+            this.keys.delete(getActionToken('left'));
+            this.keys.delete(getActionToken('right'));
+            this.keys.delete(getActionToken('up'));
+            this.keys.delete(getActionToken('down'));
         };
 
         const hideLayoutEditHint = () => {
@@ -528,7 +718,7 @@ export class InputHandler {
             }
         });
 
-        const attachButton = (id, code) => {
+        const attachButton = (id, action) => {
             setTimeout(() => {
                 const el = document.getElementById(id);
                 if (!el) return;
@@ -537,14 +727,14 @@ export class InputHandler {
                     e.preventDefault();
                     e.stopPropagation();
                     if (isLayoutEditMode()) return;
-                    pressVirtualKey(code);
+                    pressVirtualKey(action);
                 };
 
                 const release = (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     if (isLayoutEditMode()) return;
-                    releaseVirtualKey(code);
+                    releaseVirtualKey(action);
                     if (id === 'btn-attack') {
                         this._attackThumbJumpLatched = false;
                         if (this._mobileAttackToggleCharging) {
@@ -588,14 +778,14 @@ export class InputHandler {
                         el.addEventListener('touchmove', (e) => {
                             e.preventDefault();
                             if (isLayoutEditMode()) return;
-                            if (!this.keys.has('Space')) return;
+                            if (!this.isActionDown('attack')) return;
                             tryThumbJumpFromTouches(e.touches);
                         }, { passive: false });
 
                         el.addEventListener('touchstart', (e) => {
                             e.preventDefault();
                             if (isLayoutEditMode()) return;
-                            if (!this.keys.has('Space')) return;
+                            if (!this.isActionDown('attack')) return;
                             tryThumbJumpFromTouches(e.touches);
                         }, { passive: false });
                     }
@@ -610,12 +800,12 @@ export class InputHandler {
             }, 0);
         };
 
-        attachButton('btn-jump', 'KeyA');
-        attachButton('btn-attack', 'KeyD');
-        attachButton('btn-bomb', 'KeyS');
-        attachButton('btn-roll', 'KeyF');
-        attachButton('btn-portal', 'KeyW');
-        attachButton('btn-pause', 'KeyP');
+        attachButton('btn-jump', 'jump');
+        attachButton('btn-attack', 'attack');
+        attachButton('btn-bomb', 'bomb');
+        attachButton('btn-roll', 'roll');
+        attachButton('btn-portal', 'portal');
+        attachButton('btn-pause', 'pause');
 
         setTimeout(() => {
             const chargeToggleBtn = document.getElementById('btn-charge-toggle');
@@ -624,9 +814,9 @@ export class InputHandler {
             const toggleAttackCharge = () => {
                 this._mobileAttackToggleCharging = !this._mobileAttackToggleCharging;
                 if (this._mobileAttackToggleCharging) {
-                    pressVirtualKey('KeyD');
+                    pressVirtualKey('attack');
                 } else {
-                    releaseVirtualKey('KeyD');
+                    releaseVirtualKey('attack');
                 }
                 setAttackToggleVisual(this._mobileAttackToggleCharging);
             };
@@ -783,20 +973,20 @@ export class InputHandler {
 
                 joyKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`;
 
-                this.keys.delete('ArrowLeft');
-                this.keys.delete('ArrowRight');
-                this.keys.delete('ArrowUp');
-                this.keys.delete('ArrowDown');
+                this.keys.delete(getActionToken('left'));
+                this.keys.delete(getActionToken('right'));
+                this.keys.delete(getActionToken('up'));
+                this.keys.delete(getActionToken('down'));
 
                 const thresholdX = 14;
                 const thresholdY = 18;
 
                 if (distance > 6) {
-                    if (dx < -thresholdX) this.keys.add('ArrowLeft');
-                    else if (dx > thresholdX) this.keys.add('ArrowRight');
+                    if (dx < -thresholdX) this.keys.add(getActionToken('left'));
+                    else if (dx > thresholdX) this.keys.add(getActionToken('right'));
 
-                    if (dy < -thresholdY) this.keys.add('ArrowUp');
-                    else if (dy > thresholdY) this.keys.add('ArrowDown');
+                    if (dy < -thresholdY) this.keys.add(getActionToken('up'));
+                    else if (dy > thresholdY) this.keys.add(getActionToken('down'));
                 }
             };
 

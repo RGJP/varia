@@ -334,7 +334,7 @@ export class Player extends Entity {
             this.coyoteTimer -= dt;
         }
 
-        if (input.isJustPressed('KeyA')) {
+        if (input.isActionJustPressed('jump')) {
             this.jumpBufferTimer = this.jumpBufferTime;
         } else {
             this.jumpBufferTimer -= dt;
@@ -484,7 +484,7 @@ export class Player extends Entity {
 
         // Input
         // Drop Bomb
-        if (!this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0 && this.tornadoTrapTimer <= 0 && input.isJustPressed('KeyS')) {
+        if (!this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0 && this.tornadoTrapTimer <= 0 && input.isActionJustPressed('bomb')) {
             if (this.bombs > 0) {
                 this.bombs--;
                 const bombX = this.x + this.width / 2 - 12; // Center bomb
@@ -494,10 +494,10 @@ export class Player extends Entity {
                 if (game.audio) game.audio.playThrow();
             }
         }
-        if (!this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0 && this.tornadoTrapTimer <= 0 && input.isJustPressed('KeyW')) {
+        if (!this.inSafeBubble && !game.gameOverTriggered && this.stunTimer <= 0 && this.tornadoTrapTimer <= 0 && input.isActionJustPressed('portal')) {
             this._spawnPortals(game);
         }
-        if (this._canStartRoll(game) && input.isJustPressed('KeyF')) {
+        if (this._canStartRoll(game) && input.isActionJustPressed('roll')) {
             this._startRoll(game);
         }
 
@@ -507,9 +507,9 @@ export class Player extends Entity {
             this.attackChargeTimer = 0;
             this.isChargingAttack = false;
         } else {
-            const attackPressed = input.isJustPressed('KeyD');
-            const attackReleased = input.isJustReleased('KeyD');
-            const attackHeld = input.isDown('KeyD');
+            const attackPressed = input.isActionJustPressed('attack');
+            const attackReleased = input.isActionJustReleased('attack');
+            const attackHeld = input.isActionDown('attack');
 
             let shellWasKickedThisFrame = false;
             if (attackPressed && this.carriedShell) {
@@ -672,16 +672,16 @@ export class Player extends Entity {
         } else if (isFlying && !game.gameOverTriggered) {
             this.vx = 0;
             this.vy = 0;
-            if (input.isDown('ArrowLeft')) {
+            if (input.isActionDown('left')) {
                 this.vx = -this.flightSpeed;
                 this.facingRight = false;
-            } else if (input.isDown('ArrowRight')) {
+            } else if (input.isActionDown('right')) {
                 this.vx = this.flightSpeed;
                 this.facingRight = true;
             }
-            if (input.isDown('ArrowUp')) {
+            if (input.isActionDown('up')) {
                 this.vy = -this.flightSpeed;
-            } else if (input.isDown('ArrowDown')) {
+            } else if (input.isActionDown('down')) {
                 this.vy = this.flightSpeed;
             }
         } else if (this.isRolling) {
@@ -709,10 +709,10 @@ export class Player extends Entity {
             }
         } else if (!this.isClimbing && !game.gameOverTriggered) {
             const effectiveSpeed = this.slowTimer > 0 ? this.speed * 0.4 : this.speed;
-            if (input.isDown('ArrowLeft')) {
+            if (input.isActionDown('left')) {
                 this.vx = -effectiveSpeed;
                 this.facingRight = false;
-            } else if (input.isDown('ArrowRight')) {
+            } else if (input.isActionDown('right')) {
                 this.vx = effectiveSpeed;
                 this.facingRight = true;
             } else {
@@ -757,7 +757,7 @@ export class Player extends Entity {
         }
 
         // Variable Jump Height
-        if (!this.inSafeBubble && !isFlying && !input.isDown('KeyA') && this.isJumping && this.vy < 0 && !this.isClimbing && !this.forceFullJump) {
+        if (!this.inSafeBubble && !isFlying && !input.isActionDown('jump') && this.isJumping && this.vy < 0 && !this.isClimbing && !this.forceFullJump) {
             this.vy *= 0.5; // Cut jump short
             this.isJumping = false;
         }
@@ -808,9 +808,9 @@ export class Player extends Entity {
                 const pivotY = sv.anchorY + sv.anchorHeight;
 
                 // Climb up/down adjusts distance along the rope
-                if (input.isDown('ArrowUp')) {
+                if (input.isActionDown('up')) {
                     this.vineClimbDist -= 200 * dt;
-                } else if (input.isDown('ArrowDown')) {
+                } else if (input.isActionDown('down')) {
                     this.vineClimbDist += 200 * dt;
                 }
 
@@ -827,25 +827,25 @@ export class Player extends Entity {
                 this.y = pivotY + Math.cos(sv.currentAngle) * this.vineClimbDist - this.height / 2;
 
                 // Allow changing facing direction while on vine
-                if (input.isDown('ArrowLeft')) {
+                if (input.isActionDown('left')) {
                     this.facingRight = false;
-                } else if (input.isDown('ArrowRight')) {
+                } else if (input.isActionDown('right')) {
                     this.facingRight = true;
                 }
             } else {
                 // Static vine: original logic
-                if (input.isDown('ArrowUp')) {
+                if (input.isActionDown('up')) {
                     this.vy = -200;
-                } else if (input.isDown('ArrowDown')) {
+                } else if (input.isActionDown('down')) {
                     this.vy = 200;
                 }
 
                 this.y += this.vy * dt;
 
                 // Allow changing facing direction while on vine
-                if (input.isDown('ArrowLeft')) {
+                if (input.isActionDown('left')) {
                     this.facingRight = false;
-                } else if (input.isDown('ArrowRight')) {
+                } else if (input.isActionDown('right')) {
                     this.facingRight = true;
                 }
 

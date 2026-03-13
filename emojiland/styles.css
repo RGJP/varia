@@ -17,6 +17,155 @@ canvas {
     touch-action: none;
 }
 
+#desktop-ui {
+    display: none;
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 220;
+    font-family: 'Outfit', sans-serif;
+}
+
+#desktop-ui.active {
+    display: block;
+}
+
+#desktop-settings-button {
+    pointer-events: auto;
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: rgba(12, 18, 18, 0.72);
+    color: #fff6d6;
+    border-radius: 12px;
+    font-size: 24px;
+    line-height: 1;
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+
+#desktop-settings-button:hover,
+#desktop-settings-button.is-active {
+    transform: translateY(-1px);
+    background: rgba(36, 56, 54, 0.9);
+}
+
+#desktop-settings-menu {
+    display: none;
+    position: absolute;
+    top: 72px;
+    right: 18px;
+    pointer-events: none;
+}
+
+#desktop-settings-menu.is-open {
+    display: block;
+    pointer-events: auto;
+}
+
+.desktop-settings-panel {
+    width: min(420px, calc(100vw - 36px));
+    padding: 18px;
+    border-radius: 18px;
+    background: rgba(10, 14, 16, 0.92);
+    border: 1px solid rgba(243, 226, 173, 0.28);
+    box-shadow: 0 22px 48px rgba(0, 0, 0, 0.42);
+    color: #f7f2e0;
+}
+
+.desktop-settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.desktop-settings-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+#desktop-settings-close,
+#desktop-settings-reset,
+.desktop-settings-bind {
+    font: inherit;
+}
+
+#desktop-settings-close {
+    border: 0;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+#desktop-settings-rows {
+    display: grid;
+    gap: 10px;
+}
+
+.desktop-settings-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+}
+
+.desktop-settings-label {
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.desktop-settings-bind {
+    min-width: 150px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 248, 220, 0.24);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fffef7;
+    cursor: pointer;
+    text-align: center;
+}
+
+.desktop-settings-bind.is-listening {
+    border-color: rgba(255, 215, 79, 0.75);
+    background: rgba(255, 215, 79, 0.18);
+    color: #fff0b0;
+}
+
+#desktop-settings-hint {
+    margin-top: 14px;
+    font-size: 13px;
+    line-height: 1.4;
+    color: rgba(255, 247, 221, 0.78);
+}
+
+#desktop-settings-reset {
+    margin-top: 14px;
+    width: 100%;
+    min-height: 42px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 248, 220, 0.24);
+    background: rgba(181, 220, 165, 0.12);
+    color: #f7f2e0;
+    cursor: pointer;
+}
+
+@media (pointer: coarse) {
+    #desktop-ui {
+        display: none !important;
+    }
+}
+
 #mobile-ui {
     display: none;
     position: absolute;
