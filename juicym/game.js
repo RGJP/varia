@@ -29,6 +29,12 @@ const EMOJIS = [
         big: ['INSANE!', 'MONSTER!', 'UNREAL!', 'CRUSHING IT!'],
         massive: ['LEGENDARY!', 'UNSTOPPABLE!', 'GODLIKE!', 'ABSOLUTELY EPIC!']
       };
+      const COMBO_FACES = {
+        starter: ['😄', '🤩', '😊', '😎'],
+        rising: ['😆', '🤯', '😺', '🥳'],
+        big: ['🤯', '😈', '🫨', '🤠'],
+        massive: ['🤯', '👑', '🦄', '🚀']
+      };
       const LEVEL_CURVE = [
         {
           name: 'Sunlit Orchard',
@@ -1585,10 +1591,10 @@ const EMOJIS = [
 
       // Effects and score feedback
       function getComboCallout(comboChain) {
-        if (comboChain >= 6) return pickRandom(COMBO_CALLOUTS.massive);
-        if (comboChain >= 5) return pickRandom(COMBO_CALLOUTS.big);
-        if (comboChain >= 4) return pickRandom(COMBO_CALLOUTS.rising);
-        return pickRandom(COMBO_CALLOUTS.starter);
+        if (comboChain >= 6) return `${pickRandom(COMBO_FACES.massive)} ${pickRandom(COMBO_CALLOUTS.massive)}`;
+        if (comboChain >= 5) return `${pickRandom(COMBO_FACES.big)} ${pickRandom(COMBO_CALLOUTS.big)}`;
+        if (comboChain >= 4) return `${pickRandom(COMBO_FACES.rising)} ${pickRandom(COMBO_CALLOUTS.rising)}`;
+        return `${pickRandom(COMBO_FACES.starter)} ${pickRandom(COMBO_CALLOUTS.starter)}`;
       }
 
       function addPopup(c, r, text, color = '#ffffff', life = 0.85, scale = 1, options = {}) {
