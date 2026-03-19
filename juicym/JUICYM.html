@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50%25' y='.9em' font-size='90' text-anchor='middle'%3E%26%23x1F349%3B%3C/text%3E%3C/svg%3E" />
+  <title>JUICYM</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <main class="shell">
+      <div class="canvas-wrap" id="canvasWrap">
+        <canvas id="gameCanvas" aria-label="JUICYM game board"></canvas>
+      </div>
+    </main>
+
+    <section class="footer">
+      <button class="settings-trigger" id="settingsBtn" aria-label="Open game menu" aria-haspopup="dialog" aria-controls="settingsMenu" aria-expanded="false"><span class="settings-trigger-icon" aria-hidden="true">⚙️</span></button>
+    </section>
+  </div>
+
+  <div class="settings-menu" id="settingsMenu" aria-hidden="true" inert>
+    <div class="settings-panel" id="settingsPanel" role="dialog" aria-modal="true" aria-label="Game menu">
+      <div class="settings-head">
+        <button class="secondary settings-close" id="settingsCloseBtn" aria-label="Close game menu">✕</button>
+      </div>
+      <div class="footer-line settings-grid">
+        <div class="status-line" id="statusLine" role="status" aria-live="polite" aria-label="0 moves left">
+          <span class="status-icon" aria-hidden="true">🎯</span>
+          <span class="status-copy">
+            <span class="status-title">Moves Left</span>
+            <span class="status-value" id="statusMoves">0</span>
+          </span>
+        </div>
+        <button class="secondary footer-action" id="shuffleBtn" aria-label="Shuffle board for 2 moves">
+          <span class="action-icon" aria-hidden="true">🔀</span>
+          <span class="action-copy">
+            <span class="action-title">Shuffle</span>
+            <span class="action-sub">Costs 2 moves</span>
+          </span>
+        </button>
+        <button class="danger footer-action" id="restartBtn" aria-label="Start a new run">
+          <span class="action-icon" aria-hidden="true">🌱</span>
+          <span class="action-copy">
+            <span class="action-title">New Level</span>
+
+          </span>
+        </button>
+        <button class="secondary footer-action" id="muteMusicBtn" aria-label="Toggle music" aria-pressed="false">
+          <span class="action-icon" id="muteMusicIcon" aria-hidden="true">🎵</span>
+          <span class="action-copy">
+            <span class="action-title">Music</span>
+            <span class="action-sub" id="muteMusicText">On</span>
+          </span>
+        </button>
+        <button class="secondary footer-action" id="muteFxBtn" aria-label="Toggle sound effects" aria-pressed="false">
+          <span class="action-icon" id="muteFxIcon" aria-hidden="true">🔊</span>
+          <span class="action-copy">
+            <span class="action-title">Sound FX</span>
+            <span class="action-sub" id="muteFxText">On</span>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="overlay-card">
+      <h2 class="overlay-title" id="overlayTitle">Level Clear</h2>
+      <div class="overlay-sub" id="overlaySub"></div>
+      <div class="overlay-stats">
+        <div class="overlay-stat" id="overlayScoreStat">
+          <div class="label">Score</div>
+          <div class="value" id="overlayScore">0</div>
+        </div>
+        <div class="overlay-stat" id="overlayTargetStat">
+          <div class="label">Target</div>
+          <div class="value" id="overlayTarget">0</div>
+        </div>
+        <div class="overlay-stat" id="overlayLevelStat">
+          <div class="label">Level</div>
+          <div class="value" id="overlayLevel">1</div>
+        </div>
+      </div>
+      <div class="overlay-actions">
+        <button id="overlayPrimary">Continue</button>
+        <button class="secondary" id="overlaySecondary">New Run</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="splash" id="splash">
+    <div class="splash-card">
+      <div class="splash-fruits" id="splashFruitLine" aria-hidden="true"></div>
+      <h1 class="splash-title" id="splashTitle">JUICYM</h1>
+      <div class="splash-copy">
+        Swap pieces to match 3 or more, trigger explosive combos, and rack up points before your moves run out!
+      </div>
+      <div class="splash-actions">
+        <button id="startBtn">Start</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js" defer></script>
+</body>
+</html>
