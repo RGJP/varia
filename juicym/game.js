@@ -306,7 +306,9 @@ const EMOJIS = [
           musicPlaylistOrder: [],
           musicPlaylistCursor: 0,
           musicFadeFrame: 0,
-          musicTransitionId: 0
+          musicTransitionId: 0,
+          backgroundPaused: false,
+          shouldResumeMusicOnForeground: false
         },
         qualityLevel: FORCE_PERFORMANCE_MODE ? LOCKED_QUALITY_LEVEL : detectInitialQualityLevel(),
         powerVariety: {
@@ -1041,6 +1043,58 @@ const EMOJIS = [
       function primeAudio() {
         ensureAudio();
         resumePendingMusic();
+      }
+
+      function pauseAudioForBackground() {
+        if (state.audio.backgroundPaused) return;
+        state.audio.backgroundPaused = true;
+
+        const musicEl = state.audio.musicEl;
+        const hasActiveMusic = Boolean(musicEl && !musicEl.paused && state.audio.musicTrackIndex !== -1);
+        const hasPendingMusic = state.audio.pendingMusicTrackIndex != null;
+        state.audio.shouldResumeMusicOnForeground = !state.audio.musicMuted && (hasActiveMusic || hasPendingMusic);
+
+        if (musicEl && !musicEl.paused) {
+          cancelMusicFade();
+          musicEl.pause();
+        }
+
+        if (state.audio.ctx && state.audio.ctx.state === 'running') {
+          state.audio.ctx.suspend().catch(() => {});
+        }
+      }
+
+      function resumeAudioFromBackground() {
+        if (!state.audio.backgroundPaused) return;
+        state.audio.backgroundPaused = false;
+
+        if (state.audio.ctx && state.audio.ctx.state === 'suspended') {
+          state.audio.ctx.resume().catch(() => {});
+        }
+
+        if (!state.audio.shouldResumeMusicOnForeground || state.audio.musicMuted) {
+          state.audio.shouldResumeMusicOnForeground = false;
+          return;
+        }
+
+        const musicEl = state.audio.musicEl;
+        if (musicEl && musicEl.paused && state.audio.musicTrackIndex !== -1) {
+          const resumePromise = musicEl.play();
+          if (resumePromise && typeof resumePromise.then === 'function') {
+            resumePromise
+              .then(() => fadeMusicVolume(musicEl.volume, MUSIC_VOLUME, MUSIC_FADE_MS * 0.7))
+              .catch(() => {});
+          } else {
+            fadeMusicVolume(musicEl.volume, MUSIC_VOLUME, MUSIC_FADE_MS * 0.7);
+          }
+          state.audio.shouldResumeMusicOnForeground = false;
+          return;
+        }
+
+        if (state.audio.pendingMusicTrackIndex != null) {
+          resumePendingMusic();
+        }
+        state.audio.shouldResumeMusicOnForeground = false;
       }
 
       function randFloat(min, max) {
@@ -3633,15 +3687,18 @@ const EMOJIS = [
 
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState !== 'visible') {
+          pauseAudioForBackground();
           releaseWakeLock();
           return;
         }
+        resumeAudioFromBackground();
         if (state.wakeLock.shouldHold) {
           requestWakeLock();
         }
       });
 
       window.addEventListener('pagehide', () => {
+        pauseAudioForBackground();
         releaseWakeLock();
       });
 
