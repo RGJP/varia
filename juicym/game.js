@@ -13,14 +13,18 @@ const EMOJIS = [
         col: '⬇️',
         bomb: '💥',
         prism: '🌈',
-        lightning: '⚡'
+        lightning: '⚡',
+        vortex: '🌀',
+        meteor: '☄️'
       };
       const POWER_COLORS = {
         row: '#7ff6ff',
         col: '#84ffb9',
         bomb: '#ff8f6d',
         prism: '#ffd56f',
-        lightning: '#c7a2ff'
+        lightning: '#c7a2ff',
+        vortex: '#78f1ff',
+        meteor: '#ffb27b'
       };
       const CELEBRATION_EMOJIS = ['🥳', '🎉', '🎊', '✨', '🏆', '👑', '🌟', '🕺'];
       const VICTORY_CLEAR_STEP_MIN_SECONDS = 0.08;
@@ -142,8 +146,19 @@ const EMOJIS = [
       const FONT_STACK = '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
       const TAU = Math.PI * 2;
 
+      function isLikelyMobileGpuPath() {
+        const coarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        const ua = navigator.userAgent || '';
+        return coarsePointer || /Android|iPhone|iPad|iPod/i.test(ua);
+      }
+
+      const MOBILE_SAFE_RENDERING = isLikelyMobileGpuPath();
+      const CANVAS_CONTEXT_OPTIONS = MOBILE_SAFE_RENDERING
+        ? { alpha: true, desynchronized: false }
+        : { alpha: false, desynchronized: true };
+
       const canvas = document.getElementById('gameCanvas');
-      const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true }) || canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', CANVAS_CONTEXT_OPTIONS) || canvas.getContext('2d');
       const app = document.querySelector('.app');
       const footer = document.querySelector('.footer');
       const wrap = document.getElementById('canvasWrap');
@@ -188,6 +203,12 @@ const EMOJIS = [
       const MUSIC_VOLUME = 0.42;
       const IDLE_HINT_DELAY_SECONDS = 10;
       const COMBO_POPUP_LIFE_SECONDS = 2.35;
+      const LEVEL_TARGET_LENGTH_MULTIPLIER = 1.65;
+      const LEVEL_MOVES_LENGTH_MULTIPLIER = 1.22;
+      const CHAOS_DROP_BASE_CHANCE = 0.018;
+      const CHAOS_DROP_COMBO_STEP = 0.012;
+      const CHAOS_DROP_LEVEL_STEP = 0.002;
+      const CHAOS_DROP_MAX_CHANCE = 0.14;
       let footerLayoutKey = '';
       let settingsReturnFocusEl = null;
 
@@ -230,6 +251,7 @@ const EMOJIS = [
         hintMove: null,
         audio: {
           ctx: null,
+          fxBus: null,
           fxMaster: null,
           enabled: true,
           fxMuted: false,
@@ -782,7 +804,12 @@ const EMOJIS = [
       function setFxMuted(isMuted) {
         state.audio.fxMuted = isMuted;
         if (state.audio.fxMaster) {
-          state.audio.fxMaster.gain.value = state.audio.fxMuted ? 0 : FX_VOLUME;
+          const ctx = state.audio.ctx;
+          const now = ctx ? ctx.currentTime : 0;
+          const target = state.audio.fxMuted ? 0 : FX_VOLUME;
+          state.audio.fxMaster.gain.cancelScheduledValues(now);
+          state.audio.fxMaster.gain.setValueAtTime(state.audio.fxMaster.gain.value, now);
+          state.audio.fxMaster.gain.linearRampToValueAtTime(target, now + 0.02);
         }
         updateAudioButtons();
       }
@@ -939,10 +966,25 @@ const EMOJIS = [
         }
         if (!state.audio.ctx) {
           const ctx = new AudioCtx();
+          const fxBus = ctx.createGain();
+          const highpass = ctx.createBiquadFilter();
+          const compressor = ctx.createDynamicsCompressor();
           const master = ctx.createGain();
+          highpass.type = 'highpass';
+          highpass.frequency.value = 28;
+          highpass.Q.value = 0.65;
+          compressor.threshold.value = -18;
+          compressor.knee.value = 12;
+          compressor.ratio.value = 3.4;
+          compressor.attack.value = 0.004;
+          compressor.release.value = 0.14;
           master.gain.value = state.audio.fxMuted ? 0 : FX_VOLUME;
+          fxBus.connect(highpass);
+          highpass.connect(compressor);
+          compressor.connect(master);
           master.connect(ctx.destination);
           state.audio.ctx = ctx;
+          state.audio.fxBus = fxBus;
           state.audio.fxMaster = master;
         }
         if (state.audio.ctx.state === 'suspended') {
@@ -953,7 +995,7 @@ const EMOJIS = [
 
       function playTone({ frequency, duration = 0.12, type = 'sine', volume = 0.3, attack = 0.003, release = 0.12, detune = 0, when = 0, endFrequency = null, q = 0.8 }) {
         const ctx = ensureAudio();
-        if (!ctx || !state.audio.fxMaster) return;
+        if (!ctx || !state.audio.fxBus) return;
         const start = ctx.currentTime + when;
         const end = start + duration;
         const osc = ctx.createOscillator();
@@ -971,31 +1013,45 @@ const EMOJIS = [
         gain.gain.exponentialRampToValueAtTime(0.0001, end + release);
         osc.connect(filter);
         filter.connect(gain);
-        gain.connect(state.audio.fxMaster);
+        gain.connect(state.audio.fxBus);
         osc.start(start);
         osc.stop(end + release + 0.01);
       }
 
       function playNoiseBurst({ duration = 0.05, volume = 0.08, when = 0, lowpass = 2200 }) {
         const ctx = ensureAudio();
-        if (!ctx || !state.audio.fxMaster) return;
+        if (!ctx || !state.audio.fxBus) return;
         const sampleCount = Math.max(1, Math.floor(ctx.sampleRate * duration));
         const buffer = ctx.createBuffer(1, sampleCount, ctx.sampleRate);
         const data = buffer.getChannelData(0);
-        for (let i = 0; i < sampleCount; i += 1) data[i] = (Math.random() * 2 - 1) * (1 - i / sampleCount);
+        const denom = Math.max(1, sampleCount - 1);
+        for (let i = 0; i < sampleCount; i += 1) {
+          const t = i / denom;
+          const windowed = Math.sin(Math.PI * t);
+          data[i] = (Math.random() * 2 - 1) * windowed;
+        }
         const source = ctx.createBufferSource();
+        const highpass = ctx.createBiquadFilter();
         const filter = ctx.createBiquadFilter();
         const gain = ctx.createGain();
         const start = ctx.currentTime + when;
         source.buffer = buffer;
+        highpass.type = 'highpass';
+        highpass.frequency.setValueAtTime(150, start);
+        highpass.Q.setValueAtTime(0.8, start);
         filter.type = 'lowpass';
         filter.frequency.setValueAtTime(lowpass, start);
-        gain.gain.setValueAtTime(volume, start);
-        gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
-        source.connect(filter);
+        const attack = Math.min(0.006, duration * 0.35);
+        const fadeEnd = start + duration + 0.012;
+        gain.gain.setValueAtTime(0.0001, start);
+        gain.gain.linearRampToValueAtTime(Math.max(0.0001, volume), start + attack);
+        gain.gain.exponentialRampToValueAtTime(0.0001, fadeEnd);
+        source.connect(highpass);
+        highpass.connect(filter);
         filter.connect(gain);
-        gain.connect(state.audio.fxMaster);
+        gain.connect(state.audio.fxBus);
         source.start(start);
+        source.stop(fadeEnd + 0.01);
       }
 
       function playMatchSound(cells, specials, activatedPowerCount, comboChain) {
@@ -1142,11 +1198,14 @@ const EMOJIS = [
         const { rows, cols } = pickResponsiveBoardSize(baseRows, baseCols, MIN_BOARD_SIZE, MAX_BOARD_SIZE, rng);
         const easyHardDrift = rng();
         const symbolCount = clamp(randInt(rng, band.symbolRange[0], band.symbolRange[1]) + (easyHardDrift > 0.72 ? 1 : 0) - (easyHardDrift < 0.28 ? 1 : 0), 5, EMOJIS.length);
-        const moves = clamp(randInt(rng, band.moves[0], band.moves[1]) + (easyHardDrift < 0.24 ? 2 : 0) - (easyHardDrift > 0.78 ? 1 : 0), 12, 28);
+        const rawMoves = randInt(rng, band.moves[0], band.moves[1]) + (easyHardDrift < 0.24 ? 2 : 0) - (easyHardDrift > 0.78 ? 1 : 0);
+        const moves = clamp(Math.round(rawMoves * LEVEL_MOVES_LENGTH_MULTIPLIER), 14, 36);
         const perCell = randInt(rng, band.targetPerCell[0], band.targetPerCell[1]);
         const boardCells = rows * cols;
         const levelDurationBoost = 1.18 + Math.min(0.14, (level - 1) * 0.025);
-        const target = Math.round(boardCells * perCell * (1 + (level - 1) * 0.1) * levelDurationBoost);
+        const target = Math.round(
+          boardCells * perCell * (1 + (level - 1) * 0.1) * levelDurationBoost * LEVEL_TARGET_LENGTH_MULTIPLIER
+        );
         const difficultyLabel = easyHardDrift < 0.24
           ? band.difficultyText[0]
           : easyHardDrift < 0.7
@@ -1319,7 +1378,7 @@ const EMOJIS = [
       function rebuildTileSprites() {
         const cache = state.renderCache;
         cache.tileSprites.clear();
-        const powers = [null, 'row', 'col', 'bomb', 'prism', 'lightning'];
+        const powers = [null, 'row', 'col', 'bomb', 'prism', 'lightning', 'vortex', 'meteor'];
         for (let kind = 0; kind < EMOJIS.length; kind += 1) {
           for (const power of powers) {
             cache.tileSprites.set(tileSpriteKey(kind, power), buildTileSprite(kind, power));
@@ -1396,6 +1455,22 @@ const EMOJIS = [
           tries += 1;
         }
         return kind;
+      }
+
+      function pickChaosDropPower() {
+        if (state.comboChain < 2) return null;
+        const chance = clamp(
+          CHAOS_DROP_BASE_CHANCE +
+          Math.max(0, state.comboChain - 1) * CHAOS_DROP_COMBO_STEP +
+          Math.max(0, state.level - 1) * CHAOS_DROP_LEVEL_STEP,
+          0,
+          CHAOS_DROP_MAX_CHANCE
+        );
+        if (state.rng() > chance) return null;
+        const pool = state.comboChain >= 4
+          ? ['row', 'col', 'bomb', 'lightning', 'vortex', 'meteor', 'prism']
+          : ['row', 'col', 'bomb', 'lightning'];
+        return pool[randInt(state.rng, 0, pool.length - 1)];
       }
 
       function generateBoard() {
@@ -1744,7 +1819,9 @@ const EMOJIS = [
           }
 
           let power = null;
-          if (hasCross) power = 'bomb';
+          if (maxLen >= 7) power = 'meteor';
+          else if (hasCross && component.length >= 7) power = 'vortex';
+          else if (hasCross) power = 'bomb';
           else if (maxLen >= 6) power = 'lightning';
           else if (maxLen >= 5) power = 'prism';
           else if (rowPower) power = 'row';
@@ -1859,7 +1936,8 @@ const EMOJIS = [
 
       function shake(amount) {
         const quality = getQualityProfile();
-        const scaled = amount * 0.09 * quality.shakeScale * getEffectBudgetScale();
+        const mobileDampen = MOBILE_SAFE_RENDERING ? 0.55 : 1;
+        const scaled = amount * 0.09 * quality.shakeScale * getEffectBudgetScale() * mobileDampen;
         if (scaled <= 0.01) return;
         const angle = Math.random() * TAU;
         state.shake.vx += Math.cos(angle) * scaled * 10.5;
@@ -1868,6 +1946,33 @@ const EMOJIS = [
 
       function flash(amount) {
         state.flash = Math.max(state.flash, amount * getQualityProfile().flash);
+      }
+
+      function pickKindsOnBoard(count = 1, excludedKinds = []) {
+        const excluded = new Set(excludedKinds);
+        const kinds = [];
+        const seen = new Set();
+        for (let r = 0; r < state.rows; r += 1) {
+          for (let c = 0; c < state.cols; c += 1) {
+            const tile = getTile(r, c);
+            if (!tile || tile.removing || excluded.has(tile.kind) || seen.has(tile.kind)) continue;
+            seen.add(tile.kind);
+            kinds.push(tile.kind);
+          }
+        }
+        for (let i = kinds.length - 1; i > 0; i -= 1) {
+          const j = randInt(state.rng, 0, i);
+          [kinds[i], kinds[j]] = [kinds[j], kinds[i]];
+        }
+        return kinds.slice(0, Math.max(0, count));
+      }
+
+      function addSquareBlast(cells, centerRow, centerCol, radius = 1) {
+        for (let r = centerRow - radius; r <= centerRow + radius; r += 1) {
+          for (let c = centerCol - radius; c <= centerCol + radius; c += 1) {
+            if (isInside(r, c)) cells.add(keyOf(r, c));
+          }
+        }
       }
 
       function getPowerTargets(tile, contextKind = null) {
@@ -1910,6 +2015,35 @@ const EMOJIS = [
           addBeam('line', [{ r: 0, c: tile.col + 0.5 }, { r: state.rows, c: tile.col + 0.5 }], POWER_COLORS.lightning, 0.24, 0.18);
           addBeam('line', [{ r: tile.row - tile.col, c: 0 }, { r: tile.row - tile.col + state.cols, c: state.cols }], POWER_COLORS.lightning, 0.2, 0.12);
           addBeam('line', [{ r: tile.row + tile.col + 1, c: 0 }, { r: tile.row + tile.col + 1 - state.cols, c: state.cols }], POWER_COLORS.lightning, 0.2, 0.12);
+        } else if (tile.power === 'vortex') {
+          for (let c = 0; c < state.cols; c += 1) cells.add(keyOf(tile.row, c));
+          for (let r = 0; r < state.rows; r += 1) cells.add(keyOf(r, tile.col));
+          addSquareBlast(cells, tile.row, tile.col, 1);
+          const siphonKinds = pickKindsOnBoard(2, [tile.kind]);
+          if (siphonKinds.length > 0) {
+            for (let r = 0; r < state.rows; r += 1) {
+              for (let c = 0; c < state.cols; c += 1) {
+                const current = getTile(r, c);
+                if (current && siphonKinds.includes(current.kind)) cells.add(keyOf(r, c));
+              }
+            }
+            addPopup(tile.col + 0.5, tile.row - 0.2, 'Vortex ' + siphonKinds.map(emojiForKind).join(' '), '#9eeeff', 0.95, 1.12);
+          }
+          addPulse(tile.col + 0.5, tile.row + 0.5, POWER_COLORS.vortex, 1.8, 0.42);
+          addBeam('line', [{ r: tile.row + 0.5, c: 0 }, { r: tile.row + 0.5, c: state.cols }], POWER_COLORS.vortex, 0.26, 0.18);
+          addBeam('line', [{ r: 0, c: tile.col + 0.5 }, { r: state.rows, c: tile.col + 0.5 }], POWER_COLORS.vortex, 0.26, 0.18);
+        } else if (tile.power === 'meteor') {
+          const strikeCount = Math.max(3, Math.min(6, Math.round((state.rows + state.cols) / 3.6)));
+          for (let i = 0; i < strikeCount; i += 1) {
+            const hitR = randInt(state.rng, 0, state.rows - 1);
+            const hitC = randInt(state.rng, 0, state.cols - 1);
+            addSquareBlast(cells, hitR, hitC, 1);
+            addPulse(hitC + 0.5, hitR + 0.5, POWER_COLORS.meteor, 1.28, 0.3);
+            const spread = state.rng() * 0.7 - 0.35;
+            addBeam('line', [{ r: -0.4, c: hitC + 0.5 + spread }, { r: hitR + 0.5, c: hitC + 0.5 }], POWER_COLORS.meteor, 0.2, 0.1);
+          }
+          addPopup(tile.col + 0.5, tile.row - 0.2, 'Meteor Rain!', '#ffd0ad', 0.95, 1.14);
+          addPulse(tile.col + 0.5, tile.row + 0.5, POWER_COLORS.meteor, 2, 0.44);
         }
         return Array.from(cells).map(parseKey);
       }
@@ -1992,8 +2126,10 @@ const EMOJIS = [
           activatedPowerCount += 1;
           const targets = getPowerTargets(tile, options.targetKind);
           addPopup(tile.col + 0.5, tile.row + 0.15, POWER_EMOJI[tile.power], POWER_COLORS[tile.power], 0.7, 1.18);
-          shake(tile.power === 'bomb' ? 12 : tile.power === 'prism' ? 14 : 10);
-          flash(tile.power === 'prism' ? 0.22 : 0.14);
+          const shakeByPower = { bomb: 12, prism: 14, lightning: 11, vortex: 13, meteor: 16 };
+          const flashByPower = { bomb: 0.16, prism: 0.22, lightning: 0.16, vortex: 0.2, meteor: 0.24 };
+          shake(shakeByPower[tile.power] || 10);
+          flash(flashByPower[tile.power] || 0.14);
           for (const target of targets) {
             const k = keyOf(target.r, target.c);
             if (!clearSet.has(k)) {
@@ -2101,6 +2237,45 @@ const EMOJIS = [
           }
         };
 
+        const addKindClear = (kind) => {
+          for (let r = 0; r < state.rows; r += 1) {
+            for (let c = 0; c < state.cols; c += 1) {
+              const tile = getTile(r, c);
+              if (tile && tile.kind === kind) clear.add(keyOf(r, c));
+            }
+          }
+        };
+
+        const addLineForPower = (power, row, col) => {
+          if (power === 'row' || power === 'vortex' || power === 'lightning') {
+            for (let c = 0; c < state.cols; c += 1) clear.add(keyOf(row, c));
+          }
+          if (power === 'col' || power === 'vortex' || power === 'lightning') {
+            for (let r = 0; r < state.rows; r += 1) clear.add(keyOf(r, col));
+          }
+          if (power === 'lightning') {
+            for (let d = -Math.max(state.rows, state.cols); d <= Math.max(state.rows, state.cols); d += 1) {
+              const r1 = row + d;
+              const c1 = col + d;
+              const r2 = row + d;
+              const c2 = col - d;
+              if (isInside(r1, c1)) clear.add(keyOf(r1, c1));
+              if (isInside(r2, c2)) clear.add(keyOf(r2, c2));
+            }
+          }
+        };
+
+        const addMeteorBurst = (strikeCount, radius) => {
+          for (let i = 0; i < strikeCount; i += 1) {
+            const hitR = randInt(state.rng, 0, state.rows - 1);
+            const hitC = randInt(state.rng, 0, state.cols - 1);
+            addSquareBlast(clear, hitR, hitC, radius);
+            addPulse(hitC + 0.5, hitR + 0.5, POWER_COLORS.meteor, 1.34 + radius * 0.22, 0.3);
+            const spread = state.rng() * 0.8 - 0.4;
+            addBeam('line', [{ r: -0.4, c: hitC + 0.5 + spread }, { r: hitR + 0.5, c: hitC + 0.5 }], POWER_COLORS.meteor, 0.2, 0.1 + radius * 0.02);
+          }
+        };
+
         if (a === 'prism' && b === 'prism') {
           for (let r = 0; r < state.rows; r += 1) {
             for (let c = 0; c < state.cols; c += 1) clear.add(keyOf(r, c));
@@ -2124,6 +2299,34 @@ const EMOJIS = [
           }
           flash(0.28);
           shake(16);
+        } else if (a === 'meteor' || b === 'meteor') {
+          const bothMeteor = a === 'meteor' && b === 'meteor';
+          const otherPower = a === 'meteor' ? b : a;
+          addMeteorBurst(bothMeteor ? 10 : 7, bothMeteor ? 2 : 1);
+          if (otherPower === 'bomb') {
+            addRange(Math.round(origin.r) - 2, Math.round(origin.r) + 2, Math.round(origin.c) - 2, Math.round(origin.c) + 2);
+          } else if (otherPower && otherPower !== 'meteor') {
+            addLineForPower(otherPower, Math.round(origin.r), Math.round(origin.c));
+          }
+          addPopup(origin.c + 0.5, origin.r + 0.1, bothMeteor ? 'Extinction Event' : 'Meteor Storm', '#ffc296', 1.05, bothMeteor ? 1.62 : 1.5);
+          flash(bothMeteor ? 0.33 : 0.28);
+          shake(bothMeteor ? 20 : 17);
+        } else if (a === 'vortex' || b === 'vortex') {
+          const bothVortex = a === 'vortex' && b === 'vortex';
+          const siphonKinds = pickKindsOnBoard(bothVortex ? 3 : 2, []);
+          for (const kind of siphonKinds) addKindClear(kind);
+          addRange(Math.round(origin.r) - 1, Math.round(origin.r) + 1, 0, state.cols - 1);
+          addRange(0, state.rows - 1, Math.round(origin.c) - 1, Math.round(origin.c) + 1);
+          if (bothVortex) {
+            addRange(0, 0, 0, state.cols - 1);
+            addRange(state.rows - 1, state.rows - 1, 0, state.cols - 1);
+            addRange(0, state.rows - 1, 0, 0);
+            addRange(0, state.rows - 1, state.cols - 1, state.cols - 1);
+          }
+          const siphonText = siphonKinds.length ? ' ' + siphonKinds.map(emojiForKind).join(' ') : '';
+          addPopup(origin.c + 0.5, origin.r + 0.1, 'Vortex Surge' + siphonText, '#9eeeff', 1.04, bothVortex ? 1.54 : 1.42);
+          flash(bothVortex ? 0.3 : 0.24);
+          shake(bothVortex ? 19 : 16);
         } else if ((a === 'bomb' && b === 'bomb')) {
           addRange(Math.min(tileA.row, tileB.row) - 2, Math.max(tileA.row, tileB.row) + 2, Math.min(tileA.col, tileB.col) - 2, Math.max(tileA.col, tileB.col) + 2);
           addPopup(origin.c + 0.5, origin.r + 0.1, 'Mega Blast', '#ff946d', 1, 1.52);
@@ -2254,6 +2457,7 @@ const EMOJIS = [
       }
 
       function collapseBoard() {
+        let chaosDrops = 0;
         for (let c = 0; c < state.cols; c += 1) {
           let writeRow = state.rows - 1;
           for (let r = state.rows - 1; r >= 0; r -= 1) {
@@ -2270,11 +2474,19 @@ const EMOJIS = [
           const spawnCount = writeRow + 1;
           for (let r = writeRow; r >= 0; r -= 1) {
             const kind = randomKind(state.rng);
-            const tile = createTile(kind, r, c, null, spawnCount + randInt(state.rng, 1, 3));
+            const chaosPower = pickChaosDropPower();
+            const tile = createTile(kind, r, c, chaosPower, spawnCount + randInt(state.rng, 1, 3));
             tile.scale = 0.8;
             tile.targetScale = 1;
             state.board[r][c] = tile;
+            if (chaosPower) chaosDrops += 1;
           }
+        }
+        if (chaosDrops > 0) {
+          addPopup(state.cols * 0.5, -0.28, 'Chaos Drop x' + chaosDrops + '!', '#9eeeff', 0.95, 1.22, { backdrop: true });
+          addPulse(state.cols * 0.5, 0.45, '#9eeeff', 1.05 + Math.min(0.85, chaosDrops * 0.08), 0.32);
+          flash(0.12);
+          shake(8 + chaosDrops);
         }
         state.phase = 'falling';
       }
@@ -2639,6 +2851,10 @@ const EMOJIS = [
         const { x, y, w, h, tile } = state.boardRect;
         if (state.shake.x || state.shake.y) ctx.translate(state.shake.x, state.shake.y);
         ctx.drawImage(state.renderCache.boardLayer, 0, 0, state.renderCache.boardLayer.width, state.renderCache.boardLayer.height, 0, 0, width, height);
+        // Keep high-frequency effects contained to the board to avoid GPU edge artifacts on mobile.
+        ctx.save();
+        traceRoundedRect(ctx, x, y, w, h, tile * 0.26);
+        ctx.clip();
 
         for (const beam of state.beams) {
           const alpha = beam.life / beam.maxLife;
@@ -2696,7 +2912,7 @@ const EMOJIS = [
 
         if (state.glows.length > 0) {
           ctx.save();
-          ctx.globalCompositeOperation = 'lighter';
+          ctx.globalCompositeOperation = MOBILE_SAFE_RENDERING ? 'source-over' : 'lighter';
           for (const glow of state.glows) {
             const t = 1 - glow.life / glow.maxLife;
             const alpha = (1 - t) * glow.intensity;
@@ -2717,7 +2933,7 @@ const EMOJIS = [
 
         if (state.trails.length > 0) {
           ctx.save();
-          ctx.globalCompositeOperation = 'lighter';
+          ctx.globalCompositeOperation = MOBILE_SAFE_RENDERING ? 'source-over' : 'lighter';
           for (const trail of state.trails) {
             const alpha = clamp(trail.life / trail.maxLife, 0, 1) * 0.72;
             const radius = tile * trail.size;
@@ -2822,6 +3038,7 @@ const EMOJIS = [
           }
           ctx.restore();
         }
+        ctx.restore();
 
         for (const popup of state.popups) {
           const alpha = clamp(popup.life / popup.maxLife, 0, 1);
