@@ -32,8 +32,6 @@ const EMOJIS = [
       const VICTORY_CLEAR_STEP_MAX_SECONDS = 0.12;
       const VICTORY_CLEAR_BLAST_RATIO = 0.32;
       const VICTORY_CLEAR_MIN_BLAST_CELLS = 4;
-      const VICTORY_FINALE_SECONDS = 0.42;
-      const VICTORY_FIREWORK_COLORS = ['#ff6f87', '#ffd76f', '#7cf9b3', '#7fd7ff', '#c7a2ff', '#ff97dd'];
       const COMBO_CALLOUTS = {
         starter: ['Nice', 'Sweet', 'Great', 'Clean', 'Smooth', 'Solid', 'Neat', 'Tasty', 'Fresh', 'Sharp', 'Crisp', 'Slick'],
         rising: ['Epic', 'Wild', 'Spicy', 'Savage', 'Blazing', 'Cracked', 'On Fire', 'Superb', 'Brilliant', 'Electric', 'Juicy'],
@@ -308,7 +306,9 @@ const EMOJIS = [
           musicFadeFrame: 0,
           musicTransitionId: 0,
           backgroundPaused: false,
-          shouldResumeMusicOnForeground: false
+          shouldResumeMusicOnForeground: false,
+          pausedMusicVolume: 0,
+          pausedFxGain: 0
         },
         qualityLevel: FORCE_PERFORMANCE_MODE ? LOCKED_QUALITY_LEVEL : detectInitialQualityLevel(),
         powerVariety: {
@@ -377,6 +377,16 @@ const EMOJIS = [
 
       function getQualityProfile() {
         return QUALITY_PRESETS[state.qualityLevel] || QUALITY_PRESETS[QUALITY_PRESETS.length - 1];
+      }
+
+      function getCanvasDevicePixelRatio() {
+        const deviceDpr = Math.max(1, window.devicePixelRatio || 1);
+        const coarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        if (coarsePointer) {
+          return Math.min(deviceDpr, QUALITY_PRESETS[0].dprCap);
+        }
+        const quality = getQualityProfile();
+        return Math.min(deviceDpr, quality.dprCap);
       }
 
       function invalidateRenderCache({ frame = false, board = false, tiles = false } = {}) {
@@ -877,12 +887,8 @@ const EMOJIS = [
       function setFxMuted(isMuted) {
         state.audio.fxMuted = isMuted;
         if (state.audio.fxMaster) {
-          const ctx = state.audio.ctx;
-          const now = ctx ? ctx.currentTime : 0;
           const target = state.audio.fxMuted ? 0 : FX_VOLUME;
-          state.audio.fxMaster.gain.cancelScheduledValues(now);
-          state.audio.fxMaster.gain.setValueAtTime(state.audio.fxMaster.gain.value, now);
-          state.audio.fxMaster.gain.linearRampToValueAtTime(target, now + 0.02);
+          setFxMasterGain(target, 0.02);
         }
         updateAudioButtons();
       }
@@ -891,6 +897,21 @@ const EMOJIS = [
         const musicEl = state.audio.musicEl;
         if (!musicEl) return;
         musicEl.volume = clamp(value, 0, 1);
+      }
+
+      function setFxMasterGain(value, rampSeconds = 0) {
+        if (!state.audio.fxMaster) return;
+        const ctx = state.audio.ctx;
+        const now = ctx ? ctx.currentTime : 0;
+        const gainNode = state.audio.fxMaster.gain;
+        const target = clamp(value, 0, 1);
+        gainNode.cancelScheduledValues(now);
+        gainNode.setValueAtTime(gainNode.value, now);
+        if (rampSeconds > 0) {
+          gainNode.linearRampToValueAtTime(target, now + rampSeconds);
+          return;
+        }
+        gainNode.setValueAtTime(target, now);
       }
 
       function cancelMusicFade() {
@@ -1053,13 +1074,17 @@ const EMOJIS = [
         const hasActiveMusic = Boolean(musicEl && !musicEl.paused && state.audio.musicTrackIndex !== -1);
         const hasPendingMusic = state.audio.pendingMusicTrackIndex != null;
         state.audio.shouldResumeMusicOnForeground = !state.audio.musicMuted && (hasActiveMusic || hasPendingMusic);
+        state.audio.pausedMusicVolume = musicEl ? musicEl.volume : 0;
+        state.audio.pausedFxGain = state.audio.fxMaster ? state.audio.fxMaster.gain.value : 0;
 
         if (musicEl && !musicEl.paused) {
           cancelMusicFade();
+          setMusicElementVolume(0);
           musicEl.pause();
         }
 
         if (state.audio.ctx && state.audio.ctx.state === 'running') {
+          setFxMasterGain(0);
           state.audio.ctx.suspend().catch(() => {});
         }
       }
@@ -1069,7 +1094,10 @@ const EMOJIS = [
         state.audio.backgroundPaused = false;
 
         if (state.audio.ctx && state.audio.ctx.state === 'suspended') {
-          state.audio.ctx.resume().catch(() => {});
+          state.audio.ctx.resume().then(() => {
+            const targetFxGain = state.audio.fxMuted ? 0 : (state.audio.pausedFxGain || FX_VOLUME);
+            setFxMasterGain(targetFxGain, 0.05);
+          }).catch(() => {});
         }
 
         if (!state.audio.shouldResumeMusicOnForeground || state.audio.musicMuted) {
@@ -1079,13 +1107,16 @@ const EMOJIS = [
 
         const musicEl = state.audio.musicEl;
         if (musicEl && musicEl.paused && state.audio.musicTrackIndex !== -1) {
+          const resumeVolume = clamp(state.audio.pausedMusicVolume || MUSIC_VOLUME, 0, MUSIC_VOLUME);
+          cancelMusicFade();
+          setMusicElementVolume(0);
           const resumePromise = musicEl.play();
           if (resumePromise && typeof resumePromise.then === 'function') {
             resumePromise
-              .then(() => fadeMusicVolume(musicEl.volume, MUSIC_VOLUME, MUSIC_FADE_MS * 0.7))
+              .then(() => fadeMusicVolume(0, resumeVolume, MUSIC_FADE_MS * 0.7))
               .catch(() => {});
           } else {
-            fadeMusicVolume(musicEl.volume, MUSIC_VOLUME, MUSIC_FADE_MS * 0.7);
+            fadeMusicVolume(0, resumeVolume, MUSIC_FADE_MS * 0.7);
           }
           state.audio.shouldResumeMusicOnForeground = false;
           return;
@@ -1416,8 +1447,7 @@ const EMOJIS = [
         const boardPixelHeight = tile * state.rows;
         const boardOffsetX = Math.max(0, Math.floor((cssWidth - boardPixelWidth) * 0.5));
         const boardOffsetY = Math.max(0, Math.floor((cssHeight - boardPixelHeight) * 0.5));
-        const quality = getQualityProfile();
-        const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, quality.dprCap));
+        const dpr = getCanvasDevicePixelRatio();
         const prevWidth = state.canvasSize.w;
         const prevHeight = state.canvasSize.h;
         const prevTile = state.boardRect.tile;
@@ -2925,131 +2955,18 @@ const EMOJIS = [
         if (state.victoryClear) return;
         state.victoryClear = {
           mode: 'clearing',
-          timer: VICTORY_CLEAR_STEP_MIN_SECONDS,
-          finaleTimer: VICTORY_FINALE_SECONDS
+          timer: VICTORY_CLEAR_STEP_MIN_SECONDS
         };
         state.phase = 'victory-clear';
         addPopup(state.cols * 0.5, state.rows * 0.5, 'Level Complete!', '#ffe07a', 1.2, 1.5, { backdrop: true });
         flash(0.25);
         shake(16);
-        launchVictoryFirework(0.85);
-      }
-
-      function launchVictoryFirework(intensity = 1, options = {}) {
-        const quality = getQualityProfile();
-        const effectBudget = getEffectBudgetScale();
-        const style = options.style || 'standard';
-        const isFinale = style === 'finale';
-        const fireworkScale = clamp(intensity * effectBudget, 0.24, isFinale ? 1.2 : 1);
-        const available = quality.maxParticles - state.particles.length;
-        if (available <= 0 && quality.maxPulses <= 0 && quality.maxGlows <= 0 && quality.maxTrails <= 0) return;
-
-        const burstX = randFloat(0.8, Math.max(0.8, state.cols - 0.8));
-        const burstY = randFloat(Math.max(0.85, state.rows * 0.16), Math.max(1.1, state.rows * 0.58));
-        const colorA = VICTORY_FIREWORK_COLORS[randInt(Math.random, 0, VICTORY_FIREWORK_COLORS.length - 1)];
-        let colorB = colorA;
-        if (VICTORY_FIREWORK_COLORS.length > 1) {
-          let attempts = 0;
-          while (colorB === colorA && attempts < 6) {
-            colorB = VICTORY_FIREWORK_COLORS[randInt(Math.random, 0, VICTORY_FIREWORK_COLORS.length - 1)];
-            attempts += 1;
-          }
-        }
-
-        addPulse(burstX, burstY, colorA, 1 + Math.random() * 0.35 + (isFinale ? 0.22 : 0), 0.26 + Math.random() * 0.14 + (isFinale ? 0.08 : 0));
-        addGlow(burstX, burstY, colorA, 1.12 + Math.random() * 0.44 + (isFinale ? 0.26 : 0), 0.3 + Math.random() * 0.16 + (isFinale ? 0.08 : 0), 0.7 + Math.random() * 0.22 + (isFinale ? 0.14 : 0));
-        if (isFinale) {
-          addPulse(burstX, burstY, colorB, 1.34 + Math.random() * 0.5, 0.3 + Math.random() * 0.16);
-          addGlow(burstX, burstY, '#ffffff', 1.45 + Math.random() * 0.5, 0.34 + Math.random() * 0.18, 0.82 + Math.random() * 0.18);
-        }
-
-        const desiredBurst = Math.max(
-          isFinale ? 10 : 6,
-          Math.round(((isFinale ? 16 : 12) + Math.random() * (isFinale ? 14 : 10)) * quality.particleScale * fireworkScale)
-        );
-        const burstCount = Math.min(desiredBurst, available);
-        for (let i = 0; i < burstCount; i += 1) {
-          const angleBase = (i / Math.max(1, burstCount)) * TAU;
-          const wave = isFinale ? Math.sin(angleBase * 3 + Math.random() * 0.8) * 0.22 : 0;
-          const angle = angleBase + Math.random() * (isFinale ? 0.2 : 0.35) + wave;
-          const speed = (isFinale ? 1.25 : 0.95) + Math.random() * (isFinale ? 2.9 : 2.45);
-          const life = (isFinale ? 0.44 : 0.35) + Math.random() * (isFinale ? 0.42 : 0.35);
-          const color = i % 7 === 0 ? '#ffffff' : (isFinale && i % 2 === 0 ? colorB : colorA);
-          state.particles.push({
-            x: burstX,
-            y: burstY,
-            vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed - randFloat(isFinale ? 0.2 : 0.15, isFinale ? 0.5 : 0.45),
-            life,
-            maxLife: life,
-            emoji: null,
-            color,
-            shape: 'spark',
-            gravity: isFinale ? 2.45 : 2.75,
-            drag: isFinale ? 1.35 : 1.55,
-            size: (isFinale ? 0.08 : 0.07) + Math.random() * (isFinale ? 0.1 : 0.08),
-            spin: (Math.random() - 0.5) * (isFinale ? 12 : 9),
-            rot: Math.random() * TAU
-          });
-        }
-
-        const remaining = available - burstCount;
-        if (isFinale && remaining > 0) {
-          const crackleDesired = Math.max(4, Math.round((8 + Math.random() * 10) * quality.particleScale * fireworkScale));
-          const crackleCount = Math.min(crackleDesired, remaining);
-          for (let i = 0; i < crackleCount; i += 1) {
-            const angle = Math.random() * TAU;
-            const speed = 0.55 + Math.random() * 1.6;
-            const life = 0.24 + Math.random() * 0.24;
-            state.particles.push({
-              x: burstX + Math.cos(angle) * randFloat(0.02, 0.08),
-              y: burstY + Math.sin(angle) * randFloat(0.02, 0.08),
-              vx: Math.cos(angle) * speed,
-              vy: Math.sin(angle) * speed - randFloat(0.05, 0.24),
-              life,
-              maxLife: life,
-              emoji: null,
-              color: i % 3 === 0 ? '#ffffff' : (Math.random() < 0.5 ? colorA : colorB),
-              shape: 'spark',
-              gravity: 2.1,
-              drag: 2.9,
-              size: 0.055 + Math.random() * 0.065,
-              spin: (Math.random() - 0.5) * 15,
-              rot: Math.random() * TAU
-            });
-          }
-        }
-
-        if (quality.maxTrails > 0) {
-          const cometCount = Math.max(2, Math.round((isFinale ? 6 : 3) * quality.trailRate * fireworkScale));
-          for (let i = 0; i < cometCount; i += 1) {
-            const angle = Math.random() * TAU;
-            const speed = (isFinale ? 0.7 : 0.45) + Math.random() * (isFinale ? 1.7 : 1.1);
-            addTrail(
-              burstX,
-              burstY,
-              isFinale ? (i % 2 === 0 ? colorB : colorA) : colorA,
-              Math.cos(angle) * speed,
-              Math.sin(angle) * speed - randFloat(0.1, 0.28),
-              (isFinale ? 0.11 : 0.08) + Math.random() * (isFinale ? 0.09 : 0.05),
-              (isFinale ? 0.16 : 0.1) + Math.random() * (isFinale ? 0.09 : 0.06)
-            );
-          }
-        }
       }
 
       function completeVictoryClear() {
         state.victoryClear = null;
         state.phase = 'paused';
         showOverlay('win');
-      }
-
-      function updateVictoryFinale(dt) {
-        if (!state.victoryClear || state.victoryClear.mode !== 'finale') return;
-        state.victoryClear.finaleTimer -= dt;
-        if (state.victoryClear.finaleTimer <= 0) {
-          completeVictoryClear();
-        }
       }
 
       function runVictoryClearStep() {
@@ -3061,11 +2978,7 @@ const EMOJIS = [
               if (getTile(r, c)) return;
             }
           }
-          state.victoryClear.mode = 'finale';
-          state.victoryClear.finaleTimer = VICTORY_FINALE_SECONDS;
-          launchVictoryFirework(1.18, { style: 'finale' });
-          flash(0.14);
-          shake(20);
+          completeVictoryClear();
           return;
         }
 
@@ -3081,9 +2994,24 @@ const EMOJIS = [
           tile.removeTimer = tile.removeLife;
           tile.removeTargetScale = 0.12;
           tile.targetScale = 0.12;
+          const burstColor = tile.power ? POWER_COLORS[tile.power] : colorForKind(tile.kind);
+          addParticles(cell.c, cell.r, tile.kind, tile.power ? 12 : 9, tile.power);
+          addPulse(cell.c + 0.5, cell.r + 0.5, burstColor, tile.power ? 1.18 : 0.96, 0.24 + Math.random() * 0.08);
+          addGlow(cell.c + 0.5, cell.r + 0.5, burstColor, tile.power ? 1.34 : 1.02, 0.22 + Math.random() * 0.08, tile.power ? 0.88 : 0.66);
+          if (Math.random() < 0.45) {
+            addTrail(
+              cell.c + 0.5,
+              cell.r + 0.5,
+              burstColor,
+              randFloat(-1.2, 1.2),
+              randFloat(-1.5, -0.35),
+              0.1 + Math.random() * 0.08,
+              0.14 + Math.random() * 0.06
+            );
+          }
         }
-        if (Math.random() < 0.52) launchVictoryFirework(0.62);
-        flash(0.05);
+        flash(0.08);
+        shake(10);
       }
 
       function shuffleBoard(costMove = false) {
@@ -3270,16 +3198,12 @@ const EMOJIS = [
         }
 
         if (state.phase === 'victory-clear' && state.victoryClear) {
-          if (state.victoryClear.mode === 'clearing') {
-            state.victoryClear.timer -= dt;
-            if (state.victoryClear.timer <= 0) {
-              runVictoryClearStep();
-              if (state.victoryClear && state.victoryClear.mode === 'clearing') {
-                state.victoryClear.timer = randFloat(VICTORY_CLEAR_STEP_MIN_SECONDS, VICTORY_CLEAR_STEP_MAX_SECONDS);
-              }
+          state.victoryClear.timer -= dt;
+          if (state.victoryClear.timer <= 0) {
+            runVictoryClearStep();
+            if (state.victoryClear && state.victoryClear.mode === 'clearing') {
+              state.victoryClear.timer = randFloat(VICTORY_CLEAR_STEP_MIN_SECONDS, VICTORY_CLEAR_STEP_MAX_SECONDS);
             }
-          } else {
-            updateVictoryFinale(dt);
           }
         }
 
