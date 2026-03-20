@@ -176,6 +176,13 @@ const EMOJIS = [
       const overlayLevel = document.getElementById('overlayLevel');
       const overlayPrimary = document.getElementById('overlayPrimary');
       const overlaySecondary = document.getElementById('overlaySecondary');
+      const confirmModal = document.getElementById('confirmModal');
+      const confirmCard = document.getElementById('confirmCard');
+      const confirmKicker = document.getElementById('confirmKicker');
+      const confirmTitle = document.getElementById('confirmTitle');
+      const confirmMessage = document.getElementById('confirmMessage');
+      const confirmCancel = document.getElementById('confirmCancel');
+      const confirmAccept = document.getElementById('confirmAccept');
       const splash = document.getElementById('splash');
       const splashFruitLine = document.getElementById('splashFruitLine');
       const splashTitle = document.getElementById('splashTitle');
@@ -251,6 +258,7 @@ const EMOJIS = [
       const POWER_VARIETY_RECENT_WINDOW = 8;
       let footerLayoutKey = '';
       let settingsReturnFocusEl = null;
+      let confirmReturnFocusEl = null;
 
       const state = {
         level: 1,
@@ -289,6 +297,7 @@ const EMOJIS = [
         rng: Math.random,
         started: false,
         overlayMode: null,
+        confirmation: null,
         victoryClear: null,
         idleHintTimer: 0,
         hintMove: null,
@@ -714,12 +723,87 @@ const EMOJIS = [
         tile.vy = 0;
       }
 
-      function confirmShuffle() {
-        return window.confirm('Are you sure you want to shuffle? This costs 2 moves.');
+      function isConfirmDialogOpen() {
+        return confirmModal.classList.contains('show');
       }
 
-      function confirmNewRun() {
-        return window.confirm('Are you sure you want to start a new run? Your current progress will be lost.');
+      function closeConfirmDialog(confirmed = false) {
+        if (!isConfirmDialogOpen()) return;
+        const activeConfirmation = state.confirmation;
+        state.confirmation = null;
+        confirmModal.classList.remove('show');
+        confirmModal.setAttribute('aria-hidden', 'true');
+        confirmModal.setAttribute('inert', '');
+
+        const returnFocusEl = !confirmed && confirmReturnFocusEl && confirmReturnFocusEl.isConnected
+          ? confirmReturnFocusEl
+          : null;
+        confirmReturnFocusEl = null;
+        if (returnFocusEl && typeof returnFocusEl.focus === 'function') {
+          requestAnimationFrame(() => {
+            returnFocusEl.focus({ preventScroll: true });
+          });
+        }
+        updateHud();
+
+        if (activeConfirmation) {
+          const handler = confirmed ? activeConfirmation.onConfirm : activeConfirmation.onCancel;
+          if (typeof handler === 'function') handler();
+        }
+      }
+
+      function openConfirmDialog({
+        title,
+        message,
+        confirmLabel = 'Yes',
+        cancelLabel = 'No',
+        kicker = 'Confirm',
+        onConfirm = null,
+        onCancel = null
+      }) {
+        if (isConfirmDialogOpen()) {
+          closeConfirmDialog(false);
+        }
+        const activeEl = document.activeElement;
+        confirmReturnFocusEl = activeEl instanceof HTMLElement ? activeEl : settingsBtn;
+        state.confirmation = { onConfirm, onCancel };
+        if (confirmKicker) confirmKicker.textContent = kicker;
+        if (confirmTitle) confirmTitle.textContent = title;
+        if (confirmMessage) confirmMessage.textContent = message;
+        if (confirmAccept) confirmAccept.textContent = confirmLabel;
+        if (confirmCancel) confirmCancel.textContent = cancelLabel;
+        confirmModal.removeAttribute('inert');
+        confirmModal.classList.add('show');
+        confirmModal.setAttribute('aria-hidden', 'false');
+        updateHud();
+        requestAnimationFrame(() => {
+          if (!isConfirmDialogOpen()) return;
+          if (confirmCancel && typeof confirmCancel.focus === 'function') {
+            confirmCancel.focus({ preventScroll: true });
+          }
+        });
+      }
+
+      function confirmShuffle(onConfirm) {
+        openConfirmDialog({
+          kicker: 'Shuffle Board',
+          title: 'Use 3 moves to shuffle?',
+          message: 'The board will be remixed and your current setup will be lost.',
+          confirmLabel: 'Shuffle',
+          cancelLabel: 'Keep Board',
+          onConfirm
+        });
+      }
+
+      function confirmNewRun(onConfirm) {
+        openConfirmDialog({
+          kicker: 'New Level',
+          title: 'Start a new run?',
+          message: 'Your current level progress and score on this board will be lost.',
+          confirmLabel: 'Start New',
+          cancelLabel: 'Stay Here',
+          onConfirm
+        });
       }
 
       function clearIdleHint(resetTimer = true) {
@@ -1308,7 +1392,7 @@ const EMOJIS = [
         if (statusMoves) statusMoves.textContent = String(state.moves);
         if (comboStatus) comboStatus.textContent = state.comboMessage;
         statusLine.setAttribute('aria-label', `${state.moves} moves left`);
-        shuffleBtn.disabled = !(state.phase === 'idle' && state.moves > 1 && !overlay.classList.contains('show'));
+        shuffleBtn.disabled = !(state.phase === 'idle' && state.moves > 2 && !overlay.classList.contains('show') && !isConfirmDialogOpen());
         const progress = state.target > 0 ? clamp(state.score / state.target, 0, 1) : 0;
         if (levelProgressFill) {
           levelProgressFill.style.transform = `scaleX(${progress})`;
@@ -1817,6 +1901,7 @@ const EMOJIS = [
       }
 
       function showSplash() {
+        closeConfirmDialog(false);
         closeSettingsMenu();
         refreshSplashLook();
         splash.classList.remove('hidden');
@@ -1829,6 +1914,7 @@ const EMOJIS = [
       }
 
       function showOverlay(mode) {
+        closeConfirmDialog(false);
         closeSettingsMenu();
         state.overlayMode = mode;
         setStatusMessage('');
@@ -2803,7 +2889,7 @@ const EMOJIS = [
       }
 
       function attemptSwap(a, b) {
-        if (!areAdjacent(a, b) || overlay.classList.contains('show') || isSettingsMenuOpen()) return;
+        if (!areAdjacent(a, b) || overlay.classList.contains('show') || isSettingsMenuOpen() || isConfirmDialogOpen()) return;
         if (state.phase !== 'idle' && state.phase !== 'settling') return;
         const tileA = getTile(a.r, a.c);
         const tileB = getTile(b.r, b.c);
@@ -3055,7 +3141,7 @@ const EMOJIS = [
           }
         } while (findMatches().cells.length > 0 || !hasPossibleMove());
 
-        if (costMove) state.moves = Math.max(0, state.moves - 2);
+        if (costMove) state.moves = Math.max(0, state.moves - 3);
         state.comboChain = 0;
         state.displayChain = 1;
         state.comboMessage = '';
@@ -3082,7 +3168,7 @@ const EMOJIS = [
         if (Math.abs(shake.y) < 0.001) shake.y = 0;
         if (Math.abs(shake.vx) < 0.001) shake.vx = 0;
         if (Math.abs(shake.vy) < 0.001) shake.vy = 0;
-        if (!overlay.classList.contains('show') && !isSettingsMenuOpen() && state.phase === 'idle') {
+        if (!overlay.classList.contains('show') && !isSettingsMenuOpen() && !isConfirmDialogOpen() && state.phase === 'idle') {
           state.idleHintTimer += dt;
           if (state.idleHintTimer >= IDLE_HINT_DELAY_SECONDS && !state.hintMove) {
             state.hintMove = findPossibleMove();
@@ -3514,7 +3600,7 @@ const EMOJIS = [
         if (!state.started) return;
         primeAudio();
         const cell = screenToCell(event.clientX, event.clientY);
-        if (!cell || overlay.classList.contains('show') || isSettingsMenuOpen()) return;
+        if (!cell || overlay.classList.contains('show') || isSettingsMenuOpen() || isConfirmDialogOpen()) return;
         notePlayerActivity();
         state.pointerStart = cell;
         canvas.setPointerCapture(event.pointerId);
@@ -3533,7 +3619,7 @@ const EMOJIS = [
       canvas.addEventListener('pointermove', (event) => {
         if (!state.started) return;
         const cell = screenToCell(event.clientX, event.clientY);
-        if (!state.pointerStart || !cell || state.phase !== 'idle' || overlay.classList.contains('show') || isSettingsMenuOpen()) return;
+        if (!state.pointerStart || !cell || state.phase !== 'idle' || overlay.classList.contains('show') || isSettingsMenuOpen() || isConfirmDialogOpen()) return;
         if (areAdjacent(state.pointerStart, cell) && (state.pointerStart.r !== cell.r || state.pointerStart.c !== cell.c)) {
           attemptSwap(state.pointerStart, cell);
           state.pointerStart = null;
@@ -3547,18 +3633,21 @@ const EMOJIS = [
       shuffleBtn.addEventListener('click', () => {
         if (!state.started) return;
         primeAudio();
-        if (state.phase !== 'idle' || state.moves <= 1) return;
-        if (!confirmShuffle()) return;
-        shuffleBoard(true);
-        closeSettingsMenu();
+        if (state.phase !== 'idle' || state.moves <= 2 || isConfirmDialogOpen()) return;
+        confirmShuffle(() => {
+          shuffleBoard(true);
+          closeSettingsMenu();
+        });
       });
 
       restartBtn.addEventListener('click', () => {
         if (!state.started) return;
         primeAudio();
-        if (!confirmNewRun()) return;
-        startNewRun();
-        closeSettingsMenu();
+        if (isConfirmDialogOpen()) return;
+        confirmNewRun(() => {
+          startNewRun();
+          closeSettingsMenu();
+        });
       });
 
       muteMusicBtn.addEventListener('click', () => {
@@ -3595,6 +3684,24 @@ const EMOJIS = [
         event.stopPropagation();
       });
 
+      confirmModal.addEventListener('click', (event) => {
+        if (event.target === confirmModal) closeConfirmDialog(false);
+      });
+
+      confirmCard.addEventListener('click', (event) => {
+        event.stopPropagation();
+      });
+
+      confirmCancel.addEventListener('click', () => {
+        primeAudio();
+        closeConfirmDialog(false);
+      });
+
+      confirmAccept.addEventListener('click', () => {
+        primeAudio();
+        closeConfirmDialog(true);
+      });
+
       overlayPrimary.addEventListener('click', () => {
         primeAudio();
         closeSettingsMenu();
@@ -3607,13 +3714,20 @@ const EMOJIS = [
 
       overlaySecondary.addEventListener('click', () => {
         primeAudio();
-        closeSettingsMenu();
-        if (!confirmNewRun()) return;
-        startNewRun();
+        if (isConfirmDialogOpen()) return;
+        confirmNewRun(() => {
+          closeSettingsMenu();
+          startNewRun();
+        });
       });
 
       window.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') closeSettingsMenu();
+        if (event.key !== 'Escape') return;
+        if (isConfirmDialogOpen()) {
+          closeConfirmDialog(false);
+          return;
+        }
+        closeSettingsMenu();
       });
 
       document.addEventListener('fullscreenchange', updateFullscreenButtonState);
