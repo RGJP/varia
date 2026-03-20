@@ -182,7 +182,7 @@ const EMOJIS = [
       const muteFxBtn = document.getElementById('muteFxBtn');
       const muteFxIcon = document.getElementById('muteFxIcon');
       const muteFxText = document.getElementById('muteFxText');
-      const MUSIC_TRACKS = ['music/1.mp3', 'music/2.mp3', 'music/3.mp3', 'music/4.mp3', 'music/5.mp3', 'music/6.mp3', 'music/7.mp3', 'music/8.mp3'];
+      const MUSIC_TRACKS = ['music/1.mp3', 'music/2.mp3', 'music/3.mp3', 'music/4.mp3', 'music/5.mp3', 'music/6.mp3', 'music/7.mp3', 'music/8.mp3', 'music/9.mp3', 'music/10.mp3', 'music/11.mp3', 'music/12.mp3', 'music/13.mp3'];
       const MUSIC_FADE_MS = 2000;
       const FX_VOLUME = 0.75;
       const MUSIC_VOLUME = 0.42;
@@ -2325,10 +2325,8 @@ const EMOJIS = [
 
         const burstX = randFloat(0.8, Math.max(0.8, state.cols - 0.8));
         const burstY = randFloat(Math.max(0.85, state.rows * 0.16), Math.max(1.1, state.rows * 0.58));
-        const launchX = clamp(burstX + randFloat(-0.34, 0.34), 0.2, state.cols - 0.2);
         const color = VICTORY_FIREWORK_COLORS[randInt(Math.random, 0, VICTORY_FIREWORK_COLORS.length - 1)];
 
-        addBeam('line', [{ r: state.rows + 0.48, c: launchX }, { r: burstY, c: burstX }], toRgba(color, 0.88), 0.16, 0.09);
         addPulse(burstX, burstY, color, 1 + Math.random() * 0.35, 0.26 + Math.random() * 0.14);
         addGlow(burstX, burstY, color, 1.12 + Math.random() * 0.44, 0.3 + Math.random() * 0.16, 0.7 + Math.random() * 0.22);
 
