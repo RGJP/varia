@@ -3475,11 +3475,15 @@ const EMOJIS = [
             ctx.fillText(emojiForKind(tileData.kind), centerX, centerY);
           }
 
+          const highlightInset = size * 0.12;
+          const highlightSize = size - highlightInset * 2;
+          const highlightRadius = tile * 0.18;
+
           if (tileData.selectedBoost > 0) {
             ctx.lineWidth = tile * 0.035;
             ctx.strokeStyle = 'rgba(255, 240, 185, 0.9)';
             ctx.globalAlpha = tileData.alpha * tileData.selectedBoost;
-            traceRoundedRect(ctx, left + size * 0.06, top + size * 0.06, size * 0.88, size * 0.88, tile * 0.2);
+            traceRoundedRect(ctx, left + highlightInset, top + highlightInset, highlightSize, highlightSize, highlightRadius);
             ctx.stroke();
           }
 
@@ -3487,7 +3491,7 @@ const EMOJIS = [
             ctx.lineWidth = tile * 0.032;
             ctx.strokeStyle = 'rgba(142, 243, 255, 0.95)';
             ctx.globalAlpha = tileData.alpha * (0.18 + Math.max(0, Math.sin(now * 4.8)) * 0.52);
-            traceRoundedRect(ctx, left + size * 0.1, top + size * 0.1, size * 0.8, size * 0.8, tile * 0.18);
+            traceRoundedRect(ctx, left + highlightInset, top + highlightInset, highlightSize, highlightSize, highlightRadius);
             ctx.stroke();
           }
 
