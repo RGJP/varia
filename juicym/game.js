@@ -300,6 +300,8 @@ const EMOJIS = [
           musicEl: null,
           musicTrackIndex: -1,
           pendingMusicTrackIndex: null,
+          musicPlaylistOrder: [],
+          musicPlaylistCursor: 0,
           musicFadeFrame: 0,
           musicTransitionId: 0
         },
@@ -898,30 +900,40 @@ const EMOJIS = [
         if (!state.audio.musicEl) {
           const musicEl = new Audio();
           musicEl.preload = 'auto';
-          musicEl.loop = true;
+          musicEl.loop = false;
           musicEl.volume = 0;
+          musicEl.addEventListener('ended', () => {
+            const previousTrackIndex = state.audio.musicTrackIndex;
+            state.audio.musicTrackIndex = -1;
+            state.audio.pendingMusicTrackIndex = null;
+            startNextMusicTrack(previousTrackIndex);
+          });
           state.audio.musicEl = musicEl;
         }
         return state.audio.musicEl;
       }
 
-      function pickRandomMusicTrack() {
-        if (MUSIC_TRACKS.length <= 1) return 0;
-        let nextIndex = randInt(Math.random, 0, MUSIC_TRACKS.length - 1);
-        while (nextIndex === state.audio.musicTrackIndex) {
-          nextIndex = randInt(Math.random, 0, MUSIC_TRACKS.length - 1);
+      function shuffleMusicPlaylist(excludeTrackIndex = -1) {
+        const order = Array.from({ length: MUSIC_TRACKS.length }, (_, index) => index);
+        for (let i = order.length - 1; i > 0; i -= 1) {
+          const j = randInt(Math.random, 0, i);
+          [order[i], order[j]] = [order[j], order[i]];
         }
-        return nextIndex;
+        if (order.length > 1 && excludeTrackIndex >= 0 && order[0] === excludeTrackIndex) {
+          [order[0], order[1]] = [order[1], order[0]];
+        }
+        return order;
       }
 
-      function fadeOutMusic(duration = MUSIC_FADE_MS, pauseAfterFade = true) {
-        const musicEl = state.audio.musicEl;
-        if (!musicEl) return;
-        const transitionId = ++state.audio.musicTransitionId;
-        fadeMusicVolume(musicEl.volume, 0, duration, () => {
-          if (transitionId !== state.audio.musicTransitionId || !pauseAfterFade) return;
-          musicEl.pause();
-        });
+      function pickNextMusicTrack(excludeTrackIndex = state.audio.musicTrackIndex) {
+        if (!MUSIC_TRACKS.length) return -1;
+        if (state.audio.musicPlaylistCursor >= state.audio.musicPlaylistOrder.length) {
+          state.audio.musicPlaylistOrder = shuffleMusicPlaylist(excludeTrackIndex);
+          state.audio.musicPlaylistCursor = 0;
+        }
+        const trackIndex = state.audio.musicPlaylistOrder[state.audio.musicPlaylistCursor];
+        state.audio.musicPlaylistCursor += 1;
+        return trackIndex;
       }
 
       function startMusicTrack(trackIndex) {
@@ -941,7 +953,7 @@ const EMOJIS = [
           if (transitionId !== state.audio.musicTransitionId) return;
           musicEl.src = MUSIC_TRACKS[trackIndex];
           musicEl.currentTime = 0;
-          musicEl.loop = true;
+          musicEl.loop = false;
           musicEl.muted = false;
           setMusicElementVolume(0);
           const playPromise = musicEl.play();
@@ -968,9 +980,18 @@ const EMOJIS = [
         startPlayback();
       }
 
-      function startRandomLevelMusic() {
+      function startNextMusicTrack(excludeTrackIndex = state.audio.musicTrackIndex) {
+        const trackIndex = pickNextMusicTrack(excludeTrackIndex);
+        if (trackIndex < 0) return;
+        startMusicTrack(trackIndex);
+      }
+
+      function ensureContinuousMusic() {
         if (!MUSIC_TRACKS.length) return;
-        startMusicTrack(pickRandomMusicTrack());
+        const musicEl = ensureMusicElement();
+        if (state.audio.pendingMusicTrackIndex != null) return;
+        if (!musicEl.paused || state.audio.musicTrackIndex !== -1) return;
+        startNextMusicTrack();
       }
 
       function resumePendingMusic() {
@@ -1593,7 +1614,7 @@ const EMOJIS = [
         addPopup(state.cols * 0.5, -0.5, 'Level ' + level, '#ffd97a', 0.9, 1.22);
         updateHud();
         syncWakeLock();
-        startRandomLevelMusic();
+        ensureContinuousMusic();
       }
 
       function startNewRun() {
@@ -1645,7 +1666,6 @@ const EMOJIS = [
         closeSettingsMenu();
         state.overlayMode = mode;
         playOverlaySound(mode);
-        fadeOutMusic();
         overlay.classList.add('show');
         overlaySub.classList.remove('hidden');
         overlaySub.classList.remove('celebration');
@@ -3170,17 +3190,20 @@ const EMOJIS = [
             if (tileData) drawTiles.push(tileData);
           }
         }
-        if (state.phase !== 'idle' && state.phase !== 'paused') {
+        const idlePhase = state.phase === 'idle' || state.phase === 'paused';
+        if (!idlePhase) {
           drawTiles.sort((a, b) => a.y - b.y);
         }
 
         for (const tileData of drawTiles) {
           const centerX = x + (tileData.x + 0.5) * tile;
           const centerY = y + (tileData.y + 0.5) * tile;
-          const idleFloat = quality.idleMotion > 0
+          const idleFloat = !idlePhase && quality.idleMotion > 0
             ? Math.sin(now * 1.85 + tileData.wobble) * tile * 0.018 * quality.idleMotion
             : 0;
-          const pulse = 1 + Math.sin(now * 2.2 + tileData.pulse) * 0.02 * quality.tilePulse;
+          const pulse = !idlePhase
+            ? 1 + Math.sin(now * 2.2 + tileData.pulse) * 0.02 * quality.tilePulse
+            : 1;
           const isHinted = state.hintMove && tileData.row === state.hintMove.from.r && tileData.col === state.hintMove.from.c;
           const hintBoost = isHinted ? (0.06 + Math.sin(now * 4.8) * 0.04) : 0;
           const scale = tileData.scale * pulse * (1 + tileData.selectedBoost * 0.08 + hintBoost);
