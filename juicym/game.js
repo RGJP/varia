@@ -23,11 +23,19 @@ const EMOJIS = [
         lightning: '#c7a2ff'
       };
       const CELEBRATION_EMOJIS = ['🥳', '🎉', '🎊', '✨', '🏆', '👑', '🌟', '🕺'];
+      const VICTORY_CLEAR_STEP_MIN_SECONDS = 0.08;
+      const VICTORY_CLEAR_STEP_MAX_SECONDS = 0.12;
+      const VICTORY_CLEAR_BLAST_RATIO = 0.32;
+      const VICTORY_CLEAR_MIN_BLAST_CELLS = 4;
+      const VICTORY_FINALE_SECONDS = 2.2;
+      const VICTORY_FIREWORK_INTERVAL_MIN_SECONDS = 0.22;
+      const VICTORY_FIREWORK_INTERVAL_MAX_SECONDS = 0.38;
+      const VICTORY_FIREWORK_COLORS = ['#ff6f87', '#ffd76f', '#7cf9b3', '#7fd7ff', '#c7a2ff', '#ff97dd'];
       const COMBO_CALLOUTS = {
-        starter: ['AWESOME!', 'WOW!', 'NICE!', 'SWEET!'],
-        rising: ['EPIC!', 'FIRE!', 'HOT STREAK!', 'WILD!'],
-        big: ['INSANE!', 'MONSTER!', 'UNREAL!', 'CRUSHING IT!'],
-        massive: ['LEGENDARY!', 'UNSTOPPABLE!', 'GODLIKE!', 'ABSOLUTELY EPIC!']
+        starter: ['Nice', 'Sweet', 'Great', 'Clean', 'Smooth', 'Solid', 'Neat', 'Tasty', 'Fresh', 'Sharp', 'Crisp', 'Slick'],
+        rising: ['Epic', 'Wild', 'Spicy', 'Nasty', 'Savage', 'Blazing', 'Cracked', 'On Fire', 'Superb', 'Brilliant', 'Electric', 'Juicy'],
+        big: ['Insane', 'Monster', 'Unreal', 'Massive', 'Ferocious', 'Dominant', 'Explosive', 'Ridiculous', 'Fearless', 'Thunderous', 'Unstoppable', 'Mighty'],
+        massive: ['Legendary', 'Mythic', 'Godlike', 'Transcendent', 'Apocalyptic', 'Supersonic', 'Meteoric', 'Titanic', 'Overpowered', 'Invincible', 'Astronomical', 'Elite']
       };
       const COMBO_FACES = {
         starter: ['😄', '🤩', '😊', '😎'],
@@ -81,10 +89,15 @@ const EMOJIS = [
           name: 'high',
           dprCap: 2,
           particleScale: 1,
-          maxParticles: 220,
-          maxPopups: 18,
+          maxParticles: 180,
+          maxPopups: 16,
           maxBeams: 8,
           maxPulses: 8,
+          maxGlows: 14,
+          maxTrails: 56,
+          trailRate: 1,
+          shakeScale: 1,
+          pulseFill: 1,
           idleMotion: 1,
           tilePulse: 1,
           flash: 1
@@ -92,11 +105,16 @@ const EMOJIS = [
         {
           name: 'balanced',
           dprCap: 1.5,
-          particleScale: 0.65,
-          maxParticles: 132,
-          maxPopups: 14,
+          particleScale: 0.72,
+          maxParticles: 112,
+          maxPopups: 13,
           maxBeams: 6,
           maxPulses: 6,
+          maxGlows: 10,
+          maxTrails: 36,
+          trailRate: 0.72,
+          shakeScale: 0.8,
+          pulseFill: 0.74,
           idleMotion: 0.55,
           tilePulse: 0.6,
           flash: 0.82
@@ -104,18 +122,23 @@ const EMOJIS = [
         {
           name: 'smooth',
           dprCap: 1,
-          particleScale: 0,
-          maxParticles: 0,
-          maxPopups: 6,
-          maxBeams: 2,
-          maxPulses: 2,
-          idleMotion: 0,
-          tilePulse: 0,
-          flash: 0.3
+          particleScale: 0.28,
+          maxParticles: 34,
+          maxPopups: 8,
+          maxBeams: 3,
+          maxPulses: 3,
+          maxGlows: 5,
+          maxTrails: 14,
+          trailRate: 0.34,
+          shakeScale: 0.45,
+          pulseFill: 0.35,
+          idleMotion: 0.18,
+          tilePulse: 0.22,
+          flash: 0.46
         }
       ];
-      const FORCE_PERFORMANCE_MODE = true;
-      const LOCKED_QUALITY_LEVEL = QUALITY_PRESETS.length - 1;
+      const FORCE_PERFORMANCE_MODE = false;
+      const LOCKED_QUALITY_LEVEL = 1;
       const FONT_STACK = '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
       const TAU = Math.PI * 2;
 
@@ -124,6 +147,8 @@ const EMOJIS = [
       const app = document.querySelector('.app');
       const footer = document.querySelector('.footer');
       const wrap = document.getElementById('canvasWrap');
+      const levelProgress = document.getElementById('levelProgress');
+      const levelProgressFill = document.getElementById('levelProgressFill');
       const rootStyle = document.documentElement.style;
       const overlay = document.getElementById('overlay');
       const overlayTitle = document.getElementById('overlayTitle');
@@ -142,6 +167,7 @@ const EMOJIS = [
       const splashTitle = document.getElementById('splashTitle');
       const startBtn = document.getElementById('startBtn');
       const settingsBtn = document.getElementById('settingsBtn');
+      const fullscreenBtn = document.getElementById('fullscreenBtn');
       const settingsMenu = document.getElementById('settingsMenu');
       const settingsPanel = document.getElementById('settingsPanel');
       const settingsCloseBtn = document.getElementById('settingsCloseBtn');
@@ -160,6 +186,8 @@ const EMOJIS = [
       const MUSIC_FADE_MS = 2000;
       const FX_VOLUME = 0.75;
       const MUSIC_VOLUME = 0.42;
+      const IDLE_HINT_DELAY_SECONDS = 10;
+      const COMBO_POPUP_LIFE_SECONDS = 2.35;
       let footerLayoutKey = '';
       let settingsReturnFocusEl = null;
 
@@ -178,6 +206,7 @@ const EMOJIS = [
         phase: 'idle',
         comboChain: 0,
         displayChain: 1,
+        luckyCascadeUsed: false,
         levelInfo: null,
         boardRect: { x: 0, y: 0, w: 0, h: 0, tile: 0 },
         canvasSize: { w: 0, h: 0, dpr: 1 },
@@ -188,7 +217,10 @@ const EMOJIS = [
         popups: [],
         beams: [],
         pulses: [],
+        glows: [],
+        trails: [],
         flash: 0,
+        shake: { x: 0, y: 0, vx: 0, vy: 0 },
         nextId: 1,
         rng: Math.random,
         started: false,
@@ -222,7 +254,13 @@ const EMOJIS = [
           slowTime: 0,
           fastTime: 0
         },
-        theme: null
+        theme: null,
+        wakeLock: {
+          supported: typeof navigator !== 'undefined' && !!navigator.wakeLock && typeof navigator.wakeLock.request === 'function',
+          sentinel: null,
+          requesting: false,
+          shouldHold: false
+        }
       };
 
       // Utilities
@@ -250,7 +288,7 @@ const EMOJIS = [
         const coarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
         if (cores <= 2 || memory <= 2) return 2;
         if (coarsePointer || cores <= 4 || memory <= 4 || (window.devicePixelRatio || 1) > 2.4) return 1;
-        return 0;
+        return 1;
       }
 
       function getQualityProfile() {
@@ -297,6 +335,14 @@ const EMOJIS = [
           perf.fastTime = 0;
           setQualityLevel(state.qualityLevel - 1);
         }
+      }
+
+      function getEffectBudgetScale() {
+        const avgDt = state.perf.avgDt || 1 / 60;
+        if (avgDt > 1 / 52) return 0.44;
+        if (avgDt > 1 / 56) return 0.66;
+        if (avgDt > 1 / 59) return 0.84;
+        return 1;
       }
 
       function mulberry32(seed) {
@@ -577,6 +623,100 @@ const EMOJIS = [
 
       function notePlayerActivity() {
         clearIdleHint(true);
+      }
+
+      function shouldHoldWakeLock() {
+        return state.started &&
+          !overlay.classList.contains('show') &&
+          splash.classList.contains('hidden') &&
+          state.phase !== 'paused';
+      }
+
+      async function requestWakeLock() {
+        if (!state.wakeLock.supported) return;
+        if (state.wakeLock.requesting || state.wakeLock.sentinel) return;
+        if (!state.wakeLock.shouldHold || document.visibilityState !== 'visible') return;
+        state.wakeLock.requesting = true;
+        try {
+          const sentinel = await navigator.wakeLock.request('screen');
+          state.wakeLock.sentinel = sentinel;
+          sentinel.addEventListener('release', () => {
+            if (state.wakeLock.sentinel === sentinel) {
+              state.wakeLock.sentinel = null;
+            }
+            if (state.wakeLock.shouldHold && document.visibilityState === 'visible') {
+              requestWakeLock();
+            }
+          });
+        } catch (_error) {
+          // Ignore wake lock failures (unsupported/denied/visibility race); gameplay continues normally.
+        } finally {
+          state.wakeLock.requesting = false;
+        }
+      }
+
+      async function releaseWakeLock() {
+        const sentinel = state.wakeLock.sentinel;
+        if (!sentinel) return;
+        state.wakeLock.sentinel = null;
+        try {
+          await sentinel.release();
+        } catch (_error) {}
+      }
+
+      function syncWakeLock() {
+        const shouldHold = shouldHoldWakeLock();
+        if (shouldHold === state.wakeLock.shouldHold) return;
+        state.wakeLock.shouldHold = shouldHold;
+        if (shouldHold) {
+          requestWakeLock();
+        } else {
+          releaseWakeLock();
+        }
+      }
+
+      function isFullscreenActive() {
+        return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+      }
+
+      function updateFullscreenButtonState() {
+        if (!fullscreenBtn) return;
+        const active = isFullscreenActive();
+        fullscreenBtn.textContent = active ? '[ ]' : '] [';
+        fullscreenBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        fullscreenBtn.setAttribute('aria-label', active ? 'Exit fullscreen' : 'Enter fullscreen');
+      }
+
+      async function enterFullscreen() {
+        const target = document.documentElement;
+        if (target.requestFullscreen) {
+          await target.requestFullscreen();
+          return;
+        }
+        if (target.webkitRequestFullscreen) {
+          target.webkitRequestFullscreen();
+        }
+      }
+
+      async function exitFullscreen() {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+          return;
+        }
+        if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      }
+
+      async function toggleFullscreen() {
+        try {
+          if (isFullscreenActive()) {
+            await exitFullscreen();
+          } else {
+            await enterFullscreen();
+          }
+        } catch (_error) {}
+        updateFullscreenButtonState();
       }
 
       function isSettingsMenuOpen() {
@@ -925,11 +1065,25 @@ const EMOJIS = [
           if (statusMoves) statusMoves.textContent = '0';
           statusLine.setAttribute('aria-label', '0 moves left');
           shuffleBtn.disabled = true;
+          if (levelProgressFill) levelProgressFill.style.transform = 'scaleX(0)';
+          if (levelProgress) {
+            levelProgress.setAttribute('aria-valuenow', '0');
+            levelProgress.setAttribute('aria-valuetext', '0% complete');
+          }
           return;
         }
         if (statusMoves) statusMoves.textContent = String(state.moves);
         statusLine.setAttribute('aria-label', `${state.moves} moves left`);
         shuffleBtn.disabled = !(state.phase === 'idle' && state.moves > 1 && !overlay.classList.contains('show'));
+        const progress = state.target > 0 ? clamp(state.score / state.target, 0, 1) : 0;
+        if (levelProgressFill) {
+          levelProgressFill.style.transform = `scaleX(${progress})`;
+        }
+        if (levelProgress) {
+          const percent = Math.round(progress * 100);
+          levelProgress.setAttribute('aria-valuenow', String(percent));
+          levelProgress.setAttribute('aria-valuetext', `${percent}% complete`);
+        }
       }
 
       function getTargetBoardAspectRatio() {
@@ -991,7 +1145,8 @@ const EMOJIS = [
         const moves = clamp(randInt(rng, band.moves[0], band.moves[1]) + (easyHardDrift < 0.24 ? 2 : 0) - (easyHardDrift > 0.78 ? 1 : 0), 12, 28);
         const perCell = randInt(rng, band.targetPerCell[0], band.targetPerCell[1]);
         const boardCells = rows * cols;
-        const target = Math.round(boardCells * perCell * (1 + (level - 1) * 0.1));
+        const levelDurationBoost = 1.18 + Math.min(0.14, (level - 1) * 0.025);
+        const target = Math.round(boardCells * perCell * (1 + (level - 1) * 0.1) * levelDurationBoost);
         const difficultyLabel = easyHardDrift < 0.24
           ? band.difficultyText[0]
           : easyHardDrift < 0.7
@@ -1279,6 +1434,7 @@ const EMOJIS = [
         state.selected = null;
         state.comboChain = 0;
         state.displayChain = 1;
+        state.luckyCascadeUsed = false;
         state.phase = 'settling';
         state.pendingSwap = null;
         state.pendingClear = null;
@@ -1286,7 +1442,13 @@ const EMOJIS = [
         state.popups.length = 0;
         state.beams.length = 0;
         state.pulses.length = 0;
+        state.glows.length = 0;
+        state.trails.length = 0;
         state.flash = 0;
+        state.shake.x = 0;
+        state.shake.y = 0;
+        state.shake.vx = 0;
+        state.shake.vy = 0;
         state.victoryClear = null;
         state.rng = state.levelInfo.rng;
         clearIdleHint(true);
@@ -1296,6 +1458,7 @@ const EMOJIS = [
         resizeCanvas();
         addPopup(state.cols * 0.5, -0.5, 'Level ' + level, '#ffd97a', 0.9, 1.22);
         updateHud();
+        syncWakeLock();
         startRandomLevelMusic();
       }
 
@@ -1328,7 +1491,7 @@ const EMOJIS = [
         }
 
         if (splashTitle) {
-          splashTitle.textContent = 'JUICYM';
+          splashTitle.textContent = 'JuicyM';
         }
       }
 
@@ -1336,10 +1499,12 @@ const EMOJIS = [
         closeSettingsMenu();
         refreshSplashLook();
         splash.classList.remove('hidden');
+        syncWakeLock();
       }
 
       function hideSplash() {
         splash.classList.add('hidden');
+        syncWakeLock();
       }
 
       function showOverlay(mode) {
@@ -1354,11 +1519,11 @@ const EMOJIS = [
         overlayTargetStat.classList.remove('hidden');
         overlayLevelStat.classList.remove('hidden');
         overlaySecondary.classList.remove('hidden');
-        overlayScore.textContent = state.score.toLocaleString();
+        overlayScore.textContent = String(state.score);
         overlayTarget.textContent = state.target.toLocaleString();
         overlayLevel.textContent = state.level;
         if (mode === 'win') {
-          overlayTitle.textContent = 'Level Clear!';
+          overlayTitle.textContent = `Score ${state.score}`;
           overlaySub.textContent = pickCelebrationEmojis();
           overlaySub.classList.add('celebration');
           overlayStats.classList.add('hidden');
@@ -1370,11 +1535,13 @@ const EMOJIS = [
           overlayPrimary.textContent = 'Retry Level';
           overlaySecondary.textContent = 'New Run';
         }
+        syncWakeLock();
       }
 
       function hideOverlay() {
         overlay.classList.remove('show');
         state.overlayMode = null;
+        syncWakeLock();
       }
 
       function pickCelebrationEmojis() {
@@ -1625,9 +1792,41 @@ const EMOJIS = [
         state.pulses.push({ x: c, y: r, color, size, life, maxLife: life });
       }
 
+      function addGlow(c, r, color, size = 1.12, life = 0.28, intensity = 0.58) {
+        const quality = getQualityProfile();
+        if (quality.maxGlows <= 0) return;
+        if (state.glows.length >= quality.maxGlows) state.glows.shift();
+        state.glows.push({
+          x: c,
+          y: r,
+          color,
+          size,
+          life,
+          maxLife: life,
+          intensity: intensity * quality.pulseFill
+        });
+      }
+
+      function addTrail(c, r, color, vx = 0, vy = 0, size = 0.12, life = 0.14) {
+        const quality = getQualityProfile();
+        if (quality.maxTrails <= 0) return;
+        if (state.trails.length >= quality.maxTrails) state.trails.shift();
+        state.trails.push({
+          x: c,
+          y: r,
+          vx,
+          vy,
+          color,
+          size,
+          life,
+          maxLife: life
+        });
+      }
+
       function addParticles(c, r, kind, amount = 8, power = null) {
         const quality = getQualityProfile();
-        const scaledAmount = Math.max(2, Math.round(amount * quality.particleScale));
+        const effectBudget = getEffectBudgetScale();
+        const scaledAmount = Math.max(1, Math.round(amount * quality.particleScale * effectBudget));
         const available = quality.maxParticles - state.particles.length;
         const burstCount = Math.min(scaledAmount, available);
         if (burstCount <= 0) return;
@@ -1635,8 +1834,9 @@ const EMOJIS = [
         const burstEmoji = ['✨', '💫', baseEmoji, power ? POWER_EMOJI[power] : '✨'];
         for (let i = 0; i < burstCount; i += 1) {
           const angle = (i / burstCount) * TAU + Math.random() * 0.45;
-          const speed = 0.7 + Math.random() * 1.8;
-          const life = 0.48 + Math.random() * 0.22;
+          const isSpark = Math.random() < 0.48;
+          const speed = isSpark ? 1 + Math.random() * 2.35 : 0.7 + Math.random() * 1.8;
+          const life = isSpark ? 0.24 + Math.random() * 0.18 : 0.48 + Math.random() * 0.22;
           state.particles.push({
             x: c + 0.5,
             y: r + 0.5,
@@ -1644,15 +1844,27 @@ const EMOJIS = [
             vy: Math.sin(angle) * speed - 0.45,
             life,
             maxLife: life,
-            emoji: burstEmoji[Math.floor(Math.random() * burstEmoji.length)],
-            size: 0.22 + Math.random() * 0.2,
+            emoji: isSpark ? null : burstEmoji[Math.floor(Math.random() * burstEmoji.length)],
+            color: isSpark ? (power ? POWER_COLORS[power] : colorForKind(kind)) : null,
+            shape: isSpark ? 'spark' : 'emoji',
+            gravity: isSpark ? 3.4 : 2.8,
+            drag: isSpark ? 2.1 : 0,
+            size: isSpark ? 0.09 + Math.random() * 0.07 : 0.22 + Math.random() * 0.2,
             spin: (Math.random() - 0.5) * 7,
             rot: Math.random() * TAU
           });
         }
+        addGlow(c + 0.5, r + 0.5, power ? POWER_COLORS[power] : colorForKind(kind), power ? 1.24 : 0.9, power ? 0.36 : 0.24, power ? 0.76 : 0.5);
       }
 
-      function shake(_amount) {}
+      function shake(amount) {
+        const quality = getQualityProfile();
+        const scaled = amount * 0.09 * quality.shakeScale * getEffectBudgetScale();
+        if (scaled <= 0.01) return;
+        const angle = Math.random() * TAU;
+        state.shake.vx += Math.cos(angle) * scaled * 10.5;
+        state.shake.vy += Math.sin(angle) * scaled * 10.5;
+      }
 
       function flash(amount) {
         state.flash = Math.max(state.flash, amount * getQualityProfile().flash);
@@ -1660,6 +1872,7 @@ const EMOJIS = [
 
       function getPowerTargets(tile, contextKind = null) {
         const cells = new Set([keyOf(tile.row, tile.col)]);
+        addGlow(tile.col + 0.5, tile.row + 0.5, POWER_COLORS[tile.power] || '#ffffff', 1.22, 0.34, 0.72);
         if (tile.power === 'row') {
           for (let c = 0; c < state.cols; c += 1) cells.add(keyOf(tile.row, c));
           addBeam('line', [{ r: tile.row + 0.5, c: 0 }, { r: tile.row + 0.5, c: state.cols }], POWER_COLORS.row, 0.22, 0.22);
@@ -1702,6 +1915,66 @@ const EMOJIS = [
       }
 
       // Power-up resolution and cascades
+      function pickLuckyCascadeCells() {
+        const patterns = [
+          [{ r: 0, c: -1 }, { r: 0, c: 0 }, { r: 0, c: 1 }],
+          [{ r: -1, c: 0 }, { r: 0, c: 0 }, { r: 1, c: 0 }],
+          [{ r: -1, c: 0 }, { r: 0, c: 0 }, { r: 1, c: 0 }, { r: 0, c: -1 }, { r: 0, c: 1 }],
+          [{ r: 0, c: 0 }, { r: 0, c: 1 }, { r: 1, c: 0 }, { r: 1, c: 1 }]
+        ];
+
+        for (let attempt = 0; attempt < 22; attempt += 1) {
+          const anchor = {
+            r: randInt(state.rng, 0, state.rows - 1),
+            c: randInt(state.rng, 0, state.cols - 1)
+          };
+          const pattern = patterns[randInt(state.rng, 0, patterns.length - 1)];
+          const seen = new Set();
+          const cells = [];
+          for (const offset of pattern) {
+            const r = anchor.r + offset.r;
+            const c = anchor.c + offset.c;
+            if (!isInside(r, c)) continue;
+            const tile = getTile(r, c);
+            if (!tile || tile.removing) continue;
+            const key = keyOf(r, c);
+            if (seen.has(key)) continue;
+            seen.add(key);
+            cells.push({ r, c });
+          }
+          if (cells.length >= 3) return cells;
+        }
+        return [];
+      }
+
+      function tryTriggerLuckyCascade() {
+        if (state.luckyCascadeUsed || state.comboChain < 1) return false;
+        const baseChance = 0.22 + Math.min(0.18, state.level * 0.014);
+        const comboBoost = Math.min(0.15, Math.max(0, state.comboChain - 1) * 0.05);
+        const chance = clamp((baseChance + comboBoost) * getEffectBudgetScale(), 0, 0.58);
+        if (Math.random() > chance) return false;
+
+        const bonusCells = pickLuckyCascadeCells();
+        if (bonusCells.length < 3) return false;
+
+        const center = bonusCells.reduce(
+          (acc, cell) => ({ x: acc.x + cell.c + 0.5, y: acc.y + cell.r + 0.5 }),
+          { x: 0, y: 0 }
+        );
+        const centerX = center.x / bonusCells.length;
+        const centerY = center.y / bonusCells.length;
+
+        state.luckyCascadeUsed = true;
+        state.comboChain = Math.max(1, state.comboChain + 1);
+        addPopup(centerX, centerY - 0.18, 'Lucky Cascade!', '#9fffb7', 0.95, 1.34, { backdrop: true });
+        addPulse(centerX, centerY, '#9fffb7', 1.32, 0.36);
+        addGlow(centerX, centerY, '#9fffb7', 1.48, 0.42, 0.8);
+        flash(0.15);
+        shake(12);
+        startClearSequence(bonusCells, [], { luckyCascade: true });
+        return true;
+      }
+
       function collectClears(initialCells, options = {}) {
         const clearSet = new Set(initialCells.map(({ r, c }) => keyOf(r, c)));
         const queue = [...initialCells];
@@ -1748,13 +2021,29 @@ const EMOJIS = [
         });
 
         const spawnKeys = new Set(specials.map((s) => keyOf(s.r, s.c)));
+        let centerX = 0;
+        let centerY = 0;
         for (const cell of cells) {
           const tile = getTile(cell.r, cell.c);
           if (!tile) continue;
+          centerX += cell.c + 0.5;
+          centerY += cell.r + 0.5;
           tile.removing = true;
           tile.removeTimer = 0.028 + Math.random() * 0.012;
           tile.targetScale = 0.12;
           addParticles(cell.c, cell.r, tile.kind, tile.power ? 12 : 7, tile.power);
+          if (tile.power || ((cell.r + cell.c + state.comboChain) % 3 === 0)) {
+            addGlow(cell.c + 0.5, cell.r + 0.5, tile.power ? POWER_COLORS[tile.power] : colorForKind(tile.kind), tile.power ? 1.15 : 0.88, tile.power ? 0.32 : 0.2, tile.power ? 0.72 : 0.45);
+          }
+        }
+
+        if (cells.length > 0) {
+          centerX /= cells.length;
+          centerY /= cells.length;
+          const pulseColor = state.comboChain >= 2 ? '#8ef3ff' : '#ffd97a';
+          const pulseSize = clamp(0.9 + cells.length * 0.05, 0.9, 1.75);
+          addPulse(centerX, centerY, pulseColor, pulseSize, 0.26 + Math.min(0.14, cells.length * 0.01));
+          addGlow(centerX, centerY, pulseColor, pulseSize + 0.15, 0.3, 0.54);
         }
 
         for (const special of specials) {
@@ -1777,8 +2066,8 @@ const EMOJIS = [
         playMatchSound(cells, specials, activatedPowerCount, state.comboChain);
         addPopup(state.cols * 0.5, -0.2, '+' + bonus.toLocaleString(), '#fff2a8', 1.05, 1.28);
         if (state.comboChain >= 2) {
-          const comboText = getComboCallout(state.comboChain) + '  Combo x' + state.comboChain;
-          addPopup(state.cols * 0.5, state.rows * 0.45, comboText, '#8ef3ff', 1.75, 1.5, { backdrop: true });
+          const comboText = getComboCallout(state.comboChain) + ' ' + state.comboChain + 'x combo!';
+          addPopup(state.cols * 0.5, state.rows * 0.45, comboText, '#8ef3ff', COMBO_POPUP_LIFE_SECONDS, 1.5, { backdrop: true });
           flash(0.08 + state.comboChain * 0.02);
           shake(7 + state.comboChain * 2);
         }
@@ -1915,6 +2204,7 @@ const EMOJIS = [
         if (powerCombo) {
           state.moves = Math.max(0, state.moves - 1);
           state.comboChain = 1;
+          state.luckyCascadeUsed = false;
           applySpecialCombo(tileA, tileB);
           updateHud();
           return;
@@ -1923,6 +2213,7 @@ const EMOJIS = [
         if (singlePower) {
           state.moves = Math.max(0, state.moves - 1);
           state.comboChain = 1;
+          state.luckyCascadeUsed = false;
           activateSinglePowerSwap(tileA.power ? tileA : tileB, tileA.power ? tileB : tileA);
           updateHud();
           return;
@@ -1932,6 +2223,7 @@ const EMOJIS = [
         if (matches.cells.length > 0) {
           state.moves = Math.max(0, state.moves - 1);
           state.comboChain = 1;
+          state.luckyCascadeUsed = false;
           startClearSequence(matches.cells, matches.specials);
           updateHud();
         } else {
@@ -2012,15 +2304,83 @@ const EMOJIS = [
       function triggerVictoryClear() {
         if (state.victoryClear) return;
         state.victoryClear = {
-          timer: 0.04
+          mode: 'clearing',
+          timer: VICTORY_CLEAR_STEP_MIN_SECONDS,
+          finaleTimer: VICTORY_FINALE_SECONDS,
+          fireworkTimer: 0.08
         };
         state.phase = 'victory-clear';
         addPopup(state.cols * 0.5, state.rows * 0.5, 'Level Complete!', '#ffe07a', 1.2, 1.5, { backdrop: true });
         flash(0.25);
         shake(16);
+        launchVictoryFirework(0.85);
+      }
+
+      function launchVictoryFirework(intensity = 1) {
+        const quality = getQualityProfile();
+        const effectBudget = getEffectBudgetScale();
+        const fireworkScale = clamp(intensity * effectBudget, 0.24, 1);
+        const available = quality.maxParticles - state.particles.length;
+        if (available <= 0 && quality.maxPulses <= 0 && quality.maxGlows <= 0) return;
+
+        const burstX = randFloat(0.8, Math.max(0.8, state.cols - 0.8));
+        const burstY = randFloat(Math.max(0.85, state.rows * 0.16), Math.max(1.1, state.rows * 0.58));
+        const launchX = clamp(burstX + randFloat(-0.34, 0.34), 0.2, state.cols - 0.2);
+        const color = VICTORY_FIREWORK_COLORS[randInt(Math.random, 0, VICTORY_FIREWORK_COLORS.length - 1)];
+
+        addBeam('line', [{ r: state.rows + 0.48, c: launchX }, { r: burstY, c: burstX }], toRgba(color, 0.88), 0.16, 0.09);
+        addPulse(burstX, burstY, color, 1 + Math.random() * 0.35, 0.26 + Math.random() * 0.14);
+        addGlow(burstX, burstY, color, 1.12 + Math.random() * 0.44, 0.3 + Math.random() * 0.16, 0.7 + Math.random() * 0.22);
+
+        const desiredBurst = Math.max(6, Math.round((12 + Math.random() * 10) * quality.particleScale * fireworkScale));
+        const burstCount = Math.min(desiredBurst, available);
+        for (let i = 0; i < burstCount; i += 1) {
+          const angle = (i / Math.max(1, burstCount)) * TAU + Math.random() * 0.35;
+          const speed = 0.95 + Math.random() * 2.45;
+          const life = 0.35 + Math.random() * 0.35;
+          state.particles.push({
+            x: burstX,
+            y: burstY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - randFloat(0.15, 0.45),
+            life,
+            maxLife: life,
+            emoji: null,
+            color: i % 5 === 0 ? '#ffffff' : color,
+            shape: 'spark',
+            gravity: 2.75,
+            drag: 1.55,
+            size: 0.07 + Math.random() * 0.08,
+            spin: (Math.random() - 0.5) * 9,
+            rot: Math.random() * TAU
+          });
+        }
+      }
+
+      function completeVictoryClear() {
+        state.victoryClear = null;
+        state.phase = 'paused';
+        showOverlay('win');
+      }
+
+      function updateVictoryFinale(dt) {
+        if (!state.victoryClear || state.victoryClear.mode !== 'finale') return;
+        state.victoryClear.finaleTimer -= dt;
+        state.victoryClear.fireworkTimer -= dt;
+        if (state.victoryClear.fireworkTimer <= 0) {
+          launchVictoryFirework();
+          state.victoryClear.fireworkTimer = randFloat(VICTORY_FIREWORK_INTERVAL_MIN_SECONDS, VICTORY_FIREWORK_INTERVAL_MAX_SECONDS);
+        }
+        if (Math.random() < dt * 2) {
+          launchVictoryFirework(0.7);
+        }
+        if (state.victoryClear.finaleTimer <= 0) {
+          completeVictoryClear();
+        }
       }
 
       function runVictoryClearStep() {
+        if (!state.victoryClear || state.victoryClear.mode !== 'clearing') return;
         const cells = collectLiveBoardCells();
         if (cells.length === 0) {
           for (let r = 0; r < state.rows; r += 1) {
@@ -2028,22 +2388,25 @@ const EMOJIS = [
               if (getTile(r, c)) return;
             }
           }
-          state.victoryClear = null;
-          state.phase = 'paused';
-          showOverlay('win');
+          state.victoryClear.mode = 'finale';
+          state.victoryClear.finaleTimer = VICTORY_FINALE_SECONDS;
+          state.victoryClear.fireworkTimer = 0.02;
+          launchVictoryFirework(1);
+          flash(0.1);
           return;
         }
 
-        const blastCount = Math.min(cells.length, Math.max(6, Math.ceil(cells.length * 0.4)));
+        const blastCount = Math.min(cells.length, Math.max(VICTORY_CLEAR_MIN_BLAST_CELLS, Math.ceil(cells.length * VICTORY_CLEAR_BLAST_RATIO)));
         for (let i = 0; i < blastCount; i += 1) {
           const pickIndex = randInt(Math.random, 0, cells.length - 1);
           const [cell] = cells.splice(pickIndex, 1);
           const tile = getTile(cell.r, cell.c);
           if (!tile) continue;
           tile.removing = true;
-          tile.removeTimer = 0.022 + Math.random() * 0.018;
+          tile.removeTimer = 0.028 + Math.random() * 0.024;
           tile.targetScale = 0.08;
         }
+        if (Math.random() < 0.52) launchVictoryFirework(0.62);
         flash(0.05);
       }
 
@@ -2087,6 +2450,7 @@ const EMOJIS = [
         if (costMove) state.moves = Math.max(0, state.moves - 2);
         state.comboChain = 0;
         state.displayChain = 1;
+        state.luckyCascadeUsed = false;
         state.phase = 'settling';
         playShuffleSound();
         flash(0.14);
@@ -2097,10 +2461,21 @@ const EMOJIS = [
       function updateSimulation(dt) {
         if (!state.started || state.board.length !== state.rows) return;
         updatePerformanceBudget(dt);
+        const quality = getQualityProfile();
+        const effectBudget = getEffectBudgetScale();
         state.flash = Math.max(0, state.flash - dt * 1.8);
+        const shake = state.shake;
+        shake.x += shake.vx * dt;
+        shake.y += shake.vy * dt;
+        shake.vx += (-shake.x * 96 - shake.vx * 24) * dt;
+        shake.vy += (-shake.y * 96 - shake.vy * 24) * dt;
+        if (Math.abs(shake.x) < 0.001) shake.x = 0;
+        if (Math.abs(shake.y) < 0.001) shake.y = 0;
+        if (Math.abs(shake.vx) < 0.001) shake.vx = 0;
+        if (Math.abs(shake.vy) < 0.001) shake.vy = 0;
         if (!overlay.classList.contains('show') && !isSettingsMenuOpen() && state.phase === 'idle') {
           state.idleHintTimer += dt;
-          if (state.idleHintTimer >= 30 && !state.hintMove) {
+          if (state.idleHintTimer >= IDLE_HINT_DELAY_SECONDS && !state.hintMove) {
             state.hintMove = findPossibleMove();
           }
         } else {
@@ -2134,6 +2509,22 @@ const EMOJIS = [
               tile.alpha = clamp(tile.removeTimer / 0.04, 0, 1);
             } else {
               tile.alpha += (1 - tile.alpha) * Math.min(1, dt * 12);
+              if ((state.phase === 'falling' || state.phase === 'swapping' || state.phase === 'settling') && quality.maxTrails > 0) {
+                const velocity = Math.hypot(tile.vx, tile.vy);
+                if (velocity > 3 && Math.random() < dt * 14 * quality.trailRate * effectBudget) {
+                  const trailColor = tile.power ? POWER_COLORS[tile.power] : colorForKind(tile.kind);
+                  const trailStrength = clamp((velocity - 3) / 8, 0, 1);
+                  addTrail(
+                    tile.x + 0.5,
+                    tile.y + 0.5,
+                    trailColor,
+                    -tile.vx * 0.038,
+                    -tile.vy * 0.038,
+                    0.09 + trailStrength * 0.13,
+                    0.11 + trailStrength * 0.08
+                  );
+                }
+              }
             }
           }
         }
@@ -2143,7 +2534,12 @@ const EMOJIS = [
           particle.life -= dt;
           particle.x += particle.vx * dt;
           particle.y += particle.vy * dt;
-          particle.vy += 2.8 * dt;
+          particle.vy += (particle.gravity || 2.8) * dt;
+          if (particle.drag > 0) {
+            const drag = Math.max(0, 1 - particle.drag * dt);
+            particle.vx *= drag;
+            particle.vy *= drag;
+          }
           particle.rot += particle.spin * dt;
           if (particle.life <= 0) state.particles.splice(i, 1);
         }
@@ -2166,6 +2562,19 @@ const EMOJIS = [
           if (state.pulses[i].life <= 0) state.pulses.splice(i, 1);
         }
 
+        for (let i = state.glows.length - 1; i >= 0; i -= 1) {
+          state.glows[i].life -= dt;
+          if (state.glows[i].life <= 0) state.glows.splice(i, 1);
+        }
+
+        for (let i = state.trails.length - 1; i >= 0; i -= 1) {
+          const trail = state.trails[i];
+          trail.life -= dt;
+          trail.x += trail.vx * dt;
+          trail.y += trail.vy * dt;
+          if (trail.life <= 0) state.trails.splice(i, 1);
+        }
+
         pruneRemovedTiles();
 
         if (state.pendingClear) {
@@ -2174,10 +2583,16 @@ const EMOJIS = [
         }
 
         if (state.phase === 'victory-clear' && state.victoryClear) {
-          state.victoryClear.timer -= dt;
-          if (state.victoryClear.timer <= 0) {
-            runVictoryClearStep();
-            if (state.victoryClear) state.victoryClear.timer = 0.05 + Math.random() * 0.05;
+          if (state.victoryClear.mode === 'clearing') {
+            state.victoryClear.timer -= dt;
+            if (state.victoryClear.timer <= 0) {
+              runVictoryClearStep();
+              if (state.victoryClear && state.victoryClear.mode === 'clearing') {
+                state.victoryClear.timer = randFloat(VICTORY_CLEAR_STEP_MIN_SECONDS, VICTORY_CLEAR_STEP_MAX_SECONDS);
+              }
+            }
+          } else {
+            updateVictoryFinale(dt);
           }
         }
 
@@ -2186,11 +2601,14 @@ const EMOJIS = [
             resolveAfterSwap();
           } else if (state.phase === 'swap-back') {
             state.phase = 'idle';
+            state.luckyCascadeUsed = false;
           } else {
             const matches = findMatches();
             if (matches.cells.length > 0) {
               state.comboChain = Math.max(1, state.comboChain + 1);
               startClearSequence(matches.cells, matches.specials);
+            } else if (tryTriggerLuckyCascade()) {
+              // Lucky cascade starts its own clear sequence.
             } else if (state.score >= state.target) {
               triggerVictoryClear();
             } else if (state.moves <= 0) {
@@ -2201,12 +2619,14 @@ const EMOJIS = [
             } else {
               state.comboChain = 0;
               state.displayChain = 1;
+              state.luckyCascadeUsed = false;
               state.phase = 'idle';
               clearIdleHint(true);
               updateHud();
             }
           }
         }
+        syncWakeLock();
       }
 
       function render(now) {
@@ -2219,18 +2639,32 @@ const EMOJIS = [
         ctx.drawImage(state.renderCache.frameLayer, 0, 0, state.renderCache.frameLayer.width, state.renderCache.frameLayer.height, 0, 0, width, height);
         ctx.save();
         const { x, y, w, h, tile } = state.boardRect;
+        if (state.shake.x || state.shake.y) ctx.translate(state.shake.x, state.shake.y);
         ctx.drawImage(state.renderCache.boardLayer, 0, 0, state.renderCache.boardLayer.width, state.renderCache.boardLayer.height, 0, 0, width, height);
 
         for (const beam of state.beams) {
           const alpha = beam.life / beam.maxLife;
           ctx.save();
-          ctx.globalAlpha = alpha * 0.95;
+          ctx.globalAlpha = alpha * 0.32;
           ctx.strokeStyle = beam.color;
-          ctx.lineWidth = tile * beam.width;
+          ctx.lineWidth = tile * beam.width * 1.9;
           ctx.lineCap = 'round';
-          ctx.beginPath();
           const start = beam.points[0];
           const end = beam.points[1];
+          ctx.beginPath();
+          ctx.moveTo(x + start.c * tile, y + start.r * tile);
+          ctx.lineTo(x + end.c * tile, y + end.r * tile);
+          ctx.stroke();
+          ctx.globalAlpha = alpha * 0.95;
+          ctx.lineWidth = tile * beam.width;
+          ctx.beginPath();
+          ctx.moveTo(x + start.c * tile, y + start.r * tile);
+          ctx.lineTo(x + end.c * tile, y + end.r * tile);
+          ctx.stroke();
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+          ctx.globalAlpha = alpha * 0.42;
+          ctx.lineWidth = tile * beam.width * 0.42;
+          ctx.beginPath();
           ctx.moveTo(x + start.c * tile, y + start.r * tile);
           ctx.lineTo(x + end.c * tile, y + end.r * tile);
           ctx.stroke();
@@ -2241,12 +2675,60 @@ const EMOJIS = [
           const t = 1 - pulse.life / pulse.maxLife;
           const radius = tile * lerp(0.32, pulse.size, easeOutCubic(t));
           ctx.save();
-          ctx.globalAlpha = (1 - t) * 0.55;
+          if (quality.pulseFill > 0) {
+            const centerX = x + pulse.x * tile;
+            const centerY = y + pulse.y * tile;
+            const fillGradient = ctx.createRadialGradient(centerX, centerY, radius * 0.06, centerX, centerY, radius);
+            fillGradient.addColorStop(0, toRgba(pulse.color, (1 - t) * 0.44 * quality.pulseFill));
+            fillGradient.addColorStop(0.55, toRgba(pulse.color, (1 - t) * 0.2 * quality.pulseFill));
+            fillGradient.addColorStop(1, toRgba(pulse.color, 0));
+            ctx.fillStyle = fillGradient;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, TAU);
+            ctx.fill();
+          }
+          ctx.globalAlpha = (1 - t) * 0.55 * (0.7 + quality.pulseFill * 0.3);
           ctx.strokeStyle = pulse.color;
           ctx.lineWidth = tile * 0.11;
           ctx.beginPath();
           ctx.arc(x + pulse.x * tile, y + pulse.y * tile, radius, 0, TAU);
           ctx.stroke();
+          ctx.restore();
+        }
+
+        if (state.glows.length > 0) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          for (const glow of state.glows) {
+            const t = 1 - glow.life / glow.maxLife;
+            const alpha = (1 - t) * glow.intensity;
+            const radius = tile * lerp(0.2, glow.size, easeOutCubic(t));
+            const centerX = x + glow.x * tile;
+            const centerY = y + glow.y * tile;
+            const gradient = ctx.createRadialGradient(centerX, centerY, radius * 0.06, centerX, centerY, radius);
+            gradient.addColorStop(0, toRgba(glow.color, alpha * 0.95));
+            gradient.addColorStop(0.55, toRgba(glow.color, alpha * 0.24));
+            gradient.addColorStop(1, toRgba(glow.color, 0));
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, TAU);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        if (state.trails.length > 0) {
+          ctx.save();
+          ctx.globalCompositeOperation = 'lighter';
+          for (const trail of state.trails) {
+            const alpha = clamp(trail.life / trail.maxLife, 0, 1) * 0.72;
+            const radius = tile * trail.size;
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = trail.color;
+            ctx.beginPath();
+            ctx.arc(x + trail.x * tile, y + trail.y * tile, radius, 0, TAU);
+            ctx.fill();
+          }
           ctx.restore();
         }
 
@@ -2329,10 +2811,17 @@ const EMOJIS = [
           ctx.globalAlpha = alpha;
           ctx.translate(x + particle.x * tile, y + particle.y * tile);
           ctx.rotate(particle.rot);
-          ctx.font = `${Math.floor(tile * particle.size)}px ${FONT_STACK}`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(particle.emoji, 0, 0);
+          if (particle.shape === 'spark') {
+            const width = tile * particle.size * 1.6;
+            const height = tile * particle.size * 0.56;
+            ctx.fillStyle = particle.color || '#ffffff';
+            ctx.fillRect(-width * 0.5, -height * 0.5, width, height);
+          } else {
+            ctx.font = `${Math.floor(tile * particle.size)}px ${FONT_STACK}`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(particle.emoji || '✨', 0, 0);
+          }
           ctx.restore();
         }
 
@@ -2468,6 +2957,12 @@ const EMOJIS = [
         toggleSettingsMenu();
       });
 
+      if (fullscreenBtn) {
+        fullscreenBtn.addEventListener('click', () => {
+          toggleFullscreen();
+        });
+      }
+
       settingsCloseBtn.addEventListener('click', () => {
         closeSettingsMenu();
       });
@@ -2501,6 +2996,23 @@ const EMOJIS = [
         if (event.key === 'Escape') closeSettingsMenu();
       });
 
+      document.addEventListener('fullscreenchange', updateFullscreenButtonState);
+      document.addEventListener('webkitfullscreenchange', updateFullscreenButtonState);
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') {
+          releaseWakeLock();
+          return;
+        }
+        if (state.wakeLock.shouldHold) {
+          requestWakeLock();
+        }
+      });
+
+      window.addEventListener('pagehide', () => {
+        releaseWakeLock();
+      });
+
       window.addEventListener('resize', resizeCanvas, { passive: true });
       if (window.visualViewport) {
         window.visualViewport.addEventListener('resize', resizeCanvas, { passive: true });
@@ -2531,6 +3043,7 @@ const EMOJIS = [
       }
 
       updateAudioButtons();
+      updateFullscreenButtonState();
       updateHud();
       resizeCanvas();
       showSplash();
