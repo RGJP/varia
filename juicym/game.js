@@ -3389,8 +3389,7 @@ const EMOJIS = [
           const centerX = x + (tileData.x + 0.5) * tile;
           const centerY = y + (tileData.y + 0.5) * tile;
           const isHinted = state.hintMove && tileData.row === state.hintMove.from.r && tileData.col === state.hintMove.from.c;
-          const hintBoost = isHinted ? (0.06 + Math.sin(now * 4.8) * 0.04) : 0;
-          const scale = tileData.scale * (1 + tileData.selectedBoost * 0.08 + hintBoost);
+          const scale = tileData.scale * (1 + tileData.selectedBoost * 0.08);
           const size = tile * scale;
           const left = centerX - size * 0.5;
           const top = centerY - size * 0.5;
@@ -3431,10 +3430,10 @@ const EMOJIS = [
           }
 
           if (isHinted) {
-            ctx.lineWidth = tile * 0.05;
+            ctx.lineWidth = tile * 0.032;
             ctx.strokeStyle = 'rgba(142, 243, 255, 0.95)';
-            ctx.globalAlpha = tileData.alpha * (0.65 + Math.sin(now * 4.8) * 0.25);
-            traceRoundedRect(ctx, left + size * 0.04, top + size * 0.04, size * 0.92, size * 0.92, tile * 0.22);
+            ctx.globalAlpha = tileData.alpha * (0.18 + Math.max(0, Math.sin(now * 4.8)) * 0.52);
+            traceRoundedRect(ctx, left + size * 0.1, top + size * 0.1, size * 0.8, size * 0.8, tile * 0.18);
             ctx.stroke();
           }
 
