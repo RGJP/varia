@@ -203,12 +203,31 @@ const EMOJIS = [
       const MUSIC_VOLUME = 0.42;
       const IDLE_HINT_DELAY_SECONDS = 10;
       const COMBO_POPUP_LIFE_SECONDS = 2.35;
-      const LEVEL_TARGET_LENGTH_MULTIPLIER = 1.65;
-      const LEVEL_MOVES_LENGTH_MULTIPLIER = 1.22;
-      const CHAOS_DROP_BASE_CHANCE = 0.018;
-      const CHAOS_DROP_COMBO_STEP = 0.012;
-      const CHAOS_DROP_LEVEL_STEP = 0.002;
-      const CHAOS_DROP_MAX_CHANCE = 0.14;
+      const CLEAR_PHASE_BASE_SECONDS = 0.07;
+      const CLEAR_PHASE_MAX_SECONDS = 0.17;
+      const CLEAR_PHASE_PER_CELL_SECONDS = 0.0018;
+      const CLEAR_PHASE_PER_POWER_SECONDS = 0.012;
+      const CLEAR_PHASE_PER_SPAWN_SECONDS = 0.008;
+      const CLEAR_PHASE_PER_COMBO_SECONDS = 0.007;
+      const CLEAR_REMOVE_TARGET_SCALE = 0.2;
+      const CLEAR_REMOVE_TARGET_SCALE_POWER = 0.16;
+      const CLEAR_REMOVE_SCALE_LERP_SPEED = 26;
+      const VICTORY_CLEAR_REMOVE_BASE_SECONDS = 0.055;
+      const VICTORY_CLEAR_REMOVE_JITTER_SECONDS = 0.03;
+      const LEVEL_TARGET_LENGTH_MULTIPLIER = 1.82;
+      const LEVEL_MOVES_LENGTH_MULTIPLIER = 1.06;
+      const LEVEL_HARD_TARGET_BOOST_MAX = 0.26;
+      const LEVEL_HARD_MOVES_PENALTY_MAX = 0.18;
+      const LEVEL_EASY_TARGET_RELIEF_MAX = 0.08;
+      const LEVEL_EASY_MOVES_BOOST_MAX = 0.1;
+      const LUCKY_CASCADE_BASE_CHANCE = 0.12;
+      const LUCKY_CASCADE_LEVEL_STEP = 0.009;
+      const LUCKY_CASCADE_COMBO_STEP = 0.028;
+      const LUCKY_CASCADE_MAX_CHANCE = 0.34;
+      const CHAOS_DROP_BASE_CHANCE = 0.007;
+      const CHAOS_DROP_COMBO_STEP = 0.006;
+      const CHAOS_DROP_LEVEL_STEP = 0.0014;
+      const CHAOS_DROP_MAX_CHANCE = 0.055;
       let footerLayoutKey = '';
       let settingsReturnFocusEl = null;
 
@@ -612,6 +631,7 @@ const EMOJIS = [
           born: performance.now() * 0.001,
           removing: false,
           removeTimer: 0,
+          removeLife: 0,
           pulse: Math.random() * TAU,
           selectedBoost: 0
         };
@@ -1197,14 +1217,18 @@ const EMOJIS = [
         const baseCols = randInt(rng, MIN_BOARD_SIZE, MAX_BOARD_SIZE);
         const { rows, cols } = pickResponsiveBoardSize(baseRows, baseCols, MIN_BOARD_SIZE, MAX_BOARD_SIZE, rng);
         const easyHardDrift = rng();
+        const hardPressure = clamp((easyHardDrift - 0.62) / 0.38, 0, 1);
+        const easyRelief = clamp((0.24 - easyHardDrift) / 0.24, 0, 1);
+        const movePressureScale = 1 - hardPressure * LEVEL_HARD_MOVES_PENALTY_MAX + easyRelief * LEVEL_EASY_MOVES_BOOST_MAX;
+        const targetPressureScale = 1 + hardPressure * LEVEL_HARD_TARGET_BOOST_MAX - easyRelief * LEVEL_EASY_TARGET_RELIEF_MAX;
         const symbolCount = clamp(randInt(rng, band.symbolRange[0], band.symbolRange[1]) + (easyHardDrift > 0.72 ? 1 : 0) - (easyHardDrift < 0.28 ? 1 : 0), 5, EMOJIS.length);
         const rawMoves = randInt(rng, band.moves[0], band.moves[1]) + (easyHardDrift < 0.24 ? 2 : 0) - (easyHardDrift > 0.78 ? 1 : 0);
-        const moves = clamp(Math.round(rawMoves * LEVEL_MOVES_LENGTH_MULTIPLIER), 14, 36);
+        const moves = clamp(Math.round(rawMoves * LEVEL_MOVES_LENGTH_MULTIPLIER * movePressureScale), 13, 32);
         const perCell = randInt(rng, band.targetPerCell[0], band.targetPerCell[1]);
         const boardCells = rows * cols;
         const levelDurationBoost = 1.18 + Math.min(0.14, (level - 1) * 0.025);
         const target = Math.round(
-          boardCells * perCell * (1 + (level - 1) * 0.1) * levelDurationBoost * LEVEL_TARGET_LENGTH_MULTIPLIER
+          boardCells * perCell * (1 + (level - 1) * 0.1) * levelDurationBoost * LEVEL_TARGET_LENGTH_MULTIPLIER * targetPressureScale
         );
         const difficultyLabel = easyHardDrift < 0.24
           ? band.difficultyText[0]
@@ -1458,7 +1482,7 @@ const EMOJIS = [
       }
 
       function pickChaosDropPower() {
-        if (state.comboChain < 2) return null;
+        if (state.comboChain < 3) return null;
         const chance = clamp(
           CHAOS_DROP_BASE_CHANCE +
           Math.max(0, state.comboChain - 1) * CHAOS_DROP_COMBO_STEP +
@@ -1467,9 +1491,9 @@ const EMOJIS = [
           CHAOS_DROP_MAX_CHANCE
         );
         if (state.rng() > chance) return null;
-        const pool = state.comboChain >= 4
+        const pool = state.comboChain >= 5
           ? ['row', 'col', 'bomb', 'lightning', 'vortex', 'meteor', 'prism']
-          : ['row', 'col', 'bomb', 'lightning'];
+          : ['row', 'col', 'bomb'];
         return pool[randInt(state.rng, 0, pool.length - 1)];
       }
 
@@ -1595,7 +1619,7 @@ const EMOJIS = [
         overlayLevelStat.classList.remove('hidden');
         overlaySecondary.classList.remove('hidden');
         overlayScore.textContent = String(state.score);
-        overlayTarget.textContent = state.target.toLocaleString();
+        overlayTarget.textContent = String(state.target);
         overlayLevel.textContent = state.level;
         if (mode === 'win') {
           overlayTitle.textContent = `Score ${state.score}`;
@@ -1605,10 +1629,11 @@ const EMOJIS = [
           overlaySecondary.classList.add('hidden');
           overlayPrimary.textContent = 'Next Level';
         } else {
-          overlayTitle.textContent = 'Game Over';
-          overlaySub.textContent = 'Moves ran dry before the target. Start a new run or retry the same level seed.';
-          overlayPrimary.textContent = 'Retry Level';
-          overlaySecondary.textContent = 'New Run';
+          overlayTitle.textContent = 'Out of moves 🥲';
+          overlaySub.classList.add('hidden');
+          overlayLevelStat.classList.add('hidden');
+          overlaySecondary.classList.add('hidden');
+          overlayPrimary.textContent = 'Keep Playing';
         }
         syncWakeLock();
       }
@@ -2083,9 +2108,12 @@ const EMOJIS = [
 
       function tryTriggerLuckyCascade() {
         if (state.luckyCascadeUsed || state.comboChain < 1) return false;
-        const baseChance = 0.22 + Math.min(0.18, state.level * 0.014);
-        const comboBoost = Math.min(0.15, Math.max(0, state.comboChain - 1) * 0.05);
-        const chance = clamp((baseChance + comboBoost) * getEffectBudgetScale(), 0, 0.58);
+        const driftPenalty = state.levelInfo
+          ? clamp((state.levelInfo.drift - 0.62) / 0.38, 0, 1) * 0.08
+          : 0;
+        const baseChance = LUCKY_CASCADE_BASE_CHANCE + Math.min(0.12, state.level * LUCKY_CASCADE_LEVEL_STEP);
+        const comboBoost = Math.min(0.11, Math.max(0, state.comboChain - 1) * LUCKY_CASCADE_COMBO_STEP);
+        const chance = clamp((baseChance + comboBoost - driftPenalty) * getEffectBudgetScale(), 0, LUCKY_CASCADE_MAX_CHANCE);
         if (Math.random() > chance) return false;
 
         const bonusCells = pickLuckyCascadeCells();
@@ -2149,12 +2177,30 @@ const EMOJIS = [
         };
       }
 
+      function computeClearPhaseSeconds(cellCount, activatedPowerCount, spawnedSpecialCount, comboChain, luckyCascade = false) {
+        const duration = CLEAR_PHASE_BASE_SECONDS +
+          Math.min(0.055, cellCount * CLEAR_PHASE_PER_CELL_SECONDS) +
+          activatedPowerCount * CLEAR_PHASE_PER_POWER_SECONDS +
+          spawnedSpecialCount * CLEAR_PHASE_PER_SPAWN_SECONDS +
+          Math.max(0, comboChain - 1) * CLEAR_PHASE_PER_COMBO_SECONDS +
+          (luckyCascade ? 0.012 : 0);
+        return clamp(duration, CLEAR_PHASE_BASE_SECONDS, CLEAR_PHASE_MAX_SECONDS);
+      }
+
       function startClearSequence(baseCells, specials = [], options = {}) {
         const { cells, activatedPowerCount } = collectClears(baseCells, {
           specials,
           keepSpecialAnchors: true,
           targetKind: options.targetKind ?? null
         });
+        const clearPhaseSeconds = computeClearPhaseSeconds(
+          cells.length,
+          activatedPowerCount,
+          specials.length,
+          state.comboChain,
+          Boolean(options.luckyCascade)
+        );
+        const removeBaseSeconds = clearPhaseSeconds * 0.88;
 
         const spawnKeys = new Set(specials.map((s) => keyOf(s.r, s.c)));
         let centerX = 0;
@@ -2165,8 +2211,9 @@ const EMOJIS = [
           centerX += cell.c + 0.5;
           centerY += cell.r + 0.5;
           tile.removing = true;
-          tile.removeTimer = 0.028 + Math.random() * 0.012;
-          tile.targetScale = 0.12;
+          tile.removeLife = removeBaseSeconds * randFloat(0.92, 1.14);
+          tile.removeTimer = tile.removeLife;
+          tile.targetScale = tile.power ? CLEAR_REMOVE_TARGET_SCALE_POWER : CLEAR_REMOVE_TARGET_SCALE;
           addParticles(cell.c, cell.r, tile.kind, tile.power ? 12 : 7, tile.power);
           if (tile.power || ((cell.r + cell.c + state.comboChain) % 3 === 0)) {
             addGlow(cell.c + 0.5, cell.r + 0.5, tile.power ? POWER_COLORS[tile.power] : colorForKind(tile.kind), tile.power ? 1.15 : 0.88, tile.power ? 0.32 : 0.2, tile.power ? 0.72 : 0.45);
@@ -2212,7 +2259,7 @@ const EMOJIS = [
         }
 
         state.pendingClear = {
-          timer: 0.025,
+          timer: clearPhaseSeconds,
           cells,
           specials,
           spawnKeys
@@ -2450,6 +2497,9 @@ const EMOJIS = [
           }
           tile.power = special.power;
           tile.removing = false;
+          tile.removeTimer = 0;
+          tile.removeLife = 0;
+          tile.alpha = 1;
           tile.targetScale = 1.1;
         }
         state.pendingClear = null;
@@ -2613,8 +2663,9 @@ const EMOJIS = [
           const tile = getTile(cell.r, cell.c);
           if (!tile) continue;
           tile.removing = true;
-          tile.removeTimer = 0.028 + Math.random() * 0.024;
-          tile.targetScale = 0.08;
+          tile.removeLife = VICTORY_CLEAR_REMOVE_BASE_SECONDS + Math.random() * VICTORY_CLEAR_REMOVE_JITTER_SECONDS;
+          tile.removeTimer = tile.removeLife;
+          tile.targetScale = 0.12;
         }
         if (Math.random() < 0.52) launchVictoryFirework(0.62);
         flash(0.05);
@@ -2707,7 +2758,8 @@ const EMOJIS = [
             tile.vy += (dy * k - tile.vy * damping) * dt;
             tile.x += tile.vx * dt;
             tile.y += tile.vy * dt;
-            tile.scale += (tile.targetScale - tile.scale) * Math.min(1, dt * 40);
+            const scaleLerpSpeed = tile.removing ? CLEAR_REMOVE_SCALE_LERP_SPEED : 40;
+            tile.scale += (tile.targetScale - tile.scale) * Math.min(1, dt * scaleLerpSpeed);
             if (!tile.removing) tile.targetScale += (1 - tile.targetScale) * Math.min(1, dt * 34);
             if (selected && selected.r === r && selected.c === c) {
               tile.selectedBoost = Math.min(1, tile.selectedBoost + dt * 8);
@@ -2716,7 +2768,7 @@ const EMOJIS = [
             }
             if (tile.removing) {
               tile.removeTimer -= dt;
-              tile.alpha = clamp(tile.removeTimer / 0.04, 0, 1);
+              tile.alpha = clamp(tile.removeTimer / Math.max(0.001, tile.removeLife || CLEAR_PHASE_BASE_SECONDS), 0, 1);
             } else {
               tile.alpha += (1 - tile.alpha) * Math.min(1, dt * 12);
               if ((state.phase === 'falling' || state.phase === 'swapping' || state.phase === 'settling') && quality.maxTrails > 0) {
@@ -3196,7 +3248,7 @@ const EMOJIS = [
         if (state.overlayMode === 'win') {
           resetForNewLevel(state.level + 1, true);
         } else {
-          resetForNewLevel(state.level, false, state.levelInfo.seed);
+          resetForNewLevel(state.level, true);
         }
       });
 
