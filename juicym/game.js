@@ -213,6 +213,9 @@ const EMOJIS = [
       const CLEAR_REMOVE_SCALE_LERP_SPEED = 26;
       const CLEAR_REMOVE_JITTER_MIN = 0.92;
       const CLEAR_REMOVE_JITTER_MAX = 1.14;
+      const CLEAR_REMOVE_STAGGER_BASE_SECONDS = 0.018;
+      const CLEAR_REMOVE_STAGGER_MASSIVE_SECONDS = 0.032;
+      const CLEAR_REMOVE_MIN_DURATION_SECONDS = 0.045;
       const MASS_CLEAR_COVERAGE = 0.72;
       const MASS_CLEAR_MIN_CELLS = 18;
       const MASS_CLEAR_REMOVE_JITTER_MIN = 0.98;
@@ -668,8 +671,10 @@ const EMOJIS = [
           wobble: Math.random() * TAU,
           born: performance.now() * 0.001,
           removing: false,
+          removeDelay: 0,
           removeTimer: 0,
           removeLife: 0,
+          removeTargetScale: 1,
           pulse: Math.random() * TAU,
           selectedBoost: 0
         };
@@ -686,6 +691,14 @@ const EMOJIS = [
           tile.row = r;
           tile.col = c;
         }
+      }
+
+      function snapTileToGrid(tile) {
+        if (!tile) return;
+        tile.x = tile.col;
+        tile.y = tile.row;
+        tile.vx = 0;
+        tile.vy = 0;
       }
 
       function confirmShuffle() {
@@ -2407,6 +2420,7 @@ const EMOJIS = [
       }
 
       function startClearSequence(baseCells, specials = [], options = {}) {
+        if (state.pendingClear || state.phase === 'clearing') return;
         const totalBoardCells = Math.max(1, state.rows * state.cols);
         const baseCoverage = baseCells.length / totalBoardCells;
         const { cells, activatedPowerCount } = collectClears(baseCells, {
@@ -2429,37 +2443,75 @@ const EMOJIS = [
         const removeJitterMax = massiveClear ? MASS_CLEAR_REMOVE_JITTER_MAX : CLEAR_REMOVE_JITTER_MAX;
 
         const spawnKeys = new Set(specials.map((s) => keyOf(s.r, s.c)));
-        let centerX = 0;
-        let centerY = 0;
+        const liveCells = [];
         for (const cell of cells) {
           const tile = getTile(cell.r, cell.c);
           if (!tile) continue;
-          centerX += cell.c + 0.5;
-          centerY += cell.r + 0.5;
+          liveCells.push({ cell, tile });
+        }
+        if (liveCells.length === 0) {
+          state.phase = 'settling';
+          return;
+        }
+
+        let centerX = 0;
+        let centerY = 0;
+        for (const entry of liveCells) {
+          centerX += entry.cell.c + 0.5;
+          centerY += entry.cell.r + 0.5;
+        }
+        centerX /= liveCells.length;
+        centerY /= liveCells.length;
+
+        let maxCenterDistance = 0;
+        for (const entry of liveCells) {
+          const dist = Math.hypot(entry.cell.c + 0.5 - centerX, entry.cell.r + 0.5 - centerY);
+          if (dist > maxCenterDistance) maxCenterDistance = dist;
+        }
+        const staggerWindow = massiveClear ? CLEAR_REMOVE_STAGGER_MASSIVE_SECONDS : CLEAR_REMOVE_STAGGER_BASE_SECONDS;
+        let maxClearSpan = clearPhaseSeconds;
+
+        for (const entry of liveCells) {
+          const { cell, tile } = entry;
+          const hash = (((cell.r + 1) * 73856093) ^ ((cell.c + 1) * 19349663) ^ ((state.comboChain + 1) * 83492791)) >>> 0;
+          const hashNorm = (hash % 4096) / 4095;
+          const centerDistance = Math.hypot(cell.c + 0.5 - centerX, cell.r + 0.5 - centerY);
+          const wave = maxCenterDistance > 0 ? centerDistance / maxCenterDistance : 0;
+          const removeDelay = staggerWindow * (massiveClear ? wave : hashNorm * 0.58);
+          const jitter = lerp(removeJitterMin, removeJitterMax, hashNorm);
+          const removeLife = clamp(
+            removeBaseSeconds * jitter,
+            CLEAR_REMOVE_MIN_DURATION_SECONDS,
+            Math.max(CLEAR_REMOVE_MIN_DURATION_SECONDS, clearPhaseSeconds - removeDelay * 0.35)
+          );
+
           tile.removing = true;
-          tile.removeLife = removeBaseSeconds * randFloat(removeJitterMin, removeJitterMax);
-          tile.removeTimer = tile.removeLife;
-          tile.targetScale = tile.power ? CLEAR_REMOVE_TARGET_SCALE_POWER : CLEAR_REMOVE_TARGET_SCALE;
-          const particleBurst = tile.power ? (massiveClear ? 8 : 12) : (massiveClear ? 4 : 7);
+          tile.removeDelay = removeDelay;
+          tile.removeLife = removeLife;
+          tile.removeTimer = removeLife;
+          tile.removeTargetScale = tile.power ? CLEAR_REMOVE_TARGET_SCALE_POWER : CLEAR_REMOVE_TARGET_SCALE;
+          tile.targetScale = 1;
+          tile.alpha = 1;
+          maxClearSpan = Math.max(maxClearSpan, removeDelay + removeLife);
+
+          const particleBurst = tile.power ? (massiveClear ? 6 : 10) : (massiveClear ? 3 : 6);
           addParticles(cell.c, cell.r, tile.kind, particleBurst, tile.power);
           const glowPatternHit = massiveClear
-            ? ((cell.r * 17 + cell.c * 31 + state.comboChain) % 6 === 0)
+            ? ((cell.r * 17 + cell.c * 31 + state.comboChain) % 7 === 0)
             : ((cell.r + cell.c + state.comboChain) % 3 === 0);
           if (tile.power || glowPatternHit) {
             addGlow(
               cell.c + 0.5,
               cell.r + 0.5,
               tile.power ? POWER_COLORS[tile.power] : colorForKind(tile.kind),
-              tile.power ? 1.15 : (massiveClear ? 0.78 : 0.88),
-              tile.power ? 0.32 : (massiveClear ? 0.16 : 0.2),
-              tile.power ? 0.72 : (massiveClear ? 0.36 : 0.45)
+              tile.power ? 1.15 : (massiveClear ? 0.72 : 0.88),
+              tile.power ? 0.32 : (massiveClear ? 0.14 : 0.2),
+              tile.power ? 0.72 : (massiveClear ? 0.32 : 0.45)
             );
           }
         }
 
         if (cells.length > 0) {
-          centerX /= cells.length;
-          centerY /= cells.length;
           const pulseColor = state.comboChain >= 2 ? '#8ef3ff' : '#ffd97a';
           const pulseSize = clamp(0.9 + cells.length * 0.05, 0.9, 1.75);
           addPulse(centerX, centerY, pulseColor, pulseSize, 0.26 + Math.min(0.14, cells.length * 0.01));
@@ -2496,7 +2548,7 @@ const EMOJIS = [
         }
 
         state.pendingClear = {
-          timer: clearPhaseSeconds,
+          timer: maxClearSpan,
           cells,
           specials,
           spawnKeys
@@ -2734,8 +2786,10 @@ const EMOJIS = [
           }
           tile.power = special.power;
           tile.removing = false;
+          tile.removeDelay = 0;
           tile.removeTimer = 0;
           tile.removeLife = 0;
+          tile.removeTargetScale = 1;
           tile.alpha = 1;
           tile.targetScale = 1.1;
           trackSpawnedPower(special.power);
@@ -2798,10 +2852,16 @@ const EMOJIS = [
       }
 
       function pruneRemovedTiles() {
+        const holdDuringClear = Boolean(state.pendingClear && state.phase === 'clearing');
         for (let r = 0; r < state.rows; r += 1) {
           for (let c = 0; c < state.cols; c += 1) {
             const tile = getTile(r, c);
             if (!tile || !tile.removing || tile.removeTimer > 0) continue;
+            if (holdDuringClear) {
+              tile.removeTimer = 0;
+              tile.alpha = 0;
+              continue;
+            }
             setTile(r, c, null);
           }
         }
@@ -2962,8 +3022,10 @@ const EMOJIS = [
           const tile = getTile(cell.r, cell.c);
           if (!tile) continue;
           tile.removing = true;
+          tile.removeDelay = 0;
           tile.removeLife = VICTORY_CLEAR_REMOVE_BASE_SECONDS + Math.random() * VICTORY_CLEAR_REMOVE_JITTER_SECONDS;
           tile.removeTimer = tile.removeLife;
+          tile.removeTargetScale = 0.12;
           tile.targetScale = 0.12;
         }
         if (Math.random() < 0.52) launchVictoryFirework(0.62);
@@ -3057,6 +3119,19 @@ const EMOJIS = [
             tile.vy += (dy * k - tile.vy * damping) * dt;
             tile.x += tile.vx * dt;
             tile.y += tile.vy * dt;
+            if (tile.removing) {
+              if (tile.removeDelay > 0) {
+                tile.removeDelay = Math.max(0, tile.removeDelay - dt);
+                tile.targetScale = 1;
+                tile.alpha = 1;
+              } else {
+                tile.targetScale = tile.removeTargetScale || tile.targetScale;
+                tile.removeTimer = Math.max(0, tile.removeTimer - dt);
+                const removeLife = Math.max(0.001, tile.removeLife || CLEAR_PHASE_BASE_SECONDS);
+                const progress = clamp(1 - tile.removeTimer / removeLife, 0, 1);
+                tile.alpha = 1 - easeOutCubic(progress);
+              }
+            }
             const scaleLerpSpeed = tile.removing ? CLEAR_REMOVE_SCALE_LERP_SPEED : 40;
             tile.scale += (tile.targetScale - tile.scale) * Math.min(1, dt * scaleLerpSpeed);
             if (!tile.removing) tile.targetScale += (1 - tile.targetScale) * Math.min(1, dt * 34);
@@ -3065,10 +3140,7 @@ const EMOJIS = [
             } else {
               tile.selectedBoost = Math.max(0, tile.selectedBoost - dt * 8);
             }
-            if (tile.removing) {
-              tile.removeTimer -= dt;
-              tile.alpha = clamp(tile.removeTimer / Math.max(0.001, tile.removeLife || CLEAR_PHASE_BASE_SECONDS), 0, 1);
-            } else {
+            if (!tile.removing) {
               tile.alpha += (1 - tile.alpha) * Math.min(1, dt * 12);
               if ((state.phase === 'falling' || state.phase === 'swapping' || state.phase === 'settling') && quality.maxTrails > 0) {
                 const velocity = Math.hypot(tile.vx, tile.vy);
@@ -3316,18 +3388,12 @@ const EMOJIS = [
         for (const tileData of drawTiles) {
           const centerX = x + (tileData.x + 0.5) * tile;
           const centerY = y + (tileData.y + 0.5) * tile;
-          const idleFloat = !idlePhase && quality.idleMotion > 0
-            ? Math.sin(now * 1.85 + tileData.wobble) * tile * 0.018 * quality.idleMotion
-            : 0;
-          const pulse = !idlePhase
-            ? 1 + Math.sin(now * 2.2 + tileData.pulse) * 0.02 * quality.tilePulse
-            : 1;
           const isHinted = state.hintMove && tileData.row === state.hintMove.from.r && tileData.col === state.hintMove.from.c;
           const hintBoost = isHinted ? (0.06 + Math.sin(now * 4.8) * 0.04) : 0;
-          const scale = tileData.scale * pulse * (1 + tileData.selectedBoost * 0.08 + hintBoost);
+          const scale = tileData.scale * (1 + tileData.selectedBoost * 0.08 + hintBoost);
           const size = tile * scale;
           const left = centerX - size * 0.5;
-          const top = centerY - size * 0.5 + idleFloat;
+          const top = centerY - size * 0.5;
           const sprite = getTileSprite(tileData.kind, tileData.power);
 
           ctx.save();
@@ -3338,7 +3404,7 @@ const EMOJIS = [
             const fallbackColor = colorForKind(tileData.kind);
             const innerSize = size * 0.86;
             const innerLeft = centerX - innerSize * 0.5;
-            const innerTop = centerY - innerSize * 0.5 + idleFloat;
+            const innerTop = centerY - innerSize * 0.5;
             const grad = ctx.createLinearGradient(innerLeft, innerTop, innerLeft + innerSize, innerTop + innerSize);
             grad.addColorStop(0, 'rgba(255,255,255,0.08)');
             grad.addColorStop(0.12, toRgba(fallbackColor, 0.43));
@@ -3353,7 +3419,7 @@ const EMOJIS = [
             ctx.font = `${Math.floor(innerSize * 0.55)}px ${FONT_STACK}`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
-            ctx.fillText(emojiForKind(tileData.kind), centerX, centerY + idleFloat);
+            ctx.fillText(emojiForKind(tileData.kind), centerX, centerY);
           }
 
           if (tileData.selectedBoost > 0) {
