@@ -37,7 +37,7 @@ const EMOJIS = [
       const VICTORY_FIREWORK_COLORS = ['#ff6f87', '#ffd76f', '#7cf9b3', '#7fd7ff', '#c7a2ff', '#ff97dd'];
       const COMBO_CALLOUTS = {
         starter: ['Nice', 'Sweet', 'Great', 'Clean', 'Smooth', 'Solid', 'Neat', 'Tasty', 'Fresh', 'Sharp', 'Crisp', 'Slick'],
-        rising: ['Epic', 'Wild', 'Spicy', 'Nasty', 'Savage', 'Blazing', 'Cracked', 'On Fire', 'Superb', 'Brilliant', 'Electric', 'Juicy'],
+        rising: ['Epic', 'Wild', 'Spicy', 'Savage', 'Blazing', 'Cracked', 'On Fire', 'Superb', 'Brilliant', 'Electric', 'Juicy'],
         big: ['Insane', 'Monster', 'Unreal', 'Massive', 'Ferocious', 'Dominant', 'Explosive', 'Ridiculous', 'Fearless', 'Thunderous', 'Unstoppable', 'Mighty'],
         massive: ['Legendary', 'Mythic', 'Godlike', 'Transcendent', 'Apocalyptic', 'Supersonic', 'Meteoric', 'Titanic', 'Overpowered', 'Invincible', 'Astronomical', 'Elite']
       };
