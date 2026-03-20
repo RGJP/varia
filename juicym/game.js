@@ -169,6 +169,7 @@ const EMOJIS = [
       const overlayTitle = document.getElementById('overlayTitle');
       const overlaySub = document.getElementById('overlaySub');
       const overlayStats = document.querySelector('.overlay-stats');
+      const overlayActions = document.querySelector('.overlay-actions');
       const overlayScoreStat = document.getElementById('overlayScoreStat');
       const overlayTargetStat = document.getElementById('overlayTargetStat');
       const overlayLevelStat = document.getElementById('overlayLevelStat');
@@ -185,7 +186,6 @@ const EMOJIS = [
       const fullscreenBtn = document.getElementById('fullscreenBtn');
       const settingsMenu = document.getElementById('settingsMenu');
       const settingsPanel = document.getElementById('settingsPanel');
-      const settingsCloseBtn = document.getElementById('settingsCloseBtn');
 
       const statusLine = document.getElementById('statusLine');
       const statusMoves = document.getElementById('statusMoves');
@@ -193,10 +193,10 @@ const EMOJIS = [
       const restartBtn = document.getElementById('restartBtn');
       const muteMusicBtn = document.getElementById('muteMusicBtn');
       const muteMusicIcon = document.getElementById('muteMusicIcon');
-      const muteMusicText = document.getElementById('muteMusicText');
+      const muteMusicLabel = document.getElementById('muteMusicLabel');
       const muteFxBtn = document.getElementById('muteFxBtn');
       const muteFxIcon = document.getElementById('muteFxIcon');
-      const muteFxText = document.getElementById('muteFxText');
+      const muteFxLabel = document.getElementById('muteFxLabel');
       const MUSIC_TRACKS = ['music/1.mp3', 'music/2.mp3', 'music/3.mp3', 'music/4.mp3', 'music/5.mp3', 'music/6.mp3', 'music/7.mp3', 'music/8.mp3', 'music/9.mp3', 'music/10.mp3', 'music/11.mp3', 'music/12.mp3', 'music/13.mp3'];
       const MUSIC_FADE_MS = 2000;
       const FX_VOLUME = 0.75;
@@ -212,22 +212,42 @@ const EMOJIS = [
       const CLEAR_REMOVE_TARGET_SCALE = 0.2;
       const CLEAR_REMOVE_TARGET_SCALE_POWER = 0.16;
       const CLEAR_REMOVE_SCALE_LERP_SPEED = 26;
+      const CLEAR_REMOVE_JITTER_MIN = 0.92;
+      const CLEAR_REMOVE_JITTER_MAX = 1.14;
+      const MASS_CLEAR_COVERAGE = 0.72;
+      const MASS_CLEAR_MIN_CELLS = 18;
+      const MASS_CLEAR_REMOVE_JITTER_MIN = 0.98;
+      const MASS_CLEAR_REMOVE_JITTER_MAX = 1.05;
+      const MAX_POWER_VISUALS_PER_CLEAR = 6;
+      const MAX_POWER_SHAKE_PER_CLEAR = 18;
       const VICTORY_CLEAR_REMOVE_BASE_SECONDS = 0.055;
       const VICTORY_CLEAR_REMOVE_JITTER_SECONDS = 0.03;
-      const LEVEL_TARGET_LENGTH_MULTIPLIER = 1.82;
-      const LEVEL_MOVES_LENGTH_MULTIPLIER = 1.06;
-      const LEVEL_HARD_TARGET_BOOST_MAX = 0.26;
-      const LEVEL_HARD_MOVES_PENALTY_MAX = 0.18;
-      const LEVEL_EASY_TARGET_RELIEF_MAX = 0.08;
-      const LEVEL_EASY_MOVES_BOOST_MAX = 0.1;
-      const LUCKY_CASCADE_BASE_CHANCE = 0.12;
-      const LUCKY_CASCADE_LEVEL_STEP = 0.009;
-      const LUCKY_CASCADE_COMBO_STEP = 0.028;
-      const LUCKY_CASCADE_MAX_CHANCE = 0.34;
-      const CHAOS_DROP_BASE_CHANCE = 0.0095;
-      const CHAOS_DROP_COMBO_STEP = 0.0068;
-      const CHAOS_DROP_LEVEL_STEP = 0.0016;
-      const CHAOS_DROP_MAX_CHANCE = 0.067;
+      const LEVEL_TARGET_LENGTH_MULTIPLIER = 1.74;
+      const LEVEL_MOVES_LENGTH_MULTIPLIER = 1.12;
+      const LEVEL_HARD_TARGET_BOOST_MAX = 0.22;
+      const LEVEL_HARD_MOVES_PENALTY_MAX = 0.14;
+      const LEVEL_EASY_TARGET_RELIEF_MAX = 0.1;
+      const LEVEL_EASY_MOVES_BOOST_MAX = 0.12;
+      const SECOND_WIND_BASE_CHANCE = 0.58;
+      const SECOND_WIND_PROGRESS_BONUS = 0.34;
+      const SECOND_WIND_LEVEL_STEP = 0.012;
+      const SECOND_WIND_LEVEL_MAX_BONUS = 0.14;
+      const SECOND_WIND_MAX_CHANCE = 0.93;
+      const LUCKY_CASCADE_BASE_CHANCE = 0.18;
+      const LUCKY_CASCADE_LEVEL_STEP = 0.012;
+      const LUCKY_CASCADE_COMBO_STEP = 0.035;
+      const LUCKY_CASCADE_MAX_CHANCE = 0.48;
+      const CHAOS_DROP_BASE_CHANCE = 0.02;
+      const CHAOS_DROP_COMBO_STEP = 0.01;
+      const CHAOS_DROP_LEVEL_STEP = 0.0022;
+      const CHAOS_DROP_DRY_STREAK_STEP = 0.0032;
+      const CHAOS_DROP_DRY_STREAK_MAX = 0.024;
+      const CHAOS_DROP_MAX_PER_CLEAR = 2;
+      const CHAOS_DROP_MAX_CHANCE = 0.14;
+      const BONUS_MATCH_POWER_BASE_CHANCE = 0.16;
+      const BONUS_MATCH_POWER_COMBO_STEP = 0.09;
+      const BONUS_MATCH_POWER_MAX_CHANCE = 0.48;
+      const BONUS_MATCH_POWER_MAX_PER_CLEAR = 1;
       let footerLayoutKey = '';
       let settingsReturnFocusEl = null;
 
@@ -247,6 +267,8 @@ const EMOJIS = [
         comboChain: 0,
         displayChain: 1,
         luckyCascadeUsed: false,
+        secondWindUsed: false,
+        chaosDryStreak: 0,
         levelInfo: null,
         boardRect: { x: 0, y: 0, w: 0, h: 0, tile: 0 },
         canvasSize: { w: 0, h: 0, dpr: 1 },
@@ -793,8 +815,8 @@ const EMOJIS = [
         settingsBtn.setAttribute('aria-expanded', 'true');
         requestAnimationFrame(() => {
           if (!isSettingsMenuOpen()) return;
-          if (settingsCloseBtn && typeof settingsCloseBtn.focus === 'function') {
-            settingsCloseBtn.focus({ preventScroll: true });
+          if (shuffleBtn && typeof shuffleBtn.focus === 'function') {
+            shuffleBtn.focus({ preventScroll: true });
           }
         });
       }
@@ -811,12 +833,12 @@ const EMOJIS = [
         const isMusicMuted = state.audio.musicMuted;
         const isFxMuted = state.audio.fxMuted;
         if (muteMusicIcon) muteMusicIcon.textContent = isMusicMuted ? '🔇' : '🎵';
-        if (muteMusicText) muteMusicText.textContent = isMusicMuted ? 'Muted' : 'On';
+        if (muteMusicLabel) muteMusicLabel.textContent = isMusicMuted ? 'Music Off' : 'Music On';
         muteMusicBtn.setAttribute('aria-label', isMusicMuted ? 'Unmute music' : 'Mute music');
         muteMusicBtn.setAttribute('aria-pressed', isMusicMuted ? 'true' : 'false');
 
         if (muteFxIcon) muteFxIcon.textContent = isFxMuted ? '🔕' : '🔊';
-        if (muteFxText) muteFxText.textContent = isFxMuted ? 'Muted' : 'On';
+        if (muteFxLabel) muteFxLabel.textContent = isFxMuted ? 'FX Off' : 'FX On';
         muteFxBtn.setAttribute('aria-label', isFxMuted ? 'Unmute sound effects' : 'Mute sound effects');
         muteFxBtn.setAttribute('aria-pressed', isFxMuted ? 'true' : 'false');
       }
@@ -1481,12 +1503,15 @@ const EMOJIS = [
         return kind;
       }
 
-      function pickChaosDropPower() {
-        if (state.comboChain < 3) return null;
+      function pickChaosDropPower(spawnsThisClear = 0) {
+        if (spawnsThisClear >= CHAOS_DROP_MAX_PER_CLEAR) return null;
+        if (state.comboChain < 1) return null;
+        const dryBoost = Math.min(CHAOS_DROP_DRY_STREAK_MAX, state.chaosDryStreak * CHAOS_DROP_DRY_STREAK_STEP);
         const chance = clamp(
           CHAOS_DROP_BASE_CHANCE +
           Math.max(0, state.comboChain - 1) * CHAOS_DROP_COMBO_STEP +
-          Math.max(0, state.level - 1) * CHAOS_DROP_LEVEL_STEP,
+          Math.max(0, state.level - 1) * CHAOS_DROP_LEVEL_STEP +
+          dryBoost,
           0,
           CHAOS_DROP_MAX_CHANCE
         );
@@ -1495,7 +1520,9 @@ const EMOJIS = [
           ? ['row', 'col', 'bomb', 'lightning', 'vortex', 'meteor', 'prism']
           : state.comboChain >= 4
             ? ['row', 'col', 'bomb', 'lightning']
-          : ['row', 'col', 'bomb'];
+            : state.comboChain >= 2
+              ? ['row', 'col', 'bomb']
+              : ['row', 'col', 'bomb'];
         return pool[randInt(state.rng, 0, pool.length - 1)];
       }
 
@@ -1536,6 +1563,8 @@ const EMOJIS = [
         state.comboChain = 0;
         state.displayChain = 1;
         state.luckyCascadeUsed = false;
+        state.secondWindUsed = false;
+        state.chaosDryStreak = 0;
         state.phase = 'settling';
         state.pendingSwap = null;
         state.pendingClear = null;
@@ -1617,6 +1646,8 @@ const EMOJIS = [
         overlaySub.classList.remove('hidden');
         overlaySub.classList.remove('celebration');
         overlayStats.classList.remove('hidden');
+        overlayStats.classList.remove('compact');
+        overlayActions.classList.remove('single');
         overlayTargetStat.classList.remove('hidden');
         overlayLevelStat.classList.remove('hidden');
         overlaySecondary.classList.remove('hidden');
@@ -1633,6 +1664,8 @@ const EMOJIS = [
         } else {
           overlayTitle.textContent = 'Out of moves 🥲';
           overlaySub.classList.add('hidden');
+          overlayStats.classList.add('compact');
+          overlayActions.classList.add('single');
           overlayLevelStat.classList.add('hidden');
           overlaySecondary.classList.add('hidden');
           overlayPrimary.textContent = 'Keep Playing';
@@ -1802,6 +1835,7 @@ const EMOJIS = [
         const specials = [];
         const allCells = [];
         const preferredKeys = new Set(preferred.map(({ r, c }) => keyOf(r, c)));
+        let bonusSpecials = 0;
 
         matched.forEach((key) => {
           if (visited.has(key)) return;
@@ -1853,6 +1887,21 @@ const EMOJIS = [
           else if (maxLen >= 5) power = 'prism';
           else if (rowPower) power = 'row';
           else if (colPower) power = 'col';
+          else if (bonusSpecials < BONUS_MATCH_POWER_MAX_PER_CLEAR && maxLen >= 3) {
+            const extraChance = clamp(
+              BONUS_MATCH_POWER_BASE_CHANCE + Math.max(0, state.comboChain - 1) * BONUS_MATCH_POWER_COMBO_STEP,
+              0,
+              BONUS_MATCH_POWER_MAX_CHANCE
+            );
+            if (state.rng() < extraChance) {
+              if (component.length >= 5 && state.rng() < 0.32) {
+                power = 'bomb';
+              } else {
+                power = state.rng() < 0.5 ? 'row' : 'col';
+              }
+              bonusSpecials += 1;
+            }
+          }
 
           if (power) specials.push({ ...anchor, power });
         });
@@ -2002,22 +2051,31 @@ const EMOJIS = [
         }
       }
 
-      function getPowerTargets(tile, contextKind = null) {
+      function getPowerTargets(tile, contextKind = null, options = {}) {
+        const suppressVisuals = Boolean(options.suppressVisuals);
         const cells = new Set([keyOf(tile.row, tile.col)]);
-        addGlow(tile.col + 0.5, tile.row + 0.5, POWER_COLORS[tile.power] || '#ffffff', 1.22, 0.34, 0.72);
+        if (!suppressVisuals) {
+          addGlow(tile.col + 0.5, tile.row + 0.5, POWER_COLORS[tile.power] || '#ffffff', 1.22, 0.34, 0.72);
+        }
         if (tile.power === 'row') {
           for (let c = 0; c < state.cols; c += 1) cells.add(keyOf(tile.row, c));
-          addBeam('line', [{ r: tile.row + 0.5, c: 0 }, { r: tile.row + 0.5, c: state.cols }], POWER_COLORS.row, 0.22, 0.22);
+          if (!suppressVisuals) {
+            addBeam('line', [{ r: tile.row + 0.5, c: 0 }, { r: tile.row + 0.5, c: state.cols }], POWER_COLORS.row, 0.22, 0.22);
+          }
         } else if (tile.power === 'col') {
           for (let r = 0; r < state.rows; r += 1) cells.add(keyOf(r, tile.col));
-          addBeam('line', [{ r: 0, c: tile.col + 0.5 }, { r: state.rows, c: tile.col + 0.5 }], POWER_COLORS.col, 0.22, 0.22);
+          if (!suppressVisuals) {
+            addBeam('line', [{ r: 0, c: tile.col + 0.5 }, { r: state.rows, c: tile.col + 0.5 }], POWER_COLORS.col, 0.22, 0.22);
+          }
         } else if (tile.power === 'bomb') {
           for (let r = tile.row - 1; r <= tile.row + 1; r += 1) {
             for (let c = tile.col - 1; c <= tile.col + 1; c += 1) {
               if (isInside(r, c)) cells.add(keyOf(r, c));
             }
           }
-          addPulse(tile.col + 0.5, tile.row + 0.5, POWER_COLORS.bomb, 1.5, 0.36);
+          if (!suppressVisuals) {
+            addPulse(tile.col + 0.5, tile.row + 0.5, POWER_COLORS.bomb, 1.5, 0.36);
+          }
         } else if (tile.power === 'prism') {
           const targetKind = contextKind == null ? tile.kind : contextKind;
           for (let r = 0; r < state.rows; r += 1) {
@@ -2026,7 +2084,9 @@ const EMOJIS = [
               if (current && current.kind === targetKind) cells.add(keyOf(r, c));
             }
           }
-          addPulse(tile.col + 0.5, tile.row + 0.5, POWER_COLORS.prism, 2.1, 0.5);
+          if (!suppressVisuals) {
+            addPulse(tile.col + 0.5, tile.row + 0.5, POWER_COLORS.prism, 2.1, 0.5);
+          }
         } else if (tile.power === 'lightning') {
           for (let c = 0; c < state.cols; c += 1) cells.add(keyOf(tile.row, c));
           for (let r = 0; r < state.rows; r += 1) cells.add(keyOf(r, tile.col));
@@ -2038,10 +2098,12 @@ const EMOJIS = [
             if (isInside(r1, c1)) cells.add(keyOf(r1, c1));
             if (isInside(r2, c2)) cells.add(keyOf(r2, c2));
           }
-          addBeam('line', [{ r: tile.row + 0.5, c: 0 }, { r: tile.row + 0.5, c: state.cols }], POWER_COLORS.lightning, 0.24, 0.18);
-          addBeam('line', [{ r: 0, c: tile.col + 0.5 }, { r: state.rows, c: tile.col + 0.5 }], POWER_COLORS.lightning, 0.24, 0.18);
-          addBeam('line', [{ r: tile.row - tile.col, c: 0 }, { r: tile.row - tile.col + state.cols, c: state.cols }], POWER_COLORS.lightning, 0.2, 0.12);
-          addBeam('line', [{ r: tile.row + tile.col + 1, c: 0 }, { r: tile.row + tile.col + 1 - state.cols, c: state.cols }], POWER_COLORS.lightning, 0.2, 0.12);
+          if (!suppressVisuals) {
+            addBeam('line', [{ r: tile.row + 0.5, c: 0 }, { r: tile.row + 0.5, c: state.cols }], POWER_COLORS.lightning, 0.24, 0.18);
+            addBeam('line', [{ r: 0, c: tile.col + 0.5 }, { r: state.rows, c: tile.col + 0.5 }], POWER_COLORS.lightning, 0.24, 0.18);
+            addBeam('line', [{ r: tile.row - tile.col, c: 0 }, { r: tile.row - tile.col + state.cols, c: state.cols }], POWER_COLORS.lightning, 0.2, 0.12);
+            addBeam('line', [{ r: tile.row + tile.col + 1, c: 0 }, { r: tile.row + tile.col + 1 - state.cols, c: state.cols }], POWER_COLORS.lightning, 0.2, 0.12);
+          }
         } else if (tile.power === 'vortex') {
           for (let c = 0; c < state.cols; c += 1) cells.add(keyOf(tile.row, c));
           for (let r = 0; r < state.rows; r += 1) cells.add(keyOf(r, tile.col));
@@ -2054,23 +2116,31 @@ const EMOJIS = [
                 if (current && siphonKinds.includes(current.kind)) cells.add(keyOf(r, c));
               }
             }
-            addPopup(tile.col + 0.5, tile.row - 0.2, 'Vortex ' + siphonKinds.map(emojiForKind).join(' '), '#9eeeff', 0.95, 1.12);
+            if (!suppressVisuals) {
+              addPopup(tile.col + 0.5, tile.row - 0.2, 'Vortex ' + siphonKinds.map(emojiForKind).join(' '), '#9eeeff', 0.95, 1.12);
+            }
           }
-          addPulse(tile.col + 0.5, tile.row + 0.5, POWER_COLORS.vortex, 1.8, 0.42);
-          addBeam('line', [{ r: tile.row + 0.5, c: 0 }, { r: tile.row + 0.5, c: state.cols }], POWER_COLORS.vortex, 0.26, 0.18);
-          addBeam('line', [{ r: 0, c: tile.col + 0.5 }, { r: state.rows, c: tile.col + 0.5 }], POWER_COLORS.vortex, 0.26, 0.18);
+          if (!suppressVisuals) {
+            addPulse(tile.col + 0.5, tile.row + 0.5, POWER_COLORS.vortex, 1.8, 0.42);
+            addBeam('line', [{ r: tile.row + 0.5, c: 0 }, { r: tile.row + 0.5, c: state.cols }], POWER_COLORS.vortex, 0.26, 0.18);
+            addBeam('line', [{ r: 0, c: tile.col + 0.5 }, { r: state.rows, c: tile.col + 0.5 }], POWER_COLORS.vortex, 0.26, 0.18);
+          }
         } else if (tile.power === 'meteor') {
           const strikeCount = Math.max(3, Math.min(6, Math.round((state.rows + state.cols) / 3.6)));
           for (let i = 0; i < strikeCount; i += 1) {
             const hitR = randInt(state.rng, 0, state.rows - 1);
             const hitC = randInt(state.rng, 0, state.cols - 1);
             addSquareBlast(cells, hitR, hitC, 1);
-            addPulse(hitC + 0.5, hitR + 0.5, POWER_COLORS.meteor, 1.28, 0.3);
-            const spread = state.rng() * 0.7 - 0.35;
-            addBeam('line', [{ r: -0.4, c: hitC + 0.5 + spread }, { r: hitR + 0.5, c: hitC + 0.5 }], POWER_COLORS.meteor, 0.2, 0.1);
+            if (!suppressVisuals) {
+              addPulse(hitC + 0.5, hitR + 0.5, POWER_COLORS.meteor, 1.28, 0.3);
+              const spread = state.rng() * 0.7 - 0.35;
+              addBeam('line', [{ r: -0.4, c: hitC + 0.5 + spread }, { r: hitR + 0.5, c: hitC + 0.5 }], POWER_COLORS.meteor, 0.2, 0.1);
+            }
           }
-          addPopup(tile.col + 0.5, tile.row - 0.2, 'Meteor Rain!', '#ffd0ad', 0.95, 1.14);
-          addPulse(tile.col + 0.5, tile.row + 0.5, POWER_COLORS.meteor, 2, 0.44);
+          if (!suppressVisuals) {
+            addPopup(tile.col + 0.5, tile.row - 0.2, 'Meteor Rain!', '#ffd0ad', 0.95, 1.14);
+            addPulse(tile.col + 0.5, tile.row + 0.5, POWER_COLORS.meteor, 2, 0.44);
+          }
         }
         return Array.from(cells).map(parseKey);
       }
@@ -2139,12 +2209,66 @@ const EMOJIS = [
         return true;
       }
 
+      function tryGrantSecondWind() {
+        if (state.secondWindUsed || state.moves > 0 || state.score >= state.target) return false;
+        const progress = state.target > 0 ? clamp(state.score / state.target, 0, 1) : 0;
+        const levelBonus = Math.min(SECOND_WIND_LEVEL_MAX_BONUS, Math.max(0, state.level - 1) * SECOND_WIND_LEVEL_STEP);
+        const chance = clamp(
+          SECOND_WIND_BASE_CHANCE + progress * SECOND_WIND_PROGRESS_BONUS + levelBonus,
+          0,
+          SECOND_WIND_MAX_CHANCE
+        );
+        if (state.rng() > chance) return false;
+
+        const deficitRatio = state.target > 0 ? clamp((state.target - state.score) / state.target, 0, 1) : 1;
+        const grantedMoves = deficitRatio > 0.7
+          ? 7
+          : deficitRatio > 0.5
+            ? 6
+            : deficitRatio > 0.32
+              ? 5
+              : 4;
+
+        state.secondWindUsed = true;
+        state.moves = Math.max(state.moves, grantedMoves);
+        state.comboChain = 0;
+        state.displayChain = 1;
+        state.luckyCascadeUsed = false;
+
+        addPopup(
+          state.cols * 0.5,
+          state.rows * 0.48,
+          `Second Wind +${grantedMoves} moves!`,
+          '#9fffb7',
+          1.08,
+          1.24,
+          { backdrop: true }
+        );
+        addPulse(state.cols * 0.5, state.rows * 0.52, '#9fffb7', 1.26, 0.34);
+        addGlow(state.cols * 0.5, state.rows * 0.52, '#9fffb7', 1.44, 0.4, 0.76);
+        flash(0.13);
+        shake(11);
+
+        if (!hasPossibleMove()) {
+          shuffleBoard(false);
+        } else {
+          state.phase = 'idle';
+          clearIdleHint(true);
+          updateHud();
+        }
+        return true;
+      }
+
       function collectClears(initialCells, options = {}) {
         const clearSet = new Set(initialCells.map(({ r, c }) => keyOf(r, c)));
         const queue = [...initialCells];
         const triggered = new Set();
         const specialAnchors = new Set((options.specials || []).map((s) => keyOf(s.r, s.c)));
+        const maxPowerVisuals = Math.max(2, options.maxPowerVisuals ?? MAX_POWER_VISUALS_PER_CLEAR);
         let activatedPowerCount = 0;
+        let shownPowerVisuals = 0;
+        let accumulatedPowerShake = 0;
+        let peakPowerFlash = 0;
 
         for (let head = 0; head < queue.length; head += 1) {
           const cell = queue[head];
@@ -2154,12 +2278,16 @@ const EMOJIS = [
           if (specialAnchors.has(keyOf(cell.r, cell.c)) && options.keepSpecialAnchors) continue;
           triggered.add(tile.id);
           activatedPowerCount += 1;
-          const targets = getPowerTargets(tile, options.targetKind);
-          addPopup(tile.col + 0.5, tile.row + 0.15, POWER_EMOJI[tile.power], POWER_COLORS[tile.power], 0.7, 1.18);
+          const showPowerVisual = shownPowerVisuals < maxPowerVisuals;
+          const targets = getPowerTargets(tile, options.targetKind, { suppressVisuals: !showPowerVisual });
           const shakeByPower = { bomb: 12, prism: 14, lightning: 11, vortex: 13, meteor: 16 };
           const flashByPower = { bomb: 0.16, prism: 0.22, lightning: 0.16, vortex: 0.2, meteor: 0.24 };
-          shake(shakeByPower[tile.power] || 10);
-          flash(flashByPower[tile.power] || 0.14);
+          if (showPowerVisual) {
+            shownPowerVisuals += 1;
+            addPopup(tile.col + 0.5, tile.row + 0.15, POWER_EMOJI[tile.power], POWER_COLORS[tile.power], 0.7, 1.18);
+            accumulatedPowerShake += shakeByPower[tile.power] || 10;
+            peakPowerFlash = Math.max(peakPowerFlash, flashByPower[tile.power] || 0.14);
+          }
           for (const target of targets) {
             const k = keyOf(target.r, target.c);
             if (!clearSet.has(k)) {
@@ -2171,6 +2299,12 @@ const EMOJIS = [
 
         if (options.keepSpecialAnchors) {
           for (const key of specialAnchors) clearSet.delete(key);
+        }
+        if (accumulatedPowerShake > 0) {
+          shake(Math.min(MAX_POWER_SHAKE_PER_CLEAR, accumulatedPowerShake * 0.55));
+        }
+        if (peakPowerFlash > 0) {
+          flash(peakPowerFlash);
         }
 
         return {
@@ -2190,10 +2324,13 @@ const EMOJIS = [
       }
 
       function startClearSequence(baseCells, specials = [], options = {}) {
+        const totalBoardCells = Math.max(1, state.rows * state.cols);
+        const baseCoverage = baseCells.length / totalBoardCells;
         const { cells, activatedPowerCount } = collectClears(baseCells, {
           specials,
           keepSpecialAnchors: true,
-          targetKind: options.targetKind ?? null
+          targetKind: options.targetKind ?? null,
+          maxPowerVisuals: baseCoverage >= MASS_CLEAR_COVERAGE ? 3 : MAX_POWER_VISUALS_PER_CLEAR
         });
         const clearPhaseSeconds = computeClearPhaseSeconds(
           cells.length,
@@ -2203,6 +2340,10 @@ const EMOJIS = [
           Boolean(options.luckyCascade)
         );
         const removeBaseSeconds = clearPhaseSeconds * 0.88;
+        const clearCoverage = cells.length / totalBoardCells;
+        const massiveClear = cells.length >= MASS_CLEAR_MIN_CELLS && clearCoverage >= MASS_CLEAR_COVERAGE;
+        const removeJitterMin = massiveClear ? MASS_CLEAR_REMOVE_JITTER_MIN : CLEAR_REMOVE_JITTER_MIN;
+        const removeJitterMax = massiveClear ? MASS_CLEAR_REMOVE_JITTER_MAX : CLEAR_REMOVE_JITTER_MAX;
 
         const spawnKeys = new Set(specials.map((s) => keyOf(s.r, s.c)));
         let centerX = 0;
@@ -2213,12 +2354,23 @@ const EMOJIS = [
           centerX += cell.c + 0.5;
           centerY += cell.r + 0.5;
           tile.removing = true;
-          tile.removeLife = removeBaseSeconds * randFloat(0.92, 1.14);
+          tile.removeLife = removeBaseSeconds * randFloat(removeJitterMin, removeJitterMax);
           tile.removeTimer = tile.removeLife;
           tile.targetScale = tile.power ? CLEAR_REMOVE_TARGET_SCALE_POWER : CLEAR_REMOVE_TARGET_SCALE;
-          addParticles(cell.c, cell.r, tile.kind, tile.power ? 12 : 7, tile.power);
-          if (tile.power || ((cell.r + cell.c + state.comboChain) % 3 === 0)) {
-            addGlow(cell.c + 0.5, cell.r + 0.5, tile.power ? POWER_COLORS[tile.power] : colorForKind(tile.kind), tile.power ? 1.15 : 0.88, tile.power ? 0.32 : 0.2, tile.power ? 0.72 : 0.45);
+          const particleBurst = tile.power ? (massiveClear ? 8 : 12) : (massiveClear ? 4 : 7);
+          addParticles(cell.c, cell.r, tile.kind, particleBurst, tile.power);
+          const glowPatternHit = massiveClear
+            ? ((cell.r * 17 + cell.c * 31 + state.comboChain) % 6 === 0)
+            : ((cell.r + cell.c + state.comboChain) % 3 === 0);
+          if (tile.power || glowPatternHit) {
+            addGlow(
+              cell.c + 0.5,
+              cell.r + 0.5,
+              tile.power ? POWER_COLORS[tile.power] : colorForKind(tile.kind),
+              tile.power ? 1.15 : (massiveClear ? 0.78 : 0.88),
+              tile.power ? 0.32 : (massiveClear ? 0.16 : 0.2),
+              tile.power ? 0.72 : (massiveClear ? 0.36 : 0.45)
+            );
           }
         }
 
@@ -2253,7 +2405,7 @@ const EMOJIS = [
         if (state.comboChain >= 2) {
           const comboText = getComboCallout(state.comboChain) + ' ' + state.comboChain + 'x combo!';
           addPopup(state.cols * 0.5, state.rows * 0.45, comboText, '#8ef3ff', COMBO_POPUP_LIFE_SECONDS, 1.5, { backdrop: true });
-          flash(0.08 + state.comboChain * 0.02);
+          flash((0.08 + state.comboChain * 0.02) * (massiveClear ? 0.7 : 1));
           shake(7 + state.comboChain * 2);
         }
         if (cells.length >= 10 || activatedPowerCount >= 2) {
@@ -2526,7 +2678,7 @@ const EMOJIS = [
           const spawnCount = writeRow + 1;
           for (let r = writeRow; r >= 0; r -= 1) {
             const kind = randomKind(state.rng);
-            const chaosPower = pickChaosDropPower();
+            const chaosPower = pickChaosDropPower(chaosDrops);
             const tile = createTile(kind, r, c, chaosPower, spawnCount + randInt(state.rng, 1, 3));
             tile.scale = 0.8;
             tile.targetScale = 1;
@@ -2535,10 +2687,13 @@ const EMOJIS = [
           }
         }
         if (chaosDrops > 0) {
+          state.chaosDryStreak = 0;
           addPopup(state.cols * 0.5, -0.28, 'Chaos Drop x' + chaosDrops + '!', '#9eeeff', 0.95, 1.22, { backdrop: true });
           addPulse(state.cols * 0.5, 0.45, '#9eeeff', 1.05 + Math.min(0.85, chaosDrops * 0.08), 0.32);
           flash(0.12);
           shake(8 + chaosDrops);
+        } else {
+          state.chaosDryStreak = Math.min(18, state.chaosDryStreak + 1);
         }
         state.phase = 'falling';
       }
@@ -2876,8 +3031,10 @@ const EMOJIS = [
             } else if (state.score >= state.target) {
               triggerVictoryClear();
             } else if (state.moves <= 0) {
-              state.phase = 'paused';
-              showOverlay('lose');
+              if (!tryGrantSecondWind()) {
+                state.phase = 'paused';
+                showOverlay('lose');
+              }
             } else if (!hasPossibleMove()) {
               shuffleBoard(false);
             } else {
@@ -3231,10 +3388,6 @@ const EMOJIS = [
           toggleFullscreen();
         });
       }
-
-      settingsCloseBtn.addEventListener('click', () => {
-        closeSettingsMenu();
-      });
 
       settingsMenu.addEventListener('click', (event) => {
         if (event.target === settingsMenu) closeSettingsMenu();

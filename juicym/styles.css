@@ -163,13 +163,12 @@
     }
 
     .settings-panel {
-      width: min(360px, 100%);
-      height: min(430px, calc(100svh - 28px));
+      --settings-panel-size: min(360px, calc(100svh - 28px), calc(100vw - 32px));
+      width: var(--settings-panel-size);
+      height: var(--settings-panel-size);
       border-radius: 18px;
       padding: 10px;
       display: grid;
-      grid-template-rows: repeat(5, minmax(0, 1fr));
-      gap: 6px;
       background:
         radial-gradient(circle at 14% 0%, rgba(142, 243, 255, 0.14), transparent 46%),
         linear-gradient(180deg, rgba(14, 22, 40, 0.95), rgba(8, 14, 28, 0.94));
@@ -179,33 +178,6 @@
 
     .settings-menu.show .settings-panel {
       transform: translateY(0) scale(1);
-    }
-
-    .settings-head {
-      grid-row: 1;
-      min-width: 0;
-      min-height: 0;
-      display: grid;
-      padding: 0;
-    }
-
-    .settings-title {
-      font-size: 0.75rem;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 800;
-    }
-
-    .settings-close {
-      width: 100%;
-      height: 100%;
-      min-height: 0;
-      border-radius: 12px;
-      padding: 0;
-      font-size: 1.1rem;
-      display: grid;
-      place-items: center;
     }
 
     .status-line {
@@ -224,9 +196,9 @@
     }
 
     .footer-line.settings-grid {
-      grid-row: 2 / 6;
-      grid-template-columns: 1fr;
-      grid-template-rows: repeat(4, minmax(0, 1fr));
+      height: 100%;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(2, minmax(0, 1fr));
       gap: 6px;
       align-items: stretch;
     }
@@ -254,17 +226,23 @@
       min-height: 0;
       justify-content: center;
       text-align: center;
-      border-radius: 10px;
-      padding: 8px 10px;
+      border-radius: 12px;
+      padding: 12px 10px;
       gap: 8px;
-      white-space: nowrap;
-      text-wrap: nowrap;
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto;
+      align-content: center;
+      justify-items: center;
     }
 
     .settings-grid .action-copy {
       justify-items: center;
+      align-content: center;
+      width: 100%;
+      height: auto;
       overflow: hidden;
-      gap: 1px;
+      gap: 4px;
     }
 
     .settings-grid .action-sub {
@@ -273,7 +251,10 @@
       text-wrap: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      letter-spacing: 0.055em;
+      letter-spacing: 0.045em;
+      font-size: clamp(0.8rem, 2.4vw, 0.94rem);
+      font-weight: 800;
+      line-height: 1.02;
     }
 
     .settings-grid .action-title {
@@ -281,7 +262,10 @@
       text-wrap: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      font-size: 0.8rem;
+      font-size: clamp(1.08rem, 3.8vw, 1.36rem);
+      line-height: 0.98;
+      font-weight: 900;
+      letter-spacing: 0.015em;
     }
 
     .settings-grid .status-title {
@@ -295,9 +279,9 @@
 
     .settings-grid .status-icon,
     .settings-grid .action-icon {
-      width: 30px;
-      height: 30px;
-      font-size: 0.98rem;
+      width: 40px;
+      height: 40px;
+      font-size: 1.28rem;
     }
 
     .status-icon {
@@ -646,6 +630,8 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
       font-weight: 900;
+      width: 100%;
+      text-align: center;
     }
 
     .overlay-sub {
@@ -671,6 +657,12 @@
       width: 100%;
     }
 
+    .overlay-stats.compact {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      width: min(360px, 100%);
+      justify-self: center;
+    }
+
     .overlay-stat {
       border-radius: 18px;
       padding: 12px;
@@ -693,6 +685,15 @@
       flex-wrap: wrap;
       justify-content: center;
       width: 100%;
+    }
+
+    .overlay-actions.single {
+      width: auto;
+      justify-self: center;
+    }
+
+    .overlay-actions.single #overlayPrimary {
+      flex: 0 0 auto;
     }
 
     .overlay-actions #overlayPrimary {
