@@ -386,9 +386,6 @@
       height: 100%;
       touch-action: none;
       cursor: pointer;
-      transform: translateZ(0);
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
     }
 
     .footer-line {

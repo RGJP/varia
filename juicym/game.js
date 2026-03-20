@@ -91,7 +91,7 @@ const EMOJIS = [
       const QUALITY_PRESETS = [
         {
           name: 'high',
-          dprCap: 2,
+          dprCap: 3,
           particleScale: 1,
           maxParticles: 180,
           maxPopups: 16,
@@ -108,7 +108,7 @@ const EMOJIS = [
         },
         {
           name: 'balanced',
-          dprCap: 1.5,
+          dprCap: 2,
           particleScale: 0.72,
           maxParticles: 112,
           maxPopups: 13,
@@ -125,7 +125,7 @@ const EMOJIS = [
         },
         {
           name: 'smooth',
-          dprCap: 1,
+          dprCap: 1.25,
           particleScale: 0.28,
           maxParticles: 34,
           maxPopups: 8,
@@ -349,9 +349,11 @@ const EMOJIS = [
         const cores = navigator.hardwareConcurrency || 4;
         const memory = navigator.deviceMemory || 4;
         const coarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        const strongDevice = cores >= 8 && memory >= 6;
         if (cores <= 2 || memory <= 2) return 2;
-        if (coarsePointer || cores <= 4 || memory <= 4 || (window.devicePixelRatio || 1) > 2.4) return 1;
-        return 1;
+        if (coarsePointer) return strongDevice ? 0 : 1;
+        if (cores <= 4 || memory <= 4) return 1;
+        return 0;
       }
 
       function getQualityProfile() {
@@ -381,7 +383,7 @@ const EMOJIS = [
         if (perf.avgDt > 1 / 57) {
           perf.slowTime += dt;
           perf.fastTime = 0;
-        } else if (perf.avgDt < 1 / 61.5) {
+        } else if (perf.avgDt < 1 / 59.4) {
           perf.fastTime += dt;
           perf.slowTime = Math.max(0, perf.slowTime - dt * 0.3);
         } else {
@@ -1307,24 +1309,26 @@ const EMOJIS = [
         rootStyle.setProperty('--board-aspect-ratio', `${state.cols} / ${state.rows}`);
 
         const rect = wrap.getBoundingClientRect();
-        tile = Math.max(1, Math.floor(Math.min(rect.width / state.cols, rect.height / state.rows)));
+        const cssWidth = Math.max(1, Math.round(rect.width));
+        const cssHeight = Math.max(1, Math.round(rect.height));
+        tile = Math.max(1, Math.floor(Math.min(cssWidth / state.cols, cssHeight / state.rows)));
         const boardPixelWidth = tile * state.cols;
         const boardPixelHeight = tile * state.rows;
-        const boardOffsetX = Math.max(0, Math.floor((rect.width - boardPixelWidth) * 0.5));
-        const boardOffsetY = Math.max(0, Math.floor((rect.height - boardPixelHeight) * 0.5));
+        const boardOffsetX = Math.max(0, Math.floor((cssWidth - boardPixelWidth) * 0.5));
+        const boardOffsetY = Math.max(0, Math.floor((cssHeight - boardPixelHeight) * 0.5));
         const quality = getQualityProfile();
-        const dpr = Math.min(window.devicePixelRatio || 1, quality.dprCap);
+        const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, quality.dprCap));
         const prevWidth = state.canvasSize.w;
         const prevHeight = state.canvasSize.h;
         const prevTile = state.boardRect.tile;
 
-        canvas.width = Math.round(rect.width * dpr);
-        canvas.height = Math.round(rect.height * dpr);
-        canvas.style.width = rect.width + 'px';
-        canvas.style.height = rect.height + 'px';
+        canvas.width = Math.round(cssWidth * dpr);
+        canvas.height = Math.round(cssHeight * dpr);
+        canvas.style.width = cssWidth + 'px';
+        canvas.style.height = cssHeight + 'px';
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.imageSmoothingEnabled = true;
-        state.canvasSize = { w: rect.width, h: rect.height, dpr };
+        state.canvasSize = { w: cssWidth, h: cssHeight, dpr };
 
         state.boardRect = {
           x: boardOffsetX,
@@ -1335,7 +1339,7 @@ const EMOJIS = [
         };
 
         invalidateRenderCache({
-          frame: prevWidth !== rect.width || prevHeight !== rect.height,
+          frame: prevWidth !== cssWidth || prevHeight !== cssHeight,
           board: true,
           tiles: prevTile !== tile
         });
