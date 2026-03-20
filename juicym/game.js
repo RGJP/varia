@@ -32,9 +32,7 @@ const EMOJIS = [
       const VICTORY_CLEAR_STEP_MAX_SECONDS = 0.12;
       const VICTORY_CLEAR_BLAST_RATIO = 0.32;
       const VICTORY_CLEAR_MIN_BLAST_CELLS = 4;
-      const VICTORY_FINALE_SECONDS = 2.2;
-      const VICTORY_FIREWORK_INTERVAL_MIN_SECONDS = 0.22;
-      const VICTORY_FIREWORK_INTERVAL_MAX_SECONDS = 0.38;
+      const VICTORY_FINALE_SECONDS = 0.42;
       const VICTORY_FIREWORK_COLORS = ['#ff6f87', '#ffd76f', '#7cf9b3', '#7fd7ff', '#c7a2ff', '#ff97dd'];
       const COMBO_CALLOUTS = {
         starter: ['Nice', 'Sweet', 'Great', 'Clean', 'Smooth', 'Solid', 'Neat', 'Tasty', 'Fresh', 'Sharp', 'Crisp', 'Slick'],
@@ -2814,8 +2812,7 @@ const EMOJIS = [
         state.victoryClear = {
           mode: 'clearing',
           timer: VICTORY_CLEAR_STEP_MIN_SECONDS,
-          finaleTimer: VICTORY_FINALE_SECONDS,
-          fireworkTimer: 0.08
+          finaleTimer: VICTORY_FINALE_SECONDS
         };
         state.phase = 'victory-clear';
         addPopup(state.cols * 0.5, state.rows * 0.5, 'Level Complete!', '#ffe07a', 1.2, 1.5, { backdrop: true });
@@ -2824,42 +2821,106 @@ const EMOJIS = [
         launchVictoryFirework(0.85);
       }
 
-      function launchVictoryFirework(intensity = 1) {
+      function launchVictoryFirework(intensity = 1, options = {}) {
         const quality = getQualityProfile();
         const effectBudget = getEffectBudgetScale();
-        const fireworkScale = clamp(intensity * effectBudget, 0.24, 1);
+        const style = options.style || 'standard';
+        const isFinale = style === 'finale';
+        const fireworkScale = clamp(intensity * effectBudget, 0.24, isFinale ? 1.2 : 1);
         const available = quality.maxParticles - state.particles.length;
-        if (available <= 0 && quality.maxPulses <= 0 && quality.maxGlows <= 0) return;
+        if (available <= 0 && quality.maxPulses <= 0 && quality.maxGlows <= 0 && quality.maxTrails <= 0) return;
 
         const burstX = randFloat(0.8, Math.max(0.8, state.cols - 0.8));
         const burstY = randFloat(Math.max(0.85, state.rows * 0.16), Math.max(1.1, state.rows * 0.58));
-        const color = VICTORY_FIREWORK_COLORS[randInt(Math.random, 0, VICTORY_FIREWORK_COLORS.length - 1)];
+        const colorA = VICTORY_FIREWORK_COLORS[randInt(Math.random, 0, VICTORY_FIREWORK_COLORS.length - 1)];
+        let colorB = colorA;
+        if (VICTORY_FIREWORK_COLORS.length > 1) {
+          let attempts = 0;
+          while (colorB === colorA && attempts < 6) {
+            colorB = VICTORY_FIREWORK_COLORS[randInt(Math.random, 0, VICTORY_FIREWORK_COLORS.length - 1)];
+            attempts += 1;
+          }
+        }
 
-        addPulse(burstX, burstY, color, 1 + Math.random() * 0.35, 0.26 + Math.random() * 0.14);
-        addGlow(burstX, burstY, color, 1.12 + Math.random() * 0.44, 0.3 + Math.random() * 0.16, 0.7 + Math.random() * 0.22);
+        addPulse(burstX, burstY, colorA, 1 + Math.random() * 0.35 + (isFinale ? 0.22 : 0), 0.26 + Math.random() * 0.14 + (isFinale ? 0.08 : 0));
+        addGlow(burstX, burstY, colorA, 1.12 + Math.random() * 0.44 + (isFinale ? 0.26 : 0), 0.3 + Math.random() * 0.16 + (isFinale ? 0.08 : 0), 0.7 + Math.random() * 0.22 + (isFinale ? 0.14 : 0));
+        if (isFinale) {
+          addPulse(burstX, burstY, colorB, 1.34 + Math.random() * 0.5, 0.3 + Math.random() * 0.16);
+          addGlow(burstX, burstY, '#ffffff', 1.45 + Math.random() * 0.5, 0.34 + Math.random() * 0.18, 0.82 + Math.random() * 0.18);
+        }
 
-        const desiredBurst = Math.max(6, Math.round((12 + Math.random() * 10) * quality.particleScale * fireworkScale));
+        const desiredBurst = Math.max(
+          isFinale ? 10 : 6,
+          Math.round(((isFinale ? 16 : 12) + Math.random() * (isFinale ? 14 : 10)) * quality.particleScale * fireworkScale)
+        );
         const burstCount = Math.min(desiredBurst, available);
         for (let i = 0; i < burstCount; i += 1) {
-          const angle = (i / Math.max(1, burstCount)) * TAU + Math.random() * 0.35;
-          const speed = 0.95 + Math.random() * 2.45;
-          const life = 0.35 + Math.random() * 0.35;
+          const angleBase = (i / Math.max(1, burstCount)) * TAU;
+          const wave = isFinale ? Math.sin(angleBase * 3 + Math.random() * 0.8) * 0.22 : 0;
+          const angle = angleBase + Math.random() * (isFinale ? 0.2 : 0.35) + wave;
+          const speed = (isFinale ? 1.25 : 0.95) + Math.random() * (isFinale ? 2.9 : 2.45);
+          const life = (isFinale ? 0.44 : 0.35) + Math.random() * (isFinale ? 0.42 : 0.35);
+          const color = i % 7 === 0 ? '#ffffff' : (isFinale && i % 2 === 0 ? colorB : colorA);
           state.particles.push({
             x: burstX,
             y: burstY,
             vx: Math.cos(angle) * speed,
-            vy: Math.sin(angle) * speed - randFloat(0.15, 0.45),
+            vy: Math.sin(angle) * speed - randFloat(isFinale ? 0.2 : 0.15, isFinale ? 0.5 : 0.45),
             life,
             maxLife: life,
             emoji: null,
-            color: i % 5 === 0 ? '#ffffff' : color,
+            color,
             shape: 'spark',
-            gravity: 2.75,
-            drag: 1.55,
-            size: 0.07 + Math.random() * 0.08,
-            spin: (Math.random() - 0.5) * 9,
+            gravity: isFinale ? 2.45 : 2.75,
+            drag: isFinale ? 1.35 : 1.55,
+            size: (isFinale ? 0.08 : 0.07) + Math.random() * (isFinale ? 0.1 : 0.08),
+            spin: (Math.random() - 0.5) * (isFinale ? 12 : 9),
             rot: Math.random() * TAU
           });
+        }
+
+        const remaining = available - burstCount;
+        if (isFinale && remaining > 0) {
+          const crackleDesired = Math.max(4, Math.round((8 + Math.random() * 10) * quality.particleScale * fireworkScale));
+          const crackleCount = Math.min(crackleDesired, remaining);
+          for (let i = 0; i < crackleCount; i += 1) {
+            const angle = Math.random() * TAU;
+            const speed = 0.55 + Math.random() * 1.6;
+            const life = 0.24 + Math.random() * 0.24;
+            state.particles.push({
+              x: burstX + Math.cos(angle) * randFloat(0.02, 0.08),
+              y: burstY + Math.sin(angle) * randFloat(0.02, 0.08),
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed - randFloat(0.05, 0.24),
+              life,
+              maxLife: life,
+              emoji: null,
+              color: i % 3 === 0 ? '#ffffff' : (Math.random() < 0.5 ? colorA : colorB),
+              shape: 'spark',
+              gravity: 2.1,
+              drag: 2.9,
+              size: 0.055 + Math.random() * 0.065,
+              spin: (Math.random() - 0.5) * 15,
+              rot: Math.random() * TAU
+            });
+          }
+        }
+
+        if (quality.maxTrails > 0) {
+          const cometCount = Math.max(2, Math.round((isFinale ? 6 : 3) * quality.trailRate * fireworkScale));
+          for (let i = 0; i < cometCount; i += 1) {
+            const angle = Math.random() * TAU;
+            const speed = (isFinale ? 0.7 : 0.45) + Math.random() * (isFinale ? 1.7 : 1.1);
+            addTrail(
+              burstX,
+              burstY,
+              isFinale ? (i % 2 === 0 ? colorB : colorA) : colorA,
+              Math.cos(angle) * speed,
+              Math.sin(angle) * speed - randFloat(0.1, 0.28),
+              (isFinale ? 0.11 : 0.08) + Math.random() * (isFinale ? 0.09 : 0.05),
+              (isFinale ? 0.16 : 0.1) + Math.random() * (isFinale ? 0.09 : 0.06)
+            );
+          }
         }
       }
 
@@ -2872,14 +2933,6 @@ const EMOJIS = [
       function updateVictoryFinale(dt) {
         if (!state.victoryClear || state.victoryClear.mode !== 'finale') return;
         state.victoryClear.finaleTimer -= dt;
-        state.victoryClear.fireworkTimer -= dt;
-        if (state.victoryClear.fireworkTimer <= 0) {
-          launchVictoryFirework();
-          state.victoryClear.fireworkTimer = randFloat(VICTORY_FIREWORK_INTERVAL_MIN_SECONDS, VICTORY_FIREWORK_INTERVAL_MAX_SECONDS);
-        }
-        if (Math.random() < dt * 2) {
-          launchVictoryFirework(0.7);
-        }
         if (state.victoryClear.finaleTimer <= 0) {
           completeVictoryClear();
         }
@@ -2896,9 +2949,9 @@ const EMOJIS = [
           }
           state.victoryClear.mode = 'finale';
           state.victoryClear.finaleTimer = VICTORY_FINALE_SECONDS;
-          state.victoryClear.fireworkTimer = 0.02;
-          launchVictoryFirework(1);
-          flash(0.1);
+          launchVictoryFirework(1.18, { style: 'finale' });
+          flash(0.14);
+          shake(20);
           return;
         }
 
