@@ -224,10 +224,10 @@ const EMOJIS = [
       const LUCKY_CASCADE_LEVEL_STEP = 0.009;
       const LUCKY_CASCADE_COMBO_STEP = 0.028;
       const LUCKY_CASCADE_MAX_CHANCE = 0.34;
-      const CHAOS_DROP_BASE_CHANCE = 0.007;
-      const CHAOS_DROP_COMBO_STEP = 0.006;
-      const CHAOS_DROP_LEVEL_STEP = 0.0014;
-      const CHAOS_DROP_MAX_CHANCE = 0.055;
+      const CHAOS_DROP_BASE_CHANCE = 0.0095;
+      const CHAOS_DROP_COMBO_STEP = 0.0068;
+      const CHAOS_DROP_LEVEL_STEP = 0.0016;
+      const CHAOS_DROP_MAX_CHANCE = 0.067;
       let footerLayoutKey = '';
       let settingsReturnFocusEl = null;
 
@@ -1491,8 +1491,10 @@ const EMOJIS = [
           CHAOS_DROP_MAX_CHANCE
         );
         if (state.rng() > chance) return null;
-        const pool = state.comboChain >= 5
+        const pool = state.comboChain >= 6
           ? ['row', 'col', 'bomb', 'lightning', 'vortex', 'meteor', 'prism']
+          : state.comboChain >= 4
+            ? ['row', 'col', 'bomb', 'lightning']
           : ['row', 'col', 'bomb'];
         return pool[randInt(state.rng, 0, pool.length - 1)];
       }
