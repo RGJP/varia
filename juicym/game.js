@@ -26,6 +26,7 @@ const EMOJIS = [
         vortex: '#78f1ff',
         meteor: '#ffb27b'
       };
+      const POWER_TYPES = ['row', 'col', 'bomb', 'prism', 'lightning', 'vortex', 'meteor'];
       const CELEBRATION_EMOJIS = ['🥳', '🎉', '🎊', '✨', '🏆', '👑', '🌟', '🕺'];
       const VICTORY_CLEAR_STEP_MIN_SECONDS = 0.08;
       const VICTORY_CLEAR_STEP_MAX_SECONDS = 0.12;
@@ -248,6 +249,7 @@ const EMOJIS = [
       const BONUS_MATCH_POWER_COMBO_STEP = 0.09;
       const BONUS_MATCH_POWER_MAX_CHANCE = 0.48;
       const BONUS_MATCH_POWER_MAX_PER_CLEAR = 1;
+      const POWER_VARIETY_RECENT_WINDOW = 8;
       let footerLayoutKey = '';
       let settingsReturnFocusEl = null;
 
@@ -306,6 +308,18 @@ const EMOJIS = [
           musicTransitionId: 0
         },
         qualityLevel: FORCE_PERFORMANCE_MODE ? LOCKED_QUALITY_LEVEL : detectInitialQualityLevel(),
+        powerVariety: {
+          usage: {
+            row: 0,
+            col: 0,
+            bomb: 0,
+            prism: 0,
+            lightning: 0,
+            vortex: 0,
+            meteor: 0
+          },
+          recent: []
+        },
         renderCache: {
           frameLayer: null,
           boardLayer: null,
@@ -1528,6 +1542,53 @@ const EMOJIS = [
         return kind;
       }
 
+      function resetPowerVarietyTracker() {
+        for (const power of POWER_TYPES) {
+          state.powerVariety.usage[power] = 0;
+        }
+        state.powerVariety.recent.length = 0;
+      }
+
+      function trackSpawnedPower(power) {
+        if (!power || !Object.prototype.hasOwnProperty.call(state.powerVariety.usage, power)) return;
+        state.powerVariety.usage[power] += 1;
+        state.powerVariety.recent.push(power);
+        if (state.powerVariety.recent.length > POWER_VARIETY_RECENT_WINDOW) {
+          state.powerVariety.recent.shift();
+        }
+      }
+
+      function pickVariedPower(pool) {
+        const uniquePool = [];
+        for (const power of pool) {
+          if (!Object.prototype.hasOwnProperty.call(state.powerVariety.usage, power)) continue;
+          if (!uniquePool.includes(power)) uniquePool.push(power);
+        }
+        if (uniquePool.length === 0) return null;
+        if (uniquePool.length === 1) return uniquePool[0];
+
+        const recent = state.powerVariety.recent;
+        const usage = state.powerVariety.usage;
+        let bestScore = -Infinity;
+        let bestPower = uniquePool[0];
+
+        for (const power of uniquePool) {
+          const totalUses = usage[power] || 0;
+          let recentUses = 0;
+          for (const seen of recent) {
+            if (seen === power) recentUses += 1;
+          }
+          const immediateRepeat = recent.length > 0 && recent[recent.length - 1] === power ? 1 : 0;
+          const score = -totalUses * 1.12 - recentUses * 2.1 - immediateRepeat * 2.9 + state.rng() * 0.2;
+          if (score > bestScore) {
+            bestScore = score;
+            bestPower = power;
+          }
+        }
+
+        return bestPower;
+      }
+
       function pickChaosDropPower(spawnsThisClear = 0) {
         if (spawnsThisClear >= CHAOS_DROP_MAX_PER_CLEAR) return null;
         if (state.comboChain < 1) return null;
@@ -1542,13 +1603,13 @@ const EMOJIS = [
         );
         if (state.rng() > chance) return null;
         const pool = state.comboChain >= 6
-          ? ['row', 'col', 'bomb', 'lightning', 'vortex', 'meteor', 'prism']
+          ? ['row', 'col', 'bomb', 'prism', 'lightning', 'vortex', 'meteor']
           : state.comboChain >= 4
-            ? ['row', 'col', 'bomb', 'lightning']
+            ? ['row', 'col', 'bomb', 'prism', 'lightning', 'vortex']
             : state.comboChain >= 2
-              ? ['row', 'col', 'bomb']
+              ? ['row', 'col', 'bomb', 'prism', 'lightning']
               : ['row', 'col', 'bomb'];
-        return pool[randInt(state.rng, 0, pool.length - 1)];
+        return pickVariedPower(pool);
       }
 
       function generateBoard() {
@@ -1620,6 +1681,7 @@ const EMOJIS = [
       function startNewRun() {
         state.started = true;
         applyTheme(generateTheme((Date.now() ^ ((performance.now() * 1000) | 0)) >>> 0));
+        resetPowerVarietyTracker();
         resetForNewLevel(1, false);
       }
 
@@ -1904,13 +1966,13 @@ const EMOJIS = [
           }
 
           let power = null;
-          if (maxLen >= 7) power = 'meteor';
-          else if (hasCross && component.length >= 7) power = 'vortex';
-          else if (hasCross) power = 'bomb';
-          else if (maxLen >= 6) power = 'lightning';
-          else if (maxLen >= 5) power = 'prism';
-          else if (rowPower) power = 'row';
-          else if (colPower) power = 'col';
+          if (maxLen >= 7) power = pickVariedPower(['meteor', 'vortex']);
+          else if (hasCross && component.length >= 7) power = pickVariedPower(['vortex', 'meteor']);
+          else if (hasCross) power = pickVariedPower(['bomb', 'row', 'col']);
+          else if (maxLen >= 6) power = pickVariedPower(['lightning', 'prism', 'vortex']);
+          else if (maxLen >= 5) power = pickVariedPower(['prism', 'lightning']);
+          else if (rowPower) power = pickVariedPower(['row', 'col', 'bomb']);
+          else if (colPower) power = pickVariedPower(['col', 'row', 'bomb']);
           else if (bonusSpecials < BONUS_MATCH_POWER_MAX_PER_CLEAR && maxLen >= 3) {
             const extraChance = clamp(
               BONUS_MATCH_POWER_BASE_CHANCE + Math.max(0, state.comboChain - 1) * BONUS_MATCH_POWER_COMBO_STEP,
@@ -1918,11 +1980,10 @@ const EMOJIS = [
               BONUS_MATCH_POWER_MAX_CHANCE
             );
             if (state.rng() < extraChance) {
-              if (component.length >= 5 && state.rng() < 0.32) {
-                power = 'bomb';
-              } else {
-                power = state.rng() < 0.5 ? 'row' : 'col';
-              }
+              const bonusPool = component.length >= 5 && state.rng() < 0.32
+                ? ['bomb', 'row', 'col']
+                : ['row', 'col', 'bomb'];
+              power = pickVariedPower(bonusPool);
               bonusSpecials += 1;
             }
           }
@@ -2679,6 +2740,7 @@ const EMOJIS = [
           tile.removeLife = 0;
           tile.alpha = 1;
           tile.targetScale = 1.1;
+          trackSpawnedPower(special.power);
         }
         state.pendingClear = null;
         collapseBoard();
@@ -2707,7 +2769,10 @@ const EMOJIS = [
             tile.scale = 0.8;
             tile.targetScale = 1;
             state.board[r][c] = tile;
-            if (chaosPower) chaosDrops += 1;
+            if (chaosPower) {
+              chaosDrops += 1;
+              trackSpawnedPower(chaosPower);
+            }
           }
         }
         if (chaosDrops > 0) {
