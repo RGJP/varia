@@ -159,6 +159,7 @@ const EMOJIS = [
       const app = document.querySelector('.app');
       const footer = document.querySelector('.footer');
       const wrap = document.getElementById('canvasWrap');
+      const comboStatus = document.getElementById('comboStatus');
       const levelProgress = document.getElementById('levelProgress');
       const levelProgressFill = document.getElementById('levelProgressFill');
       const rootStyle = document.documentElement.style;
@@ -199,7 +200,6 @@ const EMOJIS = [
       const FX_VOLUME = 0.75;
       const MUSIC_VOLUME = 0.42;
       const IDLE_HINT_DELAY_SECONDS = 10;
-      const COMBO_POPUP_LIFE_SECONDS = 2.35;
       const CLEAR_PHASE_BASE_SECONDS = 0.07;
       const CLEAR_PHASE_MAX_SECONDS = 0.17;
       const CLEAR_PHASE_PER_CELL_SECONDS = 0.0018;
@@ -267,6 +267,7 @@ const EMOJIS = [
         phase: 'idle',
         comboChain: 0,
         displayChain: 1,
+        comboMessage: '',
         luckyCascadeUsed: false,
         secondWindUsed: false,
         chaosDryStreak: 0,
@@ -1294,6 +1295,7 @@ const EMOJIS = [
       function updateHud() {
         if (!state.started) {
           if (statusMoves) statusMoves.textContent = '0';
+          if (comboStatus) comboStatus.textContent = '';
           statusLine.setAttribute('aria-label', '0 moves left');
           shuffleBtn.disabled = true;
           if (levelProgressFill) levelProgressFill.style.transform = 'scaleX(0)';
@@ -1304,6 +1306,7 @@ const EMOJIS = [
           return;
         }
         if (statusMoves) statusMoves.textContent = String(state.moves);
+        if (comboStatus) comboStatus.textContent = state.comboMessage;
         statusLine.setAttribute('aria-label', `${state.moves} moves left`);
         shuffleBtn.disabled = !(state.phase === 'idle' && state.moves > 1 && !overlay.classList.contains('show'));
         const progress = state.target > 0 ? clamp(state.score / state.target, 0, 1) : 0;
@@ -1315,6 +1318,11 @@ const EMOJIS = [
           levelProgress.setAttribute('aria-valuenow', String(percent));
           levelProgress.setAttribute('aria-valuetext', `${percent}% complete`);
         }
+      }
+
+      function setStatusMessage(text = '') {
+        state.comboMessage = text;
+        updateHud();
       }
 
       function getTargetBoardAspectRatio() {
@@ -1743,6 +1751,7 @@ const EMOJIS = [
         state.selected = null;
         state.comboChain = 0;
         state.displayChain = 1;
+        state.comboMessage = '';
         state.luckyCascadeUsed = false;
         state.secondWindUsed = false;
         state.chaosDryStreak = 0;
@@ -1767,7 +1776,7 @@ const EMOJIS = [
         generateBoard();
         invalidateRenderCache({ board: true, tiles: true });
         resizeCanvas();
-        addPopup(state.cols * 0.5, -0.5, 'Level ' + level, '#ffd97a', 0.9, 1.22);
+        setStatusMessage('');
         updateHud();
         syncWakeLock();
         ensureContinuousMusic();
@@ -1822,6 +1831,7 @@ const EMOJIS = [
       function showOverlay(mode) {
         closeSettingsMenu();
         state.overlayMode = mode;
+        setStatusMessage('');
         playOverlaySound(mode);
         overlay.classList.add('show');
         overlaySub.classList.remove('hidden');
@@ -2297,7 +2307,7 @@ const EMOJIS = [
               }
             }
             if (!suppressVisuals) {
-              addPopup(tile.col + 0.5, tile.row - 0.2, 'Vortex ' + siphonKinds.map(emojiForKind).join(' '), '#9eeeff', 0.95, 1.12);
+              setStatusMessage('Vortex ' + siphonKinds.map(emojiForKind).join(' '));
             }
           }
           if (!suppressVisuals) {
@@ -2318,7 +2328,7 @@ const EMOJIS = [
             }
           }
           if (!suppressVisuals) {
-            addPopup(tile.col + 0.5, tile.row - 0.2, 'Meteor Rain!', '#ffd0ad', 0.95, 1.14);
+            setStatusMessage('Meteor Rain!');
             addPulse(tile.col + 0.5, tile.row + 0.5, POWER_COLORS.meteor, 2, 0.44);
           }
         }
@@ -2380,7 +2390,7 @@ const EMOJIS = [
 
         state.luckyCascadeUsed = true;
         state.comboChain = Math.max(1, state.comboChain + 1);
-        addPopup(centerX, centerY - 0.18, 'Lucky Cascade!', '#9fffb7', 0.95, 1.34, { backdrop: true });
+        setStatusMessage('Lucky Cascade!');
         addPulse(centerX, centerY, '#9fffb7', 1.32, 0.36);
         addGlow(centerX, centerY, '#9fffb7', 1.48, 0.42, 0.8);
         flash(0.15);
@@ -2413,17 +2423,10 @@ const EMOJIS = [
         state.moves = Math.max(state.moves, grantedMoves);
         state.comboChain = 0;
         state.displayChain = 1;
+        state.comboMessage = '';
         state.luckyCascadeUsed = false;
 
-        addPopup(
-          state.cols * 0.5,
-          state.rows * 0.48,
-          `Second Wind +${grantedMoves} moves!`,
-          '#9fffb7',
-          1.08,
-          1.24,
-          { backdrop: true }
-        );
+        setStatusMessage(`Second Wind +${grantedMoves} moves!`);
         addPulse(state.cols * 0.5, state.rows * 0.52, '#9fffb7', 1.26, 0.34);
         addGlow(state.cols * 0.5, state.rows * 0.52, '#9fffb7', 1.44, 0.4, 0.76);
         flash(0.13);
@@ -2622,13 +2625,14 @@ const EMOJIS = [
         playMatchSound(cells, specials, activatedPowerCount, state.comboChain);
         addPopup(state.cols * 0.5, -0.2, '+' + bonus.toLocaleString(), '#fff2a8', 1.05, 1.28);
         if (state.comboChain >= 2) {
-          const comboText = getComboCallout(state.comboChain) + ' ' + state.comboChain + 'x combo!';
-          addPopup(state.cols * 0.5, state.rows * 0.45, comboText, '#8ef3ff', COMBO_POPUP_LIFE_SECONDS, 1.5, { backdrop: true });
+          setStatusMessage(getComboCallout(state.comboChain) + ' ' + state.comboChain + 'x combo!');
           flash((0.08 + state.comboChain * 0.02) * (massiveClear ? 0.7 : 1));
           shake(7 + state.comboChain * 2);
+        } else {
+          setStatusMessage('');
         }
         if (cells.length >= 10 || activatedPowerCount >= 2) {
-          addPopup(state.cols * 0.5, state.rows * 0.35, 'Sweet Burst!', '#ffd97a', 0.95, 1.4, { backdrop: true });
+          setStatusMessage('Sweet Burst!');
         }
 
         state.pendingClear = {
@@ -2700,14 +2704,14 @@ const EMOJIS = [
           for (let r = 0; r < state.rows; r += 1) {
             for (let c = 0; c < state.cols; c += 1) clear.add(keyOf(r, c));
           }
-          addPopup(origin.c + 0.5, origin.r + 0.2, 'Prismatic Nova', '#ffd97a', 1.2, 1.65);
+          setStatusMessage('Prismatic Nova');
           flash(0.32);
           shake(18);
         } else if (a === 'prism' || b === 'prism') {
           const prismTile = a === 'prism' ? tileA : tileB;
           const otherTile = prismTile === tileA ? tileB : tileA;
           targetKind = otherTile.kind;
-          addPopup(origin.c + 0.5, origin.r + 0.1, 'Color Wipe', '#ffe48a', 1, 1.45);
+          setStatusMessage('Color Wipe');
           for (let r = 0; r < state.rows; r += 1) {
             for (let c = 0; c < state.cols; c += 1) {
               const tile = getTile(r, c);
@@ -2728,7 +2732,7 @@ const EMOJIS = [
           } else if (otherPower && otherPower !== 'meteor') {
             addLineForPower(otherPower, Math.round(origin.r), Math.round(origin.c));
           }
-          addPopup(origin.c + 0.5, origin.r + 0.1, bothMeteor ? 'Extinction Event' : 'Meteor Storm', '#ffc296', 1.05, bothMeteor ? 1.62 : 1.5);
+          setStatusMessage(bothMeteor ? 'Extinction Event' : 'Meteor Storm');
           flash(bothMeteor ? 0.33 : 0.28);
           shake(bothMeteor ? 20 : 17);
         } else if (a === 'vortex' || b === 'vortex') {
@@ -2744,12 +2748,12 @@ const EMOJIS = [
             addRange(0, state.rows - 1, state.cols - 1, state.cols - 1);
           }
           const siphonText = siphonKinds.length ? ' ' + siphonKinds.map(emojiForKind).join(' ') : '';
-          addPopup(origin.c + 0.5, origin.r + 0.1, 'Vortex Surge' + siphonText, '#9eeeff', 1.04, bothVortex ? 1.54 : 1.42);
+          setStatusMessage('Vortex Surge' + siphonText);
           flash(bothVortex ? 0.3 : 0.24);
           shake(bothVortex ? 19 : 16);
         } else if ((a === 'bomb' && b === 'bomb')) {
           addRange(Math.min(tileA.row, tileB.row) - 2, Math.max(tileA.row, tileB.row) + 2, Math.min(tileA.col, tileB.col) - 2, Math.max(tileA.col, tileB.col) + 2);
-          addPopup(origin.c + 0.5, origin.r + 0.1, 'Mega Blast', '#ff946d', 1, 1.52);
+          setStatusMessage('Mega Blast');
           flash(0.22);
           shake(18);
         } else if ((a === 'row' || a === 'col') && (b === 'row' || b === 'col')) {
@@ -2761,13 +2765,13 @@ const EMOJIS = [
             const col = Math.round(origin.c) + dc;
             if (col >= 0 && col < state.cols) for (let r = 0; r < state.rows; r += 1) clear.add(keyOf(r, col));
           }
-          addPopup(origin.c + 0.5, origin.r + 0.1, 'Crossfire', '#8ef3ff', 1, 1.4);
+          setStatusMessage('Crossfire');
           flash(0.18);
           shake(14);
         } else if ((a === 'bomb' && (b === 'row' || b === 'col' || b === 'lightning')) || (b === 'bomb' && (a === 'row' || a === 'col' || a === 'lightning'))) {
           addRange(Math.round(origin.r) - 1, Math.round(origin.r) + 1, 0, state.cols - 1);
           addRange(0, state.rows - 1, Math.round(origin.c) - 1, Math.round(origin.c) + 1);
-          addPopup(origin.c + 0.5, origin.r + 0.1, 'Shockwave', '#8dffb8', 1, 1.46);
+          setStatusMessage('Shockwave');
           flash(0.2);
           shake(16);
         } else {
@@ -2781,7 +2785,7 @@ const EMOJIS = [
             if (isInside(r1, c1)) clear.add(keyOf(r1, c1));
             if (isInside(r2, c2)) clear.add(keyOf(r2, c2));
           }
-          addPopup(origin.c + 0.5, origin.r + 0.1, 'Storm Chain', '#c7a2ff', 1.05, 1.48);
+          setStatusMessage('Storm Chain');
           flash(0.24);
           shake(18);
         }
@@ -2913,7 +2917,7 @@ const EMOJIS = [
         }
         if (chaosDrops > 0) {
           state.chaosDryStreak = 0;
-          addPopup(state.cols * 0.5, -0.28, 'Chaos Drop x' + chaosDrops + '!', '#9eeeff', 0.95, 1.22, { backdrop: true });
+          setStatusMessage('Chaos Drop x' + chaosDrops + '!');
           addPulse(state.cols * 0.5, 0.45, '#9eeeff', 1.05 + Math.min(0.85, chaosDrops * 0.08), 0.32);
           flash(0.12);
           shake(8 + chaosDrops);
@@ -2958,7 +2962,7 @@ const EMOJIS = [
           timer: VICTORY_CLEAR_STEP_MIN_SECONDS
         };
         state.phase = 'victory-clear';
-        addPopup(state.cols * 0.5, state.rows * 0.5, 'Level Complete!', '#ffe07a', 1.2, 1.5, { backdrop: true });
+        setStatusMessage('Level Complete!');
         flash(0.25);
         shake(16);
       }
@@ -3054,6 +3058,7 @@ const EMOJIS = [
         if (costMove) state.moves = Math.max(0, state.moves - 2);
         state.comboChain = 0;
         state.displayChain = 1;
+        state.comboMessage = '';
         state.luckyCascadeUsed = false;
         state.phase = 'settling';
         playShuffleSound();
@@ -3232,6 +3237,7 @@ const EMOJIS = [
             } else {
               state.comboChain = 0;
               state.displayChain = 1;
+              state.comboMessage = '';
               state.luckyCascadeUsed = false;
               state.phase = 'idle';
               clearIdleHint(true);
