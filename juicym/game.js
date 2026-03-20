@@ -704,7 +704,7 @@ const EMOJIS = [
       function updateFullscreenButtonState() {
         if (!fullscreenBtn) return;
         const active = isFullscreenActive();
-        fullscreenBtn.textContent = active ? '[ ]' : '] [';
+        fullscreenBtn.textContent = active ? '⬇️' : '⬆️';
         fullscreenBtn.setAttribute('aria-pressed', active ? 'true' : 'false');
         fullscreenBtn.setAttribute('aria-label', active ? 'Exit fullscreen' : 'Enter fullscreen');
       }

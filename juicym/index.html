@@ -24,8 +24,11 @@
     </main>
 
     <section class="footer">
+      <button class="moves-trigger" id="statusLine" type="button" aria-label="0 moves left" aria-live="polite">
+        <span id="statusMoves">0</span>
+      </button>
       <button class="settings-trigger" id="settingsBtn" aria-label="Open game menu" aria-haspopup="dialog" aria-controls="settingsMenu" aria-expanded="false"><span class="settings-trigger-icon" aria-hidden="true">⚙️</span></button>
-      <button class="fullscreen-trigger" id="fullscreenBtn" aria-label="Enter fullscreen" aria-pressed="false">[ ]</button>
+      <button class="fullscreen-trigger" id="fullscreenBtn" aria-label="Enter fullscreen" aria-pressed="false">⬆️</button>
     </section>
   </div>
 
@@ -35,13 +38,6 @@
         <button class="secondary settings-close" id="settingsCloseBtn" aria-label="Close game menu">✕</button>
       </div>
       <div class="footer-line settings-grid">
-        <div class="status-line" id="statusLine" role="status" aria-live="polite" aria-label="0 moves left">
-          <span class="status-icon" aria-hidden="true">🎯</span>
-          <span class="status-copy">
-            <span class="status-title">Moves Left</span>
-            <span class="status-value" id="statusMoves">0</span>
-          </span>
-        </div>
         <button class="secondary footer-action" id="shuffleBtn" aria-label="Shuffle board for 2 moves">
           <span class="action-icon" aria-hidden="true">🔀</span>
           <span class="action-copy">
