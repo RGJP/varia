@@ -19,7 +19,6 @@
 
   const I18N = {
     fr: {
-      tagline: "Prix autour de vous",
       locate: "📍 Localiser",
       loadingData: "Chargement des stations...",
       dataReady: "Stations chargees",
@@ -41,7 +40,6 @@
       userLocation: "Votre position",
     },
     en: {
-      tagline: "Prices around you",
       locate: "📍 Locate",
       loadingData: "Loading stations...",
       dataReady: "Stations loaded",
