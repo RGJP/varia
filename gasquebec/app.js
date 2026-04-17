@@ -65,7 +65,7 @@
   };
 
   const state = {
-    lang: localStorage.getItem("gas-quebec-lang") || preferredLanguage(),
+    lang: "fr",
     map: null,
     stationLayer: null,
     stations: [],
@@ -82,6 +82,7 @@
     statusText: document.getElementById("statusText"),
     visibleText: document.getElementById("visibleText"),
     locateButton: document.getElementById("locateButton"),
+    loadingOverlay: document.getElementById("loadingOverlay"),
     langButtons: Array.from(document.querySelectorAll("[data-lang]")),
     i18n: Array.from(document.querySelectorAll("[data-i18n]")),
   };
@@ -99,7 +100,8 @@
 
   function initMap() {
     state.map = L.map("map", {
-      zoomControl: true,
+      zoomControl: false,
+      attributionControl: false,
       preferCanvas: true,
       worldCopyJump: false,
     }).setView(QUEBEC_CENTER, QUEBEC_ZOOM);
@@ -138,6 +140,7 @@
 
   async function loadStations() {
     setStatus("loadingData");
+    setLoading(true);
     try {
       const geojson = await fetchCompressedGeoJson(DATA_URL);
       state.stations = normalizeStations(geojson);
@@ -149,6 +152,8 @@
       console.error(error);
       setStatus("dataError");
       updateVisibleText(0, 0);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -496,7 +501,6 @@
     }
 
     state.lang = lang;
-    localStorage.setItem("gas-quebec-lang", lang);
     document.documentElement.lang = lang;
     applyTranslations();
     setStatus(state.statusKey);
@@ -520,6 +524,15 @@
     els.statusText.textContent = t(key);
   }
 
+  function setLoading(isLoading) {
+    if (!els.loadingOverlay) {
+      return;
+    }
+
+    els.loadingOverlay.classList.toggle("is-hidden", !isLoading);
+    els.loadingOverlay.setAttribute("aria-hidden", String(!isLoading));
+  }
+
   function updateVisibleText(visible, total) {
     els.visibleText.textContent = t("visibleCount", { visible, total });
   }
@@ -531,10 +544,6 @@
       text = text.replace(`{${name}}`, String(value));
     });
     return text;
-  }
-
-  function preferredLanguage() {
-    return navigator.language?.toLowerCase().startsWith("en") ? "en" : "fr";
   }
 
   class StationLabelLayer extends L.Layer {
@@ -554,7 +563,9 @@
     onAdd(map) {
       this.map = map;
       this.container = L.DomUtil.create("div", "station-label-layer");
-      map.getContainer().appendChild(this.container);
+      this.pane = map.getPane("stationLabelPane") || map.createPane("stationLabelPane");
+      this.pane.classList.add("station-label-pane");
+      this.pane.appendChild(this.container);
       this.container.addEventListener("click", this.handleClick);
       map.on("moveend zoomend resize", this.handleMapUpdate);
       this.requestRender();
@@ -565,6 +576,7 @@
       this.container?.removeEventListener("click", this.handleClick);
       L.DomUtil.remove(this.container);
       this.container = null;
+      this.pane = null;
       this.map = null;
     }
 
@@ -596,11 +608,14 @@
       const labelSize = getLabelSize();
       const maxLabels = getMaxLabels(zoom, size.x);
       const center = this.map.getCenter();
+      this.container.style.width = `${size.x}px`;
+      this.container.style.height = `${size.y}px`;
       const candidates = this.stations
         .filter((station) => bounds.contains([station.lat, station.lng]))
         .map((station) => ({
           station,
-          point: this.map.latLngToContainerPoint([station.lat, station.lng]),
+          containerPoint: this.map.latLngToContainerPoint([station.lat, station.lng]),
+          layerPoint: this.map.latLngToLayerPoint([station.lat, station.lng]),
           priority: Number.isFinite(station.distanceKm)
             ? station.distanceKm
             : haversineKm(center.lat, center.lng, station.lat, station.lng),
@@ -616,10 +631,10 @@
         }
 
         const rect = {
-          left: candidate.point.x - labelSize.width / 2,
-          right: candidate.point.x + labelSize.width / 2,
-          top: candidate.point.y - labelSize.height - 9,
-          bottom: candidate.point.y - 4,
+          left: candidate.containerPoint.x - labelSize.width / 2,
+          right: candidate.containerPoint.x + labelSize.width / 2,
+          top: candidate.containerPoint.y - labelSize.height - 9,
+          bottom: candidate.containerPoint.y - 4,
         };
 
         if (rect.right < -labelSize.width || rect.left > size.x + labelSize.width) {
@@ -641,18 +656,18 @@
       const fragment = document.createDocumentFragment();
       const acceptedIds = new Set(accepted.map(({ station }) => station.id));
 
-      candidates.forEach(({ station, point }) => {
-        fragment.appendChild(renderStationPoint(station, point, acceptedIds.has(station.id)));
+      candidates.forEach(({ station, layerPoint }) => {
+        fragment.appendChild(renderStationPoint(station, layerPoint, acceptedIds.has(station.id)));
       });
 
-      accepted.forEach(({ station, point }) => {
-        fragment.appendChild(renderStationLabel(station, point));
+      accepted.forEach(({ station, layerPoint }) => {
+        fragment.appendChild(renderStationLabel(station, layerPoint));
       });
 
       if (this.selectedStationId && !acceptedIds.has(this.selectedStationId)) {
         const selected = candidates.find(({ station }) => station.id === this.selectedStationId);
         if (selected) {
-          fragment.appendChild(renderStationLabel(selected.station, selected.point, true));
+          fragment.appendChild(renderStationLabel(selected.station, selected.layerPoint, true));
         }
       }
 
