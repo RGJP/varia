@@ -65,7 +65,7 @@
   };
 
   const state = {
-    lang: "fr",
+    lang: savedLanguage(),
     map: null,
     stationLayer: null,
     stations: [],
@@ -501,6 +501,7 @@
     }
 
     state.lang = lang;
+    localStorage.setItem("gas-quebec-lang", lang);
     document.documentElement.lang = lang;
     applyTranslations();
     setStatus(state.statusKey);
@@ -544,6 +545,11 @@
       text = text.replace(`{${name}}`, String(value));
     });
     return text;
+  }
+
+  function savedLanguage() {
+    const lang = localStorage.getItem("gas-quebec-lang");
+    return I18N[lang] ? lang : "fr";
   }
 
   class StationLabelLayer extends L.Layer {
