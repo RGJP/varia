@@ -359,6 +359,11 @@
     locateButton: document.getElementById("locateButton"),
     loadingOverlay: document.getElementById("loadingOverlay"),
     resourceSelect: document.getElementById("resourceSelect"),
+    todayMassesButton: document.getElementById("todayMassesButton"),
+    todayMassesOverlay: document.getElementById("todayMassesOverlay"),
+    todayMassesClose: document.getElementById("todayMassesClose"),
+    todayMassesTitle: document.getElementById("todayMassesTitle"),
+    todayMassesList: document.getElementById("todayMassesList"),
   };
 
   document.addEventListener("DOMContentLoaded", init);
@@ -408,6 +413,24 @@
     });
 
     els.resourceSelect?.addEventListener("change", handleResourceSelect);
+    els.todayMassesButton?.addEventListener("click", openTodayMasses);
+    els.todayMassesClose?.addEventListener("click", closeTodayMasses);
+    els.todayMassesOverlay?.addEventListener("click", (event) => {
+      const focusButton = event.target.closest("[data-focus-church-id]");
+      if (focusButton) {
+        focusChurch(focusButton.dataset.focusChurchId);
+        return;
+      }
+
+      if (event.target === els.todayMassesOverlay) {
+        closeTodayMasses();
+      }
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeTodayMasses();
+      }
+    });
   }
 
   function loadChurches() {
@@ -578,6 +601,145 @@
     }
 
     window.open(value, "_blank", "noopener");
+  }
+
+  function openTodayMasses() {
+    if (!els.todayMassesOverlay || !els.todayMassesList || !els.todayMassesTitle) {
+      return;
+    }
+
+    const today = new Date();
+    const title = formatTodayTitle(today);
+    const masses = todayMasses(today);
+    els.todayMassesTitle.textContent = title;
+    els.todayMassesList.replaceChildren(renderTodayMassesContent(masses));
+    els.todayMassesOverlay.classList.remove("is-hidden");
+    els.todayMassesOverlay.setAttribute("aria-hidden", "false");
+  }
+
+  function closeTodayMasses() {
+    if (!els.todayMassesOverlay) {
+      return;
+    }
+
+    els.todayMassesOverlay.classList.add("is-hidden");
+    els.todayMassesOverlay.setAttribute("aria-hidden", "true");
+  }
+
+  function renderTodayMassesContent(masses) {
+    if (!masses.length) {
+      const empty = document.createElement("p");
+      empty.className = "today-masses-empty";
+      empty.textContent = "Aucune messe aujourd'hui dans les données.";
+      return empty;
+    }
+
+    const list = document.createElement("ol");
+    list.className = "today-masses-items";
+
+    masses.forEach((mass) => {
+      const item = document.createElement("li");
+
+      const time = document.createElement("strong");
+      time.textContent = mass.time;
+
+      const church = document.createElement("span");
+      const churchButton = document.createElement("button");
+      churchButton.className = "today-mass-church";
+      churchButton.type = "button";
+      churchButton.dataset.focusChurchId = mass.church.id;
+      churchButton.textContent = mass.church.name;
+      church.appendChild(churchButton);
+
+      item.append(time, church);
+      list.appendChild(item);
+    });
+
+    return list;
+  }
+
+  function focusChurch(churchId) {
+    const church = state.churches.find((candidate) => candidate.id === churchId);
+    if (!church) {
+      return;
+    }
+
+    closeTodayMasses();
+    state.followUser = false;
+    state.churchLayer.selectedChurchId = church.id;
+    state.map.setView([church.lat, church.lng], Math.max(state.map.getZoom(), 15), { animate: true });
+    state.churchLayer.requestRender();
+  }
+
+  function todayMasses(date) {
+    const day = jsDayToWeekOrder(date.getDay());
+    const result = [];
+
+    state.churches.forEach((church) => {
+      church.schedule.forEach((mass) => {
+        if (!scheduleAppliesToDay(mass.day, day)) {
+          return;
+        }
+
+        splitMassTimes(mass.time).forEach((time) => {
+          result.push({
+            church,
+            time,
+            minutes: timeMinutes(time),
+          });
+        });
+      });
+    });
+
+    return result.sort((a, b) => a.minutes - b.minutes || a.church.name.localeCompare(b.church.name, "fr"));
+  }
+
+  function scheduleAppliesToDay(day, targetDay) {
+    const normalized = normalizeToken(day);
+    const range = normalized.match(/^([a-z]+)\s*(?:-|a(?:u)?)\s*([a-z]+)/);
+
+    if (range) {
+      const start = dayOrder(range[1]);
+      const end = dayOrder(range[2]);
+      if (start === 99 || end === 99) {
+        return false;
+      }
+      return start <= end
+        ? targetDay >= start && targetDay <= end
+        : targetDay >= start || targetDay <= end;
+    }
+
+    return dayOrder(day) === targetDay;
+  }
+
+  function splitMassTimes(value) {
+    return String(value)
+      .split(",")
+      .map((time) => time.trim())
+      .filter(Boolean);
+  }
+
+  function timeMinutes(value) {
+    const match = String(value).match(/(\d{1,2})h(?:(\d{2}))?/);
+    if (!match) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    return Number(match[1]) * 60 + Number(match[2] || 0);
+  }
+
+  function jsDayToWeekOrder(jsDay) {
+    return jsDay === 0 ? 7 : jsDay;
+  }
+
+  function formatTodayTitle(date) {
+    const formatted = new Intl.DateTimeFormat("fr-CA", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    }).format(date);
+
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
   }
 
   function setStatus(key) {

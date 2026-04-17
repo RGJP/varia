@@ -56,10 +56,26 @@
         </select>
       </nav>
 
+      <button id="todayMassesButton" class="today-masses-button" type="button">
+        Possibilités du jour
+      </button>
+
       <section class="status-strip" aria-live="polite">
         <span id="statusText">Chargement des messes...</span>
         <span id="visibleText">0 / 0</span>
       </section>
+
+      <div id="todayMassesOverlay" class="today-masses-overlay is-hidden" aria-hidden="true">
+        <section class="today-masses-panel" role="dialog" aria-modal="true" aria-labelledby="todayMassesTitle">
+          <div class="today-masses-header">
+            <h2 id="todayMassesTitle">Possibilités du jour</h2>
+            <button id="todayMassesClose" class="today-masses-close" type="button" aria-label="Fermer">
+              Fermer
+            </button>
+          </div>
+          <div id="todayMassesList" class="today-masses-list"></div>
+        </section>
+      </div>
 
       <div id="loadingOverlay" class="loading-overlay" role="status" aria-live="polite">
         <div class="loading-panel">
