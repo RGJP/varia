@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f8faf7">
+    <meta
+      name="description"
+      content="Gas Quebec affiche les prix des stations-service du Quebec sur une carte mobile."
+    >
+    <title>Gas Quebec</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml">
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    >
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <noscript>
+      <p class="noscript">Gas Quebec requires JavaScript to load station prices and the map.</p>
+    </noscript>
+
+    <main class="app-shell" aria-label="Gas Quebec">
+      <div id="map" aria-label="Gas Quebec map"></div>
+
+      <header class="topbar" aria-label="Application controls">
+        <div class="brand-block">
+          <strong>Gas Quebec</strong>
+          <span data-i18n="tagline">Prix autour de vous</span>
+        </div>
+        <div class="topbar-actions">
+          <button id="locateButton" class="control-button" type="button" data-i18n="locate">
+            Localiser
+          </button>
+          <div class="language-toggle" aria-label="Language">
+            <button class="lang-button is-active" type="button" data-lang="fr">FR</button>
+            <button class="lang-button" type="button" data-lang="en">EN</button>
+          </div>
+        </div>
+      </header>
+
+      <section class="status-strip" aria-live="polite">
+        <span id="statusText" data-i18n="loadingData">Chargement des stations...</span>
+        <span id="visibleText">0 / 0</span>
+      </section>
+
+      <aside class="map-legend" aria-label="Price legend">
+        <span><i class="legend-dot legend-best"></i><b data-i18n="legendBest">Bas</b></span>
+        <span><i class="legend-dot legend-average"></i><b data-i18n="legendAverage">Moyen</b></span>
+        <span><i class="legend-dot legend-high"></i><b data-i18n="legendHigh">Haut</b></span>
+      </aside>
+    </main>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako_inflate.min.js"></script>
+    <script src="./app.js" defer></script>
+  </body>
+</html>
