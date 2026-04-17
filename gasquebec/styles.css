@@ -431,8 +431,8 @@ button {
 .station-label {
   position: absolute;
   z-index: 2;
-  width: 116px;
-  padding: 5px;
+  width: 104px;
+  padding: 4px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel-glass-strong);
@@ -464,25 +464,25 @@ button {
 
 .station-title {
   overflow: hidden;
-  margin: 0 0 4px;
+  margin: 0 0 2px;
   color: var(--ink);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
-  line-height: 1.1;
+  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .fuel-row {
   display: grid;
-  grid-template-columns: 29px 1fr;
+  grid-template-columns: 24px 1fr;
   align-items: center;
-  min-height: 18px;
-  margin-top: 2px;
-  padding: 1px 4px;
-  border-radius: 6px;
-  font-size: 11px;
-  line-height: 1.2;
+  min-height: 15px;
+  margin-top: 1px;
+  padding: 1px 3px;
+  border-radius: 5px;
+  font-size: 10px;
+  line-height: 1.1;
 }
 
 .fuel-row span {
@@ -521,18 +521,18 @@ button {
 
 .station-footer {
   display: grid;
-  grid-template-columns: 1fr 40px;
+  grid-template-columns: minmax(0, 1fr) 24px;
   align-items: center;
-  gap: 5px;
-  margin-top: 4px;
+  gap: 3px;
+  margin-top: 2px;
 }
 
 .station-distance {
   overflow: hidden;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
-  line-height: 1.1;
+  line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -540,12 +540,12 @@ button {
 .station-nav {
   position: relative;
   z-index: 1;
-  min-height: 28px;
+  min-height: 22px;
   padding: 0;
   border-color: var(--accent);
   background: var(--accent);
   color: var(--accent-ink);
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 900;
 }
 
@@ -590,11 +590,11 @@ button {
   }
 
   .station-label {
-    width: 126px;
+    width: 112px;
   }
 
   .fuel-row {
-    grid-template-columns: 32px 1fr;
-    font-size: 12px;
+    grid-template-columns: 26px 1fr;
+    font-size: 10px;
   }
 }

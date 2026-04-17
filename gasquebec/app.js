@@ -42,7 +42,7 @@
       legendBest: "Bas",
       legendAverage: "Moyen",
       legendHigh: "Haut",
-      nav: "NAV",
+      nav: "GO",
       navTo: "Navigation vers {station}",
       distance: "DIST",
       unknownDistance: "-- km",
@@ -73,7 +73,7 @@
       legendBest: "Low",
       legendAverage: "Mid",
       legendHigh: "High",
-      nav: "NAV",
+      nav: "GO",
       navTo: "Navigate to {station}",
       distance: "DIST",
       unknownDistance: "-- km",
@@ -946,7 +946,7 @@
 
     const distance = document.createElement("span");
     distance.className = "station-distance";
-    distance.textContent = `${t("distance")}: ${formatDistance(station.distanceKm)}`;
+    distance.textContent = formatDistance(station.distanceKm);
 
     const nav = document.createElement("button");
     nav.className = "station-nav";
@@ -1003,8 +1003,8 @@
 
   function getLabelSize() {
     return window.innerWidth < 720
-      ? { width: 116, height: 82 }
-      : { width: 126, height: 86 };
+      ? { width: 104, height: 66 }
+      : { width: 112, height: 68 };
   }
 
   function getMaxLabels(zoom, width) {
