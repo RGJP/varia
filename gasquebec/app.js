@@ -4,6 +4,7 @@
   const DATA_URL = "https://regieessencequebec.ca/stations.geojson.gz";
   const QUEBEC_CENTER = [47.75, -71.85];
   const QUEBEC_ZOOM = 6;
+  const USER_LOCATION_ZOOM = 15;
   const LOCAL_PRICE_RADIUS_KM = 50;
   const MIN_COMPARABLE_PRICES = 4;
   const EARTH_RADIUS_KM = 6371.0088;
@@ -19,6 +20,7 @@
 
   const I18N = {
     fr: {
+      brandName: "Gas Québec",
       locate: "📍 Localiser",
       loadingData: "Chargement des stations...",
       dataReady: "Stations chargees",
@@ -28,6 +30,15 @@
       locationDenied: "Geolocalisation refusee",
       locationUnavailable: "Position indisponible",
       locationUnsupported: "Geolocalisation non prise en charge",
+      postalTitle: "Position par code postal",
+      postalPlaceholder: "*** ***",
+      postalUse: "Utiliser",
+      postalHint: "Estimation locale avec les codes postaux des stations.",
+      postalNeedCode: "Entrez au moins les trois premiers caracteres du code postal.",
+      postalWaitingData: "Chargement des stations avant l'estimation.",
+      postalNoStations: "Les donnees des stations ne sont pas disponibles.",
+      postalNoMatch: "Aucune station avec un code postal similaire.",
+      postalEstimateActive: "Position estimee par code postal",
       visibleCount: "{visible} visibles / {total} stations",
       legendBest: "Bas",
       legendAverage: "Moyen",
@@ -40,6 +51,7 @@
       userLocation: "Votre position",
     },
     en: {
+      brandName: "Gas Quebec",
       locate: "📍 Locate",
       loadingData: "Loading stations...",
       dataReady: "Stations loaded",
@@ -49,6 +61,15 @@
       locationDenied: "Geolocation denied",
       locationUnavailable: "Location unavailable",
       locationUnsupported: "Geolocation is not supported",
+      postalTitle: "Postal code location",
+      postalPlaceholder: "*** ***",
+      postalUse: "Use",
+      postalHint: "Local estimate using station postal codes.",
+      postalNeedCode: "Enter at least the first three postal-code characters.",
+      postalWaitingData: "Loading stations before estimating.",
+      postalNoStations: "Station data is not available.",
+      postalNoMatch: "No stations with a similar postal code.",
+      postalEstimateActive: "Location estimated by postal code",
       visibleCount: "{visible} visible / {total} stations",
       legendBest: "Low",
       legendAverage: "Mid",
@@ -72,6 +93,7 @@
     watchId: null,
     followUser: true,
     statusKey: "loadingData",
+    pendingPostalCode: "",
     userMarker: null,
     accuracyCircle: null,
   };
@@ -81,8 +103,12 @@
     visibleText: document.getElementById("visibleText"),
     locateButton: document.getElementById("locateButton"),
     loadingOverlay: document.getElementById("loadingOverlay"),
+    postalPrompt: document.getElementById("postalPrompt"),
+    postalInput: document.getElementById("postalInput"),
+    postalError: document.getElementById("postalError"),
     langButtons: Array.from(document.querySelectorAll("[data-lang]")),
     i18n: Array.from(document.querySelectorAll("[data-i18n]")),
+    i18nPlaceholders: Array.from(document.querySelectorAll("[data-i18n-placeholder]")),
   };
 
   document.addEventListener("DOMContentLoaded", init);
@@ -125,7 +151,7 @@
     els.locateButton.addEventListener("click", () => {
       state.followUser = true;
       if (state.userLocation) {
-        state.map.setView([state.userLocation.lat, state.userLocation.lng], Math.max(state.map.getZoom(), 13));
+        state.map.setView([state.userLocation.lat, state.userLocation.lng], Math.max(state.map.getZoom(), USER_LOCATION_ZOOM));
       } else {
         requestLocation();
       }
@@ -134,6 +160,9 @@
     els.langButtons.forEach((button) => {
       button.addEventListener("click", () => setLanguage(button.dataset.lang));
     });
+
+    els.postalPrompt?.addEventListener("submit", handlePostalSubmit);
+    els.postalInput?.addEventListener("input", () => setPostalError(""));
   }
 
   async function loadStations() {
@@ -145,10 +174,16 @@
       computePriceRanks(state.stations);
       updateDistances(true);
       state.stationLayer.setStations(state.stations);
-      setStatus("dataReady");
+      if (!applyPendingPostalCode()) {
+        setStatus("dataReady");
+      }
     } catch (error) {
       console.error(error);
       setStatus("dataError");
+      if (state.pendingPostalCode) {
+        setPostalError("postalNoStations");
+        showPostalPrompt();
+      }
       updateVisibleText(0, 0);
     } finally {
       setLoading(false);
@@ -359,6 +394,7 @@
   function requestLocation() {
     if (!("geolocation" in navigator)) {
       setStatus("locationUnsupported");
+      showPostalPrompt();
       return;
     }
 
@@ -394,6 +430,8 @@
 
     const previous = state.userLocation;
     state.userLocation = next;
+    state.pendingPostalCode = "";
+    hidePostalPrompt();
     updateUserMarker(next);
 
     const movedKm = previous ? haversineKm(previous.lat, previous.lng, next.lat, next.lng) : Infinity;
@@ -408,7 +446,7 @@
     }
 
     if (state.followUser) {
-      state.map.setView([next.lat, next.lng], Math.max(state.map.getZoom(), 13), { animate: true });
+      state.map.setView([next.lat, next.lng], Math.max(state.map.getZoom(), USER_LOCATION_ZOOM), { animate: true });
       state.followUser = false;
     }
 
@@ -416,30 +454,160 @@
   }
 
   function handleLocationError(error) {
+    if (state.watchId != null) {
+      navigator.geolocation.clearWatch(state.watchId);
+      state.watchId = null;
+    }
+
     if (error?.code === error.PERMISSION_DENIED) {
       setStatus("locationDenied");
+      showPostalPrompt();
       return;
     }
 
     setStatus("locationUnavailable");
+    showPostalPrompt();
+  }
+
+  function handlePostalSubmit(event) {
+    event.preventDefault();
+    const code = normalizePostalCode(els.postalInput?.value || "");
+
+    if (code.length < 3) {
+      setPostalError("postalNeedCode");
+      return;
+    }
+
+    if (!state.stations.length) {
+      state.pendingPostalCode = code;
+      setPostalError(state.statusKey === "dataError" ? "postalNoStations" : "postalWaitingData");
+      return;
+    }
+
+    applyPostalCode(code);
+  }
+
+  function applyPendingPostalCode() {
+    if (!state.pendingPostalCode) {
+      return false;
+    }
+
+    const code = state.pendingPostalCode;
+    state.pendingPostalCode = "";
+    return applyPostalCode(code);
+  }
+
+  function applyPostalCode(code) {
+    const estimate = estimateLocationFromPostalCode(code);
+    if (!estimate) {
+      setPostalError("postalNoMatch");
+      showPostalPrompt();
+      return false;
+    }
+
+    state.userLocation = {
+      lat: estimate.lat,
+      lng: estimate.lng,
+      accuracy: estimate.accuracyMeters,
+      timestamp: Date.now(),
+      source: "postal",
+      postalCode: code,
+    };
+    state.followUser = false;
+    hidePostalPrompt();
+    updateUserMarker(state.userLocation);
+    updateDistances(true);
+    state.map.setView([estimate.lat, estimate.lng], Math.max(state.map.getZoom(), USER_LOCATION_ZOOM), { animate: true });
+    setStatus("postalEstimateActive");
+    return true;
+  }
+
+  function estimateLocationFromPostalCode(code) {
+    const stationsWithPostalCodes = state.stations
+      .map((station) => ({
+        station,
+        postalCode: normalizePostalCode(station.postalCode),
+      }))
+      .filter(({ postalCode }) => postalCode.length >= 3);
+
+    if (!stationsWithPostalCodes.length) {
+      return null;
+    }
+
+    const maxPrefix = Math.min(code.length, 6);
+    const prefixLengths = [];
+    for (let length = maxPrefix; length >= 3; length -= 1) {
+      prefixLengths.push(length);
+    }
+    prefixLengths.push(2);
+
+    for (const length of prefixLengths) {
+      const prefix = code.slice(0, length);
+      const matches = stationsWithPostalCodes.filter(({ postalCode }) => postalCode.startsWith(prefix));
+      if (matches.length) {
+        return estimateCenter(matches.map(({ station }) => station));
+      }
+    }
+
+    return null;
+  }
+
+  function estimateCenter(stations) {
+    const lat = average(stations.map((station) => station.lat));
+    const lng = average(stations.map((station) => station.lng));
+    const distances = stations.map((station) => haversineKm(lat, lng, station.lat, station.lng));
+    const averageSpreadKm = average(distances);
+    const accuracyMeters = Math.round(Math.max(1200, Math.min(25000, averageSpreadKm * 1000 || 1200)));
+
+    return { lat, lng, accuracyMeters };
+  }
+
+  function showPostalPrompt() {
+    if (!els.postalPrompt) {
+      return;
+    }
+
+    els.postalPrompt.classList.remove("is-hidden");
+    els.postalPrompt.setAttribute("aria-hidden", "false");
+  }
+
+  function hidePostalPrompt() {
+    if (!els.postalPrompt) {
+      return;
+    }
+
+    els.postalPrompt.classList.add("is-hidden");
+    els.postalPrompt.setAttribute("aria-hidden", "true");
+    state.pendingPostalCode = "";
+    setPostalError("");
+  }
+
+  function setPostalError(key) {
+    if (!els.postalError) {
+      return;
+    }
+
+    els.postalError.textContent = key ? t(key) : "";
   }
 
   function updateUserMarker(location) {
     const latLng = [location.lat, location.lng];
+    const icon = L.divIcon({
+      className: "",
+      html: `<div class="user-position${location.source === "postal" ? " is-estimated" : ""}"></div>`,
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+    });
 
     if (!state.userMarker) {
       state.userMarker = L.marker(latLng, {
         interactive: false,
-        icon: L.divIcon({
-          className: "",
-          html: '<div class="user-position"></div>',
-          iconSize: [18, 18],
-          iconAnchor: [9, 9],
-        }),
+        icon,
         zIndexOffset: 1000,
       }).addTo(state.map);
     } else {
       state.userMarker.setLatLng(latLng);
+      state.userMarker.setIcon(icon);
     }
 
     if (Number.isFinite(location.accuracy)) {
@@ -455,6 +623,9 @@
         state.accuracyCircle.setLatLng(latLng);
         state.accuracyCircle.setRadius(location.accuracy);
       }
+    } else if (state.accuracyCircle) {
+      state.accuracyCircle.remove();
+      state.accuracyCircle = null;
     }
   }
 
@@ -510,6 +681,11 @@
     els.i18n.forEach((element) => {
       const key = element.dataset.i18n;
       element.textContent = t(key);
+    });
+
+    els.i18nPlaceholders.forEach((element) => {
+      const key = element.dataset.i18nPlaceholder;
+      element.setAttribute("placeholder", t(key));
     });
 
     els.langButtons.forEach((button) => {
@@ -852,6 +1028,15 @@
 
   function updateVisibleCountOnly() {
     state.stationLayer?.options.onVisibleChange?.(state.stationLayer.visibleCount, state.stationLayer.totalCount);
+  }
+
+  function average(values) {
+    const numbers = values.filter(Number.isFinite);
+    return numbers.reduce((sum, value) => sum + value, 0) / numbers.length;
+  }
+
+  function normalizePostalCode(value) {
+    return cleanText(value).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
   }
 
   function cleanText(value) {

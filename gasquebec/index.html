@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#101310">
-    <meta name="color-scheme" content="dark">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#f8faf7">
+    <meta name="color-scheme" content="light">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta
       name="description"
       content="Gas Quebec affiche les prix des stations-service du Quebec sur une carte mobile."
@@ -30,7 +30,7 @@
 
       <header class="topbar" aria-label="Application controls">
         <div class="brand-block">
-          <strong>Gas Quebec</strong>
+          <strong data-i18n="brandName">Gas Québec</strong>
         </div>
         <div class="topbar-actions">
           <button id="locateButton" class="control-button" type="button" data-i18n="locate">
@@ -48,10 +48,33 @@
         <span id="visibleText">0 / 0</span>
       </section>
 
+      <form id="postalPrompt" class="postal-prompt is-hidden" aria-hidden="true">
+        <label class="postal-label" for="postalInput" data-i18n="postalTitle">
+          Position par code postal
+        </label>
+        <div class="postal-row">
+          <input
+            id="postalInput"
+            class="postal-input"
+            type="text"
+            inputmode="text"
+            autocomplete="postal-code"
+            maxlength="7"
+            placeholder="*** ***"
+            data-i18n-placeholder="postalPlaceholder"
+            aria-describedby="postalHint postalError"
+          >
+          <button class="postal-submit" type="submit" data-i18n="postalUse">Utiliser</button>
+        </div>
+        <p id="postalHint" class="postal-hint" data-i18n="postalHint">
+          Estimation locale avec les codes postaux des stations.
+        </p>
+        <p id="postalError" class="postal-error" aria-live="polite"></p>
+      </form>
+
       <div id="loadingOverlay" class="loading-overlay" role="status" aria-live="polite">
         <div class="loading-panel">
           <span class="loading-spinner" aria-hidden="true"></span>
-          <strong data-i18n="loadingData">Chargement des stations...</strong>
         </div>
       </div>
 
