@@ -11,10 +11,9 @@
   const DISTANCE_RERENDER_DELTA_KM = 0.025;
   const DISTANCE_RERENDER_MS = 15000;
 
-  const FUEL_KEYS = ["regular", "super", "diesel"];
+  const FUEL_KEYS = ["regular", "diesel"];
   const FUEL_ALIASES = {
     regular: ["regulier", "regular"],
-    super: ["super", "premium", "supreme"],
     diesel: ["diesel"],
   };
 
@@ -940,7 +939,6 @@
     wrapper.appendChild(title);
 
     wrapper.appendChild(renderFuelRow("REG", station.fuels.regular));
-    wrapper.appendChild(renderFuelRow("SUP", station.fuels.super));
     wrapper.appendChild(renderFuelRow("DSL", station.fuels.diesel));
 
     const footer = document.createElement("div");
@@ -1005,8 +1003,8 @@
 
   function getLabelSize() {
     return window.innerWidth < 720
-      ? { width: 116, height: 104 }
-      : { width: 126, height: 108 };
+      ? { width: 116, height: 82 }
+      : { width: 126, height: 86 };
   }
 
   function getMaxLabels(zoom, width) {
