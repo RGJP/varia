@@ -327,6 +327,57 @@
         { day: "Dimanche", time: "19h" },
       ],
     },
+    {
+      id: "eglise-nativite-notre-dame",
+      name: "Nativité-Notre-Dame",
+      lat: 46.85911324311299,
+      lng: -71.18898928350983,
+      schedule: [
+        { day: "Dimanche", time: "11h" },
+        { day: "Mercredi", time: "16h" },
+      ],
+    },
+    {
+      id: "eglise-notre-dame-esperance",
+      name: "Notre-Dame-Espérance",
+      lat: 46.853695486109736,
+      lng: -71.23197969754506,
+      schedule: [
+        { day: "Dimanche", time: "11h" },
+        { day: "Merc.", time: "13-16h-Adoration" },
+      ],
+    },
+    {
+      id: "eglise-ste-gertrude",
+      name: "Ste-Gertrude",
+      lat: 46.86989932880687,
+      lng: -71.18679896022975,
+      schedule: [
+        { day: "Dimanche", time: "9h" },
+        { day: "Dimanche", time: "16h" },
+        { day: "Vendredi", time: "8h30" },
+      ],
+    },
+    {
+      id: "eglise-st-ignace-loyola",
+      name: "St-Ignace-Loyola",
+      lat: 46.85325956726457,
+      lng: -71.20812845035994,
+      schedule: [
+        { day: "Mercredi", time: "8h30" },
+        { day: "Samedi", time: "16h" },
+      ],
+    },
+    {
+      id: "eglise-ste-therese-lisieux",
+      name: "Ste-Thérèse-Lisieux",
+      lat: 46.906050740175566,
+      lng: -71.18965962522972,
+      schedule: [
+        { day: "Samedi", time: "16h" },
+        { day: "Dimanche", time: "10h" },
+      ],
+    },
   ];
 
   const COPY = {
@@ -651,7 +702,10 @@
       churchButton.textContent = mass.church.name;
       church.appendChild(churchButton);
 
-      item.append(time, church);
+      const distance = document.createElement("small");
+      distance.textContent = formatDistance(mass.church.distanceKm);
+
+      item.append(time, church, distance);
       list.appendChild(item);
     });
 
