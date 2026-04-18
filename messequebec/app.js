@@ -548,7 +548,7 @@
           radius: location.accuracy,
           interactive: false,
           stroke: false,
-          fillColor: "#256f63",
+          fillColor: "#173f6f",
           fillOpacity: 0.12,
         }).addTo(state.map);
       } else {
@@ -666,6 +666,7 @@
 
     closeTodayMasses();
     state.followUser = false;
+    state.churchLayer.hiddenChurchIds.delete(church.id);
     state.churchLayer.selectedChurchId = church.id;
     state.map.setView([church.lat, church.lng], Math.max(state.map.getZoom(), 15), { animate: true });
     state.churchLayer.requestRender();
@@ -780,6 +781,8 @@
       this.visibleCount = 0;
       this.totalCount = 0;
       this.selectedChurchId = null;
+      this.hiddenChurchIds = new Set();
+      this.visibleLabelIds = new Set();
       this.handleMapUpdate = this.requestRender.bind(this);
       this.handleClick = this.handleClick.bind(this);
     }
@@ -848,10 +851,15 @@
         .sort((a, b) => a.priority - b.priority);
 
       const accepted = [];
+      const collision = new CollisionGrid(84);
 
       for (const candidate of candidates) {
         if (accepted.length >= maxLabels) {
           break;
+        }
+
+        if (this.hiddenChurchIds.has(candidate.church.id) && candidate.church.id !== this.selectedChurchId) {
+          continue;
         }
 
         const rect = {
@@ -869,11 +877,17 @@
           continue;
         }
 
+        if (collision.hasCollision(rect)) {
+          continue;
+        }
+
+        collision.insert(rect);
         accepted.push(candidate);
       }
 
       const fragment = document.createDocumentFragment();
       const acceptedIds = new Set(accepted.map(({ church }) => church.id));
+      const visibleLabelIds = new Set(acceptedIds);
 
       candidates.forEach(({ church, layerPoint }) => {
         fragment.appendChild(renderChurchPoint(church, layerPoint, acceptedIds.has(church.id)));
@@ -887,9 +901,11 @@
         const selected = candidates.find(({ church }) => church.id === this.selectedChurchId);
         if (selected) {
           fragment.appendChild(renderChurchLabel(selected.church, selected.layerPoint, true));
+          visibleLabelIds.add(selected.church.id);
         }
       }
 
+      this.visibleLabelIds = visibleLabelIds;
       this.container.replaceChildren(fragment);
       this.visibleCount = candidates.length;
       this.options.onVisibleChange?.(candidates.length, this.totalCount);
@@ -898,11 +914,20 @@
     handleClick(event) {
       const button = event.target.closest("[data-nav-id]");
       if (!button) {
-        const point = event.target.closest("[data-church-id]");
+        const point = event.target.closest("[data-church-point-id]");
         if (point) {
           event.preventDefault();
           event.stopPropagation();
-          this.selectedChurchId = point.dataset.churchId;
+          this.toggleChurchLabel(point.dataset.churchPointId);
+          return;
+        }
+
+        const label = event.target.closest("[data-church-id]");
+        if (label) {
+          event.preventDefault();
+          event.stopPropagation();
+          this.hiddenChurchIds.delete(label.dataset.churchId);
+          this.selectedChurchId = label.dataset.churchId;
           this.requestRender();
         }
         return;
@@ -915,15 +940,67 @@
         this.options.onNavigate?.(church);
       }
     }
+
+    toggleChurchLabel(churchId) {
+      if (this.visibleLabelIds.has(churchId)) {
+        this.hiddenChurchIds.add(churchId);
+        if (this.selectedChurchId === churchId) {
+          this.selectedChurchId = null;
+        }
+      } else {
+        this.hiddenChurchIds.delete(churchId);
+        this.selectedChurchId = churchId;
+      }
+
+      this.requestRender();
+    }
+  }
+
+  class CollisionGrid {
+    constructor(cellSize) {
+      this.cellSize = cellSize;
+      this.cells = new Map();
+    }
+
+    hasCollision(rect) {
+      const keys = this.keysForRect(rect);
+      return keys.some((key) => (this.cells.get(key) || []).some((candidate) => intersects(rect, candidate)));
+    }
+
+    insert(rect) {
+      this.keysForRect(rect).forEach((key) => {
+        if (!this.cells.has(key)) {
+          this.cells.set(key, []);
+        }
+        this.cells.get(key).push(rect);
+      });
+    }
+
+    keysForRect(rect) {
+      const keys = [];
+      const left = Math.floor(rect.left / this.cellSize);
+      const right = Math.floor(rect.right / this.cellSize);
+      const top = Math.floor(rect.top / this.cellSize);
+      const bottom = Math.floor(rect.bottom / this.cellSize);
+
+      for (let x = left; x <= right; x += 1) {
+        for (let y = top; y <= bottom; y += 1) {
+          keys.push(`${x}:${y}`);
+        }
+      }
+
+      return keys;
+    }
   }
 
   function renderChurchPoint(church, point, hasLabel) {
     const pointEl = document.createElement("button");
     pointEl.className = `church-point${hasLabel ? " has-label" : ""}`;
     pointEl.type = "button";
-    pointEl.dataset.churchId = church.id;
+    pointEl.dataset.churchPointId = church.id;
     pointEl.style.left = `${point.x}px`;
     pointEl.style.top = `${point.y}px`;
+    pointEl.textContent = "⛪";
     pointEl.setAttribute("aria-label", church.label);
     pointEl.title = church.label;
     return pointEl;
@@ -932,6 +1009,7 @@
   function renderChurchLabel(church, point, selected = false) {
     const wrapper = document.createElement("article");
     wrapper.className = selected ? "church-label is-selected" : "church-label";
+    wrapper.dataset.churchId = church.id;
     wrapper.style.left = `${point.x}px`;
     wrapper.style.top = `${point.y}px`;
     wrapper.setAttribute("aria-label", church.label);
@@ -1083,6 +1161,10 @@
 
   function toRadians(degrees) {
     return (degrees * Math.PI) / 180;
+  }
+
+  function intersects(a, b) {
+    return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
   }
 
   window.addEventListener("resize", () => {
