@@ -279,6 +279,18 @@
       ],
     },
     {
+      id: "eglise-st-patrick-anglais",
+      name: "St-Patrick-ANGLAIS",
+      lat: 46.804413287842195,
+      lng: -71.22344275057333,
+      schedule: [
+        { day: "Dimanche", time: "10h" },
+        { day: "Mardi", time: "11h30" },
+        { day: "Mercredi", time: "11h30" },
+        { day: "Samedi", time: "16h" },
+      ],
+    },
+    {
       id: "oratoire-st-joseph",
       name: "Oratoire St-Joseph",
       lat: 46.80320893846324,
