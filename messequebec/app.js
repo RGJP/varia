@@ -423,6 +423,7 @@
     initMap();
     bindUi();
     loadChurches();
+    locateUser();
   }
 
   function initMap() {
@@ -451,17 +452,7 @@
   }
 
   function bindUi() {
-    els.locateButton.addEventListener("click", () => {
-      state.followUser = true;
-      if (state.userLocation) {
-        state.map.setView(
-          [state.userLocation.lat, state.userLocation.lng],
-          Math.max(state.map.getZoom(), USER_LOCATION_ZOOM),
-        );
-      } else {
-        requestLocation();
-      }
-    });
+    els.locateButton.addEventListener("click", locateUser);
 
     els.resourceSelect?.addEventListener("change", handleResourceSelect);
     els.todayMassesButton?.addEventListener("click", openTodayMasses);
@@ -482,6 +473,18 @@
         closeTodayMasses();
       }
     });
+  }
+
+  function locateUser() {
+    state.followUser = true;
+    if (state.userLocation) {
+      state.map.setView(
+        [state.userLocation.lat, state.userLocation.lng],
+        Math.max(state.map.getZoom(), USER_LOCATION_ZOOM),
+      );
+    } else {
+      requestLocation();
+    }
   }
 
   function loadChurches() {
@@ -751,7 +754,8 @@
 
   function scheduleAppliesToDay(day, targetDay) {
     const normalized = normalizeToken(day);
-    const range = normalized.match(/^([a-z]+)\s*(?:-|a(?:u)?)\s*([a-z]+)/);
+    const range = normalized.match(/^([a-z.]+)\s*-\s*([a-z.]+)$/) ||
+      normalized.match(/^([a-z.]+)\s+a(?:u)?\s+([a-z.]+)$/);
 
     if (range) {
       const start = dayOrder(range[1]);
