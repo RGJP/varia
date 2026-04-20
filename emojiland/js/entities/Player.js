@@ -1722,7 +1722,7 @@ export class Player extends Entity {
             (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 800);
         const isGameRunning = !game || (game.state === 1 && !game.gameOverTriggered);
         const golferNeedsMobileFlip = isMobileViewport && isGameRunning && this.emoji === '🏌️‍♂️';
-        const emojiFacesLeft = this._emojiFacesLeft || (isMobileViewport && this.emoji === '🐧') || golferNeedsMobileFlip;
+        const emojiFacesLeft = this._emojiFacesLeft || (isMobileViewport && (this.emoji === '🐧' || this.emoji === '🕺')) || golferNeedsMobileFlip;
         const shouldMirrorForFacing = (!game || !game.gameOverTriggered) && (emojiFacesLeft ? this.facingRight : !this.facingRight);
         if (shouldMirrorForFacing) {
             ctx.scale(-1, 1);
