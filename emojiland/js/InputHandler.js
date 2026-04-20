@@ -321,25 +321,99 @@ export class InputHandler {
         const dragStateByTouchId = new Map();
         let movableControls = [];
         let mobileLayout = {};
+        let hasUserPreferredLayout = false;
         let layoutSaveTimerId = null;
         let layoutHintTimerId = null;
         let isResetConfirmOpen = false;
         let resetConfirmResolver = null;
 
+        const isSavedControlPosition = (value) => {
+            return value &&
+                typeof value === 'object' &&
+                typeof value.cx === 'number' &&
+                typeof value.cy === 'number' &&
+                Number.isFinite(value.cx) &&
+                Number.isFinite(value.cy) &&
+                value.cx >= 0 &&
+                value.cx <= 1 &&
+                value.cy >= 0 &&
+                value.cy <= 1;
+        };
+
+        const normalizeStoredLayout = (candidate) => {
+            const normalized = {};
+            if (!candidate || typeof candidate !== 'object') return normalized;
+            for (let i = 0; i < movableControlIds.length; i++) {
+                const id = movableControlIds[i];
+                const saved = candidate[id];
+                if (!isSavedControlPosition(saved)) continue;
+                normalized[id] = { cx: saved.cx, cy: saved.cy };
+            }
+            return normalized;
+        };
+
+        const hasCompleteStoredLayout = (layout) => {
+            for (let i = 0; i < movableControlIds.length; i++) {
+                if (!isSavedControlPosition(layout[movableControlIds[i]])) return false;
+            }
+            return true;
+        };
+
+        const isProbablyBunchedLegacyLayout = (layout) => {
+            const values = Object.values(layout);
+            if (values.length <= 1) return true;
+            let minX = Infinity;
+            let maxX = -Infinity;
+            let minY = Infinity;
+            let maxY = -Infinity;
+            for (let i = 0; i < values.length; i++) {
+                minX = Math.min(minX, values[i].cx);
+                maxX = Math.max(maxX, values[i].cx);
+                minY = Math.min(minY, values[i].cy);
+                maxY = Math.max(maxY, values[i].cy);
+            }
+            return (maxX - minX) < 0.28 && (maxY - minY) < 0.28;
+        };
+
         const loadLayout = () => {
             try {
                 const raw = localStorage.getItem(layoutStorageKey);
-                if (!raw) return {};
+                if (!raw) return { layout: {}, hasPreference: false };
                 const parsed = JSON.parse(raw);
-                return parsed && typeof parsed === 'object' ? parsed : {};
+                if (!parsed || typeof parsed !== 'object') {
+                    return { layout: {}, hasPreference: false };
+                }
+
+                if (parsed.userPreferredLayout === true && parsed.controls && typeof parsed.controls === 'object') {
+                    const layout = normalizeStoredLayout(parsed.controls);
+                    return {
+                        layout: hasCompleteStoredLayout(layout) ? layout : {},
+                        hasPreference: hasCompleteStoredLayout(layout)
+                    };
+                }
+
+                const legacyLayout = normalizeStoredLayout(parsed);
+                const canMigrateLegacyLayout = hasCompleteStoredLayout(legacyLayout) && !isProbablyBunchedLegacyLayout(legacyLayout);
+                return {
+                    layout: canMigrateLegacyLayout ? legacyLayout : {},
+                    hasPreference: canMigrateLegacyLayout
+                };
             } catch {
-                return {};
+                return { layout: {}, hasPreference: false };
             }
         };
 
         const saveLayout = () => {
             try {
-                localStorage.setItem(layoutStorageKey, JSON.stringify(mobileLayout));
+                if (!hasUserPreferredLayout) {
+                    localStorage.removeItem(layoutStorageKey);
+                    return;
+                }
+                localStorage.setItem(layoutStorageKey, JSON.stringify({
+                    version: 2,
+                    userPreferredLayout: true,
+                    controls: mobileLayout
+                }));
             } catch {
                 // Ignore storage failures silently.
             }
@@ -362,10 +436,9 @@ export class InputHandler {
         };
 
         const isLayoutEditMode = () => this._mobileControlLayoutMode === true;
-        mobileLayout = loadLayout();
-        for (const key of Object.keys(mobileLayout)) {
-            if (!movableControlIds.includes(key)) delete mobileLayout[key];
-        }
+        const loadedLayout = loadLayout();
+        mobileLayout = loadedLayout.layout;
+        hasUserPreferredLayout = loadedLayout.hasPreference;
         saveLayout();
 
         const triggerVirtualJump = () => {
@@ -439,23 +512,12 @@ export class InputHandler {
         };
 
         const persistAllControlPositions = () => {
+            if (!hasUserPreferredLayout) return;
             initializeMovableControls();
             for (let i = 0; i < movableControls.length; i++) {
                 cacheControlPosition(movableControls[i]);
             }
             flushScheduledLayoutSave();
-        };
-
-        const applySavedControlPosition = (el) => {
-            const saved = mobileLayout[el.id];
-            if (!saved || typeof saved.cx !== 'number' || typeof saved.cy !== 'number') return false;
-            const rect = el.getBoundingClientRect();
-            if (rect.width <= 0 || rect.height <= 0) return false;
-            const vp = getViewportSize();
-            const left = saved.cx * vp.width - rect.width / 2;
-            const top = saved.cy * vp.height - rect.height / 2;
-            setControlPosition(el, left, top);
-            return true;
         };
 
         const primeControlForLayout = (el) => {
@@ -496,14 +558,24 @@ export class InputHandler {
         };
 
         const refreshControlLayoutFromSaved = () => {
+            if (!hasUserPreferredLayout) return false;
             initializeMovableControls();
-            let touched = false;
+            const applications = [];
             for (let i = 0; i < movableControls.length; i++) {
                 const el = movableControls[i];
-                primeControlForLayout(el);
-                if (applySavedControlPosition(el)) touched = true;
+                const saved = mobileLayout[el.id];
+                if (!isSavedControlPosition(saved)) continue;
+                const rect = el.getBoundingClientRect();
+                if (rect.width <= 0 || rect.height <= 0) continue;
+                applications.push({ el, saved, width: rect.width, height: rect.height });
             }
-            return touched;
+            const vp = getViewportSize();
+            for (let i = 0; i < applications.length; i++) {
+                const { el, saved, width, height } = applications[i];
+                setControlPosition(el, saved.cx * vp.width - width / 2, saved.cy * vp.height - height / 2);
+                el.dataset.layoutReady = '1';
+            }
+            return applications.length > 0;
         };
 
         const freezeControlLayoutToCurrent = () => {
@@ -561,6 +633,7 @@ export class InputHandler {
             if (defaultSnapshots.length <= 0) return;
             dragStateByTouchId.clear();
             mobileLayout = {};
+            hasUserPreferredLayout = true;
             flushScheduledLayoutSave();
             for (let i = 0; i < defaultSnapshots.length; i++) {
                 const { el, left, top } = defaultSnapshots[i];
@@ -648,6 +721,7 @@ export class InputHandler {
                 }));
             }
             if (this._mobileControlLayoutMode) {
+                hasUserPreferredLayout = true;
                 // Enter edit mode from what the player currently sees, then allow drag edits.
                 // This avoids stale saved coordinates snapping buttons into a stack.
                 freezeControlLayoutToCurrent();
