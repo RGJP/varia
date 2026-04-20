@@ -212,19 +212,53 @@ button {
 .today-masses-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
+  align-items: start;
   gap: 10px;
   padding: 12px;
   border-bottom: 1px solid var(--line);
 }
 
-.today-masses-header h2 {
-  margin: 0;
+.today-masses-heading {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.today-masses-day-nav {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 8px;
+}
+
+.today-masses-day-nav strong {
   overflow: hidden;
-  font-size: 18px;
+  color: var(--accent-strong);
+  font-size: 15px;
+  font-weight: 900;
   line-height: 1.15;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.today-masses-day-button {
+  width: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  touch-action: manipulation;
+}
+
+.today-masses-day-button:active {
+  transform: translateY(1px);
 }
 
 .today-masses-close {

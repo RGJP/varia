@@ -70,9 +70,19 @@
       <a class="feedback-link" href="mailto:rakha6727@gmail.com">📧 Commentaires</a>
 
       <div id="todayMassesOverlay" class="today-masses-overlay is-hidden" aria-hidden="true">
-        <section class="today-masses-panel" role="dialog" aria-modal="true" aria-labelledby="todayMassesTitle">
+        <section class="today-masses-panel" role="dialog" aria-modal="true" aria-labelledby="todayMassesDay">
           <div class="today-masses-header">
-            <h2 id="todayMassesTitle">Possibilités du jour</h2>
+            <div class="today-masses-heading">
+              <div class="today-masses-day-nav" aria-label="Choisir la journée">
+                <button id="todayMassesPrev" class="today-masses-day-button" type="button" aria-label="Jour précédent">
+                  ‹
+                </button>
+                <strong id="todayMassesDay">Aujourd'hui</strong>
+                <button id="todayMassesNext" class="today-masses-day-button" type="button" aria-label="Jour suivant">
+                  ›
+                </button>
+              </div>
+            </div>
             <button id="todayMassesClose" class="today-masses-close" type="button" aria-label="Fermer">
               Fermer
             </button>

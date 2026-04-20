@@ -414,6 +414,7 @@
     statusKey: "loadingData",
     userMarker: null,
     accuracyCircle: null,
+    selectedMassDate: null,
   };
 
   const els = {
@@ -425,7 +426,9 @@
     todayMassesButton: document.getElementById("todayMassesButton"),
     todayMassesOverlay: document.getElementById("todayMassesOverlay"),
     todayMassesClose: document.getElementById("todayMassesClose"),
-    todayMassesTitle: document.getElementById("todayMassesTitle"),
+    todayMassesPrev: document.getElementById("todayMassesPrev"),
+    todayMassesNext: document.getElementById("todayMassesNext"),
+    todayMassesDay: document.getElementById("todayMassesDay"),
     todayMassesList: document.getElementById("todayMassesList"),
   };
 
@@ -469,6 +472,8 @@
     els.resourceSelect?.addEventListener("change", handleResourceSelect);
     els.todayMassesButton?.addEventListener("click", openTodayMasses);
     els.todayMassesClose?.addEventListener("click", closeTodayMasses);
+    els.todayMassesPrev?.addEventListener("click", () => changeTodayMassesDay(-1));
+    els.todayMassesNext?.addEventListener("click", () => changeTodayMassesDay(1));
     els.todayMassesOverlay?.addEventListener("click", (event) => {
       const focusButton = event.target.closest("[data-focus-church-id]");
       if (focusButton) {
@@ -670,17 +675,34 @@
   }
 
   function openTodayMasses() {
-    if (!els.todayMassesOverlay || !els.todayMassesList || !els.todayMassesTitle) {
+    if (!els.todayMassesOverlay || !els.todayMassesList || !els.todayMassesDay) {
       return;
     }
 
-    const today = new Date();
-    const title = formatTodayTitle(today);
-    const masses = todayMasses(today);
-    els.todayMassesTitle.textContent = title;
-    els.todayMassesList.replaceChildren(renderTodayMassesContent(masses));
+    state.selectedMassDate = startOfDay(new Date());
+    renderSelectedMassesDay();
     els.todayMassesOverlay.classList.remove("is-hidden");
     els.todayMassesOverlay.setAttribute("aria-hidden", "false");
+  }
+
+  function changeTodayMassesDay(direction) {
+    if (!state.selectedMassDate) {
+      state.selectedMassDate = startOfDay(new Date());
+    }
+
+    state.selectedMassDate = addDays(state.selectedMassDate, direction);
+    renderSelectedMassesDay();
+  }
+
+  function renderSelectedMassesDay() {
+    if (!els.todayMassesList || !els.todayMassesDay || !state.selectedMassDate) {
+      return;
+    }
+
+    const masses = todayMasses(state.selectedMassDate);
+    const dayLabel = formatDayTitle(state.selectedMassDate);
+    els.todayMassesDay.textContent = dayLabel;
+    els.todayMassesList.replaceChildren(renderTodayMassesContent(masses, dayLabel));
   }
 
   function closeTodayMasses() {
@@ -692,11 +714,11 @@
     els.todayMassesOverlay.setAttribute("aria-hidden", "true");
   }
 
-  function renderTodayMassesContent(masses) {
+  function renderTodayMassesContent(masses, dayLabel) {
     if (!masses.length) {
       const empty = document.createElement("p");
       empty.className = "today-masses-empty";
-      empty.textContent = "Aucune messe aujourd'hui dans les données.";
+      empty.textContent = `Aucune messe pour ${dayLabel.toLowerCase()} dans les données.`;
       return empty;
     }
 
@@ -803,14 +825,29 @@
     return jsDay === 0 ? 7 : jsDay;
   }
 
-  function formatTodayTitle(date) {
+  function startOfDay(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  function addDays(date, days) {
+    const next = startOfDay(date);
+    next.setDate(next.getDate() + days);
+    return next;
+  }
+
+  function isSameDate(first, second) {
+    return first.getFullYear() === second.getFullYear() &&
+      first.getMonth() === second.getMonth() &&
+      first.getDate() === second.getDate();
+  }
+
+  function formatDayTitle(date) {
     const formatted = new Intl.DateTimeFormat("fr-CA", {
       weekday: "long",
-      day: "numeric",
-      month: "long",
     }).format(date);
 
-    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    const day = formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    return isSameDate(date, new Date()) ? `${day} (Aujourd'hui)` : day;
   }
 
   function setStatus(key) {
