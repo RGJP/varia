@@ -356,7 +356,6 @@
       lng: -71.23197969754506,
       schedule: [
         { day: "Dimanche", time: "11h" },
-        { day: "Merc.", time: "13-16h-Adoration" },
       ],
     },
     {
