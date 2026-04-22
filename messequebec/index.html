@@ -58,6 +58,19 @@
         </select>
       </nav>
 
+      <section class="search-panel" aria-label="Recherche d'églises">
+        <label class="search-label" for="churchSearch">Recherche</label>
+        <input
+          id="churchSearch"
+          class="search-input"
+          type="search"
+          placeholder="Rechercher une église"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <div id="searchResults" class="search-results is-hidden" aria-live="polite"></div>
+      </section>
+
       <button id="todayMassesButton" class="today-masses-button" type="button">
         POSSIBILITÉS DU JOUR
       </button>

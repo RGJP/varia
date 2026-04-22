@@ -14,6 +14,7 @@
       name: "St-Rodrigue",
       lat: 46.8460172,
       lng: -71.2516243,
+      leafletUrl: "https://semainierparoissial.com/semainiers/353.pdf",
       schedule: [
         { day: "Lundi", time: "16h" },
         { day: "Dimanche", time: "9h30" },
@@ -25,6 +26,7 @@
       name: "St-Charles Borromée",
       lat: 46.86099749574595,
       lng: -71.26973140913687,
+      leafletUrl: "https://semainierparoissial.com/semainiers/353.pdf",
       schedule: [
         { day: "Mardi", time: "8h30" },
         { day: "Vendredi", time: "8h30" },
@@ -37,6 +39,7 @@
       name: "Ste-Cécile",
       lat: 46.86415368414262,
       lng: -71.28117327724678,
+      leafletUrl: "https://semainierparoissial.com/semainiers/353.pdf",
       schedule: [
         { day: "Mercredi", time: "8h30" },
         { day: "Dimanche", time: "9h" },
@@ -47,6 +50,7 @@
       name: "St-Jérôme",
       lat: 46.855039242598345,
       lng: -71.25507103677113,
+      leafletUrl: "https://semainierparoissial.com/semainiers/353.pdf",
       schedule: [
         { day: "Jeudi", time: "16h" },
         { day: "Samedi", time: "16h" },
@@ -58,6 +62,7 @@
       name: "BC Notre-Dame",
       lat: 46.813331,
       lng: -71.205981,
+      leafletUrl: "https://semainierparoissial.com/semainiers/204.pdf",
       schedule: [
         { day: "Lun-Ven", time: "8h00, 12h10" },
         { day: "Samedi", time: "8h00" },
@@ -69,6 +74,7 @@
       name: "St-Ambroise",
       lat: 46.85180218426283,
       lng: -71.35787970471365,
+      leafletUrl: "https://semainierparoissial.com/semainiers/122.pdf",
       schedule: [
         { day: "Dimanche", time: "8h30" },
         { day: "Dimanche", time: "10h45" },
@@ -81,6 +87,7 @@
       name: "St-André",
       lat: 46.85663866782628,
       lng: -71.33528285600016,
+      leafletUrl: "https://semainierparoissial.com/semainiers/122.pdf",
       schedule: [
         { day: "Samedi", time: "16h" },
         { day: "Mardi", time: "8h30" },
@@ -91,6 +98,7 @@
       name: "St-Émile",
       lat: 46.869888472904464,
       lng: -71.33669679091805,
+      leafletUrl: "https://semainierparoissial.com/semainiers/122.pdf",
       schedule: [
         { day: "Dimanche", time: "11h" },
         { day: "Mercredi", time: "9h" },
@@ -101,6 +109,7 @@
       name: "St-Gérard-Majella",
       lat: 46.84180671598703,
       lng: -71.43174770811653,
+      leafletUrl: "https://semainierparoissial.com/semainiers/122.pdf",
       schedule: [
         { day: "Dimanche", time: "10h45" },
         { day: "Vendredi", time: "9h" },
@@ -111,6 +120,7 @@
       name: "Notre-Dame-Annonc.",
       lat: 46.800223034066065,
       lng: -71.35844817372664,
+      leafletUrl: "https://semainierparoissial.com/semainiers/122.pdf",
       schedule: [
         { day: "Dimanche", time: "9h" },
         { day: "Dimanche", time: "10h45" },
@@ -122,6 +132,7 @@
       name: "Ste-Monique",
       lat: 46.81166551325594,
       lng: -71.3207605946268,
+      leafletUrl: "https://semainierparoissial.com/semainiers/122.pdf",
       schedule: [
         { day: "Samedi", time: "16h" },
         { day: "Mercredi", time: "16h" },
@@ -132,6 +143,7 @@
       name: "St-François-Xavier",
       lat: 46.81279265361038,
       lng: -71.29661129885727,
+      leafletUrl: "https://semainierparoissial.com/semainiers/122.pdf",
       schedule: [
         { day: "Dimanche", time: "10h" },
         { day: "Mardi", time: "16h" },
@@ -142,6 +154,7 @@
       name: "Ste-Françoise-Cabrini",
       lat: 46.90860258819331,
       lng: -71.37338876731937,
+      leafletUrl: "https://semainierparoissial.com/semainiers/812.pdf",
       schedule: [
         { day: "Dimanche", time: "9h" },
         { day: "Jeudi", time: "8h30" },
@@ -150,8 +163,10 @@
     {
       id: "eglise-notre-dame-des-laurentides",
       name: "Notre-Dame-des-Laurentides",
+      label: "ND-des-Laurentides",
       lat: 46.91153338901198,
       lng: -71.34087251412801,
+      leafletUrl: "https://semainierparoissial.com/semainiers/812.pdf",
       schedule: [
         { day: "Dimanche", time: "11h" },
         { day: "Mardi", time: "19h" },
@@ -162,6 +177,7 @@
       name: "St-Pierre-aux-Liens",
       lat: 46.88161902202593,
       lng: -71.28652928528763,
+      leafletUrl: "https://semainierparoissial.com/semainiers/812.pdf",
       schedule: [
         { day: "Samedi", time: "16h" },
         { day: "Dimanche", time: "9h30" },
@@ -174,6 +190,7 @@
       name: "St-Martyrs-Can.",
       lat: 46.798760319119936,
       lng: -71.23724558280337,
+      leafletUrl: "https://semainierparoissial.com/semainiers/204.pdf",
       schedule: [
         { day: "Samedi", time: "16h" },
         { day: "Dimanche", time: "9h30" },
@@ -186,6 +203,7 @@
       name: "St-Dominique",
       lat: 46.80132575557902,
       lng: -71.2245649099717,
+      leafletUrl: "https://semainierparoissial.com/semainiers/204.pdf",
       schedule: [
         { day: "Dimanche", time: "10h30" },
         { day: "Lun-Ven", time: "11h45" },
@@ -196,6 +214,7 @@
       name: "Notre-Dame-Garde",
       lat: 46.79895820659867,
       lng: -71.21647426208722,
+      leafletUrl: "https://semainierparoissial.com/semainiers/204.pdf",
       schedule: [
         { day: "Dimanche", time: "9h30" },
       ],
@@ -205,6 +224,7 @@
       name: "Notre-Dame-Victoires",
       lat: 46.81301322058945,
       lng: -71.20262732178475,
+      leafletUrl: "https://semainierparoissial.com/semainiers/204.pdf",
       schedule: [
         { day: "Dimanche", time: "11h" },
       ],
@@ -214,6 +234,7 @@
       name: "Chapelle-Jésuites",
       lat: 46.81225493954801,
       lng: -71.21200431062599,
+      leafletUrl: "https://pelerinagequebec.ca/les-sites-religieux/chapelle-des-jesuites/#",
       schedule: [
         { day: "Dimanche", time: "17h" },
       ],
@@ -223,6 +244,7 @@
       name: "St-Louis-Courville",
       lat: 46.885274586748935,
       lng: -71.1586831807623,
+      leafletUrl: "https://semainierparoissial.com/semainiers/817.pdf",
       schedule: [
         { day: "Samedi", time: "16h" },
         { day: "Dimanche", time: "11h" },
@@ -233,8 +255,10 @@
     {
       id: "eglise-notre-dame-recouvrance",
       name: "Notre-Dame-Recouvrance",
+      label: "ND-Recouvrance",
       lat: 46.81643434565516,
       lng: -71.25733004303723,
+      leafletUrl: "https://www.facebook.com/paroisse.de.sainte.marie.de.l.incarnation",
       schedule: [
         { day: "Samedi", time: "16h" },
         { day: "Dimanche", time: "9h30" },
@@ -247,6 +271,7 @@
       name: "St-Fidèle",
       lat: 46.829224598551974,
       lng: -71.22867389462553,
+      leafletUrl: "https://limoilou.ca/horaire-celebrations/",
       schedule: [
         { day: "Samedi", time: "16h" },
         { day: "Dimanche", time: "10h30" },
@@ -263,6 +288,7 @@
       name: "St-Pascal",
       lat: 46.83959198306098,
       lng: -71.22180135229684,
+      leafletUrl: "https://www.facebook.com/paroisse.de.sainte.marie.de.l.incarnation",
       schedule: [
         { day: "Dimanche", time: "10h" },
         { day: "Lundi", time: "16h30" },
@@ -273,6 +299,7 @@
       name: "St-Roch",
       lat: 46.81542385939474,
       lng: -71.221810419758,
+      leafletUrl: "https://www.facebook.com/paroisse.de.sainte.marie.de.l.incarnation",
       schedule: [
         { day: "Mardi", time: "11h50" },
         { day: "Dimanche", time: "11h" },
@@ -283,6 +310,7 @@
       name: "St-Patrick-ANGLAIS",
       lat: 46.804413287842195,
       lng: -71.22344275057333,
+      leafletUrl: "https://stpatricksquebec.com/",
       schedule: [
         { day: "Dimanche", time: "10h" },
         { day: "Mardi", time: "11h30" },
@@ -295,6 +323,7 @@
       name: "Oratoire St-Joseph",
       lat: 46.80320893846324,
       lng: -71.23644009773946,
+      leafletUrl: "https://oratoirestjosephquebec.com/",
       schedule: [
         { day: "Lun-Sam", time: "8h30" },
         { day: "Samedi", time: "16h" },
@@ -306,6 +335,7 @@
       name: "St-Charles-Garnier",
       lat: 46.78652053475747,
       lng: -71.25057312161238,
+      leafletUrl: "https://dinabelanger.ca/",
       schedule: [
         { day: "Samedi", time: "16h30" },
         { day: "Mardi", time: "16h30" },
@@ -317,6 +347,7 @@
       name: "St-Michel-Sillery",
       lat: 46.774490541472474,
       lng: -71.24337917002397,
+      leafletUrl: "https://dinabelanger.ca/",
       schedule: [
         { day: "Dimanche", time: "11h" },
         { day: "Mercredi", time: "16h30" },
@@ -328,6 +359,7 @@
       name: "St-Thomas-d'Aquin",
       lat: 46.78837379093458,
       lng: -71.26818192346445,
+      leafletUrl: "https://saintthomasdaquin.qc.ca/",
       schedule: [
         { day: "Lundi", time: "9h00" },
         { day: "Mardi", time: "17h15" },
@@ -344,6 +376,7 @@
       name: "Nativité-Notre-Dame",
       lat: 46.85911324311299,
       lng: -71.18898928350983,
+      leafletUrl: "https://www.notredamedebeauport.com/",
       schedule: [
         { day: "Dimanche", time: "11h" },
         { day: "Mercredi", time: "16h" },
@@ -354,6 +387,7 @@
       name: "Notre-Dame-Espérance",
       lat: 46.853695486109736,
       lng: -71.23197969754506,
+      leafletUrl: "https://www.notredamedebeauport.com/",
       schedule: [
         { day: "Dimanche", time: "11h" },
       ],
@@ -363,6 +397,7 @@
       name: "Ste-Gertrude",
       lat: 46.86989932880687,
       lng: -71.18679896022975,
+      leafletUrl: "https://www.notredamedebeauport.com/",
       schedule: [
         { day: "Dimanche", time: "9h" },
         { day: "Dimanche", time: "16h" },
@@ -374,6 +409,7 @@
       name: "St-Ignace-Loyola",
       lat: 46.85325956726457,
       lng: -71.20812845035994,
+      leafletUrl: "https://www.notredamedebeauport.com/",
       schedule: [
         { day: "Mercredi", time: "8h30" },
         { day: "Samedi", time: "16h" },
@@ -384,6 +420,7 @@
       name: "Ste-Thérèse-Lisieux",
       lat: 46.906050740175566,
       lng: -71.18965962522972,
+      leafletUrl: "https://www.notredamedebeauport.com/",
       schedule: [
         { day: "Samedi", time: "16h" },
         { day: "Dimanche", time: "10h" },
@@ -422,6 +459,8 @@
     locateButton: document.getElementById("locateButton"),
     loadingOverlay: document.getElementById("loadingOverlay"),
     resourceSelect: document.getElementById("resourceSelect"),
+    churchSearch: document.getElementById("churchSearch"),
+    searchResults: document.getElementById("searchResults"),
     todayMassesButton: document.getElementById("todayMassesButton"),
     todayMassesOverlay: document.getElementById("todayMassesOverlay"),
     todayMassesClose: document.getElementById("todayMassesClose"),
@@ -469,6 +508,9 @@
     els.locateButton.addEventListener("click", locateUser);
 
     els.resourceSelect?.addEventListener("change", handleResourceSelect);
+    els.churchSearch?.addEventListener("input", handleChurchSearchInput);
+    els.searchResults?.addEventListener("click", handleSearchResultClick);
+    document.addEventListener("click", handleDocumentClick);
     els.todayMassesButton?.addEventListener("click", openTodayMasses);
     els.todayMassesClose?.addEventListener("click", closeTodayMasses);
     els.todayMassesPrev?.addEventListener("click", () => changeTodayMassesDay(-1));
@@ -509,7 +551,7 @@
 
     state.churches = CHURCHES.map((church) => ({
       ...church,
-      label: church.name,
+      label: church.label || church.name,
       distanceKm: null,
     }));
 
@@ -671,6 +713,90 @@
     }
 
     window.open(value, "_blank", "noopener");
+  }
+
+  function handleChurchSearchInput(event) {
+    const query = normalizeToken(event.target.value);
+    if (!query) {
+      hideSearchResults();
+      return;
+    }
+
+    const matches = state.churches
+      .filter((church) => normalizeToken(church.name).includes(query) || normalizeToken(church.label).includes(query))
+      .sort((a, b) => a.name.localeCompare(b.name, "fr"))
+      .slice(0, 8);
+
+    renderSearchResults(matches);
+  }
+
+  function renderSearchResults(matches) {
+    if (!els.searchResults) {
+      return;
+    }
+
+    if (!matches.length) {
+      const empty = document.createElement("p");
+      empty.className = "today-masses-empty";
+      empty.textContent = "Aucune église trouvée.";
+      els.searchResults.replaceChildren(empty);
+      els.searchResults.classList.remove("is-hidden");
+      return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    matches.forEach((church) => {
+      const button = document.createElement("button");
+      button.className = "search-result";
+      button.type = "button";
+      button.dataset.searchChurchId = church.id;
+
+      const name = document.createElement("strong");
+      name.textContent = church.name;
+
+      const label = document.createElement("span");
+      label.textContent = church.label !== church.name ? church.label : formatDistance(church.distanceKm);
+
+      button.append(name, label);
+      fragment.appendChild(button);
+    });
+
+    els.searchResults.replaceChildren(fragment);
+    els.searchResults.classList.remove("is-hidden");
+  }
+
+  function handleSearchResultClick(event) {
+    const button = event.target.closest("[data-search-church-id]");
+    if (!button) {
+      return;
+    }
+
+    focusChurch(button.dataset.searchChurchId);
+    if (els.churchSearch) {
+      els.churchSearch.value = "";
+    }
+    hideSearchResults();
+  }
+
+  function handleDocumentClick(event) {
+    if (!els.churchSearch || !els.searchResults) {
+      return;
+    }
+
+    if (event.target === els.churchSearch || els.searchResults.contains(event.target)) {
+      return;
+    }
+
+    hideSearchResults();
+  }
+
+  function hideSearchResults() {
+    if (!els.searchResults) {
+      return;
+    }
+
+    els.searchResults.replaceChildren();
+    els.searchResults.classList.add("is-hidden");
   }
 
   function openTodayMasses() {
@@ -1122,7 +1248,23 @@
 
     const title = document.createElement("h2");
     title.className = "church-title";
-    title.textContent = church.label;
+
+    if (church.leafletUrl) {
+      const titleLink = document.createElement("a");
+      titleLink.className = "church-title-link";
+      titleLink.href = church.leafletUrl;
+      titleLink.target = "_blank";
+      titleLink.rel = "noopener noreferrer";
+      titleLink.textContent = church.label;
+      titleLink.setAttribute("aria-label", `Ouvrir le feuillet de ${church.label}`);
+      titleLink.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
+      title.appendChild(titleLink);
+    } else {
+      title.textContent = church.label;
+    }
+
     wrapper.appendChild(title);
 
     const schedule = document.createElement("div");
