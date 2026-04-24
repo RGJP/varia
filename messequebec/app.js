@@ -7,6 +7,8 @@
   const EARTH_RADIUS_KM = 6371.0088;
   const DISTANCE_RERENDER_DELTA_KM = 0.025;
   const DISTANCE_RERENDER_MS = 15000;
+  const QUICK_LOCATION_MAX_AGE_MS = 10 * 60 * 1000;
+  const QUICK_LOCATION_TIMEOUT_MS = 1000;
 
   const CHURCHES = [
     {
@@ -645,12 +647,22 @@
       navigator.geolocation.clearWatch(state.watchId);
     }
 
+    navigator.geolocation.getCurrentPosition(
+      handleLocation,
+      () => {},
+      {
+        enableHighAccuracy: false,
+        maximumAge: QUICK_LOCATION_MAX_AGE_MS,
+        timeout: QUICK_LOCATION_TIMEOUT_MS,
+      },
+    );
+
     state.watchId = navigator.geolocation.watchPosition(
       handleLocation,
       handleLocationError,
       {
-        enableHighAccuracy: false,
-        maximumAge: 20000,
+        enableHighAccuracy: true,
+        maximumAge: 30000,
         timeout: 12000,
       },
     );
