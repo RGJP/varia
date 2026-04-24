@@ -420,6 +420,30 @@
       ],
     },
     {
+      id: "eglise-st-felix",
+      name: "St-Félix",
+      lat: 46.74996279574282,
+      lng: -71.34461664807272,
+      leafletUrl: "https://www.semainierparoissial.com/semainiers/383.pdf",
+      schedule: [
+        { day: "Dimanche", time: "9h" },
+        { day: "Dimanche", time: "11h" },
+        { day: "Mardi", time: "16h30" },
+        { day: "Jeudi", time: "16h30" },
+      ],
+    },
+    {
+      id: "montmartre",
+      name: "Montmartre",
+      lat: 46.78107448202386,
+      lng: -71.24278083741899,
+      leafletUrl: "https://www.lemontmartre.ca/agenda/#offices",
+      schedule: [
+        { day: "Dimanche", time: "10h30" },
+        { day: "Lun-Sam", time: "11h15" },
+      ],
+    },
+    {
       id: "eglise-nativite-notre-dame",
       name: "Nativité-Notre-Dame",
       lat: 46.85911324311299,
