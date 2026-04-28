@@ -1,0 +1,3 @@
+command to get all tracks out saved
+
+yt-dlp --get-url --flat-playlist https://soundcloud.com/user-277071816/tracks > track_list.txt
