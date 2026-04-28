@@ -199,7 +199,7 @@
   <script>
     const playButton = document.querySelector("#play");
     const statusText = document.querySelector("#status");
-    const player = document.querySelector("#player");
+    let player = document.querySelector("#player");
     const progressWrap = document.querySelector("#progressWrap");
     const progressInput = document.querySelector("#progress");
     const currentTimeText = document.querySelector("#currentTime");
@@ -209,6 +209,7 @@
     let duration = 0;
     let started = false;
     let playing = false;
+    let finished = false;
     let seeking = false;
     let currentTitle = "";
     let currentTrack = "";
@@ -2646,15 +2647,29 @@
       }
     }
 
+    function resetPlayer() {
+      widget = null;
+      duration = 0;
+      playing = false;
+      seeking = false;
+      progressInput.value = 0;
+      updateProgress(0);
+
+      const nextPlayer = document.createElement("iframe");
+      nextPlayer.id = "player";
+      nextPlayer.title = "Lecteur SoundCloud";
+      nextPlayer.allow = "autoplay";
+      player.replaceWith(nextPlayer);
+      player = nextPlayer;
+    }
+
     function loadRandomTrack() {
       const track = chooseNextTrack();
       const attempt = ++loadAttempt;
+      resetPlayer();
       currentTrack = track;
       currentTitle = titleFromTrackUrl(track);
-      duration = 0;
-      playing = false;
-      progressInput.value = 0;
-      updateProgress(0);
+      finished = false;
       statusText.textContent = "Chargement...";
 
       clearTimeout(readyTimeout);
@@ -2721,13 +2736,14 @@
           return;
         }
 
+        finished = false;
         playing = true;
         playButton.textContent = "Pause";
         statusText.textContent = currentTitle || "Méditation";
       });
 
       widget.bind(SC.Widget.Events.PAUSE, () => {
-        if (attempt !== loadAttempt) {
+        if (attempt !== loadAttempt || finished) {
           return;
         }
 
@@ -2751,6 +2767,7 @@
 
         playing = false;
         started = false;
+        finished = true;
         widget = null;
         playButton.textContent = "Écouter, pour Voir";
         statusText.textContent = "Méditation terminée.";
@@ -2781,8 +2798,9 @@
       statusText.textContent = "Chargement...";
 
       try {
-        if (!started) {
+        if (!started || finished) {
           started = true;
+          finished = false;
           loadRandomTrack();
           return;
         }
