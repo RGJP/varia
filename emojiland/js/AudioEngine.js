@@ -1113,23 +1113,13 @@ export class AudioEngine {
     }
 
     playExplosion() {
-        // Big, longer bomb blast with a sustained rumble tail.
-        this._playTone('square', 120, 0.56, { endFreq: 64, gain: 0.52, attack: 0.002 });
-        this._playTone('triangle', 220, 0.5, { endFreq: 110, gain: 0.38, attack: 0.0022, detune: -4 });
-        this._playTone('sine', 340, 0.44, { endFreq: 150, gain: 0.22, attack: 0.0018 });
-        this._playNoiseBurst(0.18, 0.14, 320);
-
-        // Crack + bloom shortly after impact.
-        setTimeout(() => {
-            this._playTone('triangle', 920, 0.16, { endFreq: 360, gain: 0.22, attack: 0.0013 });
-            this._playNoiseBurst(0.09, 0.08, 980);
-        }, 26);
-
-        // Long audible tail so the blast feels large.
-        setTimeout(() => {
-            this._playTone('triangle', 180, 0.72, { endFreq: 92, gain: 0.22, attack: 0.003 });
-            this._playTone('sine', 260, 0.68, { endFreq: 120, gain: 0.16, attack: 0.0025 });
-        }, 70);
+        const drop = new Audio('js/sfx/dropsfx.mp3');
+        drop.volume = 0.49;
+        drop.currentTime = 0.045;
+        const playPromise = drop.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(() => { });
+        }
     }
 
     playCollect(kind = 'default') {
@@ -1374,10 +1364,12 @@ export class AudioEngine {
     }
 
     playStomp() {
-        // Heavy layered thud for impactful ground slam.
-        this.playOscillator('square', 90, 0.2, 45);
-        this.playOscillator('sine', 65, 0.28, 35);
-        setTimeout(() => this.playOscillator('triangle', 140, 0.12, 90), 35);
+        const stomp = new Audio('js/sfx/dinostomp.mp3');
+        stomp.volume = 0.95;
+        const playPromise = stomp.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(() => { });
+        }
     }
 
     playBossVictoryClimb() {
