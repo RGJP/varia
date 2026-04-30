@@ -298,15 +298,15 @@ canvas {
 
 #btn-roll {
     position: absolute;
-    bottom: 8px;
-    right: 76px;
+    bottom: 26px;
+    left: 2px;
     margin: 0;
 }
 
 #btn-attack {
     position: absolute;
-    bottom: 26px;
-    left: 2px;
+    bottom: 8px;
+    right: 76px;
     margin: 0;
 }
 
@@ -377,13 +377,13 @@ canvas {
     }
 
     #btn-roll {
-        right: 88px;
-        bottom: 8px;
+        bottom: 30px;
+        left: 0;
     }
 
     #btn-attack {
-        bottom: 30px;
-        left: 0;
+        right: 88px;
+        bottom: 8px;
     }
 
     #btn-charge-toggle {
