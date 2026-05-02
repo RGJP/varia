@@ -14,6 +14,7 @@ import { getEmojiCanvas } from '../EmojiCache.js';
 import { BossProjectile } from './BossProjectile.js';
 
 const BOSS_TYPES = ['boss_chick', 'boss_moai', 'boss_tengu', 'boss_spider', 'boss_dragon', 'boss_manliftingweights', 'boss_lobster', 'boss_kangaroo', 'boss_monkey', 'boss_mammoth', 'boss_trex', 'boss_mosquito', 'boss_beetle', 'boss_juggler', 'boss_honeybee', 'boss_rhino', 'boss_camel', 'boss_skunk'];
+const BOSS_KEY_DROP_DELAY = 1.0;
 
 const TYPE_PATROL = 'patrol';
 const TYPE_CHASER = 'chaser'; // 👹
@@ -2372,7 +2373,7 @@ export class Boss extends Entity {
                     x: dropX,
                     y: dropY,
                     size: dropSize,
-                    timer: 0.3
+                    timer: BOSS_KEY_DROP_DELAY
                 });
             }
             const cx = this.x + this.width / 2;

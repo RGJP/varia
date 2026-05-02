@@ -6,6 +6,7 @@ import { Collectible } from '../entities/Collectible.js';
 import { Vine } from '../entities/Vine.js';
 import { SwingingVine } from '../entities/SwingingVine.js';
 import { SafeBubble } from '../entities/SafeBubble.js';
+import { SpecialBarrel } from '../entities/SpecialBarrel.js';
 import { getRandomTheme } from './ThemeManager.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
@@ -245,6 +246,7 @@ export function loadLevel() {
     const bossSpawns = [];
     const collectibles = [];
     const safeZones = [];
+    const specialBarrels = [];
     const vines = [];
     const swingingVines = [];
     const layoutVariantsUsed = new Set();
@@ -1064,12 +1066,82 @@ export function loadLevel() {
         return true;
     };
 
+    const barrelCoinBlockRects = [];
+
+    const isCoinBlockedByBarrel = (x, y, size = 30) => {
+        for (let i = 0; i < barrelCoinBlockRects.length; i++) {
+            const b = barrelCoinBlockRects[i];
+            if (
+                x < b.x + b.width &&
+                x + size > b.x &&
+                y < b.y + b.height &&
+                y + size > b.y
+            ) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    const isCollectibleTooClose = (x, y, size = 30, ignored = null) => {
+        const cx = x + size / 2;
+        const cy = y + size / 2;
+        for (let i = 0; i < collectibles.length; i++) {
+            const collectible = collectibles[i];
+            if (!collectible || collectible === ignored || collectible.markedForDeletion) continue;
+            const ox = collectible.x + collectible.width / 2;
+            const oy = collectible.baseY + collectible.height / 2;
+            const minDist = Math.max(46, (size + collectible.width) * 0.75);
+            const dx = ox - cx;
+            const dy = oy - cy;
+            if ((dx * dx + dy * dy) < minDist * minDist) return true;
+        }
+        return false;
+    };
+
     if (safeCoinLocations.length > 0) {
         // Sort by X to ensure we can spread them out across the level progress
         safeCoinLocations.sort((a, b) => a.x - b.x);
 
         const occupiedIndices = new Set();
         const letterSequence = ['E', 'M', 'O', 'J', 'I'];
+
+        const findVisibleCoinRelocation = (coin) => {
+            if (!coin || safeCoinLocations.length === 0) return null;
+            const startIdx = Math.floor(Math.random() * safeCoinLocations.length);
+            for (let step = 0; step < safeCoinLocations.length; step++) {
+                const idx = (startIdx + step) % safeCoinLocations.length;
+                if (occupiedIndices.has(idx)) continue;
+                const loc = safeCoinLocations[idx];
+                if (!loc) continue;
+                if (isCoinBlockedByBarrel(loc.x, loc.y, coin.width)) continue;
+                if (isCollectibleTooClose(loc.x, loc.y, coin.width, coin)) continue;
+                occupiedIndices.add(idx);
+                return loc;
+            }
+            return null;
+        };
+
+        const moveCoinsOutOfBarrels = () => {
+            if (barrelCoinBlockRects.length === 0 || collectibles.length === 0) return;
+            let writeIdx = 0;
+            for (let i = 0; i < collectibles.length; i++) {
+                const collectible = collectibles[i];
+                if (
+                    collectible &&
+                    collectible.type === 'coin' &&
+                    isCoinBlockedByBarrel(collectible.x, collectible.baseY, collectible.width)
+                ) {
+                    const loc = findVisibleCoinRelocation(collectible);
+                    if (!loc) continue;
+                    collectible.x = loc.x;
+                    collectible.y = loc.y;
+                    collectible.baseY = loc.y;
+                }
+                collectibles[writeIdx++] = collectible;
+            }
+            collectibles.length = writeIdx;
+        };
 
         // KONG-style fixed letter set scattered across progression.
         let letterCandidates = safeCoinLocations
@@ -1366,9 +1438,181 @@ export function loadLevel() {
                 if (!candidate) continue;
                 if (!hasBarrelLaunchHeadroom(candidate.x, candidate.y)) continue;
                 const centerY = candidate.y + 16;
+                barrelCoinBlockRects.push({
+                    x: candidate.x - 64,
+                    y: centerY - 64,
+                    width: 128,
+                    height: 128
+                });
                 safeZones.push(new SafeBubble(candidate.x, centerY, 100));
             }
         }
+
+        const spawnSpecialBarrel = () => {
+            const size = 78;
+            const pathStartX = 0;
+            const pathEndX = victoryPlatform.x + victoryPlatform.width;
+            const minX = pathStartX + (pathEndX - pathStartX) * 0.3;
+            const maxX = pathStartX + (pathEndX - pathStartX) * 0.9;
+
+            const findStaticSupport = (x, y, maxDrop = 290) => {
+                let best = null;
+                let bestDrop = Infinity;
+                for (let i = 0; i < platforms.length; i++) {
+                    const p = platforms[i];
+                    if (!p || p.isVictory || p === arenaPlatform) continue;
+                    if (x < p.x + 18 || x > p.x + p.width - 18) continue;
+                    if (p.y <= y) continue;
+                    const drop = p.y - y;
+                    if (drop <= maxDrop && drop < bestDrop) {
+                        best = p;
+                        bestDrop = drop;
+                    }
+                }
+                return best;
+            };
+
+            const overlapsAnySafeZone = (rect) => {
+                for (let i = 0; i < safeZones.length; i++) {
+                    if (overlapsRect(rect, safeZones[i], 34, 34)) return true;
+                }
+                return false;
+            };
+
+            const isSpecialSpotClear = (rect, support) => {
+                if (!support || rect.y < 90 || rect.y + rect.height > 760) return false;
+                for (let i = 0; i < platforms.length; i++) {
+                    const p = platforms[i];
+                    if (!p || p === support) continue;
+                    if (overlapsRect(rect, p, 16, 18)) return false;
+                }
+                for (let i = 0; i < movingPlatforms.length; i++) {
+                    if (overlapsRect(rect, getSweptRect(movingPlatforms[i]), 24, 24)) return false;
+                }
+                for (let i = 0; i < enemies.length; i++) {
+                    if (overlapsRect(rect, enemies[i], 72, 48)) return false;
+                }
+                for (let i = 0; i < collectibles.length; i++) {
+                    const collectible = collectibles[i];
+                    if (!collectible) continue;
+                    const cRect = {
+                        x: collectible.x,
+                        y: collectible.baseY || collectible.y,
+                        width: collectible.width,
+                        height: collectible.height
+                    };
+                    if (overlapsRect(rect, cRect, 44, 42)) return false;
+                }
+                return !overlapsAnySafeZone(rect);
+            };
+
+            const buildCandidate = (centerX, support) => {
+                if (!support) return null;
+                if (support.width < size + 44) return null;
+                const x = clamp(centerX - size / 2, support.x + 18, support.x + support.width - size - 18);
+                const y = support.y - size - 4;
+                const rect = { x, y, width: size, height: size };
+                const cx = x + size / 2;
+                if (cx < minX || cx > maxX || isInsideBossArena(cx)) return null;
+                if (hasEnemyTooClose(cx, y + size / 2, 330)) return null;
+                if (!isSpecialSpotClear(rect, support)) return null;
+                return { x, y, support };
+            };
+
+            const candidates = [];
+            for (let i = 0; i < safeCoinLocations.length; i++) {
+                const loc = safeCoinLocations[i];
+                if (!loc || loc.x < minX || loc.x > maxX) continue;
+                const support = findStaticSupport(loc.x, loc.y);
+                const candidate = buildCandidate(loc.x, support);
+                if (candidate) candidates.push(candidate);
+            }
+
+            for (let i = 0; i < platforms.length; i++) {
+                const p = platforms[i];
+                if (!p || p.isVictory || p === arenaPlatform || p.width < size + 70) continue;
+                const candidateMin = Math.max(p.x + 40, minX);
+                const candidateMax = Math.min(p.x + p.width - 40, maxX);
+                if (candidateMax <= candidateMin) continue;
+                const centerX = candidateMin + Math.random() * (candidateMax - candidateMin);
+                const candidate = buildCandidate(centerX, p);
+                if (candidate) candidates.push(candidate);
+            }
+
+            let picked = candidates.length > 0
+                ? candidates[Math.floor(Math.random() * candidates.length)]
+                : null;
+
+            if (!picked) {
+                const targetX = minX + (maxX - minX) * Math.random();
+                let bestPlatform = null;
+                let bestDist = Infinity;
+                for (let i = 0; i < platforms.length; i++) {
+                    const p = platforms[i];
+                    if (!p || p.isVictory || p === arenaPlatform || p.width < size + 40) continue;
+                    const pMin = Math.max(p.x + 24, minX);
+                    const pMax = Math.min(p.x + p.width - 24, maxX);
+                    if (pMax <= pMin) continue;
+                    const cx = clamp(targetX, pMin, pMax);
+                    const dist = Math.abs(cx - targetX);
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        bestPlatform = p;
+                    }
+                }
+                if (bestPlatform) {
+                    const pMin = Math.max(bestPlatform.x + 24, minX);
+                    const pMax = Math.min(bestPlatform.x + bestPlatform.width - 24, maxX);
+                    const centerX = clamp(targetX, pMin, pMax);
+                    picked = {
+                        x: clamp(centerX - size / 2, bestPlatform.x + 18, bestPlatform.x + bestPlatform.width - size - 18),
+                        y: bestPlatform.y - size - 4,
+                        support: bestPlatform
+                    };
+                }
+            }
+
+            if (!picked && rescuePlatform) {
+                const centerX = clamp(
+                    minX + (maxX - minX) * 0.86,
+                    rescuePlatform.x + 32,
+                    rescuePlatform.x + rescuePlatform.width - 32
+                );
+                picked = {
+                    x: clamp(centerX - size / 2, rescuePlatform.x + 18, rescuePlatform.x + rescuePlatform.width - size - 18),
+                    y: rescuePlatform.y - size - 4,
+                    support: rescuePlatform
+                };
+            }
+
+            if (picked) {
+                const barrel = new SpecialBarrel(picked.x, picked.y, size);
+                specialBarrels.push(barrel);
+                barrelCoinBlockRects.push({
+                    x: barrel.x - 48,
+                    y: barrel.y - 52,
+                    width: barrel.width + 96,
+                    height: barrel.height + 104
+                });
+            }
+        };
+
+        spawnSpecialBarrel();
+        moveCoinsOutOfBarrels();
+    }
+
+    if (specialBarrels.length === 0 && rescuePlatform) {
+        const size = 78;
+        const pathEndX = victoryPlatform.x + victoryPlatform.width;
+        const minX = pathEndX * 0.3;
+        const maxX = pathEndX * 0.9;
+        const centerX = clamp(
+            minX + (maxX - minX) * 0.86,
+            rescuePlatform.x + 32,
+            rescuePlatform.x + rescuePlatform.width - 32
+        );
+        const x = clamp(centerX - size / 2, rescuePlatform.x + 18, rescuePlatform.x + rescuePlatform.width - size - 18);
+        specialBarrels.push(new SpecialBarrel(x, rescuePlatform.y - size - 4, size));
     }
 
     // Make sure vines do not intersect platforms
@@ -1409,6 +1653,7 @@ export function loadLevel() {
         bossSpawns,
         collectibles,
         safeZones,
+        specialBarrels,
         vines: validVines,
         swingingVines,
         prisonerRescue: {

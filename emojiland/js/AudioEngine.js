@@ -1114,7 +1114,7 @@ export class AudioEngine {
 
     playExplosion() {
         const drop = new Audio('js/sfx/dropsfx.mp3');
-        drop.volume = 0.49;
+        drop.volume = 0.28;
         drop.currentTime = 0.045;
         const playPromise = drop.play();
         if (playPromise !== undefined) {
@@ -1351,15 +1351,15 @@ export class AudioEngine {
 
     playFrostBlast() {
         // Glassy ice-crystal ping: keep it bright/airy, avoid rapid "chatty" formants.
-        this._playTone('sine', 2520, 0.145, { endFreq: 1880, gain: 0.37, attack: 0.0007 });
-        this._playTone('triangle', 3460, 0.078, { endFreq: 2660, gain: 0.24, attack: 0.0006 });
-        this._playNoiseBurst(0.036, 0.045, 6200);
+        this._playTone('sine', 2520, 0.145, { endFreq: 1880, gain: 0.29, attack: 0.0007 });
+        this._playTone('triangle', 3460, 0.078, { endFreq: 2660, gain: 0.19, attack: 0.0006 });
+        this._playNoiseBurst(0.036, 0.034, 6200);
         setTimeout(() => {
-            this._playTone('sine', 4780, 0.06, { endFreq: 3820, gain: 0.17, attack: 0.00055 });
-            this._playNoiseBurst(0.022, 0.024, 7600);
+            this._playTone('sine', 4780, 0.06, { endFreq: 3820, gain: 0.13, attack: 0.00055 });
+            this._playNoiseBurst(0.022, 0.018, 7600);
         }, 20);
         setTimeout(() => {
-            this._playTone('triangle', 1960, 0.115, { endFreq: 1460, gain: 0.16, attack: 0.0009 });
+            this._playTone('triangle', 1960, 0.115, { endFreq: 1460, gain: 0.13, attack: 0.0009 });
         }, 30);
     }
 
@@ -1414,6 +1414,71 @@ export class AudioEngine {
                     attack: 0.0009
                 });
             }, steps[i]);
+        }
+    }
+
+    playBonusCountdownChime(label = '3') {
+        const key = String(label).toUpperCase();
+        const isGo = key === 'GO!';
+        const baseMap = {
+            '3': 659.25,
+            '2': 783.99,
+            '1': 987.77
+        };
+        const base = isGo ? 1318.51 : (baseMap[key] || 659.25);
+        const gain = isGo ? 0.34 : 0.24;
+
+        this._playTone('triangle', this._jitter(base, 0.006), isGo ? 0.22 : 0.15, {
+            endFreq: base * (isGo ? 1.08 : 1.035),
+            gain,
+            attack: 0.001
+        });
+        this._playTone('sine', this._jitter(base * 2, 0.006), isGo ? 0.2 : 0.12, {
+            endFreq: base * (isGo ? 2.18 : 2.06),
+            gain: gain * 0.42,
+            attack: 0.0008
+        });
+        if (isGo) {
+            setTimeout(() => {
+                this._playTone('triangle', this._jitter(base * 1.25, 0.008), 0.16, {
+                    endFreq: base * 1.34,
+                    gain: 0.2,
+                    attack: 0.001
+                });
+            }, 55);
+        }
+    }
+
+    playBonusVictoryJingle() {
+        const scales = [
+            [523.25, 659.25, 783.99, 1046.5],
+            [587.33, 739.99, 880.0, 1174.66],
+            [659.25, 783.99, 987.77, 1318.51],
+            [698.46, 880.0, 1046.5, 1396.91]
+        ];
+        const notes = scales[Math.floor(Math.random() * scales.length)].slice();
+        if (Math.random() < 0.45) {
+            notes.splice(2, 0, notes[1] * 1.125);
+        }
+        const stepMs = 86 + Math.floor(Math.random() * 34);
+
+        for (let i = 0; i < notes.length; i++) {
+            const n = notes[i];
+            const delay = i * stepMs;
+            setTimeout(() => {
+                const isFinal = i === notes.length - 1;
+                const dur = isFinal ? 0.34 : 0.16;
+                this._playTone('triangle', this._jitter(n, 0.012), dur, {
+                    endFreq: n * (isFinal ? 1.08 : 1.035),
+                    gain: isFinal ? 0.36 : 0.25,
+                    attack: 0.001
+                });
+                this._playTone('sine', this._jitter(n * 2, 0.012), isFinal ? 0.26 : 0.12, {
+                    endFreq: n * (isFinal ? 2.18 : 2.06),
+                    gain: isFinal ? 0.18 : 0.1,
+                    attack: 0.0008
+                });
+            }, delay);
         }
     }
 

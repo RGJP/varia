@@ -10,6 +10,10 @@ import { Rock } from './entities/Rock.js';
 import { Collectible } from './entities/Collectible.js';
 import { clearEmojiCache } from './EmojiCache.js';
 import { getEmojiCanvas } from './EmojiCache.js';
+import { BONUS_ZONE_REWARD, createRandomBonusZone, keepBonusEnemyInPlayableArea } from './BonusZone.js';
+
+const BONUS_ZONE_SUCCESS_RETURN_DELAY = 2.0;
+const BONUS_ZONE_INTRO_DURATION = 3.8;
 export function filterInPlace(array) {
     let writeIdx = 0;
     for (let i = 0; i < array.length; i++) {
@@ -73,6 +77,7 @@ export class Game {
         this.collectibles = [];
         this.pendingBossStarDrops = [];
         this.safeZones = [];
+        this.specialBarrels = [];
         this.rocks = [];
         this.lightningOrbs = [];
         this.enemyProjectiles = [];
@@ -110,6 +115,7 @@ export class Game {
         this._activeEnemies = [];
         this._activeCollectibles = [];
         this._activeSafeZones = [];
+        this._activeSpecialBarrels = [];
         this._enemySpatial = new Map();
         this._enemySpatialCellSize = 220;
         this._enemySpatialQueryId = 1;
@@ -129,6 +135,8 @@ export class Game {
             swingingVines: [],
             victoryPlatforms: []
         };
+        this.bonusZone = null;
+        this.bonusResultOverlay = null;
 
         this.lowestY = 800;
 
@@ -563,9 +571,12 @@ export class Game {
         this.hasBossKey = false;
         this.victoryFlagEnabled = false;
         this.safeZones = levelData.safeZones || [];
+        this.specialBarrels = levelData.specialBarrels || [];
         this.vines = levelData.vines || [];
         this.swingingVines = levelData.swingingVines || [];
         this.movingPlatforms = levelData.movingPlatforms || [];
+        this.bonusZone = null;
+        this.bonusResultOverlay = null;
         this.currentTheme = levelData.theme;
         this.layoutVariantLabel = levelData.layoutVariantLabel || 'V:N/A';
         this.rocks = [];
@@ -1187,6 +1198,10 @@ export class Game {
     }
 
     update(dt) {
+        if (this.bonusResultOverlay) {
+            this.bonusResultOverlay.timer = Math.max(0, this.bonusResultOverlay.timer - dt);
+            if (this.bonusResultOverlay.timer <= 0) this.bonusResultOverlay = null;
+        }
         if (!this._mobileUI) this._mobileUI = document.getElementById('mobile-ui');
         const mobileUI = this._mobileUI;
         if (mobileUI) {
@@ -1246,6 +1261,16 @@ export class Game {
             }
         }
 
+        const specialBarrels = this.specialBarrels;
+        this._activeSpecialBarrels.length = 0;
+        for (let i = 0; i < specialBarrels.length; i++) {
+            const barrel = specialBarrels[i];
+            if (!barrel || barrel.markedForDeletion) continue;
+            if (this._intersectsBounds(barrel, cullLeft, cullRight, cullTop, cullBottom)) {
+                this._activeSpecialBarrels.push(barrel);
+            }
+        }
+
         // Update moving platforms and include in visible platforms for collision
         for (let i = 0; i < this.movingPlatforms.length; i++) {
             const mp = this.movingPlatforms[i];
@@ -1257,7 +1282,17 @@ export class Game {
         this._rebuildVisiblePlatformSpatialIndex();
 
         if (this.state === GameState.PLAYING) {
-            if (this.player.health <= 0 || (this.player.y + this.player.height) > this.lowestY) {
+            if (this.bonusZone && this._updateBonusZoneReturn(dt)) return;
+            if (this.bonusZone && this._updateBonusZoneIntro(dt)) return;
+            if (this.bonusZone && this._updateBonusZoneTimer(dt)) return;
+
+            const playerLost = this.player.health <= 0 || (this.player.y + this.player.height) > this.lowestY;
+            if (this.bonusZone && playerLost) {
+                this._beginBonusZoneReturn(false);
+                return;
+            }
+
+            if (!this.bonusZone && playerLost) {
                 if (!this.gameOverTriggered) {
                     this.gameOverTriggered = true;
                     this.gameOverTimer = 2.0;
@@ -1282,6 +1317,13 @@ export class Game {
             this._spawnNearbyBosses();
             const collisionContext = this._buildPlayerCollisionContext();
             this.player.update(dt, this.input, this._visiblePlatforms, this, collisionContext);
+            if (!this.bonusZone) {
+                const activeSpecialBarrels = this._activeSpecialBarrels;
+                for (let i = 0; i < activeSpecialBarrels.length; i++) {
+                    activeSpecialBarrels[i].update(dt, this);
+                    if (this.bonusZone) return;
+                }
+            }
 
             // Update swinging vines
             const svines = this._visibleSwingingVines;
@@ -1306,6 +1348,9 @@ export class Game {
                     enemy.y < updateBottom
                 ) {
                     enemy.update(dt, this);
+                    if (this.bonusZone && enemy.isBonusEnemy) {
+                        keepBonusEnemyInPlayableArea(enemy);
+                    }
                     this._activeEnemies.push(enemy);
                     if (!activeBoss && enemy instanceof Boss && !enemy.markedForDeletion && enemy.activated) {
                         activeBoss = enemy;
@@ -1362,9 +1407,11 @@ export class Game {
 
             this.enemies = filterInPlace(this.enemies);
             this.collectibles = filterInPlace(this.collectibles);
+            this.specialBarrels = filterInPlace(this.specialBarrels);
             this.rocks = filterInPlace(this.rocks);
             this.lightningOrbs = filterInPlace(this.lightningOrbs);
             this.enemyProjectiles = filterInPlace(this.enemyProjectiles);
+            if (this.bonusZone && this._checkBonusZoneObjective()) return;
             if (this._bossMusicEngaged && !this.hasAliveBoss()) {
                 this._bossMusicEngaged = false;
                 if (this.audio && typeof this.audio.exitBossMusicToPrevious === 'function') {
@@ -1407,6 +1454,338 @@ export class Game {
 
     canTriggerVictory() {
         return this.victoryFlagEnabled && this.pendingBossSpawns.length === 0 && !this.hasAliveBoss();
+    }
+
+    enterBonusZone(barrel) {
+        if (!barrel || this.bonusZone || !this.player) return false;
+
+        barrel.markedForDeletion = true;
+        const returnPoint = {
+            x: barrel.x + barrel.width / 2,
+            y: barrel.y
+        };
+
+        const zone = createRandomBonusZone(this.currentTheme);
+        zone.returnSnapshot = this._createBonusReturnSnapshot(returnPoint);
+        zone.introTimer = BONUS_ZONE_INTRO_DURATION;
+        zone.introDuration = BONUS_ZONE_INTRO_DURATION;
+        zone.introLastCue = null;
+        this.bonusZone = zone;
+
+        this.platforms = zone.platforms;
+        this.movingPlatforms = zone.movingPlatforms;
+        this.enemies = zone.enemies;
+        this.pendingBossSpawns = [];
+        this.collectibles = zone.collectibles;
+        this.pendingBossStarDrops = [];
+        this.safeZones = zone.safeZones;
+        this.specialBarrels = [];
+        this.vines = zone.vines;
+        this.swingingVines = zone.swingingVines;
+        this.rocks = zone.rocks;
+        this.lightningOrbs = zone.lightningOrbs;
+        this.enemyProjectiles = zone.enemyProjectiles;
+        this.prisonerRescue = null;
+        this.hasBossKey = false;
+        this.victoryFlagEnabled = false;
+        this._victoryPlatforms = [];
+        this.lowestY = zone.lowestY;
+        this.totalCoins = zone.collectibles.length;
+        this.coinsCollected = 0;
+        this.totalEnemies = zone.enemies.length;
+        this.totalCompletionEnemies = 0;
+        this.completionEnemiesDefeated = 0;
+        this.enemiesDefeated = 0;
+        this.totalCompletionCoins = 0;
+
+        this._clearSceneCaches();
+        this._activeSpecialBarrels.length = 0;
+
+        this.player.clearActivePowerUps();
+        this.player.inSafeBubble = false;
+        this.player.activeSafeBubble = null;
+        this.player.safeZoneReentryLockedZone = null;
+        this.player.safeZoneReentryLockTimer = 0;
+        this.player.isClimbing = false;
+        this.player.currentVine = null;
+        this.player.carriedShell = null;
+        this.player.x = zone.startX;
+        this.player.y = zone.startY;
+        this.player.vx = 0;
+        this.player.vy = 0;
+        this.player.grounded = false;
+        this.player.invulnerableTimer = Math.max(this.player.invulnerableTimer, BONUS_ZONE_INTRO_DURATION + 0.5);
+        if (typeof this.player._endRoll === 'function') this.player._endRoll();
+        if (typeof this.player._updateHitbox === 'function') this.player._updateHitbox();
+
+        this.camera.x = 0;
+        this.camera.y = 0;
+        if (this.audio && typeof this.audio.stopLightningBuzz === 'function') this.audio.stopLightningBuzz();
+        if (this.audio && typeof this.audio.playCollect === 'function') this.audio.playCollect('powerup');
+        return true;
+    }
+
+    _createBonusReturnSnapshot(returnPoint) {
+        return {
+            platforms: this.platforms,
+            movingPlatforms: this.movingPlatforms,
+            enemies: this.enemies,
+            pendingBossSpawns: this.pendingBossSpawns,
+            collectibles: this.collectibles,
+            pendingBossStarDrops: this.pendingBossStarDrops,
+            safeZones: this.safeZones,
+            specialBarrels: this.specialBarrels,
+            vines: this.vines,
+            swingingVines: this.swingingVines,
+            rocks: this.rocks,
+            lightningOrbs: this.lightningOrbs,
+            enemyProjectiles: this.enemyProjectiles,
+            prisonerRescue: this.prisonerRescue,
+            hasBossKey: this.hasBossKey,
+            victoryFlagEnabled: this.victoryFlagEnabled,
+            victoryPlatforms: this._victoryPlatforms,
+            totalCoins: this.totalCoins,
+            coinsCollected: this.coinsCollected,
+            totalEnemies: this.totalEnemies,
+            totalCompletionEnemies: this.totalCompletionEnemies,
+            completionEnemiesDefeated: this.completionEnemiesDefeated,
+            enemiesDefeated: this.enemiesDefeated,
+            totalCompletionCoins: this.totalCompletionCoins,
+            lowestY: this.lowestY,
+            cameraX: this.camera.x,
+            cameraY: this.camera.y,
+            bossMusicEngaged: this._bossMusicEngaged,
+            returnPoint,
+            player: this._captureBonusPlayerState()
+        };
+    }
+
+    _captureBonusPlayerState() {
+        const p = this.player;
+        return {
+            x: p.x,
+            y: p.y,
+            vx: p.vx,
+            vy: p.vy,
+            health: p.health,
+            score: p.score,
+            bombs: p.bombs,
+            hasCatProtector: p.hasCatProtector,
+            invulnerableTimer: p.invulnerableTimer,
+            damageGlowTimer: p.damageGlowTimer,
+            knockbackTimer: p.knockbackTimer,
+            stunTimer: p.stunTimer,
+            slowTimer: p.slowTimer,
+            grounded: p.grounded,
+            airJumps: p.airJumps,
+            coyoteTimer: p.coyoteTimer,
+            isJumping: p.isJumping,
+            forceFullJump: p.forceFullJump,
+            isSpinning: p.isSpinning,
+            spinDirection: p.spinDirection,
+            rotation: p.rotation,
+            diamondPowerUpTimer: p.diamondPowerUpTimer,
+            firePowerUpTimer: p.firePowerUpTimer,
+            frostPowerUpTimer: p.frostPowerUpTimer,
+            lightningPowerUpTimer: p.lightningPowerUpTimer,
+            flightTimer: p.flightTimer,
+            collectedLetters: { ...p.collectedLetters }
+        };
+    }
+
+    _restoreBonusPlayerState(snapshot, success) {
+        const p = this.player;
+        const state = snapshot.player;
+        p.x = snapshot.returnPoint.x - p.width / 2;
+        p.y = snapshot.returnPoint.y - p.height - 6;
+        p.vx = 0;
+        p.vy = 0;
+        p.health = state.health;
+        p.score = state.score + (success ? BONUS_ZONE_REWARD : 0);
+        p.bombs = state.bombs;
+        p.hasCatProtector = state.hasCatProtector;
+        p.invulnerableTimer = Math.max(state.invulnerableTimer, 0.75);
+        p.damageGlowTimer = 0;
+        p.knockbackTimer = 0;
+        p.stunTimer = state.stunTimer;
+        p.slowTimer = state.slowTimer;
+        p.grounded = false;
+        p.airJumps = state.airJumps;
+        p.coyoteTimer = state.coyoteTimer;
+        p.isJumping = false;
+        p.forceFullJump = false;
+        p.isSpinning = false;
+        p.spinDirection = state.spinDirection;
+        p.rotation = 0;
+        p.diamondPowerUpTimer = state.diamondPowerUpTimer;
+        p.firePowerUpTimer = state.firePowerUpTimer;
+        p.frostPowerUpTimer = state.frostPowerUpTimer;
+        p.lightningPowerUpTimer = state.lightningPowerUpTimer;
+        p.flightTimer = state.flightTimer;
+        p.collectedLetters = { ...state.collectedLetters };
+        p.inSafeBubble = false;
+        p.activeSafeBubble = null;
+        p.safeZoneReentryLockedZone = null;
+        p.safeZoneReentryLockTimer = 0;
+        p.isClimbing = false;
+        p.currentVine = null;
+        p.carriedShell = null;
+        p.portalHoldTimer = 0;
+        p.portalEntry = null;
+        p.portalExit = null;
+        p.isChargingAttack = false;
+        p.attackChargeTimer = 0;
+        if (typeof p._endRoll === 'function') p._endRoll();
+        if (typeof p._updateHitbox === 'function') p._updateHitbox();
+    }
+
+    _restoreMainLevelFromBonus(snapshot, success) {
+        this.platforms = snapshot.platforms;
+        this.movingPlatforms = snapshot.movingPlatforms;
+        this.enemies = snapshot.enemies;
+        this.pendingBossSpawns = snapshot.pendingBossSpawns;
+        this.collectibles = snapshot.collectibles;
+        this.pendingBossStarDrops = snapshot.pendingBossStarDrops;
+        this.safeZones = snapshot.safeZones;
+        this.specialBarrels = filterInPlace(snapshot.specialBarrels);
+        this.vines = snapshot.vines;
+        this.swingingVines = snapshot.swingingVines;
+        this.rocks = snapshot.rocks;
+        this.lightningOrbs = snapshot.lightningOrbs;
+        this.enemyProjectiles = snapshot.enemyProjectiles;
+        this.prisonerRescue = snapshot.prisonerRescue;
+        this.hasBossKey = snapshot.hasBossKey;
+        this.victoryFlagEnabled = snapshot.victoryFlagEnabled;
+        this._victoryPlatforms = snapshot.victoryPlatforms;
+        this.totalCoins = snapshot.totalCoins;
+        this.coinsCollected = snapshot.coinsCollected;
+        this.totalEnemies = snapshot.totalEnemies;
+        this.totalCompletionEnemies = snapshot.totalCompletionEnemies;
+        this.completionEnemiesDefeated = snapshot.completionEnemiesDefeated;
+        this.enemiesDefeated = snapshot.enemiesDefeated;
+        this.totalCompletionCoins = snapshot.totalCompletionCoins;
+        this.lowestY = snapshot.lowestY;
+        this._bossMusicEngaged = snapshot.bossMusicEngaged;
+        this.camera.x = snapshot.cameraX;
+        this.camera.y = snapshot.cameraY;
+        this._restoreBonusPlayerState(snapshot, success);
+        this._clearSceneCaches();
+    }
+
+    _clearSceneCaches() {
+        this._visiblePlatforms.length = 0;
+        this._visibleVines.length = 0;
+        this._visibleSwingingVines.length = 0;
+        this._activeEnemies.length = 0;
+        this._activeCollectibles.length = 0;
+        this._activeSafeZones.length = 0;
+        this._activeSpecialBarrels.length = 0;
+        this._enemySpatial.clear();
+        this._enemySpatialQueryId = 1;
+        this._visiblePlatformSpatial.clear();
+        this._visiblePlatformSpatialQueryId = 1;
+        this._rockSpatial.clear();
+        this._rockSpatialQueryId = 1;
+    }
+
+    _updateBonusZoneTimer(dt) {
+        if (!this.bonusZone || this.bonusZone.completed) return false;
+        this.bonusZone.timeRemaining = Math.max(0, this.bonusZone.timeRemaining - dt);
+        if (this.bonusZone.timeRemaining > 0) return false;
+        this._beginBonusZoneReturn(false);
+        return true;
+    }
+
+    _updateBonusZoneIntro(dt) {
+        const zone = this.bonusZone;
+        if (!zone || zone.completed || zone.introTimer <= 0) return false;
+        zone.introTimer = Math.max(0, zone.introTimer - dt);
+        const cue = this._getBonusIntroCue(zone.introTimer);
+        if (cue && zone.introLastCue !== cue) {
+            zone.introLastCue = cue;
+            if (this.audio && typeof this.audio.playBonusCountdownChime === 'function') {
+                this.audio.playBonusCountdownChime(cue);
+            }
+        }
+        if (this.player) {
+            this.player.vx = 0;
+            this.player.vy = 0;
+            this.player.grounded = false;
+            this.player.invulnerableTimer = Math.max(this.player.invulnerableTimer, 0.35);
+            if (typeof this.player._endRoll === 'function') this.player._endRoll();
+        }
+        return true;
+    }
+
+    _getBonusIntroCue(timer) {
+        if (timer > 2.8) return '3';
+        if (timer > 1.8) return '2';
+        if (timer > 0.8) return '1';
+        if (timer > 0) return 'GO!';
+        return null;
+    }
+
+    _updateBonusZoneReturn(dt) {
+        const zone = this.bonusZone;
+        if (!zone || !zone.completed) return false;
+        zone.successReturnTimer = Math.max(0, zone.successReturnTimer - dt);
+        if (zone.successReturnTimer <= 0) {
+            this._finishBonusZone(!!zone.completedSuccess);
+        }
+        return true;
+    }
+
+    _checkBonusZoneObjective() {
+        const zone = this.bonusZone;
+        if (!zone) return false;
+
+        let complete = false;
+        if (zone.type === 'coin_rush') {
+            complete = !this.collectibles.some(item =>
+                item && item.type === 'bonus_coin' && !item.markedForDeletion
+            );
+        } else {
+            complete = !this.enemies.some(enemy =>
+                enemy && enemy.isBonusEnemy && !enemy.markedForDeletion
+            );
+        }
+
+        if (!complete) return false;
+        this._beginBonusZoneReturn(true);
+        return true;
+    }
+
+    _beginBonusZoneReturn(success) {
+        const zone = this.bonusZone;
+        if (!zone || zone.completed) return;
+        zone.completed = true;
+        zone.completedSuccess = !!success;
+        zone.successReturnDuration = BONUS_ZONE_SUCCESS_RETURN_DELAY;
+        zone.successReturnTimer = BONUS_ZONE_SUCCESS_RETURN_DELAY;
+        this.bonusResultOverlay = null;
+        filterInPlace(this._activeEnemies);
+        filterInPlace(this._activeCollectibles);
+        filterInPlace(this._activeSpecialBarrels);
+        if (success && this.audio) {
+            if (typeof this.audio.playBonusVictoryJingle === 'function') this.audio.playBonusVictoryJingle();
+            else if (typeof this.audio.playCollect === 'function') this.audio.playCollect('powerup');
+        }
+    }
+
+    _finishBonusZone(success) {
+        const zone = this.bonusZone;
+        if (!zone || !zone.returnSnapshot) return;
+
+        const snapshot = zone.returnSnapshot;
+        this.bonusZone = null;
+        this._restoreMainLevelFromBonus(snapshot, success);
+
+        if (success) this.bonusResultOverlay = null;
+    }
+
+    registerBonusCoinCollected() {
+        if (!this.bonusZone || this.bonusZone.type !== 'coin_rush') return;
+        this.bonusZone.collectedCoins = (this.bonusZone.collectedCoins || 0) + 1;
     }
 
     _spawnNearbyBosses() {
@@ -2020,6 +2399,14 @@ export class Game {
                 }
             }
 
+            const specialBarrels = this._activeSpecialBarrels;
+            for (let i = 0; i < specialBarrels.length; i++) {
+                const barrel = specialBarrels[i];
+                if (this._intersectsBounds(barrel, drawLeft, drawRight, drawTop, drawBottom)) {
+                    barrel.draw(this.ctx);
+                }
+            }
+
             const enemies = this._activeEnemies;
             for (let i = 0; i < enemies.length; i++) {
                 const enemy = enemies[i];
@@ -2097,6 +2484,11 @@ export class Game {
             const safeZones = this.safeZones;
             for (let i = 0; i < safeZones.length; i++) {
                 if (this._intersectsBounds(safeZones[i], pauseLeft, pauseRight, pauseTop, pauseBottom)) safeZones[i].draw(this.ctx);
+            }
+
+            const specialBarrels = this.specialBarrels;
+            for (let i = 0; i < specialBarrels.length; i++) {
+                if (this._intersectsBounds(specialBarrels[i], pauseLeft, pauseRight, pauseTop, pauseBottom)) specialBarrels[i].draw(this.ctx);
             }
 
             const enemies = this.enemies;
@@ -2318,12 +2710,16 @@ export class Game {
             if (activeBoss) {
                 this._drawBossHealthBar(activeBoss);
             }
+            if (this.bonusZone) {
+                this._drawBonusZoneUI();
+            }
         }
 
         if (this.state !== GameState.PLAYING) {
             // Standard overlays for non-playing states
             this.drawMenuOverlays();
         }
+        this._drawBonusResultOverlay();
     }
 
     drawMenuOverlays() {
@@ -2612,6 +3008,140 @@ export class Game {
             this.ctx.fillText('Paused', 0, 0);
         }
         this.ctx.restore();
+    }
+
+    _drawBonusZoneUI() {
+        const zone = this.bonusZone;
+        if (!zone) return;
+        const ctx = this.ctx;
+        const panelW = Math.min(390, this.viewportWidth - 32);
+        const panelH = 92;
+        const panelX = (this.viewportWidth - panelW) / 2;
+        const panelY = 18;
+        const remaining = zone.type === 'coin_rush'
+            ? this.collectibles.filter(item => item && item.type === 'bonus_coin' && !item.markedForDeletion).length
+            : this.enemies.filter(enemy => enemy && enemy.isBonusEnemy && !enemy.markedForDeletion).length;
+        const total = zone.type === 'coin_rush' ? zone.totalCoins : zone.totalEnemies;
+        const cleared = Math.max(0, total - remaining);
+        const time = Math.ceil(zone.timeRemaining);
+
+        ctx.save();
+        if (zone.completed) {
+            const pulse = 1 + Math.sin(Date.now() / 1000 * 8) * 0.035;
+            const success = !!zone.completedSuccess;
+            const title = success ? 'BONUS SUCCESS' : 'BONUS FAILED';
+            const detail = success ? `+${BONUS_ZONE_REWARD}` : 'NO BONUS';
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.34)';
+            ctx.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
+            ctx.translate(this.viewportWidth / 2, this.viewportHeight * 0.36);
+            ctx.scale(pulse, pulse);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.78)';
+            ctx.shadowBlur = 16;
+            ctx.font = 'bold 50px "Outfit", sans-serif';
+            ctx.fillStyle = success ? '#ffe066' : '#ff8a80';
+            ctx.strokeStyle = success ? 'rgba(50, 25, 0, 0.95)' : 'rgba(55, 10, 10, 0.95)';
+            ctx.lineWidth = 8;
+            ctx.strokeText(title, 0, 0);
+            ctx.fillText(title, 0, 0);
+
+            ctx.font = 'bold 34px "Outfit", sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.lineWidth = 5;
+            ctx.strokeText(detail, 0, 50);
+            ctx.fillText(detail, 0, 50);
+            ctx.restore();
+            return;
+        }
+
+        if (zone.introTimer > 0) {
+            const label = this._getBonusIntroCue(zone.introTimer) || 'GO!';
+            const pulse = 1 + Math.sin(Date.now() / 1000 * 10) * 0.04;
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.32)';
+            ctx.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
+            ctx.translate(this.viewportWidth / 2, this.viewportHeight * 0.36);
+            ctx.scale(pulse, pulse);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.78)';
+            ctx.shadowBlur = 16;
+            ctx.font = 'bold 30px "Outfit", sans-serif';
+            ctx.fillStyle = '#ffe066';
+            ctx.strokeStyle = 'rgba(50, 25, 0, 0.95)';
+            ctx.lineWidth = 6;
+            ctx.strokeText(`BONUS: ${zone.title}`, 0, -58);
+            ctx.fillText(`BONUS: ${zone.title}`, 0, -58);
+
+            ctx.font = label === 'GO!' ? 'bold 72px "Outfit", sans-serif' : 'bold 92px "Outfit", sans-serif';
+            ctx.fillStyle = label === 'GO!' ? '#9cff8f' : '#ffffff';
+            ctx.lineWidth = 9;
+            ctx.strokeText(label, 0, 14);
+            ctx.fillText(label, 0, 14);
+            ctx.restore();
+            return;
+        }
+
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.65)';
+        ctx.shadowBlur = 12;
+        ctx.fillStyle = 'rgba(24, 32, 43, 0.78)';
+        ctx.strokeStyle = 'rgba(255, 224, 102, 0.72)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+            ctx.roundRect(panelX, panelY, panelW, panelH, 12);
+        } else {
+            ctx.rect(panelX, panelY, panelW, panelH);
+        }
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = 'bold 18px "Outfit", sans-serif';
+        ctx.fillStyle = '#ffe066';
+        ctx.fillText(`BONUS: ${zone.title}`, panelX + panelW / 2, panelY + 22);
+
+        ctx.font = 'bold 34px "Outfit", sans-serif';
+        ctx.fillStyle = time <= 5 ? '#ff6b6b' : '#ffffff';
+        ctx.fillText(`${time}`, panelX + panelW / 2, panelY + 52);
+
+        ctx.font = 'bold 15px "Outfit", sans-serif';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.88)';
+        ctx.fillText(`${zone.objectiveLabel}: ${cleared}/${total}`, panelX + panelW / 2, panelY + 77);
+        ctx.restore();
+    }
+
+    _drawBonusResultOverlay() {
+        const overlay = this.bonusResultOverlay;
+        if (!overlay) return;
+        const ctx = this.ctx;
+        const t = overlay.duration > 0 ? overlay.timer / overlay.duration : 0;
+        const alpha = Math.max(0, Math.min(1, t < 0.18 ? t / 0.18 : 1));
+        const lift = (1 - t) * 28;
+
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+        ctx.shadowBlur = 14;
+        ctx.font = 'bold 46px "Outfit", sans-serif';
+        ctx.fillStyle = '#ffe066';
+        ctx.strokeStyle = 'rgba(50, 25, 0, 0.92)';
+        ctx.lineWidth = 7;
+        const titleY = this.viewportHeight * 0.38 - lift;
+        ctx.strokeText(overlay.title, this.viewportWidth / 2, titleY);
+        ctx.fillText(overlay.title, this.viewportWidth / 2, titleY);
+        ctx.font = 'bold 32px "Outfit", sans-serif';
+        ctx.fillStyle = '#ffffff';
+        ctx.lineWidth = 5;
+        ctx.strokeText(overlay.detail, this.viewportWidth / 2, titleY + 48);
+        ctx.fillText(overlay.detail, this.viewportWidth / 2, titleY + 48);
+        ctx.restore();
     }
 
     _drawBossHealthBar(boss) {

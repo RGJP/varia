@@ -5,6 +5,19 @@ import { Bomb } from './Bomb.js';
 import { LightningOrb } from './LightningOrb.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
+const DEFAULT_LEFT_FACING_PLAYER_EMOJIS = new Set([
+    '🏇',
+    '🤾‍♀️',
+    '⛹️‍♀️'
+]);
+
+const MOBILE_LEFT_FACING_PLAYER_EMOJIS = new Set([
+    '🐧',
+    '🕺',
+    '🏇',
+    '🏌️‍♂️'
+]);
+
 export class Player extends Entity {
     constructor(x, y) {
         super(x, y, 72, 72);
@@ -119,6 +132,12 @@ export class Player extends Entity {
         this.minTapAttackChargeTime = 0.045;
         this.maxAttackChargeTime = 1.0;
         this.chargeIndicatorDelay = 0.14;
+        this.standardAttackBurstCount = 0;
+        this.standardAttackBurstLimit = 5;
+        this.standardAttackCooldown = 0.5;
+        this.standardAttackCooldownTimer = 0;
+        this.standardAttackBurstResetDelay = 0.5;
+        this.standardAttackBurstResetTimer = 0;
         this.shellThrowLockoutTimer = 0;
         this.shellGrabLockoutTimer = 0;
         this.isChargingAttack = false;
@@ -144,7 +163,7 @@ export class Player extends Entity {
             "⛹️‍♀️"
         ];
         this.emoji = icons[Math.floor(Math.random() * icons.length)];
-        this._emojiFacesLeft = this.emoji === "🏇" || this.emoji === "🤾‍♀️" || this.emoji === "⛹️‍♀️";
+        this._emojiFacesLeft = DEFAULT_LEFT_FACING_PLAYER_EMOJIS.has(this.emoji);
         // Pre-cache the emoji
         this._cachedEmoji = getEmojiCanvas(this.emoji, 72);
 
@@ -274,6 +293,17 @@ export class Player extends Entity {
         }
         if (this.shellThrowLockoutTimer > 0) {
             this.shellThrowLockoutTimer = Math.max(0, this.shellThrowLockoutTimer - dt);
+        }
+        if (this.standardAttackCooldownTimer > 0) {
+            this.standardAttackCooldownTimer = Math.max(0, this.standardAttackCooldownTimer - dt);
+            if (this.standardAttackCooldownTimer <= 0) {
+                this.standardAttackBurstCount = 0;
+            }
+        } else if (this.standardAttackBurstResetTimer > 0) {
+            this.standardAttackBurstResetTimer = Math.max(0, this.standardAttackBurstResetTimer - dt);
+            if (this.standardAttackBurstResetTimer <= 0) {
+                this.standardAttackBurstCount = 0;
+            }
         }
         if (this.shellGrabLockoutTimer > 0) {
             this.shellGrabLockoutTimer = Math.max(0, this.shellGrabLockoutTimer - dt);
@@ -471,7 +501,7 @@ export class Player extends Entity {
                 this.completionPopupTimer = 0;
             }
         }
-        if (!this.completionPopupTriggered && game && typeof game.getLevelCompletionPercent === 'function') {
+        if (!this.completionPopupTriggered && game && !game.bonusZone && typeof game.getLevelCompletionPercent === 'function') {
             const completion = game.getLevelCompletionPercent();
             if (completion >= 100) {
                 this.completionPopupTriggered = true;
@@ -527,16 +557,18 @@ export class Player extends Entity {
 
             // Seed charge on press so quick taps between frames still fire.
             // Only seed if we didn't just kick a shell and aren't carrying one.
-            if (!shellWasKickedThisFrame && this.shellThrowLockoutTimer <= 0 && attackPressed && this.attackChargeTimer <= 0 && !this.carriedShell) {
+            const standardAttackReady = this.standardAttackCooldownTimer <= 0;
+
+            if (!shellWasKickedThisFrame && this.shellThrowLockoutTimer <= 0 && standardAttackReady && attackPressed && this.attackChargeTimer <= 0 && !this.carriedShell) {
                 this.attackChargeTimer = this.minTapAttackChargeTime;
             }
 
-            if (!shellWasKickedThisFrame && this.shellThrowLockoutTimer <= 0 && attackHeld && !this.carriedShell) {
+            if (!shellWasKickedThisFrame && this.shellThrowLockoutTimer <= 0 && standardAttackReady && attackHeld && !this.carriedShell) {
                 this.isChargingAttack = true;
                 this.attackChargeTimer = Math.min(this.maxAttackChargeTime, this.attackChargeTimer + dt);
             }
 
-            if (!this.carriedShell && !game.gameOverTriggered && this.shellThrowLockoutTimer <= 0 && attackReleased && this.attackChargeTimer > 0) {
+            if (!this.carriedShell && !game.gameOverTriggered && this.shellThrowLockoutTimer <= 0 && standardAttackReady && attackReleased && this.attackChargeTimer > 0) {
                 this.isAttacking = true;
                 this.attackTimer = this.attackDuration;
 
@@ -553,10 +585,18 @@ export class Player extends Entity {
                 });
                 game.rocks.push(rock);
                 if (game.audio) game.audio.playThrow();
+                this.standardAttackBurstCount++;
+                this.standardAttackBurstResetTimer = this.standardAttackBurstResetDelay;
+                if (this.standardAttackBurstCount >= this.standardAttackBurstLimit) {
+                    this.standardAttackCooldownTimer = this.standardAttackCooldown;
+                    this.standardAttackBurstResetTimer = 0;
+                    this.attackChargeTimer = 0;
+                    this.isChargingAttack = false;
+                }
 
                 this.attackChargeTimer = 0;
                 this.isChargingAttack = false;
-            } else if (!attackHeld && !attackPressed && !this.carriedShell) {
+            } else if ((!attackHeld && !attackPressed && !this.carriedShell) || !standardAttackReady) {
                 // Defensive reset for cases where focus loss cancels a hold mid-charge.
                 this.attackChargeTimer = 0;
                 this.isChargingAttack = false;
@@ -1146,6 +1186,12 @@ export class Player extends Entity {
                     game.hasBossKey = true;
                     playPowerUpPickup('boss_star');
                     game.particles.emit(centerX, centerY, 24, '#ffe066', [90, 240], [0.22, 0.6], [2, 6]);
+                } else if (collectible.type === 'bonus_coin') {
+                    if (game && typeof game.registerBonusCoinCollected === 'function') {
+                        game.registerBonusCoinCollected();
+                    }
+                    game.audio.playCollect('coin');
+                    game.particles.emit(centerX, centerY, 10, '#FFFF00', [50, 150], [0.2, 0.5], [2, 4]);
                 } else {
                     this.score += 10;
                     game.coinsCollected++;
@@ -1284,6 +1330,9 @@ export class Player extends Entity {
         this.flightTimer = 0;
         this.isChargingAttack = false;
         this.attackChargeTimer = 0;
+        this.standardAttackBurstCount = 0;
+        this.standardAttackCooldownTimer = 0;
+        this.standardAttackBurstResetTimer = 0;
     }
 
     _spawnLightningOrb(game) {
@@ -1721,8 +1770,10 @@ export class Player extends Entity {
         const isMobileViewport = typeof window !== 'undefined' &&
             (('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.innerWidth < 800);
         const isGameRunning = !game || (game.state === 1 && !game.gameOverTriggered);
-        const golferNeedsMobileFlip = isMobileViewport && isGameRunning && this.emoji === '🏌️‍♂️';
-        const emojiFacesLeft = this._emojiFacesLeft || (isMobileViewport && (this.emoji === '🐧' || this.emoji === '🕺')) || golferNeedsMobileFlip;
+        const useMobileEmojiOrientation = isMobileViewport && isGameRunning;
+        const emojiFacesLeft = useMobileEmojiOrientation
+            ? MOBILE_LEFT_FACING_PLAYER_EMOJIS.has(this.emoji)
+            : this._emojiFacesLeft;
         const shouldMirrorForFacing = (!game || !game.gameOverTriggered) && (emojiFacesLeft ? this.facingRight : !this.facingRight);
         if (shouldMirrorForFacing) {
             ctx.scale(-1, 1);
@@ -2305,10 +2356,3 @@ export class Player extends Entity {
         }
     }
 }
-
-
-
-
-
-
-
