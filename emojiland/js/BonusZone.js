@@ -9,9 +9,14 @@ export const BONUS_ZONE_DURATION = 18;
 const BONUS_COIN_RUSH_DURATION = 16;
 const BONUS_SLAYER_DURATION = 18;
 const ARENA_WIDTH = 1500;
+const CEILING_Y = 70;
+const CEILING_HEIGHT = 70;
+const CEILING_BOTTOM = CEILING_Y + CEILING_HEIGHT;
 const FLOOR_Y = 660;
 const PLAYER_HEIGHT = 72;
 const MIN_UNDERPASS_CLEARANCE = PLAYER_HEIGHT + 34;
+const MIN_PLATFORM_HEADROOM = PLAYER_HEIGHT + 70;
+const MIN_PLAYABLE_PLATFORM_Y = CEILING_BOTTOM + MIN_PLATFORM_HEADROOM;
 const BONUS_ENEMY_SIZE = 54;
 const MIN_PLAYABLE_ENEMY_Y = 170;
 const SLAYER_START_BUFFER_X = 360;
@@ -74,7 +79,7 @@ function createBonusArena(theme) {
     const floor = makePlatform(0, FLOOR_Y, ARENA_WIDTH, 100, theme, true);
     const leftWall = makePlatform(-90, 110, 100, 650, theme, false);
     const rightWall = makePlatform(ARENA_WIDTH - 10, 110, 100, 650, theme, false);
-    const ceiling = makePlatform(0, 70, ARENA_WIDTH, 70, theme, false);
+    const ceiling = makePlatform(0, CEILING_Y, ARENA_WIDTH, CEILING_HEIGHT, theme, false);
     const platforms = [floor, leftWall, rightWall, ceiling];
     const playablePlatforms = [floor];
     const addPlayable = (x, y, width) => {
@@ -95,22 +100,22 @@ function createBonusArena(theme) {
         ledges = [
             addPlayable(160, 510, 260),
             addPlayable(620, 390, 250),
-            addPlayable(1090, 270, 270)
+            addPlayable(1090, MIN_PLAYABLE_PLATFORM_Y, 270)
         ];
     } else if (variant === 2) {
         ledges = [
             addPlayable(145, 395, 240),
             addPlayable(625, 515, 270),
             addPlayable(1115, 395, 240),
-            addPlayable(610, 255, 280)
+            addPlayable(610, MIN_PLAYABLE_PLATFORM_Y, 280)
         ];
     } else {
         ledges = [
             addPlayable(165, 510, 245),
-            addPlayable(535, 355, 210),
-            addPlayable(755, 355, 210),
+            addPlayable(535, 430, 210),
+            addPlayable(755, 430, 210),
             addPlayable(1090, 510, 245),
-            addPlayable(640, 225, 260)
+            addPlayable(640, MIN_PLAYABLE_PLATFORM_Y, 260)
         ];
     }
 
@@ -137,6 +142,10 @@ function enforceBonusPlatformClearance(playablePlatforms) {
     for (let i = 0; i < playablePlatforms.length; i++) {
         const upper = playablePlatforms[i];
         if (!upper || upper.y >= FLOOR_Y) continue;
+        if (upper.y < MIN_PLAYABLE_PLATFORM_Y) {
+            upper.y = MIN_PLAYABLE_PLATFORM_Y;
+        }
+
         let nearestBelow = null;
         let nearestGap = Infinity;
 
@@ -152,14 +161,44 @@ function enforceBonusPlatformClearance(playablePlatforms) {
         }
 
         if (nearestBelow && nearestGap < MIN_UNDERPASS_CLEARANCE) {
-            upper.y = nearestBelow.y - upper.height - MIN_UNDERPASS_CLEARANCE;
-            if (upper.y < 190) {
-                upper.y = 190;
-                upper.x = clamp(upper.x, 40, ARENA_WIDTH - upper.width - 40);
+            const raisedY = nearestBelow.y - upper.height - MIN_UNDERPASS_CLEARANCE;
+            if (raisedY >= MIN_PLAYABLE_PLATFORM_Y) {
+                upper.y = raisedY;
+            } else {
+                nearestBelow.y = upper.y + upper.height + MIN_UNDERPASS_CLEARANCE;
+                if (nearestBelow.y + nearestBelow.height > FLOOR_Y - MIN_UNDERPASS_CLEARANCE) {
+                    upper.x = findNonOverlappingPlatformX(upper, playablePlatforms);
+                }
             }
-            if (typeof upper._buildCache === 'function') upper._buildCache();
         }
+
+        if (typeof upper._buildCache === 'function') upper._buildCache();
+        if (nearestBelow && typeof nearestBelow._buildCache === 'function') nearestBelow._buildCache();
     }
+}
+
+function findNonOverlappingPlatformX(platform, playablePlatforms) {
+    const minX = 40;
+    const maxX = ARENA_WIDTH - platform.width - 40;
+    const candidates = [minX, maxX, 190, 610, 1025, platform.x];
+    for (let i = 0; i < candidates.length; i++) {
+        const x = clamp(candidates[i], minX, maxX);
+        const candidate = { x, y: platform.y, width: platform.width, height: platform.height };
+        let blocked = false;
+        for (let j = 0; j < playablePlatforms.length; j++) {
+            const other = playablePlatforms[j];
+            if (!other || other === platform || other.y <= platform.y) continue;
+            if (hasHorizontalOverlap(candidate, other, 18)) {
+                const gap = other.y - (candidate.y + candidate.height);
+                if (gap < MIN_UNDERPASS_CLEARANCE) {
+                    blocked = true;
+                    break;
+                }
+            }
+        }
+        if (!blocked) return x;
+    }
+    return clamp(platform.x, minX, maxX);
 }
 
 function hasHorizontalOverlap(a, b, inset = 0) {
