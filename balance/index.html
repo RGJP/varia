@@ -1,0 +1,2370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Balance</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚖️</text></svg>">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef6ef;
+      --bg-deep: #d7e7dc;
+      --ink: #17332e;
+      --muted: #62726c;
+      --soft: #f8fbf5;
+      --card: rgba(255, 252, 244, 0.88);
+      --card-strong: #fffaf0;
+      --line: rgba(45, 76, 66, 0.14);
+      --teal: #4f8780;
+      --teal-dark: #2f6e68;
+      --sage: #cfdcc7;
+      --gold: #c59f43;
+      --sand: #eee4cf;
+      --rose: #c37d68;
+      --shadow: 0 18px 50px rgba(28, 57, 49, 0.16);
+      --small-shadow: 0 8px 24px rgba(28, 57, 49, 0.10);
+      --radius: 18px;
+      --screen-max: 480px;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background:
+        radial-gradient(circle at 18% 0%, rgba(197, 159, 67, 0.16), transparent 30rem),
+        linear-gradient(145deg, #eff6ef 0%, #f8f3e7 46%, #dcece6 100%);
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0)),
+        var(--bg);
+      padding: 0;
+    }
+
+    button {
+      border: 0;
+      font: inherit;
+      color: inherit;
+    }
+
+    .app {
+      width: 100%;
+      min-height: 100vh;
+      background:
+        linear-gradient(180deg, rgba(244, 251, 244, 0.94), rgba(237, 247, 239, 0.96)),
+        var(--bg);
+      position: relative;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      padding: max(14px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
+      background:
+        radial-gradient(circle at 18% 20%, rgba(236, 228, 190, 0.26), transparent 9rem),
+        linear-gradient(135deg, #4e8881 0%, #2f6f69 100%);
+      color: #f8fff8;
+      border-bottom-left-radius: 22px;
+      border-bottom-right-radius: 22px;
+      box-shadow: 0 10px 28px rgba(37, 89, 82, 0.24);
+    }
+
+    .brand-row,
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.14);
+      font-size: 16px;
+      line-height: 1;
+      text-align: center;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1.42rem, 7vw, 2rem);
+      line-height: 1;
+      font-weight: 600;
+      letter-spacing: 0;
+    }
+
+    .breath-toggle:active {
+      transform: scale(0.96);
+    }
+
+    .meta-row {
+      margin-top: 12px;
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.86);
+      flex-wrap: wrap;
+      row-gap: 6px;
+    }
+
+    .date-pill,
+    .streak {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .topbar-inner,
+    .content {
+      width: min(100%, 980px);
+      margin: 0 auto;
+    }
+
+    main {
+      scrollbar-width: none;
+      padding: 14px max(12px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    }
+
+    main::-webkit-scrollbar {
+      display: none;
+    }
+
+    .section {
+      margin: 0 0 10px;
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: var(--radius);
+      box-shadow: var(--small-shadow);
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+    }
+
+    .section-head {
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px 7px;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 0.76rem;
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .duration-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      flex: 0 0 auto;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(79, 135, 128, 0.12);
+      color: var(--teal-dark);
+      font-size: 0.68rem;
+      line-height: 1;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .duration-pill::before {
+      content: "";
+      width: 11px;
+      height: 11px;
+      border: 1.6px solid currentColor;
+      border-radius: 50%;
+      background:
+        linear-gradient(currentColor, currentColor) 50% 22% / 1.4px 4px no-repeat,
+        linear-gradient(currentColor, currentColor) 66% 58% / 4px 1.4px no-repeat;
+    }
+
+    .section-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      flex: 0 0 auto;
+    }
+
+    .reroll-button {
+      width: 30px;
+      height: 30px;
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid rgba(79, 135, 128, 0.26);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.76);
+      color: var(--teal-dark);
+      cursor: pointer;
+      transition: transform 160ms ease, background 160ms ease, border-color 160ms ease;
+    }
+
+    .reroll-button:hover {
+      transform: rotate(24deg);
+      background: rgba(79, 135, 128, 0.12);
+      border-color: rgba(79, 135, 128, 0.42);
+    }
+
+    .reroll-button svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .quotes {
+      display: grid;
+      gap: 8px;
+      padding: 0 10px 10px;
+    }
+
+    .quote-card {
+      min-height: 96px;
+      border-radius: 14px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.76), rgba(239, 229, 204, 0.88)),
+        var(--sand);
+      border: 1px solid rgba(118, 88, 37, 0.08);
+      padding: clamp(12px, 4vw, 18px);
+      display: grid;
+      align-content: center;
+      gap: 7px;
+    }
+
+    blockquote {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1rem, 5vw, 1.34rem);
+      line-height: 1.12;
+      text-align: center;
+      text-wrap: balance;
+    }
+
+    cite {
+      display: block;
+      color: var(--muted);
+      font-size: 0.76rem;
+      font-style: normal;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .mantra {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1.05rem, 5vw, 1.42rem);
+      line-height: 1.12;
+      text-align: center;
+      text-wrap: balance;
+    }
+
+    .mantra a {
+      color: inherit;
+      text-decoration-color: rgba(79, 135, 128, 0.44);
+      text-underline-offset: 4px;
+    }
+
+    .mantra a:hover,
+    .mantra a:focus-visible {
+      color: var(--teal-dark);
+      text-decoration-color: currentColor;
+    }
+
+    .mantra-note {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .two-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      padding: 0 10px 10px;
+    }
+
+    .practice-card {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(52px, 0.8fr) minmax(0, 1fr);
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.66);
+      border: 1px solid var(--line);
+    }
+
+    .pose-card {
+      grid-template-columns: 1fr;
+      gap: 7px;
+      align-items: start;
+    }
+
+    .thumb {
+      width: 100%;
+      aspect-ratio: 1;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #e5eddf;
+      display: grid;
+      place-items: center;
+      cursor: zoom-in;
+    }
+
+    .pose-card .thumb {
+      aspect-ratio: 4 / 3;
+    }
+
+    .thumb img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .zoom-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      place-items: center;
+      padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+      background: rgba(16, 31, 28, 0.76);
+      backdrop-filter: blur(18px);
+      cursor: zoom-out;
+    }
+
+    .zoom-overlay.open {
+      display: grid;
+    }
+
+    .zoom-overlay img {
+      width: min(100%, 760px);
+      max-height: 86vh;
+      object-fit: contain;
+      border-radius: 18px;
+      background: rgba(250, 252, 245, 0.92);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.34);
+    }
+
+    .mudra .thumb img {
+      object-fit: contain;
+      mix-blend-mode: multiply;
+    }
+
+    .practice-text {
+      min-width: 0;
+    }
+
+    .practice-title {
+      margin: 0 0 3px;
+      font-size: clamp(0.76rem, 3.3vw, 0.9rem);
+      line-height: 1.1;
+      font-weight: 850;
+      overflow-wrap: anywhere;
+    }
+
+    .practice-title a {
+      color: inherit;
+      text-decoration-color: rgba(79, 135, 128, 0.44);
+      text-underline-offset: 3px;
+    }
+
+    .practice-title a:hover,
+    .practice-title a:focus-visible {
+      color: var(--teal-dark);
+      text-decoration-color: currentColor;
+    }
+
+    .sanskrit {
+      color: var(--teal-dark);
+      font-size: 0.66rem;
+      line-height: 1.1;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 5px;
+    }
+
+    .practice-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(0.68rem, 3vw, 0.78rem);
+      line-height: 1.22;
+    }
+
+    .track-card {
+      margin: 0 10px 10px;
+      border-radius: 15px;
+      overflow: hidden;
+      background: #2f2a20;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    }
+
+    .track-frame {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      display: block;
+      border: 0;
+    }
+
+    .track-caption {
+      margin: 0;
+      padding: 8px 10px 10px;
+      color: #f8ead0;
+      font-size: 0.74rem;
+      line-height: 1.25;
+    }
+
+    .breath-panel {
+      padding: 0 12px 16px;
+    }
+
+    .breath-prompt {
+      margin: 10px 0 0;
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .breathing.is-active .breath-prompt {
+      display: none;
+    }
+
+    .breath-stage {
+      display: grid;
+      grid-template-columns: 1fr;
+      align-items: center;
+      gap: 8px;
+      min-height: 160px;
+    }
+
+    .breath-toggle {
+      justify-self: center;
+      width: min(36vw, 138px);
+      aspect-ratio: 1;
+      border-radius: 999px;
+      cursor: pointer;
+      color: #f7fffb;
+      background:
+        radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.45), transparent 32%),
+        linear-gradient(145deg, #78a39b, #2f6f69);
+      box-shadow: 0 14px 34px rgba(47, 111, 105, 0.32);
+      display: grid;
+      place-items: center;
+      position: relative;
+      isolation: isolate;
+    }
+
+    .breath-progress {
+      justify-self: center;
+      width: min(44vw, 172px);
+      aspect-ratio: 1;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background:
+        conic-gradient(var(--gold) var(--session-progress, 0%), rgba(79, 135, 128, 0.14) 0);
+      padding: 6px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.58);
+    }
+
+    .breath-progress-inner {
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      display: grid;
+      place-items: center;
+      background: rgba(245, 251, 241, 0.84);
+    }
+
+    .breath-toggle::before,
+    .breath-toggle::after {
+      content: "";
+      position: absolute;
+      inset: 10%;
+      border-radius: inherit;
+      background: rgba(87, 139, 132, 0.22);
+      z-index: -1;
+      transform: scale(0.92);
+      transition: transform 5s ease-in-out, opacity 5s ease-in-out;
+    }
+
+    .breath-toggle::after {
+      inset: 0;
+      border: 1px solid rgba(255, 255, 255, 0.42);
+      background: transparent;
+    }
+
+    .breathing.inhale .breath-toggle::before,
+    .breathing.inhale .breath-toggle::after {
+      transform: scale(1.16);
+      opacity: 0.86;
+    }
+
+    .breathing.exhale .breath-toggle::before,
+    .breathing.exhale .breath-toggle::after {
+      transform: scale(0.88);
+      opacity: 0.44;
+    }
+
+    .breath-label {
+      display: grid;
+      justify-items: center;
+      gap: 4px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .breath-label strong {
+      font-size: clamp(1.7rem, 9vw, 2.5rem);
+      letter-spacing: 0;
+    }
+
+    .breath-label span {
+      font-size: 0.68rem;
+      letter-spacing: 0.06em;
+    }
+
+    svg {
+      display: block;
+      width: 1em;
+      height: 1em;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    @media (min-width: 720px) {
+      main {
+        padding-top: 18px;
+      }
+
+      .content {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        align-items: start;
+      }
+
+      .section {
+        margin-bottom: 0;
+      }
+
+      .section:first-child,
+      #breathing {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 360px) {
+      .two-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .practice-card {
+        grid-template-columns: 82px 1fr;
+      }
+
+      .pose-card {
+        grid-template-columns: 92px 1fr;
+      }
+
+      .pose-card .thumb {
+        aspect-ratio: 1;
+      }
+
+      .breath-stage {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand-row">
+          <div class="brand" aria-label="Balance">
+            <span class="brand-mark" aria-hidden="true">⚖️</span>
+            <h1>Balance</h1>
+          </div>
+        </div>
+        <div class="meta-row">
+          <span class="streak">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20"/><path d="m17 5-5-3-5 3"/><path d="m17 19-5 3-5-3"/></svg>
+            Daily Ritual
+          </span>
+          <time class="date-pill" id="today"></time>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <div class="content">
+        <section class="section" aria-labelledby="quotes-title">
+        <div class="section-head">
+          <h2 class="section-title" id="quotes-title">Quote and Mantra of the Day</h2>
+          <button class="reroll-button" type="button" data-reroll="quotes" aria-label="Reroll quote and mantra" title="Reroll quote and mantra">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2"/><path d="M3 12A9 9 0 0 1 18.5 5.8"/><path d="M18 2v4h4"/><path d="M6 22v-4H2"/></svg>
+          </button>
+        </div>
+        <div class="quotes" id="quotes"></div>
+        </section>
+
+        <section class="section" aria-labelledby="mudras-title">
+        <div class="section-head">
+          <h2 class="section-title" id="mudras-title">Mudras of the Day</h2>
+          <div class="section-actions">
+            <span class="duration-pill" aria-label="Suggested duration 3 minutes">3 min</span>
+            <button class="reroll-button" type="button" data-reroll="mudras" aria-label="Reroll mudras" title="Reroll mudras">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2"/><path d="M3 12A9 9 0 0 1 18.5 5.8"/><path d="M18 2v4h4"/><path d="M6 22v-4H2"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="two-grid" id="mudras"></div>
+        </section>
+
+        <section class="section" aria-labelledby="poses-title">
+        <div class="section-head">
+          <h2 class="section-title" id="poses-title">Yoga Poses of the Day</h2>
+          <div class="section-actions">
+            <span class="duration-pill" aria-label="Suggested duration 3 minutes">3 min</span>
+            <button class="reroll-button" type="button" data-reroll="poses" aria-label="Reroll yoga poses" title="Reroll yoga poses">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2"/><path d="M3 12A9 9 0 0 1 18.5 5.8"/><path d="M18 2v4h4"/><path d="M6 22v-4H2"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="two-grid" id="poses"></div>
+        </section>
+
+        <section class="section" aria-labelledby="track-title">
+        <div class="section-head">
+          <h2 class="section-title" id="track-title">Ecstatic Dance Track</h2>
+          <div class="section-actions">
+            <span class="duration-pill" aria-label="Suggested duration 5 minutes">5 min</span>
+            <button class="reroll-button" type="button" data-reroll="dance" aria-label="Reroll ecstatic dance track" title="Reroll ecstatic dance track">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 0 1-15.5 6.2"/><path d="M3 12A9 9 0 0 1 18.5 5.8"/><path d="M18 2v4h4"/><path d="M6 22v-4H2"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="track-card">
+          <iframe
+            id="danceFrame"
+            class="track-frame"
+            src="https://www.youtube-nocookie.com/embed/2OEL4P1Rz04?rel=0"
+            title="Ecstatic dance track of the day"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen></iframe>
+          <p class="track-caption">Move intuitievely for 5 minutes to free your body</p>
+        </div>
+        </section>
+
+        <section class="section breathing exhale" id="breathing" aria-labelledby="breath-title">
+        <div class="section-head">
+          <h2 class="section-title" id="breath-title">Coherence Breathing</h2>
+          <span class="duration-pill" aria-label="Suggested duration 5 minutes">5 min</span>
+        </div>
+        <div class="breath-panel">
+          <div class="breath-stage">
+            <div class="breath-progress" id="breathProgress" aria-hidden="true">
+              <div class="breath-progress-inner">
+                <button class="breath-toggle" id="breathToggle" type="button" aria-pressed="false">
+                  <span class="breath-label">
+                    <strong id="breathCount">5</strong>
+                    <span id="breathAction">Start</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <p class="breath-prompt">Tap the circle to begin 5 min cardiac coherence exercise.</p>
+        </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="zoom-overlay" id="zoomOverlay" aria-hidden="true">
+    <img id="zoomImage" alt="">
+  </div>
+
+  <script>
+    const quotes = [
+      { text: "The quietest moment can become the most powerful one.", author: "Lao Tzu" },
+      { text: "Almost everything will work again if you unplug it for a few minutes, including you.", author: "Anne Lamott" },
+      { text: "Within you there is a stillness and a sanctuary to which you can retreat at any time.", author: "Hermann Hesse" },
+      { text: "Feelings come and go like clouds in a windy sky. Conscious breathing is my anchor.", author: "Thich Nhat Hanh" },
+      { text: "The body benefits from movement, and the mind benefits from stillness.", author: "Sakyong Mipham" },
+      { text: "You are the sky. Everything else is just the weather.", author: "Pema Chodron" },
+      { text: "Have a mind that is open to everything and attached to nothing.", author: "Wayne Dyer" },
+      { text: "Don't die with your music still in you.", author: "Wayne Dyer" },
+      { text: "You can't give away what you don't have.", author: "Wayne Dyer" },
+      { text: "Embrace silence.", author: "Wayne Dyer" },
+      { text: "Give up your personal history.", author: "Wayne Dyer" },
+      { text: "You can't solve a problem with the same mind that created it.", author: "Wayne Dyer" },
+      { text: "There are no justified resentments.", author: "Wayne Dyer" },
+      { text: "Treat yourself as if you already are what you'd like to be.", author: "Wayne Dyer" },
+      { text: "Treasure your divinity.", author: "Wayne Dyer" },
+      { text: "Wisdom is avoiding all thoughts that weaken you.", author: "Wayne Dyer" },
+      { text: "You have power over your mind - not outside events. Realize this, and you will find strength.", author: "Marcus Aurelius" },
+      { text: "We suffer more often in imagination than in reality.", author: "Seneca" },
+      { text: "The happiness of your life depends upon the quality of your thoughts.", author: "Marcus Aurelius" },
+      { text: "Wealth consists not in having great possessions, but in having few wants.", author: "Epictetus" },
+      { text: "Man is not worried by real problems so much as by his imagined anxieties about real problems.", author: "Epictetus" },
+      { text: "The best revenge is to be unlike him who performed the injury.", author: "Marcus Aurelius" },
+      { text: "Luck is what happens when preparation meets opportunity.", author: "Seneca" },
+      { text: "Associate with people who are likely to improve you.", author: "Seneca" },
+      { text: "The person becomes dyed with the color of its thoughts.", author: "Marcus Aurelius" },
+      { text: "First say to yourself what you would be; and then do what you have to do.", author: "Epictetus" },
+      { text: "If you are distressed by anything external, the pain is not due to the thing itself, but to your estimate of it.", author: "Marcus Aurelius" },
+      { text: "It is the nature of the mind to be unconquerable.", author: "Seneca" },
+      { text: "Don't explain your philosophy. Embody it.", author: "Epictetus" },
+      { text: "Dwell on the beauty of life. Watch the stars, and see yourself running with them.", author: "Marcus Aurelius" },
+      { text: "Time discovers truth.", author: "Seneca" },
+      { text: "It is impossible for a person to learn what they think they already know.", author: "Epictetus" },
+      { text: "To be everywhere is to be nowhere.", author: "Seneca" },
+      { text: "When you arise in the morning think of what a privilege it is to be alive, to think, to enjoy, to love.", author: "Marcus Aurelius" },
+      { text: "Make the best use of what is in your power, and take the rest as it happens.", author: "Epictetus" },
+      { text: "The whole future lies in uncertainty: live immediately.", author: "Seneca" },
+      { text: "Very little is needed to make a happy life; it is all within yourself, in your way of thinking.", author: "Marcus Aurelius" },
+      { text: "He suffers more than necessary, who suffers before it is necessary.", author: "Seneca" },
+      { text: "Circumstances don't make the man, they only reveal him to himself.", author: "Epictetus" },
+      { text: "Reject your sense of injury and the injury itself disappears.", author: "Marcus Aurelius" },
+      { text: "Life is long if you know how to use it.", author: "Seneca" },
+      { text: "You become what you give your attention to.", author: "Epictetus" },
+      { text: "Everything we hear is an opinion, not a fact. Everything we see is a perspective, not the truth.", author: "Marcus Aurelius" },
+      { text: "As is a tale, so is life: not how long it is, but how good it is, is what matters.", author: "Seneca" },
+      { text: "If a man knows not to which port he sails, no wind is favorable.", author: "Seneca" },
+      { text: "Freedom is the only worthy goal in life. It is won by disregarding things that lie beyond our control.", author: "Epictetus" },
+      { text: "Because a thing seems difficult for you, do not think it impossible for anyone to accomplish.", author: "Marcus Aurelius" },
+      { text: "While we wait for life, life passes.", author: "Seneca" },
+      { text: "Know, first, who you are, and then adorn yourself accordingly.", author: "Epictetus" },
+      { text: "Confine yourself to the present.", author: "Marcus Aurelius" },
+      { text: "Difficulties strengthen the mind, as labor does the body.", author: "Seneca" },
+      { text: "It is a rough road that leads to the heights of greatness.", author: "Seneca" },
+      { text: "Loss is nothing else but change, and change is Nature's delight.", author: "Marcus Aurelius" },
+      { text: "What is the point of dragging up sufferings that are over, of being miserable now because you were miserable then?", author: "Seneca" },
+      { text: "Any person capable of angering you becomes your master.", author: "Epictetus" },
+      { text: "Receive without conceit, release without struggle.", author: "Marcus Aurelius" },
+      { text: "Dig deep within yourself, for there is a fountain of goodness ever ready to flow if you will keep digging.", author: "Marcus Aurelius" },
+      { text: "Hang on to your youthful enthusiasms -- you'll be able to use them better when you're older.", author: "Seneca" },
+      { text: "Don't hope that events will turn out the way you want, welcome events in whichever way they happen.", author: "Epictetus" },
+      { text: "How much time he gains who does not look to see what his neighbor says or does or thinks.", author: "Marcus Aurelius" },
+      { text: "The brave rejoice in adversity.", author: "Seneca" },
+      { text: "Small-minded people blame others. Average people blame themselves. The wise see all blame as foolishness.", author: "Epictetus" },
+      { text: "Every night before going to sleep, we must ask ourselves: what weakness did I overcome today? What virtue did I acquire?", author: "Seneca" },
+      { text: "The universe is change; our life is what our thoughts make it.", author: "Marcus Aurelius" },
+      { text: "They lose the day in expectation of the night, and the night in fear of the dawn.", author: "Seneca" },
+      { text: "Silence is richer than speech.", author: "Epictetus" },
+      { text: "To live a good life: We have the potential for it. If we can learn to be indifferent to what makes no difference.", author: "Marcus Aurelius" },
+      { text: "One of the most beautiful qualities of true friendship is to understand and to be understood.", author: "Seneca" },
+      { text: "Hatred is never appeased by hatred in this world. By non-hatred alone is hatred appeased. This is a law eternal.", author: "Buddha" },
+      { text: "Drop by drop is the water pot filled. Likewise, the wise man, gathering it little by little, fills himself with good.", author: "Buddha" },
+      { text: "Radiate boundless love towards the entire world-above, below, and across-unhindered, without ill will, without enmity.", author: "Buddha" },
+      { text: "People have a hard time letting go of their suffering. Out of a fear of the unknown, they prefer suffering that is familiar.", author: "Thich Nhat Hanh" },
+      { text: "Breath is the bridge which connects life to consciousness, which unites your body to your thoughts.", author: "Thich Nhat Hanh" },
+      { text: "Because you are alive, everything is possible.", author: "Thich Nhat Hanh" },
+      { text: "Your own Self-realization is the greatest service you can render the world.", author: "Ramana Maharshi" },
+      { text: "Silence is ever speaking; it is the perennial flow of language.", author: "Ramana Maharshi" },
+      { text: "The mind is only a bundle of thoughts. The thoughts arise because there is the thinker. The thinker is the ego. Find out what watches the thinker.", author: "Ramana Maharshi" },
+      { text: "Fear is a natural reaction to moving closer to the truth.", author: "Pema Chodron" },
+      { text: "Nothing ever goes away until it has taught us what we need to know.", author: "Pema Chodron" },
+      { text: "Step into the fire of self-discovery. This fire will not burn you, it will only burn what you are not.", author: "Mooji" },
+      { text: "Feelings are just visitors, let them come and go.", author: "Mooji" },
+      { text: "In the beginner's mind there are many possibilities, but in the expert's there are few.", author: "Shunryu Suzuki" },
+      { text: "To study the Way is to study the self. To study the self is to forget the self.", author: "Dogen" },
+      { text: "The Great Way is not difficult for those who have no preferences.", author: "Jianzhi Sengcan" },
+      { text: "If you let go a little, you will have a little peace. If you let go a lot, you will have a lot of peace. If you let go completely, you will know complete peace and freedom.", author: "Ajahn Chah" },
+      { text: "Wisdom tells me I am nothing. Love tells me I am everything. And between the two my life flows.", author: "Nisargadatta Maharaj" },
+      { text: "My religion is very simple. My religion is kindness.", author: "Dalai Lama" },
+      { text: "Remember that sometimes not getting what you want is a wonderful stroke of luck.", author: "Dalai Lama" },
+      { text: "The primary cause of unhappiness is never the situation but your thoughts about it.", author: "Eckhart Tolle" },
+      { text: "Not thinking about anything is Zen. Once you know this, walking, standing, sitting, or lying down, everything you do is Zen.", author: "Bodhidharma" },
+      { text: "The past has no power over the present moment.", author: "Eckhart Tolle" },
+      { text: "Realize deeply that the present moment is all you have. Make the NOW the primary focus of your life.", author: "Eckhart Tolle" },
+      { text: "Awareness is the greatest agent for change.", author: "Eckhart Tolle" },
+      { text: "Life will give you whatever experience is most helpful for the evolution of your consciousness.", author: "Eckhart Tolle" },
+      { text: "Worry pretends to be necessary but serves no useful purpose.", author: "Eckhart Tolle" },
+      { text: "You find peace not by rearranging the circumstances of your life, but by realizing who you are at the deepest level.", author: "Eckhart Tolle" },
+      { text: "Some changes look negative on the surface but you will soon realize that space is being created in your life for something new to emerge.", author: "Eckhart Tolle" },
+      { text: "You need nothing to be happy, but you need something to be sad.", author: "Mooji" },
+      { text: "Don't be a storehouse of memories. Leave past, future, and even present thoughts behind. Be a witness to life unfolding by itself.", author: "Mooji" },
+      { text: "When you drop all your ideas, fantasies, and projections about who you are and what freedom is and just remain completely empty, this is freedom.", author: "Mooji" },
+      { text: "If you wish to find Love, don't look for the object of love but rather for the source of love. There you will find the Beloved.", author: "Mooji" },
+      { text: "Your heart is the light of this world. Don't cover it with your mind.", author: "Mooji" },
+      { text: "Enlightenment is a destructive process. It has nothing to do with becoming better or being happier. Enlightenment is the crumbling away of untruth.", author: "Adyashanti" },
+      { text: "True meditation has no direction or goal. It is pure wordless surrender, pure silent prayer.", author: "Adyashanti" },
+      { text: "Spiritual awakening is remembering what you are, as opposed to what you imagine yourself to be.", author: "Adyashanti" },
+      { text: "The truth is that you already are what you are seeking.", author: "Adyashanti" },
+      { text: "Our suffering is caused by resisting what is.", author: "Adyashanti" },
+      { text: "Truth is only discovered in the moment. There is no truth that can be carried over to the next moment, the next day, the next year.", author: "Adyashanti" },
+      { text: "We realize, often quite suddenly, that our sense of self, which has been formed and constructed out of our ideas, beliefs, and images, is not who we are.", author: "Adyashanti" }
+    ];
+
+    const mantras = [
+      { text: "Om Gam Ganapataye Namaha", note: "For clearing obstacles and beginning well." },
+      { text: "Om Namah Shivaya", note: "For inner stillness and transformation." },
+      { text: "Om Mani Padme Hum", note: "For compassion and an open heart." },
+      { text: "Om Shanti Shanti Shanti", note: "For peace in body, mind, and spirit." },
+      { text: "Lokah Samastah Sukhino Bhavantu", note: "For the well-being of all beings." },
+      { text: "Om Namo Bhagavate Vasudevaya", note: "For devotion and surrender." },
+      { text: "Om Dum Durgayei Namaha", note: "For protection, courage, and strength." },
+      { text: "Om Shri Maha Lakshmiyei Namaha", note: "For abundance, grace, and gratitude." },
+      { text: "Om Aim Saraswatyai Namaha", note: "For wisdom, creativity, and clear speech." },
+      { text: "So Hum", note: "For breath awareness and presence." },
+      { text: "Om", note: "For grounding attention in the primordial sound." }
+    ];
+
+    const mudras = [
+      {
+        title: "Aakash Mudra",
+        sanskrit: "Space",
+        copy: "Aakash Mudra is associated with the space element and supports inner spaciousness, clarity, and expanded awareness.",
+        image: "mudras/aakash.jpg"
+      },
+      {
+        title: "Abhaya Mudra",
+        sanskrit: "Fearlessness",
+        copy: "Abhaya Mudra is a gesture of protection, reassurance, and peaceful courage.",
+        image: "mudras/abhaya.jpg"
+      },
+      {
+        title: "Adhi Mudra",
+        sanskrit: "Primal Calm",
+        copy: "Adhi Mudra encourages security, quiet breathing, and a return to inner steadiness.",
+        image: "mudras/adhi.jpg"
+      },
+      {
+        title: "Anjali Mudra",
+        sanskrit: "Reverence",
+        copy: "Anjali Mudra expresses reverence, greeting, and balanced presence at the heart.",
+        image: "mudras/anjali.jpg"
+      },
+      {
+        title: "Apan Vayu Mudra",
+        sanskrit: "Heart Flow",
+        copy: "Apan Vayu Mudra is traditionally used to support the heart, circulation, and emotional ease.",
+        image: "mudras/apan vayu.jpg"
+      },
+      {
+        title: "Atmanjali Mudra",
+        sanskrit: "Soul Offering",
+        copy: "Atmanjali Mudra represents a sincere offering from the soul and a personal connection to the sacred.",
+        image: "mudras/atmanjali.jpg"
+      },
+      {
+        title: "Bhairava Mudra",
+        sanskrit: "Unity",
+        copy: "Bhairava Mudra symbolizes universal consciousness and the union of complementary energies.",
+        image: "mudras/bhairava.jpg"
+      },
+      {
+        title: "Bhramara Mudra",
+        sanskrit: "Bee",
+        copy: "Bhramara Mudra is associated with the bee and is traditionally practiced for immunity and allergy balance.",
+        image: "mudras/bhramara.jpg"
+      },
+      {
+        title: "Buddhi Mudra",
+        sanskrit: "Clarity",
+        copy: "Buddhi Mudra supports mental clarity, intuitive listening, and balanced communication.",
+        image: "mudras/buddhi.jpg"
+      },
+      {
+        title: "Dharmachakra Mudra",
+        sanskrit: "Teaching",
+        copy: "Dharmachakra Mudra represents the turning of the wheel of Dharma and the sharing of wisdom.",
+        image: "mudras/dharmachakra.jpg"
+      },
+      {
+        title: "Dhyana Mudra",
+        sanskrit: "Meditation",
+        copy: "Dhyana Mudra is the meditation gesture for contemplation, stillness, and concentrated inner fire.",
+        image: "mudras/Bodhisattva Dhyan.jpg"
+      },
+      {
+        title: "Dhyani Mudra",
+        sanskrit: "Contemplation",
+        copy: "Dhyani Mudra creates a receptive bowl of energy for meditation and deep inner work.",
+        image: "mudras/dhyani.jpg"
+      },
+      {
+        title: "Ganesha Mudra",
+        sanskrit: "Obstacles",
+        copy: "Ganesha Mudra invokes strength, courage, and the removal of obstacles.",
+        image: "mudras/ganesha.jpg"
+      },
+      {
+        title: "Garuda Mudra",
+        sanskrit: "Freedom",
+        copy: "Garuda Mudra represents freedom, power, and balanced air energy.",
+        image: "mudras/garuda.jpg"
+      },
+      {
+        title: "Granthita Mudra",
+        sanskrit: "Unknotting",
+        copy: "Granthita Mudra is used to release knotted physical, mental, and emotional tension.",
+        image: "mudras/granthita.jpg"
+      },
+      {
+        title: "Hakini Mudra",
+        sanskrit: "Focus",
+        copy: "Hakini Mudra supports focus, memory, and the integration of both sides of the mind.",
+        image: "mudras/hakini.jpg"
+      },
+      {
+        title: "Hridaya Mudra",
+        sanskrit: "Heart",
+        copy: "Hridaya Mudra directs prana toward the heart center and supports emotional nourishment.",
+        image: "mudras/hridaya.jpg"
+      },
+      {
+        title: "Jalodar Nashak Mudra",
+        sanskrit: "Water Balance",
+        copy: "Jalodar Nashak Mudra is traditionally used to reduce excess water element and restore balance.",
+        image: "mudras/jalodar nashak.jpg"
+      },
+      {
+        title: "Jnana Mudra",
+        sanskrit: "Wisdom",
+        copy: "Jnana Mudra symbolizes knowledge, wisdom, and the connection between individual and universal awareness.",
+        image: "mudras/jnana.jpg"
+      },
+      {
+        title: "Kalesvara Mudra",
+        sanskrit: "Time",
+        copy: "Kalesvara Mudra helps calm the mind and slow the flow of restless thoughts.",
+        image: "mudras/kalesvara.jpg"
+      },
+      {
+        title: "Ksepana Mudra",
+        sanskrit: "Letting Go",
+        copy: "Ksepana Mudra supports letting go of stagnant energy and making space for renewal.",
+        image: "mudras/ksepana.jpg"
+      },
+      {
+        title: "Kubera Mudra",
+        sanskrit: "Intention",
+        copy: "Kubera Mudra focuses intention, confidence, and the energy of wish fulfillment.",
+        image: "mudras/kubera.jpg"
+      },
+      {
+        title: "Kundalini Mudra",
+        sanskrit: "Awakening",
+        copy: "Kundalini Mudra represents the awakening of primal life force and creative energy.",
+        image: "mudras/kundalini.jpg"
+      },
+      {
+        title: "Kurma Mudra",
+        sanskrit: "Withdrawal",
+        copy: "Kurma Mudra symbolizes withdrawing the senses inward to find protection, peace, and stability.",
+        image: "mudras/turtle in its shell.jpg"
+      },
+      {
+        title: "Linga Mudra",
+        sanskrit: "Heat",
+        copy: "Linga Mudra builds warmth, vitality, and protective inner fire.",
+        image: "mudras/linga.jpg"
+      },
+      {
+        title: "Maha Sacral Mudra",
+        sanskrit: "Sacral Balance",
+        copy: "Maha Sacral Mudra balances the lower abdomen and supports creative, emotional flow.",
+        image: "mudras/maha sacral.jpg"
+      },
+      {
+        title: "Mahasirs Mudra",
+        sanskrit: "Head Relief",
+        copy: "Mahasirs Mudra is traditionally practiced to ease head tension and balance energy in the head.",
+        image: "mudras/mahasirsa.jpg"
+      },
+      {
+        title: "Mano Fico Gesture",
+        sanskrit: "Protection",
+        copy: "Mano Fico is a protective gesture used to ward off negative energy.",
+        image: "mudras/figa.jpg"
+      },
+      {
+        title: "Matangi Mudra",
+        sanskrit: "Harmony",
+        copy: "Matangi Mudra supports inner harmony, confident expression, and solar plexus balance.",
+        image: "mudras/matangi.jpg"
+      },
+      {
+        title: "Merudanda Mudra",
+        sanskrit: "Spine",
+        copy: "Merudanda Mudra promotes awareness and energetic flow along the spine.",
+        image: "mudras/merudanda.jpg"
+      },
+      {
+        title: "Mukula Mudra",
+        sanskrit: "Bud",
+        copy: "Mukula Mudra gathers energy like a flower bud and directs it toward healing attention.",
+        image: "mudras/mukula.jpg"
+      },
+      {
+        title: "Muladhara Mudra",
+        sanskrit: "Root",
+        copy: "Muladhara Mudra activates grounding, stability, and connection to the earth.",
+        image: "mudras/muladhara.jpg"
+      },
+      {
+        title: "Mushti Mudra",
+        sanskrit: "Release",
+        copy: "Mushti Mudra represents strength and helps transform suppressed frustration into clear action.",
+        image: "mudras/mushti.jpg"
+      },
+      {
+        title: "Namaste Gesture",
+        sanskrit: "Respect",
+        copy: "Namaste honors the light within oneself and others through respectful presence.",
+        image: "mudras/namaste.jpg"
+      },
+      {
+        title: "Padma Mudra",
+        sanskrit: "Lotus",
+        copy: "Padma Mudra symbolizes purity, compassion, and the heart opening like a lotus.",
+        image: "mudras/padma.jpg"
+      },
+      {
+        title: "Prana Mudra",
+        sanskrit: "Vitality",
+        copy: "Prana Mudra awakens life force, vitality, and steady inner strength.",
+        image: "mudras/prana.jpg"
+      },
+      {
+        title: "Prithvi Mudra",
+        sanskrit: "Earth",
+        copy: "Prithvi Mudra strengthens grounding, stability, and connection to the physical body.",
+        image: "mudras/prithvi.jpg"
+      },
+      {
+        title: "Pushan Mudra",
+        sanskrit: "Nourishment",
+        copy: "Pushan Mudra supports nourishment, digestion, absorption, and release.",
+        image: "mudras/pushan.jpg"
+      },
+      {
+        title: "Pushpaputa Mudra",
+        sanskrit: "Offering",
+        copy: "Pushpaputa Mudra cultivates openness, generosity, and a receptive heart.",
+        image: "mudras/pushpaputa.jpg"
+      },
+      {
+        title: "Rudra Mudra",
+        sanskrit: "Power Center",
+        copy: "Rudra Mudra strengthens the solar plexus and the body's inner power center.",
+        image: "mudras/rudra.jpg"
+      },
+      {
+        title: "Sahasrara Mudra",
+        sanskrit: "Crown",
+        copy: "Sahasrara Mudra represents the crown chakra, spiritual connection, and enlightened awareness.",
+        image: "mudras/thousand petals.jpg"
+      },
+      {
+        title: "Samana Vayu Mudra",
+        sanskrit: "Balance",
+        copy: "Samana Vayu Mudra harmonizes the five elements and supports digestion and metabolism.",
+        image: "mudras/samana vayu.jpg"
+      },
+      {
+        title: "Shakti Mudra",
+        sanskrit: "Power",
+        copy: "Shakti Mudra invokes divine feminine energy and encourages calm, rest, and restoration.",
+        image: "mudras/shakti.jpg"
+      },
+      {
+        title: "Shankh Mudra",
+        sanskrit: "Conch",
+        copy: "Shankh Mudra symbolizes purification, sacred sound, and clear communication.",
+        image: "mudras/shankh.jpg"
+      },
+      {
+        title: "Shiva Linga Mudra",
+        sanskrit: "Recharge",
+        copy: "Shiva Linga Mudra represents the union of opposites and the renewal of vital energy.",
+        image: "mudras/shiva linga.jpg"
+      },
+      {
+        title: "Shuni Mudra",
+        sanskrit: "Patience",
+        copy: "Shuni Mudra encourages patience, discipline, responsibility, and steady attention.",
+        image: "mudras/shuni.jpg"
+      },
+      {
+        title: "Shunya Mudra",
+        sanskrit: "Emptiness",
+        copy: "Shunya Mudra opens inner space and is traditionally used to reduce dullness or numbness.",
+        image: "mudras/shunya heaven.jpg"
+      },
+      {
+        title: "Suchi Mudra",
+        sanskrit: "Needle",
+        copy: "Suchi Mudra sharpens focus and helps release blockages or held anger.",
+        image: "mudras/suchi.jpg"
+      },
+      {
+        title: "Surya Mudra",
+        sanskrit: "Sun",
+        copy: "Surya Mudra increases fire energy, warmth, and metabolic vitality.",
+        image: "mudras/surya.jpg"
+      },
+      {
+        title: "Ushas Mudra",
+        sanskrit: "Dawn",
+        copy: "Ushas Mudra symbolizes dawn, fresh energy, and openness to new beginnings.",
+        image: "mudras/ushas.jpg"
+      },
+      {
+        title: "Uttarabodhi Mudra",
+        sanskrit: "Enlightenment",
+        copy: "Uttarabodhi Mudra connects the practitioner to higher wisdom and positive energy.",
+        image: "mudras/uttarabodhi.jpg"
+      },
+      {
+        title: "Vajra Mudra",
+        sanskrit: "Thunderbolt",
+        copy: "Vajra Mudra symbolizes indestructible power, circulation, and the transformation of ignorance into wisdom.",
+        image: "mudras/Power.jpg"
+      },
+      {
+        title: "Vajrapradama Mudra",
+        sanskrit: "Trust",
+        copy: "Vajrapradama Mudra cultivates unshakeable trust, confidence, and devotion from the heart.",
+        image: "mudras/vajrapradama.jpg"
+      },
+      {
+        title: "Varun Mudra",
+        sanskrit: "Water",
+        copy: "Varun Mudra balances the water element and supports hydration, softness, and communication.",
+        image: "mudras/varun.jpg"
+      },
+      {
+        title: "Vayu Mudra",
+        sanskrit: "Air",
+        copy: "Vayu Mudra calms excess air energy and supports ease when anxiety or bloating is present.",
+        image: "mudras/vayu.jpg"
+      },
+      {
+        title: "Yoni Mudra",
+        sanskrit: "Source",
+        copy: "Yoni Mudra symbolizes withdrawal from outer distraction and reconnection with the primal creative source.",
+        image: "mudras/yoni.jpg"
+      }
+    ];
+
+    const poses = [
+      {
+        title: "Accomplished Pose",
+        sanskrit: "Siddhasana",
+        copy: "Accomplished Pose supports postural alignment, breath awareness, and steady presence.",
+        image: "asanas/accomplished-pose-siddhasana.jpg"
+      },
+      {
+        title: "Knee To Chest",
+        sanskrit: "Apanasana",
+        copy: "Knee To Chest supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/knee to chest apanasana.jpg"
+      },
+      {
+        title: "Awkward Pose",
+        sanskrit: "Utkatasana",
+        copy: "Awkward Pose supports grounded strength, stamina, and confident stability.",
+        image: "asanas/awkward-pose-utkatasana.jpg"
+      },
+      {
+        title: "Baby Cobra Pose",
+        sanskrit: "Ardha Bhujangasana",
+        copy: "Baby Cobra Pose supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/baby-cobra-pose-ardha-bhujangasana.jpg"
+      },
+      {
+        title: "Balancing Table Pose",
+        sanskrit: "Dandayamana Bharmanasana",
+        copy: "Balancing Table Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/balancing-table-pose-dandayamana-bharmanasana.jpg"
+      },
+      {
+        title: "Beam Pose",
+        sanskrit: "Yoga Pose",
+        copy: "Beam Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/beam-pose.jpg"
+      },
+      {
+        title: "Bharadvajas Twist",
+        sanskrit: "Bharadvajasana",
+        copy: "Bharadvajas Twist supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/bharadvajas-twist-bharadvajasana.jpg"
+      },
+      {
+        title: "Boat Pose",
+        sanskrit: "Navasana",
+        copy: "Boat Pose supports core strength, arm support, and steady focus.",
+        image: "asanas/boat-pose-navasana.jpg"
+      },
+      {
+        title: "Bound Angle Pose",
+        sanskrit: "Baddha Konasana",
+        copy: "Bound Angle Pose supports hip opening, grounded ease, and lower-body spaciousness.",
+        image: "asanas/bound-angle-pose-baddha-konasana.jpg"
+      },
+      {
+        title: "Bridge Pose",
+        sanskrit: "Setu Bandhasana",
+        copy: "Bridge Pose supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/bridge-pose-setu-bandhasana.jpg"
+      },
+      {
+        title: "Butterfly Pose",
+        sanskrit: "Baddha Konasana",
+        copy: "Butterfly Pose supports hip opening, grounded ease, and lower-body spaciousness.",
+        image: "asanas/butterfly-pose-baddha-konasana.jpg"
+      },
+      {
+        title: "Camel Pose",
+        sanskrit: "Ustrasana",
+        copy: "Camel Pose supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/camel-pose-ustrasana.jpg"
+      },
+      {
+        title: "Cat Cow Pose",
+        sanskrit: "Marjaryasana Bitilasana",
+        copy: "Cat Cow Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/cat-cow-pose-marjaryasana-bitilasana.jpg"
+      },
+      {
+        title: "Cat Pulling Its Tail Pose",
+        sanskrit: "Yoga Pose",
+        copy: "Cat Pulling Its Tail Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/cat-pulling-its-tail-pose.jpg"
+      },
+      {
+        title: "Caterpillar Pose",
+        sanskrit: "Paschimottanasana",
+        copy: "Caterpillar Pose supports hamstring length, back-body release, and surrender.",
+        image: "asanas/caterpillar-pose-paschimottanasana.jpg"
+      },
+      {
+        title: "Chair Pose",
+        sanskrit: "Utkatasana",
+        copy: "Chair Pose supports grounded strength, stamina, and confident stability.",
+        image: "asanas/chair-pose-utkatasana.jpg"
+      },
+      {
+        title: "Childs Pose",
+        sanskrit: "Balasana",
+        copy: "Childs Pose supports rest, release, and quiet inward attention.",
+        image: "asanas/childs-pose-balasana.jpg"
+      },
+      {
+        title: "Cobra Pose",
+        sanskrit: "Bhujangasana",
+        copy: "Cobra Pose supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/cobra-pose-bhujangasana.jpg"
+      },
+      {
+        title: "Corpse Pose",
+        sanskrit: "Savasana",
+        copy: "Corpse Pose supports deep rest, nervous system settling, and integration.",
+        image: "asanas/corpse-pose-savasana.jpg"
+      },
+      {
+        title: "Cow Face Pose",
+        sanskrit: "Gomukhasana",
+        copy: "Cow Face Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/cow-face-pose-gomukhasana.jpg"
+      },
+      {
+        title: "Cow Pose",
+        sanskrit: "Bitilasana",
+        copy: "Cow Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/cow-pose-bitilasana.jpg"
+      },
+      {
+        title: "Crescent Lunge",
+        sanskrit: "Ashta Chandrasana",
+        copy: "Crescent Lunge supports grounded strength, stamina, and confident stability.",
+        image: "asanas/crescent-lunge-ashta-chandrasana.jpg"
+      },
+      {
+        title: "Crocodile Pose",
+        sanskrit: "Makarasana",
+        copy: "Crocodile Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/crocodile-pose-makarasana.jpg"
+      },
+      {
+        title: "Cycling Pose",
+        sanskrit: "Pada Sanchalanasana",
+        copy: "Cycling Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/cycling-pose-pada-sanchalanasana.jpg"
+      },
+      {
+        title: "Dancer Pose",
+        sanskrit: "Natarajasana",
+        copy: "Dancer Pose supports balance, coordination, and steady concentration.",
+        image: "asanas/dancer-pose-natarajasana.jpg"
+      },
+      {
+        title: "Dangling Pose Uttanasana Variation",
+        sanskrit: "Yoga Pose",
+        copy: "Dangling Pose Uttanasana Variation supports hamstring length, back-body release, and surrender.",
+        image: "asanas/dangling-pose-uttanasana-variation.jpg"
+      },
+      {
+        title: "Deer Pose",
+        sanskrit: "Yoga Pose",
+        copy: "Deer Pose supports hip opening, grounded ease, and lower-body spaciousness.",
+        image: "asanas/deer-pose.jpg"
+      },
+      {
+        title: "Dolphin Plank Pose",
+        sanskrit: "Makara Adho Mukha Svanasana",
+        copy: "Dolphin Plank Pose supports core strength, arm support, and steady focus.",
+        image: "asanas/dolphin-plank-pose-makara-adho-mukha-svanasana.jpg"
+      },
+      {
+        title: "Downward Facing Dog",
+        sanskrit: "Adho Mukha Svanasana",
+        copy: "Downward Facing Dog supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/downward-facing-dog-adho-mukha-svanasana.jpg"
+      },
+      {
+        title: "Dragon Pose",
+        sanskrit: "Yoga Pose",
+        copy: "Dragon Pose supports hip opening, grounded ease, and lower-body spaciousness.",
+        image: "asanas/dragon-pose.jpg"
+      },
+      {
+        title: "Dragonfly Pose Upavistha Konasana Variation",
+        sanskrit: "Yoga Pose",
+        copy: "Dragonfly Pose Upavistha Konasana Variation supports hip opening, grounded ease, and lower-body spaciousness.",
+        image: "asanas/dragonfly-pose-upavistha-konasana-variation.jpg"
+      },
+      {
+        title: "Eagle Pose",
+        sanskrit: "Garudasana",
+        copy: "Eagle Pose supports balance, coordination, and steady concentration.",
+        image: "asanas/eagle-pose-garudasana.jpg"
+      },
+      {
+        title: "Easy Pose",
+        sanskrit: "Sukhasana",
+        copy: "Easy Pose supports postural alignment, breath awareness, and steady presence.",
+        image: "asanas/easy-pose-sukhasana.jpg"
+      },
+      {
+        title: "Extended Hand To Big Toe",
+        sanskrit: "Utthita Hasta Padangusthasana",
+        copy: "Extended Hand To Big Toe supports hamstring length, back-body release, and surrender.",
+        image: "asanas/extended-hand-to-big-toe-utthita-hasta-padangusthasana.jpg"
+      },
+      {
+        title: "Extended Puppy Pose",
+        sanskrit: "Uttana Shishosana",
+        copy: "Extended Puppy Pose supports shoulder, neck, and side-body release.",
+        image: "asanas/extended-puppy-pose-uttana-shishosana.jpg"
+      },
+      {
+        title: "Extended Side Angle Pose",
+        sanskrit: "Utthita Parsvakonasana",
+        copy: "Extended Side Angle Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/extended-side-angle-pose-utthita-parsvakonasana.jpg"
+      },
+      {
+        title: "Extended Triangle Pose",
+        sanskrit: "Utthita Trikonasana",
+        copy: "Extended Triangle Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/extended-triangle-pose-utthita-trikonasana.jpg"
+      },
+      {
+        title: "Fire Log Pose",
+        sanskrit: "Agnistambhasana",
+        copy: "Fire Log Pose supports hip opening, grounded ease, and lower-body spaciousness.",
+        image: "asanas/fire-log-pose-agnistambhasana.jpg"
+      },
+      {
+        title: "Fish Pose",
+        sanskrit: "Matsyasana",
+        copy: "Fish Pose supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/fish-pose-matsyasana.jpg"
+      },
+      {
+        title: "Five Pointed Star Pose",
+        sanskrit: "Utthita Tadasana",
+        copy: "Five Pointed Star Pose supports postural alignment, breath awareness, and steady presence.",
+        image: "asanas/five-pointed-star-pose-utthita-tadasana.jpg"
+      },
+      {
+        title: "Forearm Plank Pose",
+        sanskrit: "Yoga Pose",
+        copy: "Forearm Plank Pose supports core strength, arm support, and steady focus.",
+        image: "asanas/forearm-plank-pose.jpg"
+      },
+      {
+        title: "Four Limbed Staff Pose Chaturanga",
+        sanskrit: "Dandasana",
+        copy: "Four Limbed Staff Pose Chaturanga supports core strength, arm support, and steady focus.",
+        image: "asanas/four-limbed-staff-pose-chaturanga-dandasana.jpg"
+      },
+      {
+        title: "Full Locust Pose",
+        sanskrit: "Poorna Salabhasana",
+        copy: "Full Locust Pose supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/full-locust-pose-poorna-salabhasana.jpg"
+      },
+      {
+        title: "Garland Pose",
+        sanskrit: "Malasana",
+        copy: "Garland Pose supports hip opening, grounded ease, and lower-body spaciousness.",
+        image: "asanas/garland-pose-malasana.jpg"
+      },
+      {
+        title: "Gate Pose",
+        sanskrit: "Parighasana",
+        copy: "Gate Pose supports shoulder, neck, and side-body release.",
+        image: "asanas/gate-pose-parighasana.jpg"
+      },
+      {
+        title: "Goddess Pose Utkata",
+        sanskrit: "Konasana",
+        copy: "Goddess Pose Utkata supports grounded strength, stamina, and confident stability.",
+        image: "asanas/goddess-pose-utkata-konasana.jpg"
+      },
+      {
+        title: "Gorilla Pose",
+        sanskrit: "Padahastasana",
+        copy: "Gorilla Pose supports hamstring length, back-body release, and surrender.",
+        image: "asanas/gorilla-pose-padahastasana.jpg"
+      },
+      {
+        title: "Half Boat Pose",
+        sanskrit: "Ardha Navasana",
+        copy: "Half Boat Pose supports core strength, arm support, and steady focus.",
+        image: "asanas/half-boat-pose-ardha-navasana.jpg"
+      },
+      {
+        title: "Half Butterfly Pose",
+        sanskrit: "Ardha Baddha Konasana",
+        copy: "Half Butterfly Pose supports hip opening, grounded ease, and lower-body spaciousness.",
+        image: "asanas/half-butterfly-pose-ardha-baddha-konasana.jpg"
+      },
+      {
+        title: "Half Frog Pose",
+        sanskrit: "Ardha Bhekasana",
+        copy: "Half Frog Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/half-frog-pose-ardha-bhekasana.jpg"
+      },
+      {
+        title: "Half Lord Of The Fishes Pose",
+        sanskrit: "Ardha Matsyendrasana",
+        copy: "Half Lord Of The Fishes Pose supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/half-lord-of-the-fishes-pose-ardha-matsyendrasana.jpg"
+      },
+      {
+        title: "Half Moon Pose",
+        sanskrit: "Ardha Chandrasana",
+        copy: "Half Moon Pose supports balance, coordination, and steady concentration.",
+        image: "asanas/half-moon-pose-ardha-chandrasana.jpg"
+      },
+      {
+        title: "Half Splits Pose",
+        sanskrit: "Ardha Hanumanasana",
+        copy: "Half Splits Pose supports hamstring length, back-body release, and surrender.",
+        image: "asanas/half-splits-pose-ardha-hanumanasana.jpg"
+      },
+      {
+        title: "Half Standing Forward Bend",
+        sanskrit: "Ardha Uttanasana",
+        copy: "Half Standing Forward Bend supports hamstring length, back-body release, and surrender.",
+        image: "asanas/half-standing-forward-bend-ardha-uttanasana.jpg"
+      },
+      {
+        title: "Happy Baby Pose Ananda",
+        sanskrit: "Balasana",
+        copy: "Happy Baby Pose Ananda supports hip opening, grounded ease, and lower-body spaciousness.",
+        image: "asanas/happy-baby-pose-ananda-balasana.jpg"
+      },
+      {
+        title: "Head To Knee Forward Bend",
+        sanskrit: "Janu Sirsasana",
+        copy: "Head To Knee Forward Bend supports hamstring length, back-body release, and surrender.",
+        image: "asanas/head-to-knee-forward-bend-janu-sirsasana.jpg"
+      },
+      {
+        title: "Hero Pose",
+        sanskrit: "Virasana",
+        copy: "Hero Pose supports postural alignment, breath awareness, and steady presence.",
+        image: "asanas/hero-pose-virasana.jpg"
+      },
+      {
+        title: "Heron Pose",
+        sanskrit: "Krounchasana",
+        copy: "Heron Pose supports postural alignment, breath awareness, and steady presence.",
+        image: "asanas/heron-pose-krounchasana.jpg"
+      },
+      {
+        title: "High Lunge Pose",
+        sanskrit: "Ashta Chandrasana",
+        copy: "High Lunge Pose supports grounded strength, stamina, and confident stability.",
+        image: "asanas/high-lunge-pose-ashta-chandrasana.jpg"
+      },
+      {
+        title: "High Lunge Variation",
+        sanskrit: "Ashta Chandrasana",
+        copy: "High Lunge Variation supports grounded strength, stamina, and confident stability.",
+        image: "asanas/high-lunge-variation-ashta-chandrasana.jpg"
+      },
+      {
+        title: "Humble Warrior Pose",
+        sanskrit: "Baddha Virabhadrasana",
+        copy: "Humble Warrior Pose supports grounded strength, stamina, and confident stability.",
+        image: "asanas/humble-warrior-pose-baddha-virabhadrasana.jpg"
+      },
+      {
+        title: "Legs Up The Wall Pose",
+        sanskrit: "Viparita Karani",
+        copy: "Legs Up The Wall Pose supports rest, release, and quiet inward attention.",
+        image: "asanas/legs-up-the-wall-pose-viparita-karani.jpg"
+      },
+      {
+        title: "Lion Pose",
+        sanskrit: "Simhasana",
+        copy: "Lion Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/lion-pose-simhasana.jpg"
+      },
+      {
+        title: "Lizard Pose",
+        sanskrit: "Utthan Pristhasana",
+        copy: "Lizard Pose supports hip opening, grounded ease, and lower-body spaciousness.",
+        image: "asanas/lizard-pose-utthan-pristhasana.jpg"
+      },
+      {
+        title: "Locust Pose",
+        sanskrit: "Salabhasana",
+        copy: "Locust Pose supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/locust-pose-salabhasana.jpg"
+      },
+      {
+        title: "Low Lunge Pose Anjaneyasana",
+        sanskrit: "Yoga Pose",
+        copy: "Low Lunge Pose Anjaneyasana supports grounded strength, stamina, and confident stability.",
+        image: "asanas/low-lunge-pose-anjaneyasana.jpg"
+      },
+      {
+        title: "Lunge Pose",
+        sanskrit: "Yoga Pose",
+        copy: "Lunge Pose supports grounded strength, stamina, and confident stability.",
+        image: "asanas/lunge-pose.jpg"
+      },
+      {
+        title: "Marichis Pose",
+        sanskrit: "Marichyasana",
+        copy: "Marichis Pose supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/marichis-pose-marichyasana.jpg"
+      },
+      {
+        title: "Mountain Pose",
+        sanskrit: "Tadasana",
+        copy: "Mountain Pose supports postural alignment, breath awareness, and steady presence.",
+        image: "asanas/mountain-pose-tadasana.jpg"
+      },
+      {
+        title: "One Legged Bridge Pose",
+        sanskrit: "Eka Pada Setu Bandhasana",
+        copy: "One Legged Bridge Pose supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/one-legged-bridge-pose-eka-pada-setu-bandhasana.jpg"
+      },
+      {
+        title: "One Legged Mountain Pose",
+        sanskrit: "Eka Pada Tadasana",
+        copy: "One Legged Mountain Pose supports postural alignment, breath awareness, and steady presence.",
+        image: "asanas/one-legged-mountain-pose-eka-pada-tadasana.jpg"
+      },
+      {
+        title: "One Legged Plank Pose",
+        sanskrit: "Eka Pada Phalakasana",
+        copy: "One Legged Plank Pose supports core strength, arm support, and steady focus.",
+        image: "asanas/one-legged-plank-pose-eka-pada-phalakasana.jpg"
+      },
+      {
+        title: "One Legged Seated Forward Bend",
+        sanskrit: "Janu Sirsasana",
+        copy: "One Legged Seated Forward Bend supports hamstring length, back-body release, and surrender.",
+        image: "asanas/one-legged-seated-forward-bend-janu-sirsasana.jpg"
+      },
+      {
+        title: "One Legged Wheel Pose",
+        sanskrit: "Eka Pada Urdhva Dhanurasana",
+        copy: "One Legged Wheel Pose supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/one-legged-wheel-pose-eka-pada-urdhva-dhanurasana.jpg"
+      },
+      {
+        title: "Palm Tree Pose Urdhva Hastasana",
+        sanskrit: "Yoga Pose",
+        copy: "Palm Tree Pose Urdhva Hastasana supports balance, coordination, and steady concentration.",
+        image: "asanas/palm-tree-pose-urdhva-hastasana.jpg"
+      },
+      {
+        title: "Pigeon Pose",
+        sanskrit: "Eka Pada Rajakapotasana",
+        copy: "Pigeon Pose supports hip opening, grounded ease, and lower-body spaciousness.",
+        image: "asanas/pigeon-pose-eka-pada-rajakapotasana.jpg"
+      },
+      {
+        title: "Plank Pose",
+        sanskrit: "Phalakasana",
+        copy: "Plank Pose supports core strength, arm support, and steady focus.",
+        image: "asanas/plank-pose-phalakasana.jpg"
+      },
+      {
+        title: "Plow Pose",
+        sanskrit: "Halasana",
+        copy: "Plow Pose supports inversion awareness, circulation, and calm focus.",
+        image: "asanas/plow-pose-halasana.jpg"
+      },
+      {
+        title: "Pyramid Pose",
+        sanskrit: "Parsvottanasana",
+        copy: "Pyramid Pose supports hamstring length, back-body release, and surrender.",
+        image: "asanas/pyramid-pose-parsvottanasana.jpg"
+      },
+      {
+        title: "Rabbit Pose",
+        sanskrit: "Sasangasana",
+        copy: "Rabbit Pose supports rest, release, and quiet inward attention.",
+        image: "asanas/rabbit-pose-sasangasana.jpg"
+      },
+      {
+        title: "Reclined Bound Angle Pose",
+        sanskrit: "Supta Baddha Konasana",
+        copy: "Reclined Bound Angle Pose supports rest, release, and quiet inward attention.",
+        image: "asanas/reclined-bound-angle-pose-supta-baddha-konasana.jpg"
+      },
+      {
+        title: "Reclined Spinal Twist",
+        sanskrit: "Supta Matsyendrasana",
+        copy: "Reclined Spinal Twist supports rest, release, and quiet inward attention.",
+        image: "asanas/reclined-spinal-twist-supta-matsyendrasana.jpg"
+      },
+      {
+        title: "Reclining Hand To Big Toe Pose",
+        sanskrit: "Supta Padangusthasana",
+        copy: "Reclining Hand To Big Toe Pose supports rest, release, and quiet inward attention.",
+        image: "asanas/reclining-hand-to-big-toe-pose-supta-padangusthasana.jpg"
+      },
+      {
+        title: "Reclining Hero Pose",
+        sanskrit: "Supta Virasana",
+        copy: "Reclining Hero Pose supports rest, release, and quiet inward attention.",
+        image: "asanas/reclining-hero-pose-supta-virasana.jpg"
+      },
+      {
+        title: "Reclining Staff Pose",
+        sanskrit: "Yoga Pose",
+        copy: "Reclining Staff Pose supports rest, release, and quiet inward attention.",
+        image: "asanas/reclining-staff-pose.jpg"
+      },
+      {
+        title: "Reverse Table Top Pose",
+        sanskrit: "Ardha Purvottanasana",
+        copy: "Reverse Table Top Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/reverse-table-top-pose-ardha-purvottanasana.jpg"
+      },
+      {
+        title: "Reverse Warrior Pose",
+        sanskrit: "Viparita Virabhadrasana",
+        copy: "Reverse Warrior Pose supports grounded strength, stamina, and confident stability.",
+        image: "asanas/reverse-warrior-pose-viparita-virabhadrasana.jpg"
+      },
+      {
+        title: "Revolved Bound Angle Pose",
+        sanskrit: "Parivrtta Baddha Konasana",
+        copy: "Revolved Bound Angle Pose supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/revolved-bound-angle-pose-parivrtta-baddha-konasana.jpg"
+      },
+      {
+        title: "Revolved Chair Pose",
+        sanskrit: "Parivrtta Utkatasana",
+        copy: "Revolved Chair Pose supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/revolved-chair-pose-parivrtta-utkatasana.jpg"
+      },
+      {
+        title: "Revolved Half Moon Pose",
+        sanskrit: "Parivrtta Ardha Chandrasana",
+        copy: "Revolved Half Moon Pose supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/revolved-half-moon-pose-parivrtta-ardha-chandrasana.jpg"
+      },
+      {
+        title: "Revolved Hand To Big Toe Pose",
+        sanskrit: "Parivrtta Hasta Padangusthasana",
+        copy: "Revolved Hand To Big Toe Pose supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/revolved-hand-to-big-toe-pose-parivrtta-hasta-padangusthasana.jpg"
+      },
+      {
+        title: "Revolved Head To Knee Pose",
+        sanskrit: "Parivrtta Janu Sirsasana",
+        copy: "Revolved Head To Knee Pose supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/revolved-head-to-knee-pose-parivrtta-janu-sirsasana.jpg"
+      },
+      {
+        title: "Revolved Lunge Pose",
+        sanskrit: "Parivrtta Parsvakonasana",
+        copy: "Revolved Lunge Pose supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/revolved-lunge-pose-parivrtta-parsvakonasana.jpg"
+      },
+      {
+        title: "Revolved Triangle Pose",
+        sanskrit: "Parivrtta Trikonasana",
+        copy: "Revolved Triangle Pose supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/revolved-triangle-pose-parivrtta-trikonasana.jpg"
+      },
+      {
+        title: "Revolved Wide Legged Forward Bend",
+        sanskrit: "Parivrtta Prasarita Padottanasana",
+        copy: "Revolved Wide Legged Forward Bend supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/revolved-wide-legged-forward-bend-parivrtta-prasarita-padottanasana.jpg"
+      },
+      {
+        title: "Saddle Pose Supta Virasana Variation",
+        sanskrit: "Yoga Pose",
+        copy: "Saddle Pose Supta Virasana Variation supports rest, release, and quiet inward attention.",
+        image: "asanas/saddle-pose-supta-virasana-variation.jpg"
+      },
+      {
+        title: "Scale Pose",
+        sanskrit: "Tolasana",
+        copy: "Scale Pose supports core strength, arm support, and steady focus.",
+        image: "asanas/scale-pose-tolasana.jpg"
+      },
+      {
+        title: "Seated Forward Bend",
+        sanskrit: "Paschimottanasana",
+        copy: "Seated Forward Bend supports hamstring length, back-body release, and surrender.",
+        image: "asanas/seated-forward-bend-paschimottanasana.jpg"
+      },
+      {
+        title: "Seated Spinal Twist",
+        sanskrit: "Ardha Matsyendrasana",
+        copy: "Seated Spinal Twist supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/seated-spinal-twist-ardha-matsyendrasana.jpg"
+      },
+      {
+        title: "Seated Twist",
+        sanskrit: "Ardha Matsyendrasana",
+        copy: "Seated Twist supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/seated-twist-ardha-matsyendrasana.jpg"
+      },
+      {
+        title: "Shoulder Stand Pose",
+        sanskrit: "Sarvangasana",
+        copy: "Shoulder Stand Pose supports shoulder, neck, and side-body release.",
+        image: "asanas/shoulder-stand-pose-sarvangasana.jpg"
+      },
+      {
+        title: "Side Bend",
+        sanskrit: "Bananasana",
+        copy: "Side Bend supports shoulder, neck, and side-body release.",
+        image: "asanas/side-bend-bananasana.jpg"
+      },
+      {
+        title: "Side Lunge Pose",
+        sanskrit: "Skandasana",
+        copy: "Side Lunge Pose supports grounded strength, stamina, and confident stability.",
+        image: "asanas/side-lunge-pose-skandasana.jpg"
+      },
+      {
+        title: "Side Plank Pose",
+        sanskrit: "Vasisthasana",
+        copy: "Side Plank Pose supports core strength, arm support, and steady focus.",
+        image: "asanas/side-plank-pose-vasisthasana.jpg"
+      },
+      {
+        title: "Side Reclining Leg Lift",
+        sanskrit: "Anantasana",
+        copy: "Side Reclining Leg Lift supports rest, release, and quiet inward attention.",
+        image: "asanas/side-reclining-leg-lift-anantasana.jpg"
+      },
+      {
+        title: "Simple Seated Twist",
+        sanskrit: "Yoga Pose",
+        copy: "Simple Seated Twist supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/simple-seated-twist.jpg"
+      },
+      {
+        title: "Sleeping Swan Pose",
+        sanskrit: "Yoga Pose",
+        copy: "Sleeping Swan Pose supports rest, release, and quiet inward attention.",
+        image: "asanas/sleeping-swan-pose.jpg"
+      },
+      {
+        title: "Sleeping Vishnu Pose",
+        sanskrit: "Anantasana",
+        copy: "Sleeping Vishnu Pose supports rest, release, and quiet inward attention.",
+        image: "asanas/sleeping-vishnu-pose-anantasana.jpg"
+      },
+      {
+        title: "Snail Pose Halasana Variation",
+        sanskrit: "Yoga Pose",
+        copy: "Snail Pose Halasana Variation supports inversion awareness, circulation, and calm focus.",
+        image: "asanas/snail-pose-halasana-variation.jpg"
+      },
+      {
+        title: "Sphinx Pose",
+        sanskrit: "Salamba Bhujangasana",
+        copy: "Sphinx Pose supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/sphinx-pose-salamba-bhujangasana.jpg"
+      },
+      {
+        title: "Staff Pose",
+        sanskrit: "Dandasana",
+        copy: "Staff Pose supports core strength, arm support, and steady focus.",
+        image: "asanas/staff-pose-dandasana.jpg"
+      },
+      {
+        title: "Standing Big Toe Pose",
+        sanskrit: "Padangusthasana",
+        copy: "Standing Big Toe Pose supports hamstring length, back-body release, and surrender.",
+        image: "asanas/standing-big-toe-pose-padangusthasana.jpg"
+      },
+      {
+        title: "Standing Forward Bend",
+        sanskrit: "Uttanasana",
+        copy: "Standing Forward Bend supports hamstring length, back-body release, and surrender.",
+        image: "asanas/standing-forward-bend-uttanasana.jpg"
+      },
+      {
+        title: "Standing Pigeon Pose Eka Pada Galavasana Prep",
+        sanskrit: "Yoga Pose",
+        copy: "Standing Pigeon Pose Eka Pada Galavasana Prep supports balance, coordination, and steady concentration.",
+        image: "asanas/standing-pigeon-pose-eka-pada-galavasana-prep.jpg"
+      },
+      {
+        title: "Standing Side Bend Pose Ardha Kati",
+        sanskrit: "Chakrasana",
+        copy: "Standing Side Bend Pose Ardha Kati supports shoulder, neck, and side-body release.",
+        image: "asanas/standing-side-bend-pose-ardha-kati-chakrasana.jpg"
+      },
+      {
+        title: "Standing Split Pose Urdhva Prasarita Eka Padasana",
+        sanskrit: "Yoga Pose",
+        copy: "Standing Split Pose Urdhva Prasarita Eka Padasana supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/standing-split-pose-urdhva-prasarita-eka-padasana.jpg"
+      },
+      {
+        title: "Sugarcane Pose Ardha Chandra Chapasana",
+        sanskrit: "Yoga Pose",
+        copy: "Sugarcane Pose Ardha Chandra Chapasana supports balance, coordination, and steady concentration.",
+        image: "asanas/sugarcane-pose-ardha-chandra-chapasana.jpg"
+      },
+      {
+        title: "Superman Pose Viparita Shalabhasana",
+        sanskrit: "Yoga Pose",
+        copy: "Superman Pose Viparita Shalabhasana supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/superman-pose-viparita-shalabhasana.jpg"
+      },
+      {
+        title: "Swan Pose",
+        sanskrit: "Yoga Pose",
+        copy: "Swan Pose supports hip opening, grounded ease, and lower-body spaciousness.",
+        image: "asanas/swan-pose.jpg"
+      },
+      {
+        title: "Table Top Pose",
+        sanskrit: "Bharmanasana",
+        copy: "Table Top Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/table-top-pose-bharmanasana.jpg"
+      },
+      {
+        title: "Thread The Needle Pose",
+        sanskrit: "Urdhva Mukha Pasasana",
+        copy: "Thread The Needle Pose supports shoulder, neck, and side-body release.",
+        image: "asanas/thread-the-needle-pose-urdhva-mukha-pasasana.jpg"
+      },
+      {
+        title: "Three Legged Downward Dog",
+        sanskrit: "Eka Pada Adho Mukha Svanasana",
+        copy: "Three Legged Downward Dog supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/three-legged-downward-dog-eka-pada-adho-mukha-svanasana.jpg"
+      },
+      {
+        title: "Three Legged Side Plank",
+        sanskrit: "Yoga Pose",
+        copy: "Three Legged Side Plank supports core strength, arm support, and steady focus.",
+        image: "asanas/three-legged-side-plank.jpg"
+      },
+      {
+        title: "Thunderbolt Pose",
+        sanskrit: "Vajrasana",
+        copy: "Thunderbolt Pose supports postural alignment, breath awareness, and steady presence.",
+        image: "asanas/thunderbolt-pose-vajrasana.jpg"
+      },
+      {
+        title: "Tiger Pose",
+        sanskrit: "Vyaghrasana",
+        copy: "Tiger Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/tiger-pose-vyaghrasana.jpg"
+      },
+      {
+        title: "Tree Pose",
+        sanskrit: "Vrksasana",
+        copy: "Tree Pose supports balance, coordination, and steady concentration.",
+        image: "asanas/tree-pose-vrksasana.jpg"
+      },
+      {
+        title: "Triangle Pose",
+        sanskrit: "Trikonasana",
+        copy: "Triangle Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/triangle-pose-trikonasana.jpg"
+      },
+      {
+        title: "Twisted Roots Pose",
+        sanskrit: "Yoga Pose",
+        copy: "Twisted Roots Pose supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/twisted-roots-pose.jpg"
+      },
+      {
+        title: "Universal Spinal Twist",
+        sanskrit: "Jathara Parivartanasana",
+        copy: "Universal Spinal Twist supports spinal mobility, digestion, and a refreshed center.",
+        image: "asanas/universal-spinal-twist-jathara-parivartanasana.jpg"
+      },
+      {
+        title: "Upward Extended Feet Pose Urdhva Prasarita Padasana",
+        sanskrit: "Yoga Pose",
+        copy: "Upward Extended Feet Pose Urdhva Prasarita Padasana supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/upward-extended-feet-pose-urdhva-prasarita-padasana.jpg"
+      },
+      {
+        title: "Upward Facing Dog",
+        sanskrit: "Urdhva Mukha Svanasana",
+        copy: "Upward Facing Dog supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/upward-facing-dog-urdhva-mukha-svanasana.jpg"
+      },
+      {
+        title: "Upward Facing Seated Forward Bend",
+        sanskrit: "Urdhva Mukha Paschimottanasana",
+        copy: "Upward Facing Seated Forward Bend supports hamstring length, back-body release, and surrender.",
+        image: "asanas/upward-facing-seated-forward-bend-urdhva-mukha-paschimottanasana.jpg"
+      },
+      {
+        title: "Upward Plank Pose",
+        sanskrit: "Purvottanasana",
+        copy: "Upward Plank Pose supports core strength, arm support, and steady focus.",
+        image: "asanas/upward-plank-pose-purvottanasana.jpg"
+      },
+      {
+        title: "Upward Salute Pose Urdhva Hastasana",
+        sanskrit: "Yoga Pose",
+        copy: "Upward Salute Pose Urdhva Hastasana supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/upward-salute-pose-urdhva-hastasana.jpg"
+      },
+      {
+        title: "Wall Squat Exercise",
+        sanskrit: "Yoga Pose",
+        copy: "Wall Squat Exercise supports grounded strength, stamina, and confident stability.",
+        image: "asanas/wall-squat-exercise.jpg"
+      },
+      {
+        title: "Warrior I Pose Virabhadrasana I",
+        sanskrit: "Yoga Pose",
+        copy: "Warrior I Pose Virabhadrasana I supports grounded strength, stamina, and confident stability.",
+        image: "asanas/warrior-i-pose-virabhadrasana-i.jpg"
+      },
+      {
+        title: "Warrior II Pose Virabhadrasana II",
+        sanskrit: "Yoga Pose",
+        copy: "Warrior II Pose Virabhadrasana II supports grounded strength, stamina, and confident stability.",
+        image: "asanas/warrior-ii-pose-virabhadrasana-ii.jpg"
+      },
+      {
+        title: "Warrior III Pose Virabhadrasana III",
+        sanskrit: "Yoga Pose",
+        copy: "Warrior III Pose Virabhadrasana III supports grounded strength, stamina, and confident stability.",
+        image: "asanas/warrior-iii-pose-virabhadrasana-iii.jpg"
+      },
+      {
+        title: "Wheel Pose",
+        sanskrit: "Chakrasana",
+        copy: "Wheel Pose supports front-body openness, spinal extension, and uplifted energy.",
+        image: "asanas/wheel-pose-chakrasana.jpg"
+      },
+      {
+        title: "Wide Angle Seated Forward Bend",
+        sanskrit: "Upavistha Konasana",
+        copy: "Wide Angle Seated Forward Bend supports hamstring length, back-body release, and surrender.",
+        image: "asanas/wide-angle-seated-forward-bend-upavistha-konasana.jpg"
+      },
+      {
+        title: "Wide Legged Forward Bend",
+        sanskrit: "Prasarita Padottanasana",
+        copy: "Wide Legged Forward Bend supports hamstring length, back-body release, and surrender.",
+        image: "asanas/wide-legged-forward-bend-prasarita-padottanasana.jpg"
+      },
+      {
+        title: "Wind Relieving Pose",
+        sanskrit: "Pavanamuktasana",
+        copy: "Wind Relieving Pose supports mobility, mindful strength, and balanced body awareness.",
+        image: "asanas/wind-relieving-pose-pavanamuktasana.jpg"
+      }
+    ];
+
+    const danceTracks = [
+      { title: "Live Ecstatic Dance - Janax Pacha at Agape Zoe Festival", id: "0_R6MR9ZQDo" },
+      { title: "Ecstatic Dance Music 2021", id: "gLw10hu78Pw" },
+      { title: "Somatic Movement Medicine and Ecstatic Dance", id: "u3yRIZz1WWQ" },
+      { title: "Liquid Sitar Ecstatic Dance", id: "8PWleoocuaw" },
+      { title: "Ecstatic Dance 2024 Dragon Year", id: "Tc3ysU0oEbA" },
+      { title: "Dance of the Moon Ecstatic Dance", id: "9CEnSTruBBg" },
+      { title: "Ecstatic Dance Shamanic Deep House Journey", id: "JQPNqs58vOY" },
+      { title: "Mose - Cacao Dance at Eagles Nest Atitlan", id: "wKI-ngRQJ90" },
+      { title: "Ecstatic Dance - Shamanic Mix", id: "WvPMmLysKJQ" },
+      { title: "Liquid Bloom Cacao Ecstatic Dance Set", id: "pbr9A81FbzM" },
+      { title: "Ecstatic Dance Mix - Move Your Body", id: "Tc2Z1jbDngg" },
+      { title: "Ecstatic Dance Set - Jungle Vibes Mix", id: "vKeNJkV-uss" },
+      { title: "Full Moon Ecstatic Dance Mix", id: "SarpnPmTqq4" },
+      { title: "Live Ecstatic Dance DJ Set", id: "cbQTmg8sFKg" },
+      { title: "Ecstatic Wave Dance Mix", id: "WeL8BrWTkJg" },
+      { title: "Ecstatic Dance and Yoga Music Mix", id: "1wYifx3krEY" },
+      { title: "Ecstatic Dance 2023 Mix 02", id: "trqYl4yFsZ4" },
+      { title: "Cosmic Groove Ecstatic Dance and Shamanic Drumming", id: "2SqHWp7K0Qk" },
+      { title: "Shaman's Spell Ethno Chill Tribal Beats", id: "KqgvGAwGhYo" },
+      { title: "Ecstatic Dance of the Heart", id: "_95NVWCn0uw" }
+    ];
+
+    const byId = (id) => document.getElementById(id);
+    const today = new Date();
+    const daySeed = Math.floor(today.setHours(0, 0, 0, 0) / 86400000);
+
+    function pickDaily(list, count, offset = 0) {
+      return Array.from({ length: count }, (_, index) => list[(daySeed + offset + index * 3) % list.length]);
+    }
+
+    function pickRandom(list, count, excludeItems = []) {
+      const excluded = new Set(excludeItems);
+      const pool = list.filter((item) => !excluded.has(item));
+      const source = pool.length >= count ? pool : list;
+      const shuffled = [...source];
+      for (let index = shuffled.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+      }
+      return shuffled.slice(0, count);
+    }
+
+    const currentPicks = {
+      quotes: pickDaily(quotes, 1),
+      mantras: pickDaily(mantras, 1, 7),
+      mudras: pickDaily(mudras, 3, 1),
+      poses: pickDaily(poses, 3, 2),
+      dance: pickDaily(danceTracks, 1, 5)
+    };
+
+    function renderQuotes(quoteItems = currentPicks.quotes, mantraItems = currentPicks.mantras) {
+      currentPicks.quotes = quoteItems;
+      currentPicks.mantras = mantraItems;
+      const quote = quoteItems[0];
+      const mantra = mantraItems[0];
+      byId("quotes").innerHTML = `
+        <article class="quote-card">
+          <blockquote>&ldquo;${quote.text}&rdquo;</blockquote>
+          <cite>${quote.author}</cite>
+        </article>
+        <article class="quote-card">
+          <p class="mantra"><a href="${youtubeSearchUrl(mantra.text)}" target="_blank" rel="noopener noreferrer">${mantra.text}</a></p>
+          <div class="mantra-note">${mantra.note}</div>
+        </article>
+      `;
+    }
+
+    function youtubeSearchUrl(query) {
+      return `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    }
+
+    function renderPractice(target, items, className) {
+      byId(target).innerHTML = items.map((item) => `
+        <article class="practice-card ${className}">
+          <button class="thumb zoom-trigger" type="button" data-full="${item.image}" data-alt="${item.title}" aria-label="Zoom ${item.title}">
+            <img src="${item.image}" alt="${item.title}" loading="lazy">
+          </button>
+          <div class="practice-text">
+            <h3 class="practice-title">${className === "pose-card" ? `<a href="${youtubeSearchUrl(item.title)}" target="_blank" rel="noopener noreferrer">${item.title}</a>` : item.title}</h3>
+            <div class="sanskrit">${item.sanskrit}</div>
+            <p class="practice-copy">${item.copy}</p>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function renderDanceTrack() {
+      const track = currentPicks.dance[0];
+      const frame = byId("danceFrame");
+      frame.src = `https://www.youtube-nocookie.com/embed/${track.id}?rel=0`;
+      frame.title = track.title;
+    }
+
+    function reroll(section) {
+      if (section === "quotes") {
+        renderQuotes(
+          pickRandom(quotes, 1, currentPicks.quotes),
+          pickRandom(mantras, 1, currentPicks.mantras)
+        );
+      }
+      if (section === "mudras") {
+        currentPicks.mudras = pickRandom(mudras, 3, currentPicks.mudras);
+        renderPractice("mudras", currentPicks.mudras, "mudra");
+      }
+      if (section === "poses") {
+        currentPicks.poses = pickRandom(poses, 3, currentPicks.poses);
+        renderPractice("poses", currentPicks.poses, "pose-card");
+      }
+      if (section === "dance") {
+        currentPicks.dance = pickRandom(danceTracks, 1, currentPicks.dance);
+        renderDanceTrack();
+      }
+    }
+
+    function openZoom(src, alt) {
+      const overlay = byId("zoomOverlay");
+      const image = byId("zoomImage");
+      image.src = src;
+      image.alt = alt;
+      overlay.classList.add("open");
+      overlay.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeZoom() {
+      const overlay = byId("zoomOverlay");
+      overlay.classList.remove("open");
+      overlay.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+
+    function renderDate() {
+      const now = new Date();
+      byId("today").innerHTML = `
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+        ${new Intl.DateTimeFormat(undefined, { weekday: "long", month: "short", day: "numeric" }).format(now)}
+      `;
+    }
+
+    const breath = {
+      active: false,
+      phase: "inhale",
+      remaining: 5,
+      interval: null,
+      audio: null,
+      masterGain: null,
+      sessionStartedAt: 0,
+      sessionDuration: 5 * 60 * 1000,
+      progressFrame: null
+    };
+
+    function audioContext() {
+      if (!breath.audio) {
+        breath.audio = new (window.AudioContext || window.webkitAudioContext)();
+        breath.masterGain = breath.audio.createGain();
+        breath.masterGain.connect(breath.audio.destination);
+        breath.masterGain.gain.setValueAtTime(0.5, breath.audio.currentTime);
+      }
+      return breath.audio;
+    }
+
+    function playHridayamBell(pitch = 600, duration = 3.1) {
+      const ctx = audioContext();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(pitch, now);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.4, now + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      osc.connect(gain);
+      gain.connect(breath.masterGain);
+      osc.start(now);
+      osc.stop(now + duration + 0.1);
+
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = "sine";
+      osc2.frequency.setValueAtTime(pitch * 2.5, now);
+      gain2.gain.setValueAtTime(0, now);
+      gain2.gain.linearRampToValueAtTime(0.1, now + 0.02);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + (duration / 2));
+      osc2.connect(gain2);
+      gain2.connect(breath.masterGain);
+      osc2.start(now);
+      osc2.stop(now + (duration / 2) + 0.1);
+    }
+
+    function updateBreathUi() {
+      const panel = byId("breathing");
+      panel.classList.toggle("inhale", breath.phase === "inhale");
+      panel.classList.toggle("exhale", breath.phase === "exhale");
+      panel.classList.toggle("is-active", breath.active);
+      byId("breathCount").textContent = breath.active ? breath.remaining : "5";
+      byId("breathAction").textContent = breath.active ? breath.phase : "Start";
+      byId("breathToggle").setAttribute("aria-pressed", String(breath.active));
+    }
+
+    function updateSessionProgress() {
+      const elapsed = breath.active ? Date.now() - breath.sessionStartedAt : 0;
+      const progress = Math.min(elapsed / breath.sessionDuration, 1) * 100;
+      byId("breathProgress").style.setProperty("--session-progress", `${progress}%`);
+      if (breath.active && progress < 100) {
+        breath.progressFrame = requestAnimationFrame(updateSessionProgress);
+        return;
+      }
+      if (breath.active && progress >= 100) {
+        stopBreathing();
+      }
+    }
+
+    function nextBreathPhase() {
+      breath.phase = breath.phase === "inhale" ? "exhale" : "inhale";
+      breath.remaining = 5;
+      playHridayamBell(breath.phase === "inhale" ? 528 : 396);
+      updateBreathUi();
+    }
+
+    function startBreathing() {
+      breath.active = true;
+      breath.phase = "inhale";
+      breath.remaining = 5;
+      breath.sessionStartedAt = Date.now();
+      playHridayamBell(528);
+      updateBreathUi();
+      updateSessionProgress();
+      breath.interval = window.setInterval(() => {
+        breath.remaining -= 1;
+        if (breath.remaining <= 0) {
+          nextBreathPhase();
+          return;
+        }
+        updateBreathUi();
+      }, 1000);
+    }
+
+    function stopBreathing() {
+      breath.active = false;
+      window.clearInterval(breath.interval);
+      cancelAnimationFrame(breath.progressFrame);
+      breath.interval = null;
+      breath.progressFrame = null;
+      breath.phase = "exhale";
+      breath.remaining = 5;
+      updateBreathUi();
+      updateSessionProgress();
+    }
+
+    byId("breathToggle").addEventListener("click", async () => {
+      if (breath.audio?.state === "suspended") {
+        await breath.audio.resume();
+      }
+      breath.active ? stopBreathing() : startBreathing();
+    });
+
+    document.addEventListener("click", (event) => {
+      const rerollTrigger = event.target.closest("[data-reroll]");
+      if (rerollTrigger) {
+        reroll(rerollTrigger.dataset.reroll);
+        return;
+      }
+      const trigger = event.target.closest(".zoom-trigger");
+      if (trigger) {
+        openZoom(trigger.dataset.full, trigger.dataset.alt);
+        return;
+      }
+      if (event.target.closest("#zoomOverlay")) {
+        closeZoom();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && byId("zoomOverlay").classList.contains("open")) {
+        closeZoom();
+      }
+    });
+
+    let wakeLock = null;
+
+    async function requestWakeLock() {
+      if (!("wakeLock" in navigator) || document.visibilityState !== "visible") return;
+      try {
+        wakeLock = await navigator.wakeLock.request("screen");
+        wakeLock.addEventListener("release", () => {
+          wakeLock = null;
+        });
+      } catch {
+        wakeLock = null;
+      }
+    }
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible" && !wakeLock) {
+        requestWakeLock();
+      }
+    });
+
+    renderDate();
+    renderQuotes();
+    renderPractice("mudras", currentPicks.mudras, "mudra");
+    renderPractice("poses", currentPicks.poses, "pose-card");
+    renderDanceTrack();
+    updateBreathUi();
+    requestWakeLock();
+  </script>
+</body>
+</html>
