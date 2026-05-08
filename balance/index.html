@@ -701,11 +701,12 @@
           <iframe
             id="danceFrame"
             class="track-frame"
-            src="https://www.youtube-nocookie.com/embed/2OEL4P1Rz04?rel=0"
+            src="https://www.youtube-nocookie.com/embed/2OEL4P1Rz04?rel=0&playsinline=1&enablejsapi=1"
             title="Ecstatic dance track of the day"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerpolicy="strict-origin-when-cross-origin"
             allowfullscreen></iframe>
-          <p class="track-caption">Move intuitievely for 5 minutes to free your body</p>
+          <p class="track-caption">Move intuitively for 5 minutes to free your body</p>
         </div>
         </section>
 
@@ -2085,6 +2086,8 @@
     const byId = (id) => document.getElementById(id);
     const today = new Date();
     const daySeed = Math.floor(today.setHours(0, 0, 0, 0) / 86400000);
+    let dancePlayer = null;
+    let pendingDanceVideoId = null;
 
     function pickDaily(list, count, offset = 0) {
       return Array.from({ length: count }, (_, index) => list[(daySeed + offset + index * 3) % list.length]);
@@ -2149,8 +2152,87 @@
     function renderDanceTrack() {
       const track = currentPicks.dance[0];
       const frame = byId("danceFrame");
-      frame.src = `https://www.youtube-nocookie.com/embed/${track.id}?rel=0`;
+      const params = new URLSearchParams({
+        rel: "0",
+        playsinline: "1",
+        enablejsapi: "1"
+      });
+      if (window.location.origin !== "null") {
+        params.set("origin", window.location.origin);
+      }
       frame.title = track.title;
+      pendingDanceVideoId = track.id;
+      updateDanceMediaSession(track);
+      if (dancePlayer?.loadVideoById) {
+        dancePlayer.loadVideoById(track.id);
+      } else {
+        frame.src = `https://www.youtube-nocookie.com/embed/${track.id}?${params.toString()}`;
+      }
+    }
+
+    function updateDanceMediaSession(track = currentPicks.dance[0]) {
+      if (!("mediaSession" in navigator) || !track) return;
+      if ("MediaMetadata" in window) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: track.title,
+          artist: "Ecstatic Dance Track",
+          album: "Daily Ritual"
+        });
+      }
+      navigator.mediaSession.playbackState = "none";
+    }
+
+    function setDancePlaybackState(state) {
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.playbackState = state;
+      }
+    }
+
+    function setupDanceMediaControls() {
+      if (!("mediaSession" in navigator)) return;
+      const actions = {
+        play: () => dancePlayer?.playVideo?.(),
+        pause: () => dancePlayer?.pauseVideo?.(),
+        stop: () => dancePlayer?.stopVideo?.()
+      };
+      Object.entries(actions).forEach(([action, handler]) => {
+        try {
+          navigator.mediaSession.setActionHandler(action, handler);
+        } catch {
+          // Some browsers expose Media Session but not every action.
+        }
+      });
+      updateDanceMediaSession();
+    }
+
+    function loadYoutubeIframeApi() {
+      if (window.YT?.Player || document.querySelector("script[data-youtube-api]")) return;
+      const script = document.createElement("script");
+      script.src = "https://www.youtube.com/iframe_api";
+      script.dataset.youtubeApi = "true";
+      document.head.append(script);
+    }
+
+    window.onYouTubeIframeAPIReady = () => {
+      dancePlayer = new YT.Player("danceFrame", {
+        events: {
+          onReady: () => {
+            setupDanceMediaControls();
+            if (pendingDanceVideoId && dancePlayer?.cueVideoById) {
+              dancePlayer.cueVideoById(pendingDanceVideoId);
+            }
+          },
+          onStateChange: (event) => {
+            if (event.data === YT.PlayerState.PLAYING) {
+              updateDanceMediaSession();
+              setDancePlaybackState("playing");
+            }
+            if (event.data === YT.PlayerState.PAUSED || event.data === YT.PlayerState.ENDED) {
+              setDancePlaybackState("paused");
+            }
+          }
+        }
+      });
     }
 
     function reroll(section) {
@@ -2363,6 +2445,7 @@
     renderPractice("mudras", currentPicks.mudras, "mudra");
     renderPractice("poses", currentPicks.poses, "pose-card");
     renderDanceTrack();
+    loadYoutubeIframeApi();
     updateBreathUi();
     requestWakeLock();
   </script>
