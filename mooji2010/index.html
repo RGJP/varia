@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2010 Satsangs with Mooji at Arunachala</title>
+  <meta name="description" content="A minimalist, spiritual audio player containing the 2010 Satsangs with Mooji at Arunachala, Tiruvannamalai, India.">
+  
+  <!-- Typography & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* CSS Variables & Reset */
+    :root {
+      --bg-color: #fbf9f6;
+      --card-bg: #ffffff;
+      --card-border: #f0ede6;
+      --text-main: #2c2a29;
+      --text-muted: #7c756e;
+      --accent: #a38a6a;
+      --accent-light: #f3ede2;
+      --accent-hover: #8f7759;
+      --progress-bg: #efeae2;
+      --sidebar-width: 380px;
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --shadow-sm: 0 2px 8px rgba(44, 42, 41, 0.04);
+      --shadow-md: 0 8px 24px rgba(44, 42, 41, 0.06);
+      --radius: 16px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-weight: 400;
+      line-height: 1.5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Layout Structure */
+    .app-container {
+      display: flex;
+      flex: 1;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Sidebar - Satsang List (Left) */
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--card-bg);
+      border-right: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      z-index: 10;
+      transition: var(--transition);
+    }
+
+    .sidebar-header {
+      padding: 28px 24px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .sidebar-header h1 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--text-main);
+      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+    }
+
+    .sidebar-header p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+
+    .search-container {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      background-color: var(--bg-color);
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      color: var(--text-main);
+      outline: none;
+      transition: var(--transition);
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+      background-color: #fff;
+    }
+
+    .satsang-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px;
+    }
+
+    /* Webkit Scrollbar Customization */
+    .satsang-list::-webkit-scrollbar,
+    .tracks-list-container::-webkit-scrollbar {
+      width: 4px;
+    }
+    .satsang-list::-webkit-scrollbar-thumb,
+    .tracks-list-container::-webkit-scrollbar-thumb {
+      background-color: var(--progress-bg);
+      border-radius: 4px;
+    }
+
+    .satsang-item {
+      padding: 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-bottom: 6px;
+      transition: var(--transition);
+      border: 1px solid transparent;
+    }
+
+    .satsang-item:hover {
+      background-color: var(--bg-color);
+    }
+
+    .satsang-item.active {
+      background-color: var(--accent-light);
+      border-color: rgba(163, 138, 106, 0.15);
+    }
+
+    .satsang-item .item-date {
+      font-size: 0.75rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .satsang-item .item-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-main);
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+    }
+
+    .satsang-item .item-track-count {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      display: block;
+    }
+
+    /* Main Content Area */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background-color: var(--bg-color);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Top bar for mobile */
+    .mobile-header {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--card-border);
+      z-index: 5;
+    }
+
+    .mobile-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      text-align: center;
+      flex: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .menu-toggle-btn {
+      background: none;
+      border: none;
+      color: var(--text-main);
+      cursor: pointer;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    /* Audio Player Core Card */
+    .player-section {
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--card-bg);
+      border-bottom: 1px solid var(--card-border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .player-card {
+      width: 100%;
+      max-width: 680px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .satsang-meta {
+      margin-bottom: 16px;
+    }
+
+    .satsang-meta .meta-date {
+      font-size: 0.85rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+    }
+
+    .satsang-meta .meta-satsang-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-top: 6px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+
+    .current-track-title {
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-bottom: 30px;
+      font-weight: 400;
+      max-width: 90%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Modern Seekbar */
+    .seekbar-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 24px;
+    }
+
+    .time-indicators {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+      font-weight: 500;
+    }
+
+    .progress-bar-wrapper {
+      position: relative;
+      width: 100%;
+      height: 6px;
+      background-color: var(--progress-bg);
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .progress-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background-color: var(--accent);
+      border-radius: 3px;
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    .progress-handle {
+      position: absolute;
+      top: 50%;
+      left: 0%;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background-color: var(--accent);
+      transform: translate(-50%, -50%) scale(0);
+      transition: transform 0.15s ease, left 0.1s linear;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+
+    .progress-bar-wrapper:hover .progress-handle {
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* Player Controls */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      margin-bottom: 24px;
+      width: 100%;
+    }
+
+    .control-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+      transition: var(--transition);
+      border-radius: 50%;
+    }
+
+    .control-btn:hover {
+      color: var(--accent);
+      transform: scale(1.05);
+    }
+
+    .control-btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn-secondary {
+      width: 48px;
+      height: 48px;
+      background-color: var(--bg-color);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-primary {
+      width: 72px;
+      height: 72px;
+      background-color: var(--accent);
+      color: #ffffff;
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+      color: #ffffff;
+    }
+
+    /* Volume Control */
+    .volume-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 160px;
+    }
+
+    .volume-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      transition: var(--transition);
+    }
+
+    .volume-btn:hover {
+      color: var(--accent);
+    }
+
+    .volume-slider-wrapper {
+      position: relative;
+      flex: 1;
+      height: 4px;
+      background-color: var(--progress-bg);
+      border-radius: 2px;
+      cursor: pointer;
+    }
+
+    .volume-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background-color: var(--accent);
+      border-radius: 2px;
+      width: 80%;
+    }
+
+    /* Track List Section (Bottom) */
+    .tracks-list-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 40px;
+      max-width: 100%;
+    }
+
+    .tracks-inner {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    .tracks-header {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .track-row {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-bottom: 6px;
+      border: 1px solid transparent;
+    }
+
+    .track-row:hover {
+      background-color: var(--card-bg);
+      border-color: var(--card-border);
+    }
+
+    .track-row.active {
+      background-color: var(--accent-light);
+      border-color: rgba(163, 138, 106, 0.12);
+    }
+
+    .track-num {
+      width: 32px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .track-title {
+      flex: 1;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .track-row.active .track-title {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .track-status-icon {
+      margin-right: 12px;
+      display: none;
+      color: var(--accent);
+    }
+
+    .track-row.active .track-status-icon {
+      display: block;
+    }
+
+    .track-row.active .track-num {
+      display: none;
+    }
+
+    /* Spiritual subtle watermark background */
+    .arunachala-watermark {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      font-size: 6rem;
+      font-weight: 800;
+      opacity: 0.02;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .mooji-link {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px dashed transparent;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    .mooji-link:hover {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    /* Mobile Sheet / Drawer for Satsangs */
+    .mobile-drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(44, 42, 41, 0.4);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .mobile-drawer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      width: 85%;
+      max-width: 360px;
+      background-color: var(--card-bg);
+      z-index: 101;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 8px 0 32px rgba(0, 0, 0, 0.08);
+    }
+
+    .mobile-drawer.open {
+      transform: translateX(0);
+    }
+
+    .mobile-drawer-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .mobile-drawer-close {
+      position: absolute;
+      top: 24px;
+      right: 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+    }
+
+    /* SVGs for icons */
+    .icon {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+
+    /* Responsive styling */
+    @media (max-width: 768px) {
+      body {
+        height: 100vh;
+        overflow: hidden;
+      }
+
+      .app-container {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        display: none; /* Handled by drawer on mobile */
+      }
+
+      .mobile-header {
+        display: flex;
+      }
+
+      .player-section {
+        padding: 24px 20px;
+      }
+
+      .satsang-meta .meta-satsang-title {
+        font-size: 1.5rem;
+      }
+
+      .controls-row {
+        gap: 20px;
+      }
+
+      .btn-primary {
+        width: 64px;
+        height: 64px;
+      }
+
+      .tracks-list-container {
+        padding: 20px;
+      }
+
+      .volume-container {
+        display: none; /* Hide volume control on mobile as physical buttons are preferred */
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mobile Header -->
+  <header class="mobile-header">
+    <button id="menuOpenBtn" class="menu-toggle-btn" aria-label="Open satsang list">
+      <svg class="icon" viewBox="0 0 24 24">
+        <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+      </svg>
+    </button>
+    <div class="mobile-title"><a href="https://mooji.org" target="_blank" rel="noopener noreferrer" class="mooji-link">Mooji</a> Arunachala 2010</div>
+    <div style="width: 40px;"></div> <!-- Spacer -->
+  </header>
+
+  <div class="app-container">
+    
+    <!-- Sidebar for Desktop -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>Arunachala Satsangs</h1>
+        <p>2010 • <a href="https://mooji.org" target="_blank" rel="noopener noreferrer" class="mooji-link">Mooji</a></p>
+      </div>
+      <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" placeholder="Search Satsang by title or date...">
+      </div>
+      <div class="satsang-list" id="satsangList">
+        <!-- Rendered dynamically -->
+      </div>
+    </aside>
+
+    <!-- Main Player Area -->
+    <main class="main-content">
+      
+      <!-- Player Unit -->
+      <section class="player-section">
+        <div class="player-card">
+          <div class="satsang-meta">
+            <span class="meta-date" id="playerDate">January 6, 2010</span>
+            <h2 class="meta-satsang-title" id="playerSatsangTitle">Loading Satsang...</h2>
+          </div>
+          
+          <div class="current-track-title" id="playerTrackTitle">Select a track to begin</div>
+
+          <!-- Seekbar -->
+          <div class="seekbar-container">
+            <div class="progress-bar-wrapper" id="progressBarWrapper">
+              <div class="progress-fill" id="progressFill"></div>
+              <div class="progress-handle" id="progressHandle"></div>
+            </div>
+            <div class="time-indicators">
+              <span id="timeCurrent">0:00</span>
+              <span id="timeTotal">0:00</span>
+            </div>
+          </div>
+
+          <!-- Controls -->
+          <div class="controls-row">
+            <!-- Prev -->
+            <button class="control-btn btn-secondary" id="btnPrev" aria-label="Previous track">
+              <svg class="icon" viewBox="0 0 24 24">
+                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+              </svg>
+            </button>
+
+            <!-- Play/Pause -->
+            <button class="control-btn btn-primary" id="btnPlay" aria-label="Play track">
+              <svg class="icon" id="playIcon" viewBox="0 0 24 24" style="width: 32px; height: 32px;">
+                <!-- Play Triangle -->
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </button>
+
+            <!-- Next -->
+            <button class="control-btn btn-secondary" id="btnNext" aria-label="Next track">
+              <svg class="icon" viewBox="0 0 24 24">
+                <path d="M6 18l8.5-6L6 6zm9-12v12h2V6z"/>
+              </svg>
+            </button>
+
+            <!-- Volume (Desktop only via CSS hidden on mobile) -->
+            <div class="volume-container">
+              <button class="volume-btn" id="btnMute" aria-label="Mute volume">
+                <svg class="icon" id="volumeIcon" viewBox="0 0 24 24" style="width: 20px; height: 20px;">
+                  <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                </svg>
+              </button>
+              <div class="volume-slider-wrapper" id="volumeSliderWrapper">
+                <div class="volume-fill" id="volumeFill"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Track List Section -->
+      <section class="tracks-list-container">
+        <div class="tracks-inner">
+          <div class="tracks-header">
+            <span>Track Name</span>
+            <span>Status</span>
+          </div>
+          <div id="tracksList">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <div class="arunachala-watermark">Arunachala</div>
+    </main>
+  </div>
+
+  <!-- Mobile Drawer Structure -->
+  <div class="mobile-drawer-overlay" id="drawerOverlay"></div>
+  <div class="mobile-drawer" id="mobileDrawer">
+    <div class="sidebar-header" style="position: relative;">
+      <h1>Arunachala Satsangs</h1>
+      <p>2010 • <a href="https://mooji.org" target="_blank" rel="noopener noreferrer" class="mooji-link">Mooji</a></p>
+      <button class="mobile-drawer-close" id="menuCloseBtn" aria-label="Close menu">
+        <svg class="icon" viewBox="0 0 24 24">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
+    </div>
+    <div class="search-container">
+      <input type="text" id="drawerSearchInput" class="search-input" placeholder="Search Satsang...">
+    </div>
+    <div class="satsang-list" id="drawerSatsangList">
+      <!-- Shared template rendering -->
+    </div>
+  </div>
+
+  <!-- Embed JSON Metadata and App Script -->
+  <script>
+    const SATSANGS = [{"dir": "2010_01_06_The Prison of the Mind Has Beautiful Apartments", "date": "January 6, 2010", "title": "The Prison of the Mind Has Beautiful Apartments", "tracks": [{"filename": "2010_01_06_tr00_Omkara - Shower of Grace.mp3", "title": "Omkara - Shower of Grace", "rel_path": "﻿https://archive.org/download/aruna2010sat/2010_01_06_tr00_Omkara%2520-%2520Shower%2520of%2520Grace.mp3"}, {"filename": "2010_01_06_tr01_Opening Chants by Temple Priest.mp3", "title": "Opening Chants by Temple Priest", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr01_Opening%2520Chants%2520by%2520Temple%2520Priest.mp3"}, {"filename": "2010_01_06_tr02_Truth Is Not Difficult.mp3", "title": "Truth Is Not Difficult", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr02_Truth%2520Is%2520Not%2520Difficult.mp3"}, {"filename": "2010_01_06_tr03_The End of Suffering Forever.mp3", "title": "The End of Suffering Forever", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr03_The%2520End%2520of%2520Suffering%2520Forever.mp3"}, {"filename": "2010_01_06_tr04_The Real Opportunity of Satsang.mp3", "title": "The Real Opportunity of Satsang", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr04_The%2520Real%2520Opportunity%2520of%2520Satsang.mp3"}, {"filename": "2010_01_06_tr05_Where Is Your 'Here'.mp3", "title": "Where Is Your 'Here'", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr05_Where%2520Is%2520Your%2520%2527Here%2527.mp3"}, {"filename": "2010_01_06_tr06_The Greatest Software Program.mp3", "title": "The Greatest Software Program", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr06_The%2520Greatest%2520Software%2520Program.mp3"}, {"filename": "2010_01_06_tr07_Who Is Looking.mp3", "title": "Who Is Looking", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr07_Who%2520Is%2520Looking.mp3"}, {"filename": "2010_01_06_tr08_Awareness Is Not Concrete.mp3", "title": "Awareness Is Not Concrete", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr08_Awareness%2520Is%2520Not%2520Concrete.mp3"}, {"filename": "2010_01_06_tr09_Mind Is Not Stable.mp3", "title": "Mind Is Not Stable", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr09_Mind%2520Is%2520Not%2520Stable.mp3"}, {"filename": "2010_01_06_tr10_I Want to Meet You.mp3", "title": "I Want to Meet You", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr10_I%2520Want%2520to%2520Meet%2520You.mp3"}, {"filename": "2010_01_06_tr11_Not Believing In Thoughts .mp3", "title": "Not Believing In Thoughts", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr11_Not%2520Believing%2520In%2520Thoughts%2520.mp3"}, {"filename": "2010_01_06_tr12_Love is the Unicity of Being.mp3", "title": "Love is the Unicity of Being", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr12_Love%2520is%2520the%2520Unicity%2520of%2520Being.mp3"}, {"filename": "2010_01_06_tr13_Completely Dissolve Yourself.mp3", "title": "Completely Dissolve Yourself", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr13_Completely%2520Dissolve%2520Yourself.mp3"}, {"filename": "2010_01_06_tr14_You're Seeing Everything.mp3", "title": "You're Seeing Everything", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr14_You%2527re%2520Seeing%2520Everything.mp3"}, {"filename": "2010_01_06_tr15_Meet God Now.mp3", "title": "Meet God Now", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr15_Meet%2520God%2520Now.mp3"}, {"filename": "2010_01_06_tr16_The Sliding Bar of I.mp3", "title": "The Sliding Bar of I", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr16_The%2520Sliding%2520Bar%2520of%2520I.mp3"}, {"filename": "2010_01_06_tr17_Omkara - Shower of Grace.mp3", "title": "Omkara - Shower of Grace", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_06_tr17_Omkara%2520-%2520Shower%2520of%2520Grace.mp3"}]}, {"dir": "2010_01_07_From Mahamaya to Mahadeva", "date": "January 7, 2010", "title": "From Mahamaya to Mahadeva", "tracks": [{"filename": "2010_01_07_tr00_Om Namo Bhagavate sung by Omkara & Mooji.mp3", "title": "Om Namo Bhagavate sung by Omkara & Mooji", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr00_Om%2520Namo%2520Bhagavate%2520sung%2520by%2520Omkara%2520%2526%2520Mooji.mp3"}, {"filename": "2010_01_07_tr01_Suffering your experience.mp3", "title": "Suffering your experience", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr01_Suffering%2520your%2520experience.mp3"}, {"filename": "2010_01_07_tr02_Stay inside your own Satsang.mp3", "title": "Stay inside your own Satsang", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr02_Stay%2520inside%2520your%2520own%2520Satsang.mp3"}, {"filename": "2010_01_07_tr03_Go back to the source.mp3", "title": "Go back to the source", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr03_Go%2520back%2520to%2520the%2520source.mp3"}, {"filename": "2010_01_07_tr04_You know what you are not.mp3", "title": "You know what you are not", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr04_You%2520know%2520what%2520you%2520are%2520not.mp3"}, {"filename": "2010_01_07_tr05_The I quality.mp3", "title": "The I quality", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr05_The%2520I%2520quality.mp3"}, {"filename": "2010_01_07_tr06_'That' does not need to think.mp3", "title": "'That' does not need to think", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr06_%2527That%2527%2520does%2520not%2520need%2520to%2520think.mp3"}, {"filename": "2010_01_07_tr07_I am sorry.mp3", "title": "I am sorry", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr07_I%2520am%2520sorry.mp3"}, {"filename": "2010_01_07_tr08_My house is on fire.mp3", "title": "My house is on fire", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr08_My%2520house%2520is%2520on%2520fire.mp3"}, {"filename": "2010_01_07_tr09_Question about silence_ Translation in Spanish.mp3", "title": "Question about silence  Translation in Spanish", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr09_Question%2520about%2520silence_%2520Translation%2520in%2520Spanish.mp3"}, {"filename": "2010_01_07_tr10_Turn the attention inward.mp3", "title": "Turn the attention inward", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr10_Turn%2520the%2520attention%2520inward.mp3"}, {"filename": "2010_01_07_tr11_Be a living Ramana.mp3", "title": "Be a living Ramana", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr11_Be%2520a%2520living%2520Ramana.mp3"}, {"filename": "2010_01_07_tr12_Just be here.mp3", "title": "Just be here", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr12_Just%2520be%2520here.mp3"}, {"filename": "2010_01_07_tr13_Image in consciousness.mp3", "title": "Image in consciousness", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr13_Image%2520in%2520consciousness.mp3"}, {"filename": "2010_01_07_tr14_Maya is illusionary.mp3", "title": "Maya is illusionary", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr14_Maya%2520is%2520illusionary.mp3"}, {"filename": "2010_01_07_tr15_God is everywhere.mp3", "title": "God is everywhere", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr15_God%2520is%2520everywhere.mp3"}, {"filename": "2010_01_07_tr16_Om Namo Bhagavate sung by Omkara.mp3", "title": "Om Namo Bhagavate sung by Omkara", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_07_tr16_Om%2520Namo%2520Bhagavate%2520sung%2520by%2520Omkara.mp3"}]}, {"dir": "2010_01_08_Awakening to Your Awakening", "date": "January 8, 2010", "title": "Awakening to Your Awakening", "tracks": [{"filename": "2010_01_08_tr00_Omkara - Everything is Shiva.mp3", "title": "Omkara - Everything is Shiva", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr00_Omkara%2520-%2520Everything%2520is%2520Shiva.mp3"}, {"filename": "2010_01_08_tr01_Find Out the Mistake First.mp3", "title": "Find Out the Mistake First", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr01_Find%2520Out%2520the%2520Mistake%2520First.mp3"}, {"filename": "2010_01_08_tr02_Leave the Mind Alone.mp3", "title": "Leave the Mind Alone", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr02_Leave%2520the%2520Mind%2520Alone.mp3"}, {"filename": "2010_01_08_tr03_Psychic Detox.mp3", "title": "Psychic Detox", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr03_Psychic%2520Detox.mp3"}, {"filename": "2010_01_08_tr04_The Joy of I Am.mp3", "title": "The Joy of I Am", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr04_The%2520Joy%2520of%2520I%2520Am.mp3"}, {"filename": "2010_01_08_tr05_Be Absolutely Alone.mp3", "title": "Be Absolutely Alone", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr05_Be%2520Absolutely%2520Alone.mp3"}, {"filename": "2010_01_08_tr06_The Most Beautiful Will.mp3", "title": "The Most Beautiful Will", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr06_The%2520Most%2520Beautiful%2520Will.mp3"}, {"filename": "2010_01_08_tr07_You Have Always Been This.mp3", "title": "You Have Always Been This", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr07_You%2520Have%2520Always%2520Been%2520This.mp3"}, {"filename": "2010_01_08_tr08_A Buddha's Question.mp3", "title": "A Buddha's Question", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr08_A%2520Buddha%2527s%2520Question.mp3"}, {"filename": "2010_01_08_tr09_Don't Close Your Door.mp3", "title": "Don't Close Your Door", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr09_Don%2527t%2520Close%2520Your%2520Door.mp3"}, {"filename": "2010_01_08_tr10_Truth is Religionless.mp3", "title": "Truth is Religionless", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr10_Truth%2520is%2520Religionless.mp3"}, {"filename": "2010_01_08_tr11_Be Empty of Everything.mp3", "title": "Be Empty of Everything", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr11_Be%2520Empty%2520of%2520Everything.mp3"}, {"filename": "2010_01_08_tr12_Profound Seeing.mp3", "title": "Profound Seeing", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr12_Profound%2520Seeing.mp3"}, {"filename": "2010_01_08_tr13_Guided Enquiry.mp3", "title": "Guided Enquiry", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr13_Guided%2520Enquiry.mp3"}, {"filename": "2010_01_08_tr14_Omkara - Everything is Shiva.mp3", "title": "Omkara - Everything is Shiva", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_08_tr14_Omkara%2520-%2520Everything%2520is%2520Shiva.mp3"}]}, {"dir": "2010_01_09_Perceiving with Bhagavan's eyes", "date": "January 9, 2010", "title": "Perceiving with Bhagavan's eyes", "tracks": [{"filename": "2010_01_09_tr00_Omkara - Everything is Shiva.mp3", "title": "Omkara - Everything is Shiva", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_09_tr00_Omkara%2520-%2520Everything%2520is%2520Shiva.mp3"}, {"filename": "2010_01_09_tr01_Just get the cream.mp3", "title": "Just get the cream", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_09_tr01_Just%2520get%2520the%2520cream.mp3"}, {"filename": "2010_01_09_tr02_Don't personalise what is arising.mp3", "title": "Don't personalise what is arising", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_09_tr02_Don%2527t%2520personalise%2520what%2520is%2520arising.mp3"}, {"filename": "2010_01_09_tr03_No 'me' to be troubled.mp3", "title": "No 'me' to be troubled", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_09_tr03_No%2520%2527me%2527%2520to%2520be%2520troubled.mp3"}, {"filename": "2010_01_09_tr04_I exist.mp3", "title": "I exist", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_09_tr04_I%2520exist.mp3"}, {"filename": "2010_01_09_tr05_The core Self of every Being.mp3", "title": "The core Self of every Being", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_09_tr05_The%2520core%2520Self%2520of%2520every%2520Being.mp3"}, {"filename": "2010_01_09_tr06_Focus yourself in awareness only.mp3", "title": "Focus yourself in awareness only", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_09_tr06_Focus%2520yourself%2520in%2520awareness%2520only.mp3"}, {"filename": "2010_01_09_tr07_No spirits that night.mp3", "title": "No spirits that night", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_09_tr07_No%2520spirits%2520that%2520night.mp3"}, {"filename": "2010_01_09_tr08_No mind state.mp3", "title": "No mind state", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_09_tr08_No%2520mind%2520state.mp3"}, {"filename": "2010_01_09_tr09_Everybody wants to know the Self.mp3", "title": "Everybody wants to know the Self", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_09_tr09_Everybody%2520wants%2520to%2520know%2520the%2520Self.mp3"}, {"filename": "2010_01_09_tr10_Stand in your maturity in life.mp3", "title": "Stand in your maturity in life", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_09_tr10_Stand%2520in%2520your%2520maturity%2520in%2520life.mp3"}, {"filename": "2010_01_09_tr11_The last breath is out.mp3", "title": "The last breath is out", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_09_tr11_The%2520last%2520breath%2520is%2520out.mp3"}, {"filename": "2010_01_09_tr12_The power is in the introspection.mp3", "title": "The power is in the introspection", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_09_tr12_The%2520power%2520is%2520in%2520the%2520introspection.mp3"}, {"filename": "2010_01_09_tr13_Perceiving with Bhagavan's eyes.mp3", "title": "Perceiving with Bhagavan's eyes", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_09_tr13_Perceiving%2520with%2520Bhagavan%2527s%2520eyes.mp3"}]}, {"dir": "2010_01_10_Human for Now, Divine Eternally", "date": "January 10, 2010", "title": "Human for Now, Divine Eternally", "tracks": [{"filename": "2010_01_10_tr00_Omkara - Remember.mp3", "title": "Omkara - Remember", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_10_tr00_Omkara%2520-%2520Remember.mp3"}, {"filename": "2010_01_10_tr01_Love.mp3", "title": "Love", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_10_tr01_Love.mp3"}, {"filename": "2010_01_10_tr02_Find THAT in Yourself.mp3", "title": "Find THAT in Yourself", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_10_tr02_Find%2520THAT%2520in%2520Yourself.mp3"}, {"filename": "2010_01_10_tr03_No Excuses.mp3", "title": "No Excuses", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_10_tr03_No%2520Excuses.mp3"}, {"filename": "2010_01_10_tr04_Identify Yourself!.mp3", "title": "Identify Yourself!", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_10_tr04_Identify%2520Yourself%2521.mp3"}, {"filename": "2010_01_10_tr05_Throw Everything Out.mp3", "title": "Throw Everything Out", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_10_tr05_Throw%2520Everything%2520Out.mp3"}, {"filename": "2010_01_10_tr06_Urgency Has Become Emergency.mp3", "title": "Urgency Has Become Emergency", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_10_tr06_Urgency%2520Has%2520Become%2520Emergency.mp3"}, {"filename": "2010_01_10_tr07_Sweep As It Goes.mp3", "title": "Sweep As It Goes", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_10_tr07_Sweep%2520As%2520It%2520Goes.mp3"}, {"filename": "2010_01_10_tr08_Find the Universal Flow.mp3", "title": "Find the Universal Flow", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_10_tr08_Find%2520the%2520Universal%2520Flow.mp3"}, {"filename": "2010_01_10_tr09_Mortal Body, Immortal Being.mp3", "title": "Mortal Body, Immortal Being", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_10_tr09_Mortal%2520Body%252C%2520Immortal%2520Being.mp3"}, {"filename": "2010_01_10_tr10_No More Questions.mp3", "title": "No More Questions", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_10_tr10_No%2520More%2520Questions.mp3"}, {"filename": "2010_01_10_tr11_A State is Not More Real Than You.mp3", "title": "A State is Not More Real Than You", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_10_tr11_A%2520State%2520is%2520Not%2520More%2520Real%2520Than%2520You.mp3"}, {"filename": "2010_01_10_tr12_Zip Yourself in Your Sleeping Bag.mp3", "title": "Zip Yourself in Your Sleeping Bag", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_10_tr12_Zip%2520Yourself%2520in%2520Your%2520Sleeping%2520Bag.mp3"}, {"filename": "2010_01_10_tr13_Omkara - Remember.mp3", "title": "Omkara - Remember", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_10_tr13_Omkara%2520-%2520Remember.mp3"}]}, {"dir": "2010_01_13_I Love Satsang", "date": "January 13, 2010", "title": "I Love Satsang", "tracks": [{"filename": "2010_01_13_tr00_Om Bhagavan_ Omkara & Mooji.mp3", "title": "Om Bhagavan  Omkara & Mooji", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_13_tr00_Om%2520Bhagavan_%2520Omkara%2520%2526%2520Mooji.mp3"}, {"filename": "2010_01_13_tr01_I Love Satsang.mp3", "title": "I Love Satsang", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_13_tr01_I%2520Love%2520Satsang.mp3"}, {"filename": "2010_01_13_tr02_Grasp the simple truth.mp3", "title": "Grasp the simple truth", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_13_tr02_Grasp%2520the%2520simple%2520truth.mp3"}, {"filename": "2010_01_13_tr03_It is just an idea.mp3", "title": "It is just an idea", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_13_tr03_It%2520is%2520just%2520an%2520idea.mp3"}, {"filename": "2010_01_13_tr04_Somewhere behind.mp3", "title": "Somewhere behind", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_13_tr04_Somewhere%2520behind.mp3"}, {"filename": "2010_01_13_tr05_The transient expressions of the Being.mp3", "title": "The transient expressions of the Being", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_13_tr05_The%2520transient%2520expressions%2520of%2520the%2520Being.mp3"}, {"filename": "2010_01_13_tr06_What practice I need to be myself.mp3", "title": "What practice I need to be myself", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_13_tr06_What%2520practice%2520I%2520need%2520to%2520be%2520myself.mp3"}, {"filename": "2010_01_13_tr07_Surrender comes from Grace.mp3", "title": "Surrender comes from Grace", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_13_tr07_Surrender%2520comes%2520from%2520Grace.mp3"}, {"filename": "2010_01_13_tr08_The love in your presence.mp3", "title": "The love in your presence", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_13_tr08_The%2520love%2520in%2520your%2520presence.mp3"}, {"filename": "2010_01_13_tr09_Don't wast your time.mp3", "title": "Don't wast your time", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_13_tr09_Don%2527t%2520wast%2520your%2520time.mp3"}, {"filename": "2010_01_13_tr10_The observer of Ego.mp3", "title": "The observer of Ego", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_13_tr10_The%2520observer%2520of%2520Ego.mp3"}, {"filename": "2010_01_13_tr11_Hold on to the sense I am.mp3", "title": "Hold on to the sense I am", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_13_tr11_Hold%2520on%2520to%2520the%2520sense%2520I%2520am.mp3"}, {"filename": "2010_01_13_tr12_Om Bhagavan_ Omkara.mp3", "title": "Om Bhagavan  Omkara", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_13_tr12_Om%2520Bhagavan_%2520Omkara.mp3"}]}, {"dir": "2010_01_14_Now the Sky Can Be Seen", "date": "January 14, 2010", "title": "Now the Sky Can Be Seen", "tracks": [{"filename": "2010_01_14_tr00_Bahman singing Rumi.mp3", "title": "Bahman singing Rumi", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr00_Bahman%2520singing%2520Rumi.mp3"}, {"filename": "2010_01_14_tr01_A Beautiful Discovery.mp3", "title": "A Beautiful Discovery", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr01_A%2520Beautiful%2520Discovery.mp3"}, {"filename": "2010_01_14_tr02_The Desire to Be Free of Desire.mp3", "title": "The Desire to Be Free of Desire", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr02_The%2520Desire%2520to%2520Be%2520Free%2520of%2520Desire.mp3"}, {"filename": "2010_01_14_tr03_Come Out of Time.mp3", "title": "Come Out of Time", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr03_Come%2520Out%2520of%2520Time.mp3"}, {"filename": "2010_01_14_tr04_Find the One, Ignore the Many.mp3", "title": "Find the One, Ignore the Many", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr04_Find%2520the%2520One%252C%2520Ignore%2520the%2520Many.mp3"}, {"filename": "2010_01_14_tr05_Expressing Gratitude.mp3", "title": "Expressing Gratitude", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr05_Expressing%2520Gratitude.mp3"}, {"filename": "2010_01_14_tr06_A Tiny Pea.mp3", "title": "A Tiny Pea", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr06_A%2520Tiny%2520Pea.mp3"}, {"filename": "2010_01_14_tr07_Existentialism.mp3", "title": "Existentialism", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr07_Existentialism.mp3"}, {"filename": "2010_01_14_tr08_Fear of Emptiness.mp3", "title": "Fear of Emptiness", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr08_Fear%2520of%2520Emptiness.mp3"}, {"filename": "2010_01_14_tr09_Can You Be Perceived.mp3", "title": "Can You Be Perceived", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr09_Can%2520You%2520Be%2520Perceived.mp3"}, {"filename": "2010_01_14_tr10_Barns Burn Down.mp3", "title": "Barns Burn Down", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr10_Barns%2520Burn%2520Down.mp3"}, {"filename": "2010_01_14_tr11_Seize the Opportunity.mp3", "title": "Seize the Opportunity", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr11_Seize%2520the%2520Opportunity.mp3"}, {"filename": "2010_01_14_tr12_Where You Are Forever.mp3", "title": "Where You Are Forever", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr12_Where%2520You%2520Are%2520Forever.mp3"}, {"filename": "2010_01_14_tr13_Not Touched by Any Condition.mp3", "title": "Not Touched by Any Condition", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr13_Not%2520Touched%2520by%2520Any%2520Condition.mp3"}, {"filename": "2010_01_14_tr14_Avadhuta Gita Reading .mp3", "title": "Avadhuta Gita Reading", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_14_tr14_Avadhuta%2520Gita%2520Reading%2520.mp3"}]}, {"dir": "2010_01_15_Whoever took me here must take me home", "date": "January 15, 2010", "title": "Whoever took me here must take me home", "tracks": [{"filename": "2010_01_15_tr00_Music Introduction.mp3", "title": "Music Introduction", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_15_tr00_Music%2520Introduction.mp3"}, {"filename": "2010_01_15_tr01_I am stable.mp3", "title": "I am stable", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_15_tr01_I%2520am%2520stable.mp3"}, {"filename": "2010_01_15_tr02_One time you had nothing at all.mp3", "title": "One time you had nothing at all", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_15_tr02_One%2520time%2520you%2520had%2520nothing%2520at%2520all.mp3"}, {"filename": "2010_01_15_tr03_All that is believed became your experience.mp3", "title": "All that is believed became your experience", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_15_tr03_All%2520that%2520is%2520believed%2520became%2520your%2520experience.mp3"}, {"filename": "2010_01_15_tr04_Let go.mp3", "title": "Let go", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_15_tr04_Let%2520go.mp3"}, {"filename": "2010_01_15_tr05_Can the perceiver be perceived.mp3", "title": "Can the perceiver be perceived", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_15_tr05_Can%2520the%2520perceiver%2520be%2520perceived.mp3"}, {"filename": "2010_01_15_tr06_Hold on only to the feeling I am.mp3", "title": "Hold on only to the feeling I am", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_15_tr06_Hold%2520on%2520only%2520to%2520the%2520feeling%2520I%2520am.mp3"}, {"filename": "2010_01_15_tr07_No seeds of I-ness.mp3", "title": "No seeds of I-ness", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_15_tr07_No%2520seeds%2520of%2520I-ness.mp3"}, {"filename": "2010_01_15_tr08_It is all one.mp3", "title": "It is all one", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_15_tr08_It%2520is%2520all%2520one.mp3"}, {"filename": "2010_01_15_tr09_The king and his counsellor.mp3", "title": "The king and his counsellor", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_15_tr09_The%2520king%2520and%2520his%2520counsellor.mp3"}, {"filename": "2010_01_15_tr10_The autonomy of consciousness.mp3", "title": "The autonomy of consciousness", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_15_tr10_The%2520autonomy%2520of%2520consciousness.mp3"}, {"filename": "2010_01_15_tr11_Direct Experience.mp3", "title": "Direct Experience", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_15_tr11_Direct%2520Experience.mp3"}, {"filename": "2010_01_15_tr12_Shower of Grace by Omkara.mp3", "title": "Shower of Grace by Omkara", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_15_tr12_Shower%2520of%2520Grace%2520by%2520Omkara.mp3"}]}, {"dir": "2010_01_16_The Removalist", "date": "January 16, 2010", "title": "The Removalist", "tracks": [{"filename": "2010_01_16_tr00_Music introduction.mp3", "title": "Music introduction", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr00_Music%2520introduction.mp3"}, {"filename": "2010_01_16_tr01_The removalist.mp3", "title": "The removalist", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr01_The%2520removalist.mp3"}, {"filename": "2010_01_16_tr02_No need for  enlightenment.mp3", "title": "No need for  enlightenment", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr02_No%2520need%2520for%2520%2520enlightenment.mp3"}, {"filename": "2010_01_16_tr03_You should be in Satsang.mp3", "title": "You should be in Satsang", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr03_You%2520should%2520be%2520in%2520Satsang.mp3"}, {"filename": "2010_01_16_tr04_Beyond the sense of separation.mp3", "title": "Beyond the sense of separation", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr04_Beyond%2520the%2520sense%2520of%2520separation.mp3"}, {"filename": "2010_01_16_tr05_Discovering the divinity inside.mp3", "title": "Discovering the divinity inside", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr05_Discovering%2520the%2520divinity%2520inside.mp3"}, {"filename": "2010_01_16_tr06_The game of the mind.mp3", "title": "The game of the mind", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr06_The%2520game%2520of%2520the%2520mind.mp3"}, {"filename": "2010_01_16_tr07_Buddha was not Buddhist.mp3", "title": "Buddha was not Buddhist", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr07_Buddha%2520was%2520not%2520Buddhist.mp3"}, {"filename": "2010_01_16_tr08_Panoramic awareness.mp3", "title": "Panoramic awareness", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr08_Panoramic%2520awareness.mp3"}, {"filename": "2010_01_16_tr09_The broadness of Being.mp3", "title": "The broadness of Being", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr09_The%2520broadness%2520of%2520Being.mp3"}, {"filename": "2010_01_16_tr10_Bhajans sung by Ashok.mp3", "title": "Bhajans sung by Ashok", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr10_Bhajans%2520sung%2520by%2520Ashok.mp3"}, {"filename": "2010_01_16_tr11_The Grace of the Self.mp3", "title": "The Grace of the Self", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr11_The%2520Grace%2520of%2520the%2520Self.mp3"}, {"filename": "2010_01_16_tr12_Die but don't be dead.mp3", "title": "Die but don't be dead", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr12_Die%2520but%2520don%2527t%2520be%2520dead.mp3"}, {"filename": "2010_01_16_tr13_Prayers and surrender.mp3", "title": "Prayers and surrender", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr13_Prayers%2520and%2520surrender.mp3"}, {"filename": "2010_01_16_tr14_Freedom at the foot of Arunachala.mp3", "title": "Freedom at the foot of Arunachala", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr14_Freedom%2520at%2520the%2520foot%2520of%2520Arunachala.mp3"}, {"filename": "2010_01_16_tr15_Song I am.mp3", "title": "Song I am", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr15_Song%2520I%2520am.mp3"}, {"filename": "2010_01_16_tr16_Pure recognition.mp3", "title": "Pure recognition", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_16_tr16_Pure%2520recognition.mp3"}]}, {"dir": "2010_01_17_Beyond Belief There is Discovery", "date": "January 17, 2010", "title": "Beyond Belief There is Discovery", "tracks": [{"filename": "2010_01_17_tr00_Omkara - Infinite Dance.mp3", "title": "Omkara - Infinite Dance", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_17_tr00_Omkara%2520-%2520Infinite%2520Dance.mp3"}, {"filename": "2010_01_17_tr01_Digest Your Seeing.mp3", "title": "Digest Your Seeing", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_17_tr01_Digest%2520Your%2520Seeing.mp3"}, {"filename": "2010_01_17_tr02_Closer Than Intimacy.mp3", "title": "Closer Than Intimacy", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_17_tr02_Closer%2520Than%2520Intimacy.mp3"}, {"filename": "2010_01_17_tr03_Don't Leave Profound Seeing to the Wind.mp3", "title": "Don't Leave Profound Seeing to the Wind", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_17_tr03_Don%2527t%2520Leave%2520Profound%2520Seeing%2520to%2520the%2520Wind.mp3"}, {"filename": "2010_01_17_tr04_You're Beyond All Happenings.mp3", "title": "You're Beyond All Happenings", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_17_tr04_You%2527re%2520Beyond%2520All%2520Happenings.mp3"}, {"filename": "2010_01_17_tr05_Story of the Three Dolls.mp3", "title": "Story of the Three Dolls", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_17_tr05_Story%2520of%2520the%2520Three%2520Dolls.mp3"}, {"filename": "2010_01_17_tr06_The Best Place for You.mp3", "title": "The Best Place for You", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_17_tr06_The%2520Best%2520Place%2520for%2520You.mp3"}, {"filename": "2010_01_17_tr07_Psychic Detoxing.mp3", "title": "Psychic Detoxing", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_17_tr07_Psychic%2520Detoxing.mp3"}, {"filename": "2010_01_17_tr08_You Are So Great.mp3", "title": "You Are So Great", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_17_tr08_You%2520Are%2520So%2520Great.mp3"}, {"filename": "2010_01_17_tr09_Unpleasant States.mp3", "title": "Unpleasant States", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_17_tr09_Unpleasant%2520States.mp3"}, {"filename": "2010_01_17_tr10_Remember Your True Place.mp3", "title": "Remember Your True Place", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_17_tr10_Remember%2520Your%2520True%2520Place.mp3"}, {"filename": "2010_01_17_tr11_Watching Frees Up Life.mp3", "title": "Watching Frees Up Life", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_17_tr11_Watching%2520Frees%2520Up%2520Life.mp3"}, {"filename": "2010_01_17_tr12_Omkara - Infinite Dance.mp3", "title": "Omkara - Infinite Dance", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_17_tr12_Omkara%2520-%2520Infinite%2520Dance.mp3"}]}, {"dir": "2010_01_20_The Only Thing Worth Finding", "date": "January 20, 2010", "title": "The Only Thing Worth Finding", "tracks": [{"filename": "2010_01_20_tr00_Music Introduction.mp3", "title": "Music Introduction", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_20_tr00_Music%2520Introduction.mp3"}, {"filename": "2010_01_20_tr01_A sincere hug.mp3", "title": "A sincere hug", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_20_tr01_A%2520sincere%2520hug.mp3"}, {"filename": "2010_01_20_tr02_Let love happen.mp3", "title": "Let love happen", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_20_tr02_Let%2520love%2520happen.mp3"}, {"filename": "2010_01_20_tr03_Real seeing is taking place.mp3", "title": "Real seeing is taking place", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_20_tr03_Real%2520seeing%2520is%2520taking%2520place.mp3"}, {"filename": "2010_01_20_tr04_Can you find the watcher.mp3", "title": "Can you find the watcher", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_20_tr04_Can%2520you%2520find%2520the%2520watcher.mp3"}, {"filename": "2010_01_20_tr05_Where is the origin of the I.mp3", "title": "Where is the origin of the I", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_20_tr05_Where%2520is%2520the%2520origin%2520of%2520the%2520I.mp3"}, {"filename": "2010_01_20_tr06_The fundamental questions.mp3", "title": "The fundamental questions", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_20_tr06_The%2520fundamental%2520questions.mp3"}, {"filename": "2010_01_20_tr07_The self is not an object.mp3", "title": "The self is not an object", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_20_tr07_The%2520self%2520is%2520not%2520an%2520object.mp3"}, {"filename": "2010_01_20_tr08_The witness of time is timeless.mp3", "title": "The witness of time is timeless", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_20_tr08_The%2520witness%2520of%2520time%2520is%2520timeless.mp3"}, {"filename": "2010_01_20_tr09_Belief in ego creates ego.mp3", "title": "Belief in ego creates ego", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_20_tr09_Belief%2520in%2520ego%2520creates%2520ego.mp3"}, {"filename": "2010_01_20_tr10_Cooking in the pot of god.mp3", "title": "Cooking in the pot of god", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_20_tr10_Cooking%2520in%2520the%2520pot%2520of%2520god.mp3"}, {"filename": "2010_01_20_tr11_Just abandon yourself.mp3", "title": "Just abandon yourself", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_20_tr11_Just%2520abandon%2520yourself.mp3"}, {"filename": "2010_01_20_tr12_Like space moving in space.mp3", "title": "Like space moving in space", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_20_tr12_Like%2520space%2520moving%2520in%2520space.mp3"}, {"filename": "2010_01_20_tr13_Om namah Shivaya Gurave.mp3", "title": "Om namah Shivaya Gurave", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_20_tr13_Om%2520namah%2520Shivaya%2520Gurave.mp3"}]}, {"dir": "2010_01_21_Drop Your self", "date": "January 21, 2010", "title": "Drop Your self", "tracks": [{"filename": "2010_01_21_tr00_Music introduction.mp3", "title": "Music introduction", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_21_tr00_Music%2520introduction.mp3"}, {"filename": "2010_01_21_tr01_Towards joy.mp3", "title": "Towards joy", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_21_tr01_Towards%2520joy.mp3"}, {"filename": "2010_01_21_tr02_Nothing to do about it.mp3", "title": "Nothing to do about it", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_21_tr02_Nothing%2520to%2520do%2520about%2520it.mp3"}, {"filename": "2010_01_21_tr03_I is the most potent knowledge.mp3", "title": "I is the most potent knowledge", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_21_tr03_I%2520is%2520the%2520most%2520potent%2520knowledge.mp3"}, {"filename": "2010_01_21_tr04_Belief gives power to thoughts.mp3", "title": "Belief gives power to thoughts", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_21_tr04_Belief%2520gives%2520power%2520to%2520thoughts.mp3"}, {"filename": "2010_01_21_tr05_A light of perceiving.mp3", "title": "A light of perceiving", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_21_tr05_A%2520light%2520of%2520perceiving.mp3"}, {"filename": "2010_01_21_tr06_Illusion is also a illusion.mp3", "title": "Illusion is also a illusion", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_21_tr06_Illusion%2520is%2520also%2520a%2520illusion.mp3"}, {"filename": "2010_01_21_tr07_The most potent question.mp3", "title": "The most potent question", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_21_tr07_The%2520most%2520potent%2520question.mp3"}, {"filename": "2010_01_21_tr08_Start with the feeling I am.mp3", "title": "Start with the feeling I am", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_21_tr08_Start%2520with%2520the%2520feeling%2520I%2520am.mp3"}, {"filename": "2010_01_21_tr09_Let it fully happen.mp3", "title": "Let it fully happen", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_21_tr09_Let%2520it%2520fully%2520happen.mp3"}, {"filename": "2010_01_21_tr10_The fundamental true.mp3", "title": "The fundamental true", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_21_tr10_The%2520fundamental%2520true.mp3"}, {"filename": "2010_01_21_tr11_The play of consciousness.mp3", "title": "The play of consciousness", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_21_tr11_The%2520play%2520of%2520consciousness.mp3"}, {"filename": "2010_01_21_tr12_Story The Cleaning Boy.mp3", "title": "Story The Cleaning Boy", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_21_tr12_Story%2520The%2520Cleaning%2520Boy.mp3"}, {"filename": "2010_01_21_tr13_Om Baghavan.mp3", "title": "Om Baghavan", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_21_tr13_Om%2520Baghavan.mp3"}]}, {"dir": "2010_01_22_Shortcut to the Distanceless", "date": "January 22, 2010", "title": "Shortcut to the Distanceless", "tracks": [{"filename": "2010_01_22_tr00_Many Have Awakened Here.mp3", "title": "Many Have Awakened Here", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr00_Many%2520Have%2520Awakened%2520Here.mp3"}, {"filename": "2010_01_22_tr01_Satsang is Association with Truth.mp3", "title": "Satsang is Association with Truth", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr01_Satsang%2520is%2520Association%2520with%2520Truth.mp3"}, {"filename": "2010_01_22_tr02_The Only Thing About You.mp3", "title": "The Only Thing About You", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr02_The%2520Only%2520Thing%2520About%2520You.mp3"}, {"filename": "2010_01_22_tr03_Can You Bear This Question.mp3", "title": "Can You Bear This Question", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr03_Can%2520You%2520Bear%2520This%2520Question.mp3"}, {"filename": "2010_01_22_tr04_Not Even This.mp3", "title": "Not Even This", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr04_Not%2520Even%2520This.mp3"}, {"filename": "2010_01_22_tr05_Understand 'I' First.mp3", "title": "Understand 'I' First", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr05_Understand%2520%2527I%2527%2520First.mp3"}, {"filename": "2010_01_22_tr06_See From Awareness.mp3", "title": "See From Awareness", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr06_See%2520From%2520Awareness.mp3"}, {"filename": "2010_01_22_tr07_Burning What You Are Not.mp3", "title": "Burning What You Are Not", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr07_Burning%2520What%2520You%2520Are%2520Not.mp3"}, {"filename": "2010_01_22_tr08_It Has No Shape.mp3", "title": "It Has No Shape", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr08_It%2520Has%2520No%2520Shape.mp3"}, {"filename": "2010_01_22_tr09_Content Being Alone.mp3", "title": "Content Being Alone", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr09_Content%2520Being%2520Alone.mp3"}, {"filename": "2010_01_22_tr10_You Are Consciousness.mp3", "title": "You Are Consciousness", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr10_You%2520Are%2520Consciousness.mp3"}, {"filename": "2010_01_22_tr11_Struck at the Greatness of God.mp3", "title": "Struck at the Greatness of God", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr11_Struck%2520at%2520the%2520Greatness%2520of%2520God.mp3"}, {"filename": "2010_01_22_tr12_My Heart Just Exploded.mp3", "title": "My Heart Just Exploded", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr12_My%2520Heart%2520Just%2520Exploded.mp3"}, {"filename": "2010_01_22_tr13_Mind Like Moon in Full Sun.mp3", "title": "Mind Like Moon in Full Sun", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr13_Mind%2520Like%2520Moon%2520in%2520Full%2520Sun.mp3"}, {"filename": "2010_01_22_tr14_Avadhuta Gita Reading.mp3", "title": "Avadhuta Gita Reading", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_22_tr14_Avadhuta%2520Gita%2520Reading.mp3"}]}, {"dir": "2010_01_23_Timeless", "date": "January 23, 2010", "title": "Timeless", "tracks": [{"filename": "2010_01_23_tr00_Introduction music.mp3", "title": "Introduction music", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_23_tr00_Introduction%2520music.mp3"}, {"filename": "2010_01_23_tr01_Singing this sweetness.mp3", "title": "Singing this sweetness", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_23_tr01_Singing%2520this%2520sweetness.mp3"}, {"filename": "2010_01_23_tr02_ I see you because you are invisible.mp3", "title": "I see you because you are invisible", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_23_tr02_%2520I%2520see%2520you%2520because%2520you%2520are%2520invisible.mp3"}, {"filename": "2010_01_23_tr03_Come back home.mp3", "title": "Come back home", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_23_tr03_Come%2520back%2520home.mp3"}, {"filename": "2010_01_23_tr04_The mind fell into silence.mp3", "title": "The mind fell into silence", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_23_tr04_The%2520mind%2520fell%2520into%2520silence.mp3"}, {"filename": "2010_01_23_tr05_Hold on to the sense I Am.mp3", "title": "Hold on to the sense I Am", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_23_tr05_Hold%2520on%2520to%2520the%2520sense%2520I%2520Am.mp3"}, {"filename": "2010_01_23_tr06_Watching without identifying.mp3", "title": "Watching without identifying", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_23_tr06_Watching%2520without%2520identifying.mp3"}, {"filename": "2010_01_23_tr07_The freedom of just Being.mp3", "title": "The freedom of just Being", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_23_tr07_The%2520freedom%2520of%2520just%2520Being.mp3"}, {"filename": "2010_01_23_tr08_A shower of Grace.mp3", "title": "A shower of Grace", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_23_tr08_A%2520shower%2520of%2520Grace.mp3"}, {"filename": "2010_01_23_tr09_I am going to die.mp3", "title": "I am going to die", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_23_tr09_I%2520am%2520going%2520to%2520die.mp3"}, {"filename": "2010_01_23_tr10_The cosmic unfolding.mp3", "title": "The cosmic unfolding", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_23_tr10_The%2520cosmic%2520unfolding.mp3"}, {"filename": "2010_01_23_tr11_The initiating point.mp3", "title": "The initiating point", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_23_tr11_The%2520initiating%2520point.mp3"}, {"filename": "2010_01_23_tr12_Satchidananda_Omkara.mp3", "title": "Satchidananda Omkara", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_23_tr12_Satchidananda_Omkara.mp3"}]}, {"dir": "2010_01_24_Come Until You Cannot Go", "date": "January 24, 2010", "title": "Come Until You Cannot Go", "tracks": [{"filename": "2010_01_24_tr00_Omkara - Love of God.mp3", "title": "Omkara - Love of God", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr00_Omkara%2520-%2520Love%2520of%2520God.mp3"}, {"filename": "2010_01_24_tr01_You Are the Greater.mp3", "title": "You Are the Greater", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr01_You%2520Are%2520the%2520Greater.mp3"}, {"filename": "2010_01_24_tr02_The Divine Mirror.mp3", "title": "The Divine Mirror", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr02_The%2520Divine%2520Mirror.mp3"}, {"filename": "2010_01_24_tr03_Be in Your True Position.mp3", "title": "Be in Your True Position", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr03_Be%2520in%2520Your%2520True%2520Position.mp3"}, {"filename": "2010_01_24_tr04_Like Crackers or Mozzarella.mp3", "title": "Like Crackers or Mozzarella", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr04_Like%2520Crackers%2520or%2520Mozzarella.mp3"}, {"filename": "2010_01_24_tr05_Blessed to Be Alone.mp3", "title": "Blessed to Be Alone", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr05_Blessed%2520to%2520Be%2520Alone.mp3"}, {"filename": "2010_01_24_tr06_I Am Already the Self.mp3", "title": "I Am Already the Self", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr06_I%2520Am%2520Already%2520the%2520Self.mp3"}, {"filename": "2010_01_24_tr07_One of God's Nutcases.mp3", "title": "One of God's Nutcases", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr07_One%2520of%2520God%2527s%2520Nutcases.mp3"}, {"filename": "2010_01_24_tr08_Coming Up to Go Out.mp3", "title": "Coming Up to Go Out", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr08_Coming%2520Up%2520to%2520Go%2520Out.mp3"}, {"filename": "2010_01_24_tr09_A Fully Available Discovery.mp3", "title": "A Fully Available Discovery", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr09_A%2520Fully%2520Available%2520Discovery.mp3"}, {"filename": "2010_01_24_tr10_It Is Not You.mp3", "title": "It Is Not You", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr10_It%2520Is%2520Not%2520You.mp3"}, {"filename": "2010_01_24_tr11_You Are God.mp3", "title": "You Are God", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr11_You%2520Are%2520God.mp3"}, {"filename": "2010_01_24_tr12_Unsplittable Awareness.mp3", "title": "Unsplittable Awareness", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr12_Unsplittable%2520Awareness.mp3"}, {"filename": "2010_01_24_tr13_Free to Enjoy.mp3", "title": "Free to Enjoy", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr13_Free%2520to%2520Enjoy.mp3"}, {"filename": "2010_01_24_tr14_Be True on Every Level.mp3", "title": "Be True on Every Level", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr14_Be%2520True%2520on%2520Every%2520Level.mp3"}, {"filename": "2010_01_24_tr15_This Cannot Go.mp3", "title": "This Cannot Go", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_24_tr15_This%2520Cannot%2520Go.mp3"}]}, {"dir": "2010_01_27_Beautifully Alone", "date": "January 27, 2010", "title": "Beautifully Alone", "tracks": [{"filename": "2010_01_27_tr00_Music Introduction.mp3", "title": "Music Introduction", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_27_tr00_Music%2520Introduction.mp3"}, {"filename": "2010_01_27_tr01_My Self Is My Home.mp3", "title": "My Self Is My Home", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_27_tr01_My%2520Self%2520Is%2520My%2520Home.mp3"}, {"filename": "2010_01_27_tr02_Stay By Yourself.mp3", "title": "Stay By Yourself", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_27_tr02_Stay%2520By%2520Yourself.mp3"}, {"filename": "2010_01_27_tr03_A Fresh Discovering.mp3", "title": "A Fresh Discovering", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_27_tr03_A%2520Fresh%2520Discovering.mp3"}, {"filename": "2010_01_27_tr04_There Is No Tangible Me.mp3", "title": "There Is No Tangible Me", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_27_tr04_There%2520Is%2520No%2520Tangible%2520Me.mp3"}, {"filename": "2010_01_27_tr05_Two Birds With One Stone.mp3", "title": "Two Birds With One Stone", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_27_tr05_Two%2520Birds%2520With%2520One%2520Stone.mp3"}, {"filename": "2010_01_27_tr06_Dealing With Addiction.mp3", "title": "Dealing With Addiction", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_27_tr06_Dealing%2520With%2520Addiction.mp3"}, {"filename": "2010_01_27_tr07_Beautifully Alone.mp3", "title": "Beautifully Alone", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_27_tr07_Beautifully%2520Alone.mp3"}, {"filename": "2010_01_27_tr08_Sweet and Serene Detachment.mp3", "title": "Sweet and Serene Detachment", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_27_tr08_Sweet%2520and%2520Serene%2520Detachment.mp3"}, {"filename": "2010_01_27_tr09_Intuitive Sense of Being.mp3", "title": "Intuitive Sense of Being", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_27_tr09_Intuitive%2520Sense%2520of%2520Being.mp3"}, {"filename": "2010_01_27_tr10_The Play of Existence.mp3", "title": "The Play of Existence", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_27_tr10_The%2520Play%2520of%2520Existence.mp3"}, {"filename": "2010_01_27_tr11_Identity is not Needed.mp3", "title": "Identity is not Needed", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_27_tr11_Identity%2520is%2520not%2520Needed.mp3"}, {"filename": "2010_01_27_tr12_You just come.mp3", "title": "You just come", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_27_tr12_You%2520just%2520come.mp3"}, {"filename": "2010_01_27_tr13_Shiva Shambo.mp3", "title": "Shiva Shambo", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_27_tr13_Shiva%2520Shambo.mp3"}]}, {"dir": "2010_01_28_How Long Will The Full Moon Last", "date": "January 28, 2010", "title": "How Long Will The Full Moon Last", "tracks": [{"filename": "2010_01_28_tr00_Omkara - Amazing Grace.mp3", "title": "Omkara - Amazing Grace", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_28_tr00_Omkara%2520-%2520Amazing%2520Grace.mp3"}, {"filename": "2010_01_28_tr01_Fundamental insight.mp3", "title": "Fundamental insight", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_28_tr01_Fundamental%2520insight.mp3"}, {"filename": "2010_01_28_tr02_There is only One.mp3", "title": "There is only One", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_28_tr02_There%2520is%2520only%2520One.mp3"}, {"filename": "2010_01_28_tr03_Who do you think you are.mp3", "title": "Who do you think you are", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_28_tr03_Who%2520do%2520you%2520think%2520you%2520are.mp3"}, {"filename": "2010_01_28_tr04_Storyless Presence.mp3", "title": "Storyless Presence", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_28_tr04_Storyless%2520Presence.mp3"}, {"filename": "2010_01_28_tr05_My ex problems.mp3", "title": "My ex problems", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_28_tr05_My%2520ex%2520problems.mp3"}, {"filename": "2010_01_28_tr06_The easiest thing.mp3", "title": "The easiest thing", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_28_tr06_The%2520easiest%2520thing.mp3"}, {"filename": "2010_01_28_tr07_Say 'Yes' to Truth.mp3", "title": "Say 'Yes' to Truth", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_28_tr07_Say%2520%2527Yes%2527%2520to%2520Truth.mp3"}, {"filename": "2010_01_28_tr08_To know without doubt.mp3", "title": "To know without doubt", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_28_tr08_To%2520know%2520without%2520doubt.mp3"}, {"filename": "2010_01_28_tr09_Use your fear.mp3", "title": "Use your fear", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_28_tr09_Use%2520your%2520fear.mp3"}, {"filename": "2010_01_28_tr10_I am is peace.mp3", "title": "I am is peace", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_28_tr10_I%2520am%2520is%2520peace.mp3"}, {"filename": "2010_01_28_tr11_A soup of sensations.mp3", "title": "A soup of sensations", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_28_tr11_A%2520soup%2520of%2520sensations.mp3"}, {"filename": "2010_01_28_tr12_Tremendous Love.mp3", "title": "Tremendous Love", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_28_tr12_Tremendous%2520Love.mp3"}, {"filename": "2010_01_28_tr13_Grace into your Heart.mp3", "title": "Grace into your Heart", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_28_tr13_Grace%2520into%2520your%2520Heart.mp3"}]}, {"dir": "2010_01_29_Is this love that I am feeling", "date": "January 29, 2010", "title": "Is this love that I am feeling", "tracks": [{"filename": "2010_01_29_tr00_Sri Ram Jay Ram_ Omkara.mp3", "title": "Sri Ram Jay Ram  Omkara", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr00_Sri%2520Ram%2520Jay%2520Ram_%2520Omkara.mp3"}, {"filename": "2010_01_29_tr01_It is done.mp3", "title": "It is done", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr01_It%2520is%2520done.mp3"}, {"filename": "2010_01_29_tr02_I is your true name.mp3", "title": "I is your true name", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr02_I%2520is%2520your%2520true%2520name.mp3"}, {"filename": "2010_01_29_tr03_Shake me out and replace me with God.mp3", "title": "Shake me out and replace me with God", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr03_Shake%2520me%2520out%2520and%2520replace%2520me%2520with%2520God.mp3"}, {"filename": "2010_01_29_tr04_The ultimate witness.mp3", "title": "The ultimate witness", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr04_The%2520ultimate%2520witness.mp3"}, {"filename": "2010_01_29_tr05_Burning in the snow.mp3", "title": "Burning in the snow", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr05_Burning%2520in%2520the%2520snow.mp3"}, {"filename": "2010_01_29_tr06_The maturing of love.mp3", "title": "The maturing of love", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr06_The%2520maturing%2520of%2520love.mp3"}, {"filename": "2010_01_29_tr07_You don't know how lucky you are.mp3", "title": "You don't know how lucky you are", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr07_You%2520don%2527t%2520know%2520how%2520lucky%2520you%2520are.mp3"}, {"filename": "2010_01_29_tr08_Stay Home.mp3", "title": "Stay Home", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr08_Stay%2520Home.mp3"}, {"filename": "2010_01_29_tr09_Love arising from inside.mp3", "title": "Love arising from inside", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr09_Love%2520arising%2520from%2520inside.mp3"}, {"filename": "2010_01_29_tr10_The truth inside wants to recognize itself.mp3", "title": "The truth inside wants to recognize itself", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr10_The%2520truth%2520inside%2520wants%2520to%2520recognize%2520itself.mp3"}, {"filename": "2010_01_29_tr11_The beauty in you and in me.mp3", "title": "The beauty in you and in me", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr11_The%2520beauty%2520in%2520you%2520and%2520in%2520me.mp3"}, {"filename": "2010_01_29_tr12_I combine my existence with you.mp3", "title": "I combine my existence with you", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr12_I%2520combine%2520my%2520existence%2520with%2520you.mp3"}, {"filename": "2010_01_29_tr13_In a moment of contemplation.mp3", "title": "In a moment of contemplation", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr13_In%2520a%2520moment%2520of%2520contemplation.mp3"}, {"filename": "2010_01_29_tr14_ My heart is opening.mp3", "title": "My heart is opening", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr14_%2520My%2520heart%2520is%2520opening.mp3"}, {"filename": "2010_01_29_tr15_Words from the Avadhuta.mp3", "title": "Words from the Avadhuta", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_29_tr15_Words%2520from%2520the%2520Avadhuta.mp3"}]}, {"dir": "2010_01_30_Breaking The Spell", "date": "January 30, 2010", "title": "Breaking The Spell", "tracks": [{"filename": "2010_01_30_tr00_Music Introduction.mp3", "title": "Music Introduction", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_30_tr00_Music%2520Introduction.mp3"}, {"filename": "2010_01_30_tr01_Hold Inside the Witness.mp3", "title": "Hold Inside the Witness", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_30_tr01_Hold%2520Inside%2520the%2520Witness.mp3"}, {"filename": "2010_01_30_tr02_Inside Heart Energy.mp3", "title": "Inside Heart Energy", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_30_tr02_Inside%2520Heart%2520Energy.mp3"}, {"filename": "2010_01_30_tr03_Something Earlier Than Attention.mp3", "title": "Something Earlier Than Attention", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_30_tr03_Something%2520Earlier%2520Than%2520Attention.mp3"}, {"filename": "2010_01_30_tr04_Letters.mp3", "title": "Letters", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_30_tr04_Letters.mp3"}, {"filename": "2010_01_30_tr05_Mind Is Not Sentient.mp3", "title": "Mind Is Not Sentient", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_30_tr05_Mind%2520Is%2520Not%2520Sentient.mp3"}, {"filename": "2010_01_30_tr06_Take It Fresh.mp3", "title": "Take It Fresh", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_30_tr06_Take%2520It%2520Fresh.mp3"}, {"filename": "2010_01_30_tr07_You Are The Source.mp3", "title": "You Are The Source", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_30_tr07_You%2520Are%2520The%2520Source.mp3"}, {"filename": "2010_01_30_tr08_A Visa to Eternity.mp3", "title": "A Visa to Eternity", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_30_tr08_A%2520Visa%2520to%2520Eternity.mp3"}, {"filename": "2010_01_30_tr09_Find The Timeless Being.mp3", "title": "Find The Timeless Being", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_30_tr09_Find%2520The%2520Timeless%2520Being.mp3"}, {"filename": "2010_01_30_tr10_A Mirror for The Supreme.mp3", "title": "A Mirror for The Supreme", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_30_tr10_A%2520Mirror%2520for%2520The%2520Supreme.mp3"}, {"filename": "2010_01_30_tr11_Music I am Calling You.mp3", "title": "Music I am Calling You", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_30_tr11_Music%2520I%2520am%2520Calling%2520You.mp3"}, {"filename": "2010_01_30_tr12_Deep Your Head and Look Again.mp3", "title": "Deep Your Head and Look Again", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_30_tr12_Deep%2520Your%2520Head%2520and%2520Look%2520Again.mp3"}]}, {"dir": "2010_01_31_Is-ness is the Business", "date": "January 31, 2010", "title": "Is-ness is the Business", "tracks": [{"filename": "2010_01_31_tr00_Omkara - Love of God.mp3", "title": "Omkara - Love of God", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr00_Omkara%2520-%2520Love%2520of%2520God.mp3"}, {"filename": "2010_01_31_tr01_No World, No Suffering.mp3", "title": "No World, No Suffering", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr01_No%2520World%252C%2520No%2520Suffering.mp3"}, {"filename": "2010_01_31_tr02_Die While You Are Alive.mp3", "title": "Die While You Are Alive", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr02_Die%2520While%2520You%2520Are%2520Alive.mp3"}, {"filename": "2010_01_31_tr03_The Light is Only One.mp3", "title": "The Light is Only One", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr03_The%2520Light%2520is%2520Only%2520One.mp3"}, {"filename": "2010_01_31_tr04_Have Eyes Only for This.mp3", "title": "Have Eyes Only for This", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr04_Have%2520Eyes%2520Only%2520for%2520This.mp3"}, {"filename": "2010_01_31_tr05_Root Awareness.mp3", "title": "Root Awareness", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr05_Root%2520Awareness.mp3"}, {"filename": "2010_01_31_tr06_Confirm Your 'Already So-ness'.mp3", "title": "Confirm Your 'Already So-ness'", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr06_Confirm%2520Your%2520%2527Already%2520So-ness%2527.mp3"}, {"filename": "2010_01_31_tr07_Slipping Into Emptiness.mp3", "title": "Slipping Into Emptiness", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr07_Slipping%2520Into%2520Emptiness.mp3"}, {"filename": "2010_01_31_tr08_Keep Quiet.mp3", "title": "Keep Quiet", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr08_Keep%2520Quiet.mp3"}, {"filename": "2010_01_31_tr09_50 Years, Then a Short-cut.mp3", "title": "50 Years, Then a Short-cut", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr09_50%2520Years%252C%2520Then%2520a%2520Short-cut.mp3"}, {"filename": "2010_01_31_tr10_No Time for Identity-Indulging.mp3", "title": "No Time for Identity-Indulging", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr10_No%2520Time%2520for%2520Identity-Indulging.mp3"}, {"filename": "2010_01_31_tr11_The Self Knows the Combination to Every Heart.mp3", "title": "The Self Knows the Combination to Every Heart", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr11_The%2520Self%2520Knows%2520the%2520Combination%2520to%2520Every%2520Heart.mp3"}, {"filename": "2010_01_31_tr12_Return Home With the Universe.mp3", "title": "Return Home With the Universe", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr12_Return%2520Home%2520With%2520the%2520Universe.mp3"}, {"filename": "2010_01_31_tr13_My Pirhana Question.mp3", "title": "My Pirhana Question", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr13_My%2520Pirhana%2520Question.mp3"}, {"filename": "2010_01_31_tr14_Speechless Seeing.mp3", "title": "Speechless Seeing", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr14_Speechless%2520Seeing.mp3"}, {"filename": "2010_01_31_tr15_Mukti - Is-ness is the Business.mp3", "title": "Mukti - Is-ness is the Business", "rel_path": "https://archive.org/download/aruna2010sat/2010_01_31_tr15_Mukti%2520-%2520Is-ness%2520is%2520the%2520Business.mp3"}]}, {"dir": "2010_02_03_A Bomb of Silence", "date": "February 3, 2010", "title": "A Bomb of Silence", "tracks": [{"filename": "2010_02_03_tr00_Music Introduction.mp3", "title": "Music Introduction", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_03_tr00_Music%2520Introduction.mp3"}, {"filename": "2010_02_03_tr01_A Silence Bomb.mp3", "title": "A Silence Bomb", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_03_tr01_A%2520Silence%2520Bomb.mp3"}, {"filename": "2010_02_03_tr02_Always Alive Inside.mp3", "title": "Always Alive Inside", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_03_tr02_Always%2520Alive%2520Inside.mp3"}, {"filename": "2010_02_03_tr03_From Person To Being.mp3", "title": "From Person To Being", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_03_tr03_From%2520Person%2520To%2520Being.mp3"}, {"filename": "2010_02_03_tr04_Keep Quiet.mp3", "title": "Keep Quiet", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_03_tr04_Keep%2520Quiet.mp3"}, {"filename": "2010_02_03_tr05_What Are You So Afraid Of.mp3", "title": "What Are You So Afraid Of", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_03_tr05_What%2520Are%2520You%2520So%2520Afraid%2520Of.mp3"}, {"filename": "2010_02_03_tr06_The Joy of Being.mp3", "title": "The Joy of Being", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_03_tr06_The%2520Joy%2520of%2520Being.mp3"}, {"filename": "2010_02_03_tr07_Just Emptiness There.mp3", "title": "Just Emptiness There", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_03_tr07_Just%2520Emptiness%2520There.mp3"}, {"filename": "2010_02_03_tr08_The Information Is Not You.mp3", "title": "The Information Is Not You", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_03_tr08_The%2520Information%2520Is%2520Not%2520You.mp3"}, {"filename": "2010_02_03_tr09_Stay Neutral Inside Your being.mp3", "title": "Stay Neutral Inside Your being", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_03_tr09_Stay%2520Neutral%2520Inside%2520Your%2520being.mp3"}, {"filename": "2010_02_03_tr10_Step On The Unknown Feeling.mp3", "title": "Step On The Unknown Feeling", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_03_tr10_Step%2520On%2520The%2520Unknown%2520Feeling.mp3"}, {"filename": "2010_02_03_tr11_Let Fears Go By.mp3", "title": "Let Fears Go By", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_03_tr11_Let%2520Fears%2520Go%2520By.mp3"}, {"filename": "2010_02_03_tr12_Reading from Ribbhu Gita.mp3", "title": "Reading from Ribbhu Gita", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_03_tr12_Reading%2520from%2520Ribbhu%2520Gita.mp3"}, {"filename": "2010_02_03_tr13_I Am Here What Can Go Wrong.mp3", "title": "I Am Here What Can Go Wrong", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_03_tr13_I%2520Am%2520Here%2520What%2520Can%2520Go%2520Wrong.mp3"}]}, {"dir": "2010_02_04_Ramana's Eyes, Shiva's Heart, Krishna's Love", "date": "February 4, 2010", "title": "Ramana's Eyes, Shiva's Heart, Krishna's Love", "tracks": [{"filename": "2010_02_04_tr00_Janya - Amazing Grace.mp3", "title": "Janya - Amazing Grace", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr00_Janya%2520-%2520Amazing%2520Grace.mp3"}, {"filename": "2010_02_04_tr01_Mind is Going Crazy.mp3", "title": "Mind is Going Crazy", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr01_Mind%2520is%2520Going%2520Crazy.mp3"}, {"filename": "2010_02_04_tr02_The Broken Finger of 'I'.mp3", "title": "The Broken Finger of 'I'", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr02_The%2520Broken%2520Finger%2520of%2520%2527I%2527.mp3"}, {"filename": "2010_02_04_tr03_Just Be 'I Am'.mp3", "title": "Just Be 'I Am'", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr03_Just%2520Be%2520%2527I%2520Am%2527.mp3"}, {"filename": "2010_02_04_tr04_At the Point of Freedom....mp3", "title": "At the Point of Freedom...", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr04_At%2520the%2520Point%2520of%2520Freedom....mp3"}, {"filename": "2010_02_04_tr05_Human and Divine.mp3", "title": "Human and Divine", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr05_Human%2520and%2520Divine.mp3"}, {"filename": "2010_02_04_tr06_Your Original Name.mp3", "title": "Your Original Name", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr06_Your%2520Original%2520Name.mp3"}, {"filename": "2010_02_04_tr07_Identification is Only a Phenomenon.mp3", "title": "Identification is Only a Phenomenon", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr07_Identification%2520is%2520Only%2520a%2520Phenomenon.mp3"}, {"filename": "2010_02_04_tr08_I Alone Am.mp3", "title": "I Alone Am", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr08_I%2520Alone%2520Am.mp3"}, {"filename": "2010_02_04_tr09_I See Only Myself.mp3", "title": "I See Only Myself", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr09_I%2520See%2520Only%2520Myself.mp3"}, {"filename": "2010_02_04_tr10_Janya - Amazing Grace.mp3", "title": "Janya - Amazing Grace", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr10_Janya%2520-%2520Amazing%2520Grace.mp3"}, {"filename": "2010_02_04_tr11_Thank You.mp3", "title": "Thank You", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr11_Thank%2520You.mp3"}, {"filename": "2010_02_04_tr12_Shiva's Heart.mp3", "title": "Shiva's Heart", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr12_Shiva%2527s%2520Heart.mp3"}, {"filename": "2010_02_04_tr13_Don't Go Into the Mind.mp3", "title": "Don't Go Into the Mind", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr13_Don%2527t%2520Go%2520Into%2520the%2520Mind.mp3"}, {"filename": "2010_02_04_tr14_Ribhu Gita Reading.mp3", "title": "Ribhu Gita Reading", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_04_tr14_Ribhu%2520Gita%2520Reading.mp3"}]}, {"dir": "2010_02_05_Rumi, sausage and chips", "date": "February 5, 2010", "title": "Rumi, sausage and chips", "tracks": [{"filename": "2010_02_05_tr00_Music Introduction.mp3", "title": "Music Introduction", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr00_Music%2520Introduction.mp3"}, {"filename": "2010_02_05_tr01_Leaving all aside.mp3", "title": "Leaving all aside", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr01_Leaving%2520all%2520aside.mp3"}, {"filename": "2010_02_05_tr02_ I want to be alone.mp3", "title": "I want to be alone", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr02_%2520I%2520want%2520to%2520be%2520alone.mp3"}, {"filename": "2010_02_05_tr03_The excellence of nothing.mp3", "title": "The excellence of nothing", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr03_The%2520excellence%2520of%2520nothing.mp3"}, {"filename": "2010_02_05_tr04_Silent gratitude.mp3", "title": "Silent gratitude", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr04_Silent%2520gratitude.mp3"}, {"filename": "2010_02_05_tr05_Be attached to what doesn't leave.mp3", "title": "Be attached to what doesn't leave", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr05_Be%2520attached%2520to%2520what%2520doesn%2527t%2520leave.mp3"}, {"filename": "2010_02_05_tr06_I don't want anything.mp3", "title": "I don't want anything", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr06_I%2520don%2527t%2520want%2520anything.mp3"}, {"filename": "2010_02_05_tr07_There is just love.mp3", "title": "There is just love", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr07_There%2520is%2520just%2520love.mp3"}, {"filename": "2010_02_05_tr08_I am nameless now.mp3", "title": "I am nameless now", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr08_I%2520am%2520nameless%2520now.mp3"}, {"filename": "2010_02_05_tr09_Trust yourself.mp3", "title": "Trust yourself", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr09_Trust%2520yourself.mp3"}, {"filename": "2010_02_05_tr10_Emptiness is looking at me.mp3", "title": "Emptiness is looking at me", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr10_Emptiness%2520is%2520looking%2520at%2520me.mp3"}, {"filename": "2010_02_05_tr11_Just remove what is not true.mp3", "title": "Just remove what is not true", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr11_Just%2520remove%2520what%2520is%2520not%2520true.mp3"}, {"filename": "2010_02_05_tr12_ I know who I am.mp3", "title": "I know who I am", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr12_%2520I%2520know%2520who%2520I%2520am.mp3"}, {"filename": "2010_02_05_tr13_The gentle giant.mp3", "title": "The gentle giant", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr13_The%2520gentle%2520giant.mp3"}, {"filename": "2010_02_05_tr14_Hare Krishna sung by Omkara.mp3", "title": "Hare Krishna sung by Omkara", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_05_tr14_Hare%2520Krishna%2520sung%2520by%2520Omkara.mp3"}]}, {"dir": "2010_02_06_A Garland to the Self", "date": "February 6, 2010", "title": "A Garland to the Self", "tracks": [{"filename": "2010_02_06_tr00_  Omkara- Add Guray Nameh.mp3", "title": "Omkara- Add Guray Nameh", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_06_tr00_%2520%2520Omkara-%2520Add%2520Guray%2520Nameh.mp3"}, {"filename": "2010_02_06_tr01_The Self is bowing to the Self.mp3", "title": "The Self is bowing to the Self", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_06_tr01_The%2520Self%2520is%2520bowing%2520to%2520the%2520Self.mp3"}, {"filename": "2010_02_06_tr02_Don't waste time.mp3", "title": "Don't waste time", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_06_tr02_Don%2527t%2520waste%2520time.mp3"}, {"filename": "2010_02_06_tr03_Locate the sufferer.mp3", "title": "Locate the sufferer", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_06_tr03_Locate%2520the%2520sufferer.mp3"}, {"filename": "2010_02_06_tr04_A momentary dream.mp3", "title": "A momentary dream", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_06_tr04_A%2520momentary%2520dream.mp3"}, {"filename": "2010_02_06_tr05_Life takes care of life.mp3", "title": "Life takes care of life", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_06_tr05_Life%2520takes%2520care%2520of%2520life.mp3"}, {"filename": "2010_02_06_tr06_There is only one to whom nothing is happening.mp3", "title": "There is only one to whom nothing is happening", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_06_tr06_There%2520is%2520only%2520one%2520to%2520whom%2520nothing%2520is%2520happening.mp3"}, {"filename": "2010_02_06_tr07_You are Timeless.mp3", "title": "You are Timeless", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_06_tr07_You%2520are%2520Timeless.mp3"}, {"filename": "2010_02_06_tr08_You can't be tempted unless you are temptable.mp3", "title": "You can't be tempted unless you are temptable", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_06_tr08_You%2520can%2527t%2520be%2520tempted%2520unless%2520you%2520are%2520temptable.mp3"}, {"filename": "2010_02_06_tr09_The body like a jail.mp3", "title": "The body like a jail", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_06_tr09_The%2520body%2520like%2520a%2520jail.mp3"}, {"filename": "2010_02_06_tr10_At your feet.mp3", "title": "At your feet", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_06_tr10_At%2520your%2520feet.mp3"}, {"filename": "2010_02_06_tr11_Omkara - Aad Guray Nameh.mp3", "title": "Omkara - Aad Guray Nameh", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_06_tr11_Omkara%2520-%2520Aad%2520Guray%2520Nameh.mp3"}, {"filename": "2010_02_06_tr12_Reading from the Ribhu Gita.mp3", "title": "Reading from the Ribhu Gita", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_06_tr12_Reading%2520from%2520the%2520Ribhu%2520Gita.mp3"}]}, {"dir": "2010_02_07_Naked Mind, Open Heart", "date": "February 7, 2010", "title": "Naked Mind, Open Heart", "tracks": [{"filename": "2010_02_07_tr00_Music Introduction.mp3", "title": "Music Introduction", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr00_Music%2520Introduction.mp3"}, {"filename": "2010_02_07_tr01_A Little Twist Of Attention.mp3", "title": "A Little Twist Of Attention", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr01_A%2520Little%2520Twist%2520Of%2520Attention.mp3"}, {"filename": "2010_02_07_tr02_Information Is Not Knowledge.mp3", "title": "Information Is Not Knowledge", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr02_Information%2520Is%2520Not%2520Knowledge.mp3"}, {"filename": "2010_02_07_tr03_The Witness of Everything.mp3", "title": "The Witness of Everything", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr03_The%2520Witness%2520of%2520Everything.mp3"}, {"filename": "2010_02_07_tr04_Words From Another Place.mp3", "title": "Words From Another Place", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr04_Words%2520From%2520Another%2520Place.mp3"}, {"filename": "2010_02_07_tr05_Freedom Is Our Way.mp3", "title": "Freedom Is Our Way", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr05_Freedom%2520Is%2520Our%2520Way.mp3"}, {"filename": "2010_02_07_tr06_What I Am Can Not Die.mp3", "title": "What I Am Can Not Die", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr06_What%2520I%2520Am%2520Can%2520Not%2520Die.mp3"}, {"filename": "2010_02_07_tr07_There Must Be An Urge.mp3", "title": "There Must Be An Urge", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr07_There%2520Must%2520Be%2520An%2520Urge.mp3"}, {"filename": "2010_02_07_tr08_The Best Meditation.mp3", "title": "The Best Meditation", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr08_The%2520Best%2520Meditation.mp3"}, {"filename": "2010_02_07_tr09_Last Flea To Manifest Me.mp3", "title": "Last Flea To Manifest Me", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr09_Last%2520Flea%2520To%2520Manifest%2520Me.mp3"}, {"filename": "2010_02_07_tr10_Remain As That.mp3", "title": "Remain As That", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr10_Remain%2520As%2520That.mp3"}, {"filename": "2010_02_07_tr11_Let Life Be Lived.mp3", "title": "Let Life Be Lived", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr11_Let%2520Life%2520Be%2520Lived.mp3"}, {"filename": "2010_02_07_tr12_We Are Only Dreaming.mp3", "title": "We Are Only Dreaming", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr12_We%2520Are%2520Only%2520Dreaming.mp3"}, {"filename": "2010_02_07_tr13_What I Is .mp3", "title": "What I Is", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr13_What%2520I%2520Is%2520.mp3"}, {"filename": "2010_02_07_tr14_Om Namo Bhagavati.mp3", "title": "Om Namo Bhagavati", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_07_tr14_Om%2520Namo%2520Bhagavati.mp3"}]}, {"dir": "2010_02_10_Bathing in Grace", "date": "February 10, 2010", "title": "Bathing in Grace", "tracks": [{"filename": "2010_02_10_tr00_Omkara- Om Namo.mp3", "title": "Omkara- Om Namo", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_10_tr00_Omkara-%2520Om%2520Namo.mp3"}, {"filename": "2010_02_10_tr01_The different between Love and attachment.mp3", "title": "The different between Love and attachment", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_10_tr01_The%2520different%2520between%2520Love%2520and%2520attachment.mp3"}, {"filename": "2010_02_10_tr02_Universe in your consciousness.mp3", "title": "Universe in your consciousness", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_10_tr02_Universe%2520in%2520your%2520consciousness.mp3"}, {"filename": "2010_02_10_tr03_Let things happen.mp3", "title": "Let things happen", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_10_tr03_Let%2520things%2520happen.mp3"}, {"filename": "2010_02_10_tr04_No thought is self employed.mp3", "title": "No thought is self employed", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_10_tr04_No%2520thought%2520is%2520self%2520employed.mp3"}, {"filename": "2010_02_10_tr05_Bathing in Grace.mp3", "title": "Bathing in Grace", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_10_tr05_Bathing%2520in%2520Grace.mp3"}, {"filename": "2010_02_10_tr06_Your Shiva Being.mp3", "title": "Your Shiva Being", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_10_tr06_Your%2520Shiva%2520Being.mp3"}, {"filename": "2010_02_10_tr07_I Am - The seed of existence.mp3", "title": "I Am - The seed of existence", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_10_tr07_I%2520Am%2520-%2520The%2520seed%2520of%2520existence.mp3"}, {"filename": "2010_02_10_tr08_ Stay as I Am.mp3", "title": "Stay as I Am", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_10_tr08_%2520Stay%2520as%2520I%2520Am.mp3"}, {"filename": "2010_02_10_tr09_Laloby  Song.mp3", "title": "Laloby  Song", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_10_tr09_Laloby%2520%2520Song.mp3"}, {"filename": "2010_02_10_tr10_Let everything come and go.mp3", "title": "Let everything come and go", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_10_tr10_Let%2520everything%2520come%2520and%2520go.mp3"}, {"filename": "2010_02_10_tr11_Duality is not a mistake.mp3", "title": "Duality is not a mistake", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_10_tr11_Duality%2520is%2520not%2520a%2520mistake.mp3"}, {"filename": "2010_02_10_tr12_Forms of Space.mp3", "title": "Forms of Space", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_10_tr12_Forms%2520of%2520Space.mp3"}, {"filename": "2010_02_10_tr13_Untouched.mp3", "title": "Untouched", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_10_tr13_Untouched.mp3"}]}, {"dir": "2010_02_11_Beyond I Am", "date": "February 11, 2010", "title": "Beyond I Am", "tracks": [{"filename": "2010_02_11_t03_Beyond I am.mp3", "title": "t03 Beyond I am", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_11_t03_Beyond%2520I%2520am.mp3"}, {"filename": "2010_02_11_tr00_Clip Love of God.mp3", "title": "Clip Love of God", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_11_tr00_Clip%2520Love%2520of%2520God.mp3"}, {"filename": "2010_02_11_tr01_You Are One.mp3", "title": "You Are One", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_11_tr01_You%2520Are%2520One.mp3"}, {"filename": "2010_02_11_tr02_The First Seed.mp3", "title": "The First Seed", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_11_tr02_The%2520First%2520Seed.mp3"}, {"filename": "2010_02_11_tr04_The Feeling Of None-ness.mp3", "title": "The Feeling Of None-ness", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_11_tr04_The%2520Feeling%2520Of%2520None-ness.mp3"}, {"filename": "2010_02_11_tr05_And The Words Disappear.mp3", "title": "And The Words Disappear", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_11_tr05_And%2520The%2520Words%2520Disappear.mp3"}, {"filename": "2010_02_11_tr06_Fear of Deep Sleep.mp3", "title": "Fear of Deep Sleep", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_11_tr06_Fear%2520of%2520Deep%2520Sleep.mp3"}, {"filename": "2010_02_11_tr07_When Life Gives Lemon Make A Lemonade.mp3", "title": "When Life Gives Lemon Make A Lemonade", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_11_tr07_When%2520Life%2520Gives%2520Lemon%2520Make%2520A%2520Lemonade.mp3"}, {"filename": "2010_02_11_tr08_Take Me Beyond.mp3", "title": "Take Me Beyond", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_11_tr08_Take%2520Me%2520Beyond.mp3"}, {"filename": "2010_02_11_tr09_The Natural Feeling Of I Am.mp3", "title": "The Natural Feeling Of I Am", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_11_tr09_The%2520Natural%2520Feeling%2520Of%2520I%2520Am.mp3"}, {"filename": "2010_02_11_tr10_Song Everything is Shiva.mp3", "title": "Song Everything is Shiva", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_11_tr10_Song%2520Everything%2520is%2520Shiva.mp3"}]}, {"dir": "2010_02_12_Divine Samurai", "date": "February 12, 2010", "title": "Divine Samurai", "tracks": [{"filename": "2010_02_12_tr00_Bahman singing Rumi.mp3", "title": "Bahman singing Rumi", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_12_tr00_Bahman%2520singing%2520Rumi.mp3"}, {"filename": "2010_02_12_tr01_Divine Samurai.mp3", "title": "Divine Samurai", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_12_tr01_Divine%2520Samurai.mp3"}, {"filename": "2010_02_12_tr02_Locate your true presence.mp3", "title": "Locate your true presence", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_12_tr02_Locate%2520your%2520true%2520presence.mp3"}, {"filename": "2010_02_12_tr03_The presence of Presence.mp3", "title": "The presence of Presence", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_12_tr03_The%2520presence%2520of%2520Presence.mp3"}, {"filename": "2010_02_12_tr04_I am concept free.mp3", "title": "I am concept free", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_12_tr04_I%2520am%2520concept%2520free.mp3"}, {"filename": "2010_02_12_tr05_Not addicted to journeys.mp3", "title": "Not addicted to journeys", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_12_tr05_Not%2520addicted%2520to%2520journeys.mp3"}, {"filename": "2010_02_12_tr06_The immaculate conception.mp3", "title": "The immaculate conception", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_12_tr06_The%2520immaculate%2520conception.mp3"}, {"filename": "2010_02_12_tr07_You are what you are.mp3", "title": "You are what you are", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_12_tr07_You%2520are%2520what%2520you%2520are.mp3"}, {"filename": "2010_02_12_tr08_The place that cannot be described.mp3", "title": "The place that cannot be described", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_12_tr08_The%2520place%2520that%2520cannot%2520be%2520described.mp3"}, {"filename": "2010_02_12_tr09_Immerse the Self in This.mp3", "title": "Immerse the Self in This", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_12_tr09_Immerse%2520the%2520Self%2520in%2520This.mp3"}, {"filename": "2010_02_12_tr10_I am not.mp3", "title": "I am not", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_12_tr10_I%2520am%2520not.mp3"}]}, {"dir": "2010_02_13_Even The Flowers Are Saying It`s Saturday", "date": "February 13, 2010", "title": "Even The Flowers Are Saying It`s Saturday", "tracks": [{"filename": "2010_02_13_tr00_The Dog With A Broken Leg.mp3", "title": "The Dog With A Broken Leg", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_13_tr00_The%2520Dog%2520With%2520A%2520Broken%2520Leg.mp3"}, {"filename": "2010_02_13_tr01_Strong Desire For That.mp3", "title": "Strong Desire For That", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_13_tr01_Strong%2520Desire%2520For%2520That.mp3"}, {"filename": "2010_02_13_tr02_A Simple Pointing.mp3", "title": "A Simple Pointing", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_13_tr02_A%2520Simple%2520Pointing.mp3"}, {"filename": "2010_02_13_tr03_What Is The I That Says Am.mp3", "title": "What Is The I That Says Am", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_13_tr03_What%2520Is%2520The%2520I%2520That%2520Says%2520Am.mp3"}, {"filename": "2010_02_13_tr04_The True Lord Land Is Home.mp3", "title": "The True Lord Land Is Home", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_13_tr04_The%2520True%2520Lord%2520Land%2520Is%2520Home.mp3"}, {"filename": "2010_02_13_tr05_Don't Delay Your Seeing.mp3", "title": "Don't Delay Your Seeing", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_13_tr05_Don%2527t%2520Delay%2520Your%2520Seeing.mp3"}, {"filename": "2010_02_13_tr06_Confirm Belief Through Experience.mp3", "title": "Confirm Belief Through Experience", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_13_tr06_Confirm%2520Belief%2520Through%2520Experience.mp3"}, {"filename": "2010_02_13_tr07_The Self Is Praying To The self.mp3", "title": "The Self Is Praying To The self", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_13_tr07_The%2520Self%2520Is%2520Praying%2520To%2520The%2520self.mp3"}, {"filename": "2010_02_13_tr08_Leave People Alone.mp3", "title": "Leave People Alone", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_13_tr08_Leave%2520People%2520Alone.mp3"}, {"filename": "2010_02_13_tr09_Love is The Expression Of Existence.mp3", "title": "Love is The Expression Of Existence", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_13_tr09_Love%2520is%2520The%2520Expression%2520Of%2520Existence.mp3"}, {"filename": "2010_02_13_tr10_Your Eternal Being.mp3", "title": "Your Eternal Being", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_13_tr10_Your%2520Eternal%2520Being.mp3"}]}, {"dir": "2010_02_14_I Went For a Walk and Never Came Back", "date": "February 14, 2010", "title": "I Went For a Walk and Never Came Back", "tracks": [{"filename": "2010_02_14_tr00_Omkara.mp3", "title": "Omkara", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr00_Omkara.mp3"}, {"filename": "2010_02_14_tr01_Space of Being.mp3", "title": "Space of Being", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr01_Space%2520of%2520Being.mp3"}, {"filename": "2010_02_14_tr02_Always right now.mp3", "title": "Always right now", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr02_Always%2520right%2520now.mp3"}, {"filename": "2010_02_14_tr03_Don't use the inquiry merely as a pain killer.mp3", "title": "Don't use the inquiry merely as a pain killer", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr03_Don%2527t%2520use%2520the%2520inquiry%2520merely%2520as%2520a%2520pain%2520killer.mp3"}, {"filename": "2010_02_14_tr04_Don't use the inquiry merely as a pain killer.mp3", "title": "Don't use the inquiry merely as a pain killer", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr04_Don%2527t%2520use%2520the%2520inquiry%2520merely%2520as%2520a%2520pain%2520killer.mp3"}, {"filename": "2010_02_14_tr05_The ping pong of the mind.mp3", "title": "The ping pong of the mind", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr05_The%2520ping%2520pong%2520of%2520the%2520mind.mp3"}, {"filename": "2010_02_14_tr06_The burning ghat of the ego.mp3", "title": "The burning ghat of the ego", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr06_The%2520burning%2520ghat%2520of%2520the%2520ego.mp3"}, {"filename": "2010_02_14_tr07_Grace brought you here.mp3", "title": "Grace brought you here", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr07_Grace%2520brought%2520you%2520here.mp3"}, {"filename": "2010_02_14_tr08_What to do - the mantra of the mind.mp3", "title": "What to do - the mantra of the mind", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr08_What%2520to%2520do%2520-%2520the%2520mantra%2520of%2520the%2520mind.mp3"}, {"filename": "2010_02_14_tr09_Experience your own findings.mp3", "title": "Experience your own findings", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr09_Experience%2520your%2520own%2520findings.mp3"}, {"filename": "2010_02_14_tr10_The feeling of being.mp3", "title": "The feeling of being", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr10_The%2520feeling%2520of%2520being.mp3"}, {"filename": "2010_02_14_tr11_I couldn't find myself.mp3", "title": "I couldn't find myself", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr11_I%2520couldn%2527t%2520find%2520myself.mp3"}, {"filename": "2010_02_14_tr12_Inner space.mp3", "title": "Inner space", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr12_Inner%2520space.mp3"}, {"filename": "2010_02_14_tr13_You are earlier than all concepts.mp3", "title": "You are earlier than all concepts", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr13_You%2520are%2520earlier%2520than%2520all%2520concepts.mp3"}, {"filename": "2010_02_14_tr14_Song- Arunachala Shiva.mp3", "title": "Song- Arunachala Shiva", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr14_Song-%2520Arunachala%2520Shiva.mp3"}, {"filename": "2010_02_14_tr15_Reading from the Avadut.mp3", "title": "Reading from the Avadut", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr15_Reading%2520from%2520the%2520Avadut.mp3"}, {"filename": "2010_02_14_tr16_Go in Peace.mp3", "title": "Go in Peace", "rel_path": "https://archive.org/download/aruna2010sat/2010_02_14_tr16_Go%2520in%2520Peace.mp3"}]}];
+
+    // State Variables
+    let currentSatsangIdx = 0;
+    let currentTrackIdx = 0;
+    let isPlaying = false;
+    let volume = 0.8; // default volume
+    let isMuted = false;
+    let prevVolume = 0.8;
+
+    // Audio Instance
+    const audio = new Audio();
+
+    // DOM Elements
+    const satsangListEl = document.getElementById('satsangList');
+    const drawerSatsangListEl = document.getElementById('drawerSatsangList');
+    const tracksListEl = document.getElementById('tracksList');
+    const searchInput = document.getElementById('searchInput');
+    const drawerSearchInput = document.getElementById('drawerSearchInput');
+    
+    // Player DOM
+    const playerDate = document.getElementById('playerDate');
+    const playerSatsangTitle = document.getElementById('playerSatsangTitle');
+    const playerTrackTitle = document.getElementById('playerTrackTitle');
+    
+    // Controls & Progress
+    const btnPlay = document.getElementById('btnPlay');
+    const playIcon = document.getElementById('playIcon');
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const btnMute = document.getElementById('btnMute');
+    const volumeIcon = document.getElementById('volumeIcon');
+    
+    const progressBarWrapper = document.getElementById('progressBarWrapper');
+    const progressFill = document.getElementById('progressFill');
+    const progressHandle = document.getElementById('progressHandle');
+    const timeCurrent = document.getElementById('timeCurrent');
+    const timeTotal = document.getElementById('timeTotal');
+    const volumeSliderWrapper = document.getElementById('volumeSliderWrapper');
+    const volumeFill = document.getElementById('volumeFill');
+
+    // Mobile Drawer Elements
+    const menuOpenBtn = document.getElementById('menuOpenBtn');
+    const menuCloseBtn = document.getElementById('menuCloseBtn');
+    const drawerOverlay = document.getElementById('drawerOverlay');
+    const mobileDrawer = document.getElementById('mobileDrawer');
+
+    // Init App
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSavedState();
+      renderSatsangs();
+      selectSatsang(currentSatsangIdx, false); // select without autoplay on load
+      
+      // Setup Audio Listeners
+      setupAudioListeners();
+      // Setup UI Listeners
+      setupUIListeners();
+    });
+
+    // Load saved state from LocalStorage
+    function loadSavedState() {
+      const savedSatsang = localStorage.getItem('mooji_satsang_idx');
+      const savedTrack = localStorage.getItem('mooji_track_idx');
+      const savedPos = localStorage.getItem('mooji_playback_pos');
+      const savedVol = localStorage.getItem('mooji_volume');
+      
+      if (savedSatsang !== null) currentSatsangIdx = parseInt(savedSatsang, 10);
+      if (savedTrack !== null) currentTrackIdx = parseInt(savedTrack, 10);
+      if (savedVol !== null) {
+        volume = parseFloat(savedVol);
+        audio.volume = volume;
+        updateVolumeUI();
+      }
+      
+      // We will apply savedPos once the track is loaded
+      if (savedPos !== null) {
+        const targetPos = parseFloat(savedPos);
+        audio.addEventListener('loadedmetadata', function onLoaded() {
+          audio.currentTime = targetPos;
+          updateProgressBar();
+          audio.removeEventListener('loadedmetadata', onLoaded);
+        });
+      }
+    }
+
+    // Save State helper
+    function saveState() {
+      localStorage.setItem('mooji_satsang_idx', currentSatsangIdx);
+      localStorage.setItem('mooji_track_idx', currentTrackIdx);
+      localStorage.setItem('mooji_playback_pos', audio.currentTime);
+      localStorage.setItem('mooji_volume', volume);
+    }
+
+    // Throttled position saving
+    let lastSaveTime = 0;
+    function throttleSavePosition() {
+      const now = Date.now();
+      if (now - lastSaveTime > 1000) {
+        localStorage.setItem('mooji_playback_pos', audio.currentTime);
+        lastSaveTime = now;
+      }
+    }
+
+    // Render lists
+    function renderSatsangs(filterText = '') {
+      const cleanFilter = filterText.toLowerCase().trim();
+      
+      const filtered = SATSANGS.map((s, idx) => {
+        const matchesSatsang = s.title.toLowerCase().includes(cleanFilter) || s.date.toLowerCase().includes(cleanFilter);
+        const matchingTracks = s.tracks.filter(t => t.title.toLowerCase().includes(cleanFilter));
+        return {
+          ...s,
+          originalIdx: idx,
+          matchesSelf: matchesSatsang,
+          matchingTracksCount: matchingTracks.length,
+          firstMatchingTrack: matchingTracks[0] ? matchingTracks[0].title : null
+        };
+      }).filter(s => s.matchesSelf || s.matchingTracksCount > 0);
+
+      const buildHtml = (items) => {
+        if (items.length === 0) {
+          return '<div style="padding: 20px; text-align: center; color: var(--text-muted);">No matching Satsangs</div>';
+        }
+        return items.map(s => {
+          const isActive = s.originalIdx === currentSatsangIdx;
+          let matchLabel = '';
+          if (cleanFilter && s.matchingTracksCount > 0 && !s.matchesSelf) {
+            matchLabel = `<span style="font-size: 0.75rem; color: var(--accent); display: block; margin-top: 4px; font-weight: 500;">↳ Matches: "${s.firstMatchingTrack}"${s.matchingTracksCount > 1 ? ` (+${s.matchingTracksCount - 1} more)` : ''}</span>`;
+          }
+          return `
+            <div class="satsang-item ${isActive ? 'active' : ''}" onclick="onSatsangItemClick(${s.originalIdx})">
+              <span class="item-date">${s.date}</span>
+              <div class="item-title">${s.title}</div>
+              ${matchLabel}
+              <span class="item-track-count">${s.tracks.length} tracks</span>
+            </div>
+          `;
+        }).join('');
+      };
+
+      const html = buildHtml(filtered);
+      satsangListEl.innerHTML = html;
+      drawerSatsangListEl.innerHTML = html;
+    }
+
+    window.onSatsangItemClick = function(idx) {
+      selectSatsang(idx, true);
+      // Close drawer on mobile
+      closeDrawer();
+    };
+
+    // Select Satsang & Render Tracks
+    function selectSatsang(idx, autoPlay = true) {
+      if (idx < 0 || idx >= SATSANGS.length) return;
+      currentSatsangIdx = idx;
+      
+      // A quick re-render keeps active state perfect
+      const activeSearch = searchInput.value || drawerSearchInput.value;
+      renderSatsangs(activeSearch);
+
+      const satsang = SATSANGS[idx];
+      playerDate.textContent = satsang.date;
+      playerSatsangTitle.textContent = satsang.title;
+
+      // If switching satsang, reset track to 0
+      // BUT if we searched for a track, we should load that matching track first!
+      if (autoPlay) {
+        if (activeSearch) {
+          // Find the first track matching the search in the selected Satsang
+          const matchIdx = satsang.tracks.findIndex(t => t.title.toLowerCase().includes(activeSearch.toLowerCase().trim()));
+          currentTrackIdx = matchIdx !== -1 ? matchIdx : 0;
+        } else {
+          currentTrackIdx = 0;
+        }
+      }
+
+      renderTracks();
+      loadTrack(currentTrackIdx, autoPlay);
+    }
+
+    // Render Tracklist
+    function renderTracks() {
+      const satsang = SATSANGS[currentSatsangIdx];
+      const activeSearch = (searchInput.value || drawerSearchInput.value || '').toLowerCase().trim();
+      
+      tracksListEl.innerHTML = satsang.tracks.map((t, idx) => {
+        const isActive = idx === currentTrackIdx;
+        const isMatch = activeSearch && t.title.toLowerCase().includes(activeSearch);
+        
+        return `
+          <div class="track-row ${isActive ? 'active' : ''}" style="${isMatch ? 'border-color: rgba(163, 138, 106, 0.4); background-color: var(--accent-light);' : ''}" onclick="selectTrack(${idx})">
+            <span class="track-num">${String(idx + 1).padStart(2, '0')}</span>
+            <div class="track-status-icon">
+              <svg style="width: 16px; height: 16px; fill: var(--accent);" viewBox="0 0 24 24">
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+              </svg>
+            </div>
+            <div class="track-title">${t.title}</div>
+            ${isMatch ? `<span style="font-size: 0.75rem; color: var(--accent); font-weight: 600; padding: 2px 8px; background: #fff; border-radius: 20px; border: 1px solid rgba(163, 138, 106, 0.2);">Match</span>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Select specific track
+    window.selectTrack = function(trackIdx) {
+      currentTrackIdx = trackIdx;
+      renderTracks();
+      loadTrack(currentTrackIdx, true);
+    };
+
+    // Load Track MP3
+    function loadTrack(trackIdx, autoPlay = false) {
+      const satsang = SATSANGS[currentSatsangIdx];
+      if (trackIdx < 0 || trackIdx >= satsang.tracks.length) return;
+      
+      const track = satsang.tracks[trackIdx];
+      playerTrackTitle.textContent = track.title;
+      
+      // Update browser tab title too
+      document.title = `${track.title} | Mooji 2010`;
+      
+      audio.src = track.rel_path;
+      audio.load();
+
+      saveState();
+
+      if (autoPlay) {
+        playAudio();
+      } else {
+        pauseAudio();
+      }
+    }
+
+    // Play/Pause Functions
+    function playAudio() {
+      audio.play().then(() => {
+        isPlaying = true;
+        updatePlayBtnUI();
+      }).catch(err => {
+        console.log("Audio play failed / user gesture needed:", err);
+      });
+    }
+
+    function pauseAudio() {
+      audio.pause();
+      isPlaying = false;
+      updatePlayBtnUI();
+    }
+
+    function togglePlay() {
+      if (isPlaying) {
+        pauseAudio();
+      } else {
+        playAudio();
+      }
+    }
+
+    function updatePlayBtnUI() {
+      if (isPlaying) {
+        // Pause icon
+        playIcon.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
+      } else {
+        // Play icon
+        playIcon.innerHTML = `<path d="M8 5v14l11-7z"/>`;
+      }
+    }
+
+    // Audio Player Listeners
+    function setupAudioListeners() {
+      audio.addEventListener('timeupdate', () => {
+        updateProgressBar();
+        throttleSavePosition();
+      });
+
+      audio.addEventListener('durationchange', () => {
+        timeTotal.textContent = formatTime(audio.duration);
+      });
+
+      audio.addEventListener('ended', () => {
+        nextTrack();
+      });
+    }
+
+    // Next Track
+    function nextTrack() {
+      const satsang = SATSANGS[currentSatsangIdx];
+      if (currentTrackIdx < satsang.tracks.length - 1) {
+        currentTrackIdx++;
+        renderTracks();
+        loadTrack(currentTrackIdx, true);
+      } else {
+        // Go to next satsang
+        if (currentSatsangIdx < SATSANGS.length - 1) {
+          selectSatsang(currentSatsangIdx + 1, true);
+        } else {
+          // Loop to first day, first track
+          selectSatsang(0, true);
+        }
+      }
+    }
+
+    // Previous Track
+    function prevTrack() {
+      // If current track has played more than 3 seconds, restart it
+      if (audio.currentTime > 3) {
+        audio.currentTime = 0;
+        return;
+      }
+      
+      if (currentTrackIdx > 0) {
+        currentTrackIdx--;
+        renderTracks();
+        loadTrack(currentTrackIdx, true);
+      } else {
+        // Go to previous day
+        if (currentSatsangIdx > 0) {
+          const prevSatsang = SATSANGS[currentSatsangIdx - 1];
+          currentTrackIdx = prevSatsang.tracks.length - 1;
+          selectSatsang(currentSatsangIdx - 1, false);
+          renderTracks();
+          loadTrack(currentTrackIdx, true);
+        }
+      }
+    }
+
+    // UI Listeners
+    function setupUIListeners() {
+      // Buttons
+      btnPlay.addEventListener('click', togglePlay);
+      btnPrev.addEventListener('click', prevTrack);
+      btnNext.addEventListener('click', nextTrack);
+
+      // Search Inputs
+      searchInput.addEventListener('input', (e) => {
+        renderSatsangs(e.target.value);
+      });
+      drawerSearchInput.addEventListener('input', (e) => {
+        renderSatsangs(e.target.value);
+      });
+
+      // Mobile Drawer toggles
+      menuOpenBtn.addEventListener('click', openDrawer);
+      menuCloseBtn.addEventListener('click', closeDrawer);
+      drawerOverlay.addEventListener('click', closeDrawer);
+
+      // Progress Seek Click/Drag
+      progressBarWrapper.addEventListener('mousedown', startScrub);
+      progressBarWrapper.addEventListener('touchstart', startScrub, { passive: true });
+
+      // Volume Click
+      volumeSliderWrapper.addEventListener('click', setVolumeFromClick);
+      btnMute.addEventListener('click', toggleMute);
+    }
+
+    // Drawer Helpers
+    function openDrawer() {
+      mobileDrawer.classList.add('open');
+      drawerOverlay.classList.add('open');
+    }
+
+    function closeDrawer() {
+      mobileDrawer.classList.remove('open');
+      drawerOverlay.classList.remove('open');
+    }
+
+    // Progress Bar Scrubbing
+    let isScrubbing = false;
+
+    function startScrub(e) {
+      isScrubbing = true;
+      scrub(e);
+      window.addEventListener('mousemove', scrub);
+      window.addEventListener('mouseup', endScrub);
+      window.addEventListener('touchmove', scrub, { passive: true });
+      window.addEventListener('touchend', endScrub);
+    }
+
+    function scrub(e) {
+      if (!isScrubbing) return;
+      const rect = progressBarWrapper.getBoundingClientRect();
+      let clientX = e.clientX;
+      if (e.touches && e.touches[0]) {
+        clientX = e.touches[0].clientX;
+      }
+      
+      let percentage = (clientX - rect.left) / rect.width;
+      percentage = Math.max(0, Math.min(1, percentage));
+      
+      progressFill.style.width = `${percentage * 100}%`;
+      progressHandle.style.left = `${percentage * 100}%`;
+      
+      if (audio.duration) {
+        const targetTime = percentage * audio.duration;
+        timeCurrent.textContent = formatTime(targetTime);
+      }
+    }
+
+    function endScrub(e) {
+      if (!isScrubbing) return;
+      isScrubbing = false;
+      window.removeEventListener('mousemove', scrub);
+      window.removeEventListener('mouseup', endScrub);
+      window.removeEventListener('touchmove', scrub);
+      window.removeEventListener('touchend', endScrub);
+
+      // Seek audio
+      const rect = progressBarWrapper.getBoundingClientRect();
+      let clientX = e.clientX;
+      if (e.changedTouches && e.changedTouches[0]) {
+        clientX = e.changedTouches[0].clientX;
+      } else if (e.touches && e.touches[0]) {
+        clientX = e.touches[0].clientX;
+      }
+      
+      if (clientX !== undefined) {
+        let percentage = (clientX - rect.left) / rect.width;
+        percentage = Math.max(0, Math.min(1, percentage));
+        if (audio.duration) {
+          audio.currentTime = percentage * audio.duration;
+          saveState();
+        }
+      }
+    }
+
+    // Format Time Helpers
+    function formatTime(secs) {
+      if (isNaN(secs)) return "0:00";
+      const m = Math.floor(secs / 60);
+      const s = Math.floor(secs % 60);
+      return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
+
+    function updateProgressBar() {
+      if (isScrubbing) return;
+      if (!audio.duration) return;
+      
+      const percentage = audio.currentTime / audio.duration;
+      progressFill.style.width = `${percentage * 100}%`;
+      progressHandle.style.left = `${percentage * 100}%`;
+      timeCurrent.textContent = formatTime(audio.currentTime);
+    }
+
+    // Volume helpers
+    function setVolumeFromClick(e) {
+      const rect = volumeSliderWrapper.getBoundingClientRect();
+      let percentage = (e.clientX - rect.left) / rect.width;
+      percentage = Math.max(0, Math.min(1, percentage));
+      volume = percentage;
+      audio.volume = volume;
+      isMuted = false;
+      updateVolumeUI();
+      saveState();
+    }
+
+    function toggleMute() {
+      if (isMuted) {
+        volume = prevVolume;
+        audio.volume = volume;
+        isMuted = false;
+      } else {
+        prevVolume = volume;
+        audio.volume = 0;
+        isMuted = true;
+      }
+      updateVolumeUI();
+    }
+
+    function updateVolumeUI() {
+      const displayVol = isMuted ? 0 : volume;
+      volumeFill.style.width = `${displayVol * 100}%`;
+      
+      // Update Volume Icon
+      if (displayVol === 0) {
+        volumeIcon.innerHTML = `<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>`;
+      } else if (displayVol < 0.5) {
+        volumeIcon.innerHTML = `<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>`;
+      } else {
+        volumeIcon.innerHTML = `<path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>`;
+      }
+    }
+  </script>
+</body>
+</html>
