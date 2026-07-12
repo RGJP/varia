@@ -521,6 +521,16 @@
       border-bottom-color: var(--accent);
     }
 
+    .arunachala-link {
+      color: inherit;
+      text-decoration: none;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    .arunachala-link:hover {
+      color: var(--accent);
+    }
+
     /* Mobile Sheet / Drawer for Satsangs */
     .mobile-drawer-overlay {
       position: fixed;
@@ -642,7 +652,7 @@
     <!-- Sidebar for Desktop -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <h1>Arunachala Satsangs</h1>
+        <h1><a href="https://archive.org/details/aruna2010sat" target="_blank" rel="noopener noreferrer" class="arunachala-link">Arunachala Satsangs</a></h1>
         <p>2010 • <a href="https://mooji.org" target="_blank" rel="noopener noreferrer" class="mooji-link">Mooji</a></p>
       </div>
       <div class="search-container">
@@ -738,7 +748,7 @@
   <div class="mobile-drawer-overlay" id="drawerOverlay"></div>
   <div class="mobile-drawer" id="mobileDrawer">
     <div class="sidebar-header" style="position: relative;">
-      <h1>Arunachala Satsangs</h1>
+      <h1><a href="https://archive.org/details/aruna2010sat" target="_blank" rel="noopener noreferrer" class="arunachala-link">Arunachala Satsangs</a></h1>
       <p>2010 • <a href="https://mooji.org" target="_blank" rel="noopener noreferrer" class="mooji-link">Mooji</a></p>
       <button class="mobile-drawer-close" id="menuCloseBtn" aria-label="Close menu">
         <svg class="icon" viewBox="0 0 24 24">
