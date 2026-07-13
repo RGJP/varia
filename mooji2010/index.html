@@ -724,6 +724,11 @@
                 <div class="volume-fill" id="volumeFill"></div>
               </div>
             </div>
+
+            <!-- Boost Toggle Button -->
+            <button class="control-btn" id="btnBoost" aria-label="Toggle Volume Boost" style="width: auto; height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--card-border); background-color: var(--bg-color); font-size: 0.75rem; font-weight: 700; color: var(--text-muted); display: flex; align-items: center; gap: 6px; transition: var(--transition); letter-spacing: 0.05em; text-transform: uppercase;">
+              <span style="font-size: 0.9rem;">⚡</span> Boost Off
+            </button>
           </div>
         </div>
       </section>
@@ -779,6 +784,80 @@
 
     // Audio Instance
     const audio = new Audio();
+    audio.crossOrigin = "anonymous";
+
+    // Web Audio Gain Boost Setup
+    let audioCtx = null;
+    let gainNode = null;
+    let isBoostActive = false; // boost disabled by default
+    const BOOST_MULTIPLIER = 3.5; // 3.5x (350%) gain boost (clean & loud)
+
+    function initAudioBoost() {
+      if (audioCtx) {
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        return;
+      }
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+        const source = audioCtx.createMediaElementSource(audio);
+        
+        gainNode = audioCtx.createGain();
+        
+        // Safety dynamics compressor configured for smooth, transparent protection (no squashing/pumping)
+        const limiter = audioCtx.createDynamicsCompressor();
+        limiter.threshold.setValueAtTime(-2, audioCtx.currentTime); // Limit only the absolute loudest spikes
+        limiter.knee.setValueAtTime(30, audioCtx.currentTime);      // Soft knee for transparent compression
+        limiter.ratio.setValueAtTime(4, audioCtx.currentTime);       // Low ratio for natural gain reduction
+        limiter.attack.setValueAtTime(0.003, audioCtx.currentTime); // Standard fast attack (3ms)
+        limiter.release.setValueAtTime(0.25, audioCtx.currentTime);  // Smooth release (250ms) to prevent breathing
+
+        // Graph connection: Source -> Gain -> Limiter -> Destination (Speakers)
+        source.connect(gainNode);
+        gainNode.connect(limiter);
+        limiter.connect(audioCtx.destination);
+        
+        updateAudioGain();
+      } catch (e) {
+        console.error("Web Audio API not supported or blocked:", e);
+      }
+    }
+
+    function updateAudioGain() {
+      const targetVol = isMuted ? 0 : volume;
+      const currentMultiplier = isBoostActive ? BOOST_MULTIPLIER : 1.0;
+      if (gainNode) {
+        gainNode.gain.setValueAtTime(targetVol * currentMultiplier, audioCtx.currentTime);
+        audio.volume = 1.0;
+      } else {
+        audio.volume = targetVol;
+      }
+    }
+
+    function toggleBoost() {
+      initAudioBoost();
+      isBoostActive = !isBoostActive;
+      updateAudioGain();
+      updateBoostUI();
+      saveState();
+    }
+
+    function updateBoostUI() {
+      const btnBoost = document.getElementById('btnBoost');
+      if (isBoostActive) {
+        btnBoost.style.backgroundColor = 'var(--accent)';
+        btnBoost.style.borderColor = 'var(--accent)';
+        btnBoost.style.color = '#ffffff';
+        btnBoost.innerHTML = '<span style="font-size: 0.9rem;">⚡</span> Boost On';
+      } else {
+        btnBoost.style.backgroundColor = 'var(--bg-color)';
+        btnBoost.style.borderColor = 'var(--card-border)';
+        btnBoost.style.color = 'var(--text-muted)';
+        btnBoost.innerHTML = '<span style="font-size: 0.9rem;">⚡</span> Boost Off';
+      }
+    }
 
     // DOM Elements
     const satsangListEl = document.getElementById('satsangList');
@@ -832,14 +911,19 @@
       const savedTrack = localStorage.getItem('mooji_track_idx');
       const savedPos = localStorage.getItem('mooji_playback_pos');
       const savedVol = localStorage.getItem('mooji_volume');
+      const savedBoost = localStorage.getItem('mooji_boost_active');
       
       if (savedSatsang !== null) currentSatsangIdx = parseInt(savedSatsang, 10);
       if (savedTrack !== null) currentTrackIdx = parseInt(savedTrack, 10);
       if (savedVol !== null) {
         volume = parseFloat(savedVol);
-        audio.volume = volume;
         updateVolumeUI();
       }
+      if (savedBoost !== null) {
+        isBoostActive = (savedBoost === 'true');
+      }
+      updateBoostUI();
+      updateAudioGain();
       
       // We will apply savedPos once the track is loaded
       if (savedPos !== null) {
@@ -858,6 +942,7 @@
       localStorage.setItem('mooji_track_idx', currentTrackIdx);
       localStorage.setItem('mooji_playback_pos', audio.currentTime);
       localStorage.setItem('mooji_volume', volume);
+      localStorage.setItem('mooji_boost_active', isBoostActive);
     }
 
     // Throttled position saving
@@ -1003,6 +1088,7 @@
 
     // Play/Pause Functions
     function playAudio() {
+      initAudioBoost();
       audio.play().then(() => {
         isPlaying = true;
         updatePlayBtnUI();
@@ -1120,6 +1206,9 @@
       // Volume Click
       volumeSliderWrapper.addEventListener('click', setVolumeFromClick);
       btnMute.addEventListener('click', toggleMute);
+      
+      // Boost Click
+      document.getElementById('btnBoost').addEventListener('click', toggleBoost);
     }
 
     // Drawer Helpers
@@ -1212,26 +1301,27 @@
 
     // Volume helpers
     function setVolumeFromClick(e) {
+      initAudioBoost();
       const rect = volumeSliderWrapper.getBoundingClientRect();
       let percentage = (e.clientX - rect.left) / rect.width;
       percentage = Math.max(0, Math.min(1, percentage));
       volume = percentage;
-      audio.volume = volume;
       isMuted = false;
+      updateAudioGain();
       updateVolumeUI();
       saveState();
     }
 
     function toggleMute() {
+      initAudioBoost();
       if (isMuted) {
         volume = prevVolume;
-        audio.volume = volume;
         isMuted = false;
       } else {
         prevVolume = volume;
-        audio.volume = 0;
         isMuted = true;
       }
+      updateAudioGain();
       updateVolumeUI();
     }
 
