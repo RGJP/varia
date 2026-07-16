@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mose - Long Set & Session Archives</title>
+  <!-- Google Fonts: Outfit for titles, Inter for body -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0e1217 0%, #161b22 100%);
+      --card-bg: rgba(25, 30, 40, 0.65);
+      --card-border: rgba(255, 255, 255, 0.06);
+      --card-hover-border: rgba(212, 175, 55, 0.3); /* Subtle gold */
+      --text-primary: #f0f3f6;
+      --text-secondary: #8b949e;
+      --accent: #d4af37; /* Warm Gold */
+      --accent-hover: #f3e5ab;
+      --accent-rgb: 212, 175, 55;
+      --input-bg: rgba(255, 255, 255, 0.04);
+      --font-title: 'Outfit', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.5rem 1rem 3rem 1rem;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Elegant, premium header */
+    header {
+      width: 100%;
+      max-width: 600px;
+      text-align: center;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    .logo-container {
+      margin-bottom: 0.5rem;
+    }
+
+    h1 {
+      font-family: var(--font-title);
+      font-weight: 600;
+      font-size: 2.2rem;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #ffffff 0%, #e2d1a6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      font-weight: 300;
+      margin-top: 0.25rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .count-badge {
+      display: inline-block;
+      margin-top: 0.75rem;
+      background: rgba(212, 175, 55, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(212, 175, 55, 0.2);
+      padding: 0.2rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    /* Main Container */
+    main {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      flex-grow: 1;
+    }
+
+    /* Search Box */
+    .search-wrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      padding: 0.9rem 1.2rem;
+      padding-left: 2.8rem;
+      border-radius: 14px;
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .search-input:focus {
+      border-color: rgba(212, 175, 55, 0.5);
+      box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 1.1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-secondary);
+      pointer-events: none;
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Sorting Controls */
+    .sort-wrapper {
+      display: flex;
+      gap: 0.75rem;
+      width: 100%;
+      margin-top: -0.25rem;
+    }
+
+    .sort-btn {
+      flex: 1;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-secondary);
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      font-family: var(--font-body);
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      backdrop-filter: blur(10px);
+    }
+
+    .sort-btn:hover {
+      border-color: rgba(212, 175, 55, 0.3);
+      color: var(--text-primary);
+    }
+
+    .sort-btn.active {
+      background: rgba(212, 175, 55, 0.1);
+      border-color: rgba(212, 175, 55, 0.4);
+      color: var(--accent);
+    }
+
+    /* Video List */
+    .video-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* Video Card */
+    .video-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+      transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .video-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--card-hover-border);
+      box-shadow: 0 8px 30px rgba(212, 175, 55, 0.05);
+    }
+
+    /* Media Area */
+    .media-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .thumbnail-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    .video-card:hover .thumbnail-img {
+      transform: scale(1.03);
+    }
+
+    .play-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.3s ease;
+    }
+
+    .play-button {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+      transition: transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.2s ease;
+    }
+
+    .play-button svg {
+      width: 22px;
+      height: 22px;
+      fill: #0e1217;
+      margin-left: 3px;
+    }
+
+    .video-card:hover .play-button {
+      transform: scale(1.1);
+      background: var(--accent);
+    }
+
+    .video-card:hover .play-button svg {
+      fill: #000;
+    }
+
+    .duration-tag {
+      position: absolute;
+      bottom: 0.75rem;
+      right: 0.75rem;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      backdrop-filter: blur(4px);
+      letter-spacing: 0.02em;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .published-tag {
+      position: absolute;
+      top: 0.75rem;
+      left: 0.75rem;
+      background: rgba(14, 18, 23, 0.75);
+      color: var(--text-primary);
+      font-size: 0.7rem;
+      font-weight: 500;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Content Area */
+    .card-content {
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .card-title {
+      font-family: var(--font-title);
+      font-size: 1.15rem;
+      font-weight: 500;
+      line-height: 1.4;
+      color: var(--text-primary);
+      transition: color 0.2s ease;
+      cursor: pointer;
+    }
+
+    .card-title:hover {
+      color: var(--accent);
+    }
+
+    .card-description {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      font-weight: 300;
+      white-space: pre-wrap; /* Preserves newlines and spaces */
+      max-height: 120px;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+    }
+
+    .card-description::-webkit-scrollbar {
+      width: 4px;
+    }
+    .card-description::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .card-description::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+    .card-description::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+    }
+
+    /* Embed Iframe styling */
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    /* No results state */
+    .no-results {
+      text-align: center;
+      padding: 3rem 1.5rem;
+      color: var(--text-secondary);
+      font-weight: 300;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+    }
+
+    .no-results svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 1rem;
+      stroke: var(--text-secondary);
+      opacity: 0.5;
+    }
+
+    /* Scrollbar style */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0e1217;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #222c3a;
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-container">
+      <h1>Mose Archives</h1>
+      <p class="subtitle">Deep Sessions & Ritual Sets</p>
+    </div>
+    <div class="count-badge" id="video-count">Loading sets...</div>
+  </header>
+
+  <main>
+    <div class="search-wrapper">
+      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+      </svg>
+      <input type="text" class="search-input" id="search-box" placeholder="Search sessions, collaborations, locations..." aria-label="Search videos">
+    </div>
+
+    <div class="sort-wrapper">
+      <button class="sort-btn active" id="sort-recent-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+        Most Recent
+      </button>
+      <button class="sort-btn" id="sort-oldest-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+        Oldest First
+      </button>
+    </div>
+
+    <div class="video-list" id="video-list-container">
+      <!-- Dynamic list injection -->
+    </div>
+  </main>
+
+  <script>
+    const API_KEY = 'AIzaSyAOiKD9U0McsyguvoQbPg-lQoZnO91Z3Mw';
+    const CHANNEL_ID = 'UCSvv0vpCTvpF-Cy44XAs5Gw';
+    
+    let videos = [];
+    let filteredVideos = [];
+    let currentSort = 'recent'; // 'recent' or 'oldest'
+
+    const listContainer = document.getElementById('video-list-container');
+    const searchBox = document.getElementById('search-box');
+    const countBadge = document.getElementById('video-count');
+    const sortRecentBtn = document.getElementById('sort-recent-btn');
+    const sortOldestBtn = document.getElementById('sort-oldest-btn');
+
+    // Convert ISO 8601 duration to minutes
+    function getDurationInMinutes(durationStr) {
+      const match = durationStr.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      if (!match) return 0;
+      const hours = parseInt(match[1] || 0, 10);
+      const minutes = parseInt(match[2] || 0, 10);
+      const seconds = parseInt(match[3] || 0, 10);
+      return (hours * 60) + minutes + (seconds / 60);
+    }
+
+    // Human-friendly duration formatter
+    function formatDuration(durationStr) {
+      const match = durationStr.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+      if (!match) return '0:00';
+      const hours = match[1] ? parseInt(match[1]) : 0;
+      const minutes = match[2] ? parseInt(match[2]) : 0;
+      const seconds = match[3] ? parseInt(match[3]) : 0;
+      
+      const parts = [];
+      if (hours > 0) {
+        parts.push(hours);
+        parts.push(minutes.toString().padStart(2, '0'));
+      } else {
+        parts.push(minutes);
+      }
+      parts.push(seconds.toString().padStart(2, '0'));
+      return parts.join(':');
+    }
+
+    // Human-friendly date formatter
+    function formatDate(dateStr) {
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
+      return new Date(dateStr).toLocaleDateString(undefined, options);
+    }
+
+    async function init() {
+      try {
+        countBadge.textContent = "Scanning channel...";
+        
+        // 1. Get channel uploads playlist
+        const channelUrl = `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${CHANNEL_ID}&key=${API_KEY}`;
+        const channelRes = await fetch(channelUrl).then(r => r.json());
+        
+        if (!channelRes.items || channelRes.items.length === 0) {
+          throw new Error('Channel details not found.');
+        }
+        
+        const uploadsPlaylistId = channelRes.items[0].contentDetails.relatedPlaylists.uploads;
+        
+        // 2. Fetch all playlist items (paginated loops)
+        let allVideos = [];
+        let nextPageToken = '';
+        let page = 1;
+        
+        do {
+          countBadge.textContent = `Scanning videos page ${page}...`;
+          const playlistUrl = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&playlistId=${uploadsPlaylistId}&maxResults=50&pageToken=${nextPageToken}&key=${API_KEY}`;
+          const playlistRes = await fetch(playlistUrl).then(r => r.json());
+          const items = playlistRes.items || [];
+          
+          if (items.length === 0) break;
+          
+          const videoIds = items.map(item => item.snippet.resourceId.videoId).join(',');
+          
+          // 3. Get detailed duration info for this page's videos
+          const detailsUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails&id=${videoIds}&key=${API_KEY}`;
+          const detailsRes = await fetch(detailsUrl).then(r => r.json());
+          
+          for (const video of detailsRes.items || []) {
+            const durationStr = video.contentDetails.duration;
+            const durationMin = getDurationInMinutes(durationStr);
+            
+            // Only add if >= 20 minutes
+            if (durationMin >= 20) {
+              allVideos.push({
+                id: video.id,
+                title: video.snippet.title,
+                description: video.snippet.description,
+                publishedAt: video.snippet.publishedAt,
+                thumbnail: video.snippet.thumbnails?.high?.url || video.snippet.thumbnails?.medium?.url || video.snippet.thumbnails?.default?.url,
+                duration: durationStr,
+                durationMin: Math.round(durationMin * 10) / 10
+              });
+            }
+          }
+          
+          nextPageToken = playlistRes.nextPageToken || '';
+          page++;
+        } while (nextPageToken);
+
+        // Sort by publish date descending initially
+        allVideos.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+        
+        videos = allVideos;
+        applyFilterAndSort();
+      } catch (err) {
+        console.error('Error fetching videos live:', err);
+        listContainer.innerHTML = `<div class="no-results">Error loading live data from YouTube. Check Console or API Key domain restrictions.</div>`;
+        countBadge.textContent = "Error loading";
+      }
+    }
+
+    function applyFilterAndSort() {
+      const query = searchBox.value.toLowerCase();
+      
+      // Filter
+      filteredVideos = videos.filter(video => 
+        video.title.toLowerCase().includes(query) || 
+        video.description.toLowerCase().includes(query)
+      );
+
+      // Sort
+      if (currentSort === 'recent') {
+        filteredVideos.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+      } else {
+        filteredVideos.sort((a, b) => new Date(a.publishedAt) - new Date(b.publishedAt));
+      }
+
+      updateUI();
+    }
+
+    function updateUI() {
+      countBadge.textContent = `${filteredVideos.length} sets over 20 min`;
+      renderList();
+    }
+
+    function renderList() {
+      listContainer.innerHTML = '';
+      
+      if (filteredVideos.length === 0) {
+        listContainer.innerHTML = `
+          <div class="no-results">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <p>No sets found matching "${searchBox.value}"</p>
+          </div>
+        `;
+        return;
+      }
+
+      filteredVideos.forEach(video => {
+        const card = document.createElement('div');
+        card.className = 'video-card';
+        card.id = `video-${video.id}`;
+        
+        card.innerHTML = `
+          <div class="media-container" onclick="playVideo('${video.id}')">
+            <img class="thumbnail-img" src="${video.thumbnail}" alt="${video.title}" loading="lazy">
+            <div class="play-overlay">
+              <div class="play-button" aria-label="Play video">
+                <svg viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+            </div>
+            <div class="published-tag">${formatDate(video.publishedAt)}</div>
+            <div class="duration-tag">${formatDuration(video.duration)}</div>
+          </div>
+          <div class="card-content">
+            <h2 class="card-title" onclick="playVideo('${video.id}')">${video.title}</h2>
+            <p class="card-description">${video.description || 'No description available.'}</p>
+          </div>
+        `;
+        listContainer.appendChild(card);
+      });
+    }
+
+    window.playVideo = function(videoId) {
+      const card = document.getElementById(`video-${videoId}`);
+      const mediaContainer = card.querySelector('.media-container');
+      mediaContainer.innerHTML = `
+        <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" 
+                title="YouTube video player" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                allowfullscreen>
+        </iframe>
+      `;
+    };
+
+    // Events
+    searchBox.addEventListener('input', () => {
+      applyFilterAndSort();
+    });
+
+    sortRecentBtn.addEventListener('click', () => {
+      if (currentSort !== 'recent') {
+        currentSort = 'recent';
+        sortRecentBtn.classList.add('active');
+        sortOldestBtn.classList.remove('active');
+        applyFilterAndSort();
+      }
+    });
+
+    sortOldestBtn.addEventListener('click', () => {
+      if (currentSort !== 'oldest') {
+        currentSort = 'oldest';
+        sortOldestBtn.classList.add('active');
+        sortRecentBtn.classList.remove('active');
+        applyFilterAndSort();
+      }
+    });
+
+    // Start
+    init();
+  </script>
+</body>
+</html>
