@@ -661,12 +661,106 @@
       transform: translateX(-50%) translateY(0);
       opacity: 1;
     }
+
+    /* Custom Confirmation Modal */
+    .confirm-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .confirm-modal-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .confirm-modal-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 24px;
+      width: 90%;
+      max-width: 380px;
+      box-shadow: var(--shadow-lg);
+      transform: scale(0.95);
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      text-align: center;
+      color: var(--text-main);
+    }
+    .confirm-modal-overlay.show .confirm-modal-card {
+      transform: scale(1);
+    }
+    .confirm-modal-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .confirm-modal-text {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .confirm-modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    .confirm-modal-btn {
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: var(--transition);
+      flex: 1;
+      outline: none;
+    }
+    .confirm-modal-btn.cancel {
+      background: var(--bg-color);
+      border-color: var(--card-border);
+      color: var(--text-muted);
+    }
+    .confirm-modal-btn.cancel:active {
+      transform: scale(0.95);
+    }
+    .confirm-modal-btn.confirm {
+      background: var(--accent);
+      color: white;
+    }
+    .confirm-modal-btn.confirm:active {
+      transform: scale(0.95);
+    }
   </style>
 </head>
 <body>
 
   <!-- Toast Container -->
   <div id="toast" class="toast-container"></div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmModal" class="confirm-modal-overlay">
+    <div class="confirm-modal-card">
+      <div class="confirm-modal-title" id="confirmModalTitle">Switch Track?</div>
+      <div class="confirm-modal-text" id="confirmModalText">Do you want to switch to the new track?</div>
+      <div class="confirm-modal-actions">
+        <button class="confirm-modal-btn cancel" id="btnCancelSwitch">Cancel</button>
+        <button class="confirm-modal-btn confirm" id="btnConfirmSwitch">Yes, Switch</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Mobile Header -->
   <header class="mobile-header">
@@ -930,6 +1024,8 @@
       setupAudioListeners();
       // Setup UI Listeners
       setupUIListeners();
+      // Setup Confirmation Modal Listeners
+      setupModalListeners();
     });
 
     // Load saved state from LocalStorage
@@ -1024,9 +1120,30 @@
       drawerSatsangListEl.innerHTML = html;
     }
 
+    let pendingTrackIdx = null;
+    let pendingSatsangIdx = null;
+
     window.onSatsangItemClick = function(idx) {
-      selectSatsang(idx, true);
-      // Close drawer on mobile
+      if (idx === currentSatsangIdx) {
+        closeDrawer();
+        return;
+      }
+
+      // Prompt only if currently playing or has playback progress (greater than 5 seconds)
+      if (isPlaying || audio.currentTime > 5) {
+        pendingSatsangIdx = idx;
+        pendingTrackIdx = null;
+        const currentSatsang = SATSANGS[currentSatsangIdx];
+        const currentTrack = currentSatsang.tracks[currentTrackIdx];
+        const targetSatsang = SATSANGS[idx];
+        
+        const modal = document.getElementById('confirmModal');
+        const modalText = document.getElementById('confirmModalText');
+        modalText.innerHTML = `You are listening to:<br><strong>${currentSatsang.date} (Track ${currentTrackIdx + 1}) - ${currentTrack.title}</strong><br><br>Do you want to switch to Satsang:<br><strong>${targetSatsang.title}</strong>?`;
+        modal.classList.add('show');
+      } else {
+        selectSatsang(idx, true);
+      }
       closeDrawer();
     };
 
@@ -1085,10 +1202,64 @@
 
     // Select specific track
     window.selectTrack = function(trackIdx) {
+      if (trackIdx === currentTrackIdx) {
+        togglePlay();
+        return;
+      }
+
+      if (isPlaying || audio.currentTime > 5) {
+        pendingTrackIdx = trackIdx;
+        pendingSatsangIdx = null;
+        const satsang = SATSANGS[currentSatsangIdx];
+        const currentTrack = satsang.tracks[currentTrackIdx];
+        const targetTrack = satsang.tracks[trackIdx];
+        
+        const modal = document.getElementById('confirmModal');
+        const modalText = document.getElementById('confirmModalText');
+        modalText.innerHTML = `You are listening to:<br><strong>${satsang.date} (Track ${currentTrackIdx + 1}) - ${currentTrack.title}</strong><br><br>Do you want to switch to:<br><strong>${targetTrack.title}</strong>?`;
+        modal.classList.add('show');
+      } else {
+        executeTrackSwitch(trackIdx);
+      }
+    };
+
+    function executeTrackSwitch(trackIdx) {
       currentTrackIdx = trackIdx;
       renderTracks();
       loadTrack(currentTrackIdx, true);
-    };
+    }
+
+    // Modal Events Setup
+    function setupModalListeners() {
+      const modal = document.getElementById('confirmModal');
+      const btnCancel = document.getElementById('btnCancelSwitch');
+      const btnConfirm = document.getElementById('btnConfirmSwitch');
+
+      btnCancel.addEventListener('click', () => {
+        modal.classList.remove('show');
+        pendingTrackIdx = null;
+        pendingSatsangIdx = null;
+      });
+
+      btnConfirm.addEventListener('click', () => {
+        modal.classList.remove('show');
+        if (pendingTrackIdx !== null) {
+          executeTrackSwitch(pendingTrackIdx);
+          pendingTrackIdx = null;
+        } else if (pendingSatsangIdx !== null) {
+          selectSatsang(pendingSatsangIdx, true);
+          pendingSatsangIdx = null;
+        }
+      });
+
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.remove('show');
+          pendingTrackIdx = null;
+          pendingSatsangIdx = null;
+        }
+      });
+    }
 
     // Toast Notification helper
     let toastTimeoutId = null;
