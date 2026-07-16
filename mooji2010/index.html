@@ -633,9 +633,39 @@
         display: none; /* Hide volume control on mobile as physical buttons are preferred */
       }
     }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: rgba(43, 37, 30, 0.95);
+      color: #f1ebd9;
+      padding: 12px 24px;
+      border-radius: 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(163, 138, 106, 0.2);
+      z-index: 9999;
+      font-family: inherit;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+      opacity: 0;
+    }
+    .toast-container.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
   </style>
 </head>
 <body>
+
+  <!-- Toast Container -->
+  <div id="toast" class="toast-container"></div>
 
   <!-- Mobile Header -->
   <header class="mobile-header">
@@ -736,10 +766,6 @@
       <!-- Track List Section -->
       <section class="tracks-list-container">
         <div class="tracks-inner">
-          <div class="tracks-header">
-            <span>Track Name</span>
-            <span>Status</span>
-          </div>
           <div id="tracksList">
             <!-- Rendered dynamically -->
           </div>
@@ -1013,7 +1039,7 @@
       renderSatsangs(activeSearch);
 
       const satsang = SATSANGS[idx];
-      playerDate.textContent = satsang.date;
+      playerDate.textContent = `${idx + 1}/${SATSANGS.length} - ${satsang.date}`;
       playerSatsangTitle.textContent = satsang.title;
 
       // If switching satsang, reset track to 0
@@ -1063,10 +1089,127 @@
       loadTrack(currentTrackIdx, true);
     };
 
+    // Toast Notification helper
+    let toastTimeoutId = null;
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.textContent = message;
+      toast.classList.add('show');
+      if (toastTimeoutId) clearTimeout(toastTimeoutId);
+      toastTimeoutId = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 4000);
+    }
+
+    // Playback Warning Chime (3 synthesized bell sounds)
+    function playWarningChime() {
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        const ctx = new AudioContextClass();
+        const playChimeNote = (startTime, freq) => {
+          const osc = ctx.createOscillator();
+          const osc2 = ctx.createOscillator();
+          const gainNode = ctx.createGain();
+          
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, startTime);
+          
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(freq * 2.76, startTime);
+          
+          gainNode.gain.setValueAtTime(0, startTime);
+          gainNode.gain.linearRampToValueAtTime(0.2, startTime + 0.01);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.8);
+          
+          osc.connect(gainNode);
+          osc2.connect(gainNode);
+          gainNode.connect(ctx.destination);
+          
+          osc.start(startTime);
+          osc2.start(startTime);
+          osc.stop(startTime + 0.8);
+          osc2.stop(startTime + 0.8);
+        };
+        
+        const now = ctx.currentTime;
+        playChimeNote(now, 880);        // A5
+        playChimeNote(now + 0.35, 987.77); // B5
+        playChimeNote(now + 0.70, 1174.66); // D6
+      } catch (e) {
+        console.error("Warning chime failed:", e);
+      }
+    }
+
+    // Playback Retry Mechanism
+    let playRetryCount = 0;
+    const MAX_PLAY_RETRIES = 3;
+    let retryTimeoutId = null;
+    let isRetrying = false;
+
+    function handlePlayFailure(err) {
+      console.warn("Playback failure encountered:", err);
+      
+      // Don't auto-retry/skip if it's browser's autoplay block (NotAllowedError)
+      if (err && err.name === 'NotAllowedError') {
+        console.log("Autoplay blocked. Waiting for user interaction.");
+        return;
+      }
+
+      if (isRetrying) {
+        console.log("Retry already in progress, ignoring duplicate trigger.");
+        return;
+      }
+      isRetrying = true;
+
+      if (playRetryCount < MAX_PLAY_RETRIES) {
+        playRetryCount++;
+        const delay = Math.pow(2, playRetryCount) * 1000;
+        showToast(`Playback interrupted. Retrying in ${delay / 1000}s... (Attempt ${playRetryCount}/${MAX_PLAY_RETRIES})`);
+        
+        if (retryTimeoutId) clearTimeout(retryTimeoutId);
+        retryTimeoutId = setTimeout(() => {
+          isRetrying = false;
+          console.log(`Retrying play, attempt ${playRetryCount}...`);
+          
+          const currentPos = audio.currentTime;
+          audio.load();
+          if (currentPos > 0) {
+            audio.currentTime = currentPos;
+          }
+          
+          initAudioBoost();
+          audio.play().then(() => {
+            playRetryCount = 0;
+            isPlaying = true;
+            updatePlayBtnUI();
+            showToast("Playback restored!");
+          }).catch(retryErr => {
+            handlePlayFailure(retryErr);
+          });
+        }, delay);
+      } else {
+        isRetrying = false;
+        playRetryCount = 0;
+        showToast("Playback failed. Please check connection.");
+        console.error("Max retries reached. Playing warning chime and pausing track.");
+        playWarningChime();
+        pauseAudio();
+      }
+    }
+
     // Load Track MP3
     function loadTrack(trackIdx, autoPlay = false) {
       const satsang = SATSANGS[currentSatsangIdx];
       if (trackIdx < 0 || trackIdx >= satsang.tracks.length) return;
+      
+      // Clear retry state when a new track is loaded
+      if (retryTimeoutId) {
+        clearTimeout(retryTimeoutId);
+        retryTimeoutId = null;
+      }
+      playRetryCount = 0;
+      isRetrying = false;
       
       const track = satsang.tracks[trackIdx];
       playerTrackTitle.textContent = track.title;
@@ -1092,12 +1235,25 @@
       audio.play().then(() => {
         isPlaying = true;
         updatePlayBtnUI();
+        playRetryCount = 0;
+        isRetrying = false;
+        if (retryTimeoutId) {
+          clearTimeout(retryTimeoutId);
+          retryTimeoutId = null;
+        }
       }).catch(err => {
         console.log("Audio play failed / user gesture needed:", err);
+        handlePlayFailure(err);
       });
     }
 
     function pauseAudio() {
+      if (retryTimeoutId) {
+        clearTimeout(retryTimeoutId);
+        retryTimeoutId = null;
+      }
+      isRetrying = false;
+      playRetryCount = 0;
       audio.pause();
       isPlaying = false;
       updatePlayBtnUI();
@@ -1134,6 +1290,13 @@
 
       audio.addEventListener('ended', () => {
         nextTrack();
+      });
+
+      audio.addEventListener('error', (e) => {
+        if (!audio.src) return;
+        const err = audio.error;
+        console.error("Audio element error event:", err);
+        handlePlayFailure(err || new Error("Audio error event"));
       });
     }
 
