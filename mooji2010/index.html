@@ -850,10 +850,6 @@
               </div>
             </div>
 
-            <!-- Boost Toggle Button -->
-            <button class="control-btn" id="btnBoost" aria-label="Toggle Volume Boost" style="width: auto; height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid var(--card-border); background-color: var(--bg-color); font-size: 0.75rem; font-weight: 700; color: var(--text-muted); display: flex; align-items: center; gap: 6px; transition: var(--transition); letter-spacing: 0.05em; text-transform: uppercase;">
-              <span style="font-size: 0.9rem;">⚡</span> Boost Off
-            </button>
           </div>
         </div>
       </section>
@@ -899,109 +895,26 @@
     let currentSatsangIdx = 0;
     let currentTrackIdx = 0;
     let isPlaying = false;
+    let wantsPlayback = false;
+    let playbackRequestId = 0;
     let volume = 0.8; // default volume
     let isMuted = false;
     let prevVolume = 0.8;
 
     // Audio Instance
     const audio = new Audio();
-    audio.crossOrigin = "anonymous";
+    audio.id = 'backgroundAudio';
     audio.preload = "auto";
     audio.setAttribute('playsinline', '');
+    audio.style.display = 'none';
+    document.body.appendChild(audio);
 
-    // Android permits a normal media element to keep playing as background
-    // media, but commonly suspends Web Audio contexts when the screen locks.
-    // Never move Android playback into Web Audio; uninterrupted playback is
-    // more important than the optional gain boost on that platform.
-    const isAndroid = /Android/i.test(navigator.userAgent);
-
-    // Web Audio Gain Boost Setup
-    let audioCtx = null;
-    let gainNode = null;
-    let isBoostActive = false; // boost disabled by default
-    const BOOST_MULTIPLIER = 3.5; // 3.5x (350%) gain boost (clean & loud)
-
-    function initAudioBoost() {
-      if (isAndroid) {
-        isBoostActive = false;
-        updateAudioGain();
-        return false;
-      }
-      if (audioCtx) {
-        if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
-        return true;
-      }
-      try {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioContextClass();
-        const source = audioCtx.createMediaElementSource(audio);
-        
-        gainNode = audioCtx.createGain();
-        
-        // Safety dynamics compressor configured for smooth, transparent protection (no squashing/pumping)
-        const limiter = audioCtx.createDynamicsCompressor();
-        limiter.threshold.setValueAtTime(-2, audioCtx.currentTime); // Limit only the absolute loudest spikes
-        limiter.knee.setValueAtTime(30, audioCtx.currentTime);      // Soft knee for transparent compression
-        limiter.ratio.setValueAtTime(4, audioCtx.currentTime);       // Low ratio for natural gain reduction
-        limiter.attack.setValueAtTime(0.003, audioCtx.currentTime); // Standard fast attack (3ms)
-        limiter.release.setValueAtTime(0.25, audioCtx.currentTime);  // Smooth release (250ms) to prevent breathing
-
-        // Graph connection: Source -> Gain -> Limiter -> Destination (Speakers)
-        source.connect(gainNode);
-        gainNode.connect(limiter);
-        limiter.connect(audioCtx.destination);
-        
-        updateAudioGain();
-        return true;
-      } catch (e) {
-        console.error("Web Audio API not supported or blocked:", e);
-        isBoostActive = false;
-        updateAudioGain();
-        return false;
-      }
-    }
+    // Keep all playback on this one native media element. This is the path
+    // browsers expose to operating-system media controls and background audio.
 
     function updateAudioGain() {
       const targetVol = isMuted ? 0 : volume;
-      const currentMultiplier = isBoostActive ? BOOST_MULTIPLIER : 1.0;
-      if (gainNode) {
-        gainNode.gain.setValueAtTime(targetVol * currentMultiplier, audioCtx.currentTime);
-        audio.volume = 1.0;
-      } else {
-        audio.volume = targetVol;
-      }
-    }
-
-    function toggleBoost() {
-      if (isAndroid) {
-        isBoostActive = false;
-        updateBoostUI();
-        saveState();
-        showToast("Boost is disabled on Android to keep playback running when the screen locks.");
-        return;
-      }
-      initAudioBoost();
-      isBoostActive = !isBoostActive;
-      updateAudioGain();
-      updateBoostUI();
-      saveState();
-    }
-
-    function updateBoostUI() {
-      const btnBoost = document.getElementById('btnBoost');
-      if (isBoostActive) {
-        btnBoost.style.backgroundColor = 'var(--accent)';
-        btnBoost.style.borderColor = 'var(--accent)';
-        btnBoost.style.color = '#ffffff';
-        btnBoost.innerHTML = '<span style="font-size: 0.9rem;">⚡</span> Boost On';
-      } else {
-        btnBoost.style.backgroundColor = 'var(--bg-color)';
-        btnBoost.style.borderColor = 'var(--card-border)';
-        btnBoost.style.color = 'var(--text-muted)';
-        btnBoost.innerHTML = '<span style="font-size: 0.9rem;">⚡</span> Boost Off';
-      }
+      audio.volume = targetVol;
     }
 
     // DOM Elements
@@ -1041,11 +954,11 @@
     // Init App
     window.addEventListener('DOMContentLoaded', () => {
       loadSavedState();
+      // Register media lifecycle handlers before the first source is loaded so
+      // cached tracks cannot win a race against listener setup.
+      setupAudioListeners();
       renderSatsangs();
       selectSatsang(currentSatsangIdx, false); // select without autoplay on load
-      
-      // Setup Audio Listeners
-      setupAudioListeners();
       // Setup UI Listeners
       setupUIListeners();
       // Setup Confirmation Modal Listeners
@@ -1054,42 +967,68 @@
 
     // Load saved state from LocalStorage
     function loadSavedState() {
-      const savedSatsang = localStorage.getItem('mooji_satsang_idx');
-      const savedTrack = localStorage.getItem('mooji_track_idx');
-      const savedPos = localStorage.getItem('mooji_playback_pos');
-      const savedVol = localStorage.getItem('mooji_volume');
-      const savedBoost = localStorage.getItem('mooji_boost_active');
+      const savedSatsang = safeStorageGet('mooji_satsang_idx');
+      const savedTrack = safeStorageGet('mooji_track_idx');
+      const savedPos = safeStorageGet('mooji_playback_pos');
+      const savedVol = safeStorageGet('mooji_volume');
       
-      if (savedSatsang !== null) currentSatsangIdx = parseInt(savedSatsang, 10);
-      if (savedTrack !== null) currentTrackIdx = parseInt(savedTrack, 10);
+      if (savedSatsang !== null) {
+        const parsedSatsang = parseInt(savedSatsang, 10);
+        if (Number.isInteger(parsedSatsang) && parsedSatsang >= 0 && parsedSatsang < SATSANGS.length) {
+          currentSatsangIdx = parsedSatsang;
+        }
+      }
+      if (savedTrack !== null) {
+        const parsedTrack = parseInt(savedTrack, 10);
+        const trackCount = SATSANGS[currentSatsangIdx].tracks.length;
+        if (Number.isInteger(parsedTrack) && parsedTrack >= 0 && parsedTrack < trackCount) {
+          currentTrackIdx = parsedTrack;
+        }
+      }
       if (savedVol !== null) {
-        volume = parseFloat(savedVol);
-        updateVolumeUI();
+        const parsedVolume = parseFloat(savedVol);
+        if (Number.isFinite(parsedVolume)) {
+          volume = Math.max(0, Math.min(1, parsedVolume));
+          updateVolumeUI();
+        }
       }
-      if (savedBoost !== null) {
-        isBoostActive = !isAndroid && (savedBoost === 'true');
-      }
-      updateBoostUI();
       updateAudioGain();
       
       // We will apply savedPos once the track is loaded
       if (savedPos !== null) {
         const targetPos = parseFloat(savedPos);
-        audio.addEventListener('loadedmetadata', function onLoaded() {
-          audio.currentTime = targetPos;
-          updateProgressBar();
-          audio.removeEventListener('loadedmetadata', onLoaded);
-        });
+        if (Number.isFinite(targetPos) && targetPos >= 0) {
+          audio.addEventListener('loadedmetadata', function onLoaded() {
+            audio.currentTime = Math.min(targetPos, audio.duration || targetPos);
+            updateProgressBar();
+          }, { once: true });
+        }
+      }
+    }
+
+    function safeStorageGet(key) {
+      try {
+        return localStorage.getItem(key);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function safeStorageSet(key, value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {
+        // Storage may be blocked in private/embedded browsing. Playback must
+        // remain independent from optional position persistence.
       }
     }
 
     // Save State helper
     function saveState() {
-      localStorage.setItem('mooji_satsang_idx', currentSatsangIdx);
-      localStorage.setItem('mooji_track_idx', currentTrackIdx);
-      localStorage.setItem('mooji_playback_pos', audio.currentTime);
-      localStorage.setItem('mooji_volume', volume);
-      localStorage.setItem('mooji_boost_active', isBoostActive);
+      safeStorageSet('mooji_satsang_idx', currentSatsangIdx);
+      safeStorageSet('mooji_track_idx', currentTrackIdx);
+      safeStorageSet('mooji_playback_pos', audio.currentTime);
+      safeStorageSet('mooji_volume', volume);
     }
 
     // Throttled position saving
@@ -1097,7 +1036,7 @@
     function throttleSavePosition() {
       const now = Date.now();
       if (now - lastSaveTime > 1000) {
-        localStorage.setItem('mooji_playback_pos', audio.currentTime);
+        safeStorageSet('mooji_playback_pos', audio.currentTime);
         lastSaveTime = now;
       }
     }
@@ -1298,57 +1237,25 @@
       }, 4000);
     }
 
-    // Playback Warning Chime (3 synthesized bell sounds)
-    function playWarningChime() {
-      try {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        const ctx = new AudioContextClass();
-        const playChimeNote = (startTime, freq) => {
-          const osc = ctx.createOscillator();
-          const osc2 = ctx.createOscillator();
-          const gainNode = ctx.createGain();
-          
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, startTime);
-          
-          osc2.type = 'sine';
-          osc2.frequency.setValueAtTime(freq * 2.76, startTime);
-          
-          gainNode.gain.setValueAtTime(0, startTime);
-          gainNode.gain.linearRampToValueAtTime(0.2, startTime + 0.01);
-          gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + 0.8);
-          
-          osc.connect(gainNode);
-          osc2.connect(gainNode);
-          gainNode.connect(ctx.destination);
-          
-          osc.start(startTime);
-          osc2.start(startTime);
-          osc.stop(startTime + 0.8);
-          osc2.stop(startTime + 0.8);
-        };
-        
-        const now = ctx.currentTime;
-        playChimeNote(now, 880);        // A5
-        playChimeNote(now + 0.35, 987.77); // B5
-        playChimeNote(now + 0.70, 1174.66); // D6
-      } catch (e) {
-        console.error("Warning chime failed:", e);
-      }
-    }
-
-    // Playback Retry Mechanism
+    // Playback Retry Mechanism. It intentionally never gives up while the user
+    // still wants playback; temporary loss of connectivity must not turn into
+    // a permanent pause.
     let playRetryCount = 0;
-    const MAX_PLAY_RETRIES = 3;
     let retryTimeoutId = null;
     let isRetrying = false;
 
     function handlePlayFailure(err) {
       console.warn("Playback failure encountered:", err);
       
-      // Don't auto-retry/skip if it's browser's autoplay block (NotAllowedError)
+      if (!wantsPlayback) return;
+
+      // Browsers require a new user/media-control gesture after explicitly
+      // revoking autoplay permission. Keep the intent so a foreground return
+      // or lock-screen Play action can resume it.
       if (err && err.name === 'NotAllowedError') {
         console.log("Autoplay blocked. Waiting for user interaction.");
+        isRetrying = false;
+        showToast("Tap Play once to allow background playback.");
         return;
       }
 
@@ -1358,40 +1265,32 @@
       }
       isRetrying = true;
 
-      if (playRetryCount < MAX_PLAY_RETRIES) {
-        playRetryCount++;
-        const delay = Math.pow(2, playRetryCount) * 1000;
-        showToast(`Playback interrupted. Retrying in ${delay / 1000}s... (Attempt ${playRetryCount}/${MAX_PLAY_RETRIES})`);
-        
-        if (retryTimeoutId) clearTimeout(retryTimeoutId);
-        retryTimeoutId = setTimeout(() => {
-          isRetrying = false;
-          console.log(`Retrying play, attempt ${playRetryCount}...`);
-          
-          const currentPos = audio.currentTime;
-          audio.load();
-          if (currentPos > 0) {
-            audio.currentTime = currentPos;
-          }
-          
-          initAudioBoost();
-          audio.play().then(() => {
-            playRetryCount = 0;
-            isPlaying = true;
-            updatePlayBtnUI();
-            showToast("Playback restored!");
-          }).catch(retryErr => {
-            handlePlayFailure(retryErr);
-          });
-        }, delay);
-      } else {
+      playRetryCount++;
+      const delay = navigator.onLine
+        ? Math.min(30000, Math.pow(2, Math.min(playRetryCount, 5)) * 1000)
+        : 15000;
+      showToast(navigator.onLine
+        ? `Playback interrupted. Retrying in ${delay / 1000}s...`
+        : "Connection lost. Playback will resume automatically when online.");
+
+      if (retryTimeoutId) clearTimeout(retryTimeoutId);
+      retryTimeoutId = setTimeout(() => {
+        retryTimeoutId = null;
         isRetrying = false;
-        playRetryCount = 0;
-        showToast("Playback failed. Please check connection.");
-        console.error("Max retries reached. Playing warning chime and pausing track.");
-        playWarningChime();
-        pauseAudio();
-      }
+        if (!wantsPlayback) return;
+
+        console.log(`Retrying play, attempt ${playRetryCount}...`);
+        const currentPos = audio.currentTime;
+        if (currentPos > 0) {
+          audio.addEventListener('loadedmetadata', function restoreRetryPosition() {
+            if (Number.isFinite(audio.duration)) {
+              audio.currentTime = Math.min(currentPos, audio.duration);
+            }
+          }, { once: true });
+        }
+        audio.load();
+        playAudio();
+      }, delay);
     }
 
     // Load Track MP3
@@ -1428,10 +1327,13 @@
 
     // Play/Pause Functions
     function playAudio() {
-      // Creating an AudioContext merely to play at normal volume breaks
-      // background playback on Android. Only desktop boost needs Web Audio.
-      if (isBoostActive) initAudioBoost();
+      wantsPlayback = true;
+      const requestId = ++playbackRequestId;
+      // Keeping autoplay set after the initial user gesture lets the native
+      // media pipeline carry source changes into the next track in background.
+      audio.autoplay = true;
       audio.play().then(() => {
+        if (requestId !== playbackRequestId || !wantsPlayback || audio.paused) return;
         isPlaying = true;
         updatePlayBtnUI();
         playRetryCount = 0;
@@ -1442,12 +1344,16 @@
         }
         updateMediaSessionPlaybackState('playing');
       }).catch(err => {
+        if (requestId !== playbackRequestId || !wantsPlayback) return;
         console.log("Audio play failed / user gesture needed:", err);
         handlePlayFailure(err);
       });
     }
 
     function pauseAudio() {
+      wantsPlayback = false;
+      playbackRequestId++;
+      audio.autoplay = false;
       if (retryTimeoutId) {
         clearTimeout(retryTimeoutId);
         retryTimeoutId = null;
@@ -1525,16 +1431,27 @@
       // forced-on display) is required.
       document.addEventListener('visibilitychange', () => {
         saveState();
-        if (!document.hidden && isPlaying && audio.paused && !audio.ended) {
+        if (!document.hidden && wantsPlayback && audio.paused && !audio.ended) {
           playAudio();
         }
       });
       window.addEventListener('pagehide', saveState);
+      window.addEventListener('online', () => {
+        if (!wantsPlayback || !audio.paused) return;
+        if (retryTimeoutId) clearTimeout(retryTimeoutId);
+        retryTimeoutId = null;
+        isRetrying = false;
+        playAudio();
+      });
     }
 
     function updateMediaSessionPlaybackState(state) {
       if ('mediaSession' in navigator) {
-        navigator.mediaSession.playbackState = state;
+        try {
+          navigator.mediaSession.playbackState = state;
+        } catch (e) {
+          // Partial Media Session implementations must never affect playback.
+        }
       }
     }
 
@@ -1542,11 +1459,15 @@
       if (!('mediaSession' in navigator) || !('MediaMetadata' in window)) return;
       const satsang = SATSANGS[currentSatsangIdx];
       const track = satsang.tracks[currentTrackIdx];
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: track.title,
-        artist: 'Mooji',
-        album: `${satsang.date} — ${satsang.title}`
-      });
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: track.title,
+          artist: 'Mooji',
+          album: `${satsang.date} — ${satsang.title}`
+        });
+      } catch (e) {
+        // Metadata is an enhancement; native playback remains authoritative.
+      }
     }
 
     function updateMediaSessionPositionState() {
@@ -1661,8 +1582,6 @@
       volumeSliderWrapper.addEventListener('click', setVolumeFromClick);
       btnMute.addEventListener('click', toggleMute);
       
-      // Boost Click
-      document.getElementById('btnBoost').addEventListener('click', toggleBoost);
     }
 
     // Drawer Helpers
@@ -1755,7 +1674,6 @@
 
     // Volume helpers
     function setVolumeFromClick(e) {
-      initAudioBoost();
       const rect = volumeSliderWrapper.getBoundingClientRect();
       let percentage = (e.clientX - rect.left) / rect.width;
       percentage = Math.max(0, Math.min(1, percentage));
@@ -1767,7 +1685,6 @@
     }
 
     function toggleMute() {
-      initAudioBoost();
       if (isMuted) {
         volume = prevVolume;
         isMuted = false;
