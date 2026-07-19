@@ -906,6 +906,14 @@
     // Audio Instance
     const audio = new Audio();
     audio.crossOrigin = "anonymous";
+    audio.preload = "auto";
+    audio.setAttribute('playsinline', '');
+
+    // Android permits a normal media element to keep playing as background
+    // media, but commonly suspends Web Audio contexts when the screen locks.
+    // Never move Android playback into Web Audio; uninterrupted playback is
+    // more important than the optional gain boost on that platform.
+    const isAndroid = /Android/i.test(navigator.userAgent);
 
     // Web Audio Gain Boost Setup
     let audioCtx = null;
@@ -914,11 +922,16 @@
     const BOOST_MULTIPLIER = 3.5; // 3.5x (350%) gain boost (clean & loud)
 
     function initAudioBoost() {
+      if (isAndroid) {
+        isBoostActive = false;
+        updateAudioGain();
+        return false;
+      }
       if (audioCtx) {
         if (audioCtx.state === 'suspended') {
           audioCtx.resume();
         }
-        return;
+        return true;
       }
       try {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext;
@@ -941,8 +954,12 @@
         limiter.connect(audioCtx.destination);
         
         updateAudioGain();
+        return true;
       } catch (e) {
         console.error("Web Audio API not supported or blocked:", e);
+        isBoostActive = false;
+        updateAudioGain();
+        return false;
       }
     }
 
@@ -958,6 +975,13 @@
     }
 
     function toggleBoost() {
+      if (isAndroid) {
+        isBoostActive = false;
+        updateBoostUI();
+        saveState();
+        showToast("Boost is disabled on Android to keep playback running when the screen locks.");
+        return;
+      }
       initAudioBoost();
       isBoostActive = !isBoostActive;
       updateAudioGain();
@@ -1043,7 +1067,7 @@
         updateVolumeUI();
       }
       if (savedBoost !== null) {
-        isBoostActive = (savedBoost === 'true');
+        isBoostActive = !isAndroid && (savedBoost === 'true');
       }
       updateBoostUI();
       updateAudioGain();
@@ -1391,6 +1415,7 @@
       
       audio.src = track.rel_path;
       audio.load();
+      updateMediaSessionMetadata();
 
       saveState();
 
@@ -1403,7 +1428,9 @@
 
     // Play/Pause Functions
     function playAudio() {
-      initAudioBoost();
+      // Creating an AudioContext merely to play at normal volume breaks
+      // background playback on Android. Only desktop boost needs Web Audio.
+      if (isBoostActive) initAudioBoost();
       audio.play().then(() => {
         isPlaying = true;
         updatePlayBtnUI();
@@ -1413,6 +1440,7 @@
           clearTimeout(retryTimeoutId);
           retryTimeoutId = null;
         }
+        updateMediaSessionPlaybackState('playing');
       }).catch(err => {
         console.log("Audio play failed / user gesture needed:", err);
         handlePlayFailure(err);
@@ -1429,6 +1457,7 @@
       audio.pause();
       isPlaying = false;
       updatePlayBtnUI();
+      updateMediaSessionPlaybackState('paused');
     }
 
     function togglePlay() {
@@ -1454,6 +1483,7 @@
       audio.addEventListener('timeupdate', () => {
         updateProgressBar();
         throttleSavePosition();
+        updateMediaSessionPositionState();
       });
 
       audio.addEventListener('durationchange', () => {
@@ -1461,7 +1491,24 @@
       });
 
       audio.addEventListener('ended', () => {
+        // Keep the transition synchronous with the trusted media event. This
+        // is the path Android Chrome allows to continue behind the lock screen.
         nextTrack();
+      });
+
+      audio.addEventListener('play', () => {
+        isPlaying = true;
+        updatePlayBtnUI();
+        updateMediaSessionPlaybackState('playing');
+      });
+
+      audio.addEventListener('pause', () => {
+        // An ended track pauses just before nextTrack starts the replacement;
+        // avoid briefly advertising a stopped session in that case.
+        if (audio.ended) return;
+        isPlaying = false;
+        updatePlayBtnUI();
+        updateMediaSessionPlaybackState('paused');
       });
 
       audio.addEventListener('error', (e) => {
@@ -1470,6 +1517,78 @@
         console.error("Audio element error event:", err);
         handlePlayFailure(err || new Error("Audio error event"));
       });
+
+      setupMediaSession();
+
+      // Persist immediately when Android backgrounds the page. Normal media
+      // playback remains native; no screen wake lock (and no battery-draining
+      // forced-on display) is required.
+      document.addEventListener('visibilitychange', () => {
+        saveState();
+        if (!document.hidden && isPlaying && audio.paused && !audio.ended) {
+          playAudio();
+        }
+      });
+      window.addEventListener('pagehide', saveState);
+    }
+
+    function updateMediaSessionPlaybackState(state) {
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = state;
+      }
+    }
+
+    function updateMediaSessionMetadata() {
+      if (!('mediaSession' in navigator) || !('MediaMetadata' in window)) return;
+      const satsang = SATSANGS[currentSatsangIdx];
+      const track = satsang.tracks[currentTrackIdx];
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: track.title,
+        artist: 'Mooji',
+        album: `${satsang.date} — ${satsang.title}`
+      });
+    }
+
+    function updateMediaSessionPositionState() {
+      if (!('mediaSession' in navigator) || !navigator.mediaSession.setPositionState) return;
+      if (!Number.isFinite(audio.duration) || audio.duration <= 0) return;
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: audio.duration,
+          playbackRate: audio.playbackRate,
+          position: Math.min(audio.currentTime, audio.duration)
+        });
+      } catch (e) {
+        // Some older Android WebViews expose the API only partially.
+      }
+    }
+
+    function setupMediaSession() {
+      if (!('mediaSession' in navigator)) return;
+      const handlers = {
+        play: playAudio,
+        pause: pauseAudio,
+        previoustrack: prevTrack,
+        nexttrack: nextTrack,
+        seekbackward: (details) => {
+          audio.currentTime = Math.max(0, audio.currentTime - (details.seekOffset || 10));
+        },
+        seekforward: (details) => {
+          const end = Number.isFinite(audio.duration) ? audio.duration : audio.currentTime + 10;
+          audio.currentTime = Math.min(end, audio.currentTime + (details.seekOffset || 10));
+        },
+        seekto: (details) => {
+          if (Number.isFinite(details.seekTime)) audio.currentTime = details.seekTime;
+        }
+      };
+      Object.entries(handlers).forEach(([action, handler]) => {
+        try {
+          navigator.mediaSession.setActionHandler(action, handler);
+        } catch (e) {
+          // Unsupported actions differ between Chrome and Android WebViews.
+        }
+      });
+      updateMediaSessionMetadata();
     }
 
     // Next Track
