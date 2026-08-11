@@ -743,9 +743,26 @@
     .confirm-modal-btn.confirm:active {
       transform: scale(0.95);
     }
+
+    /* Hidden persistent media nodes positioned offscreen but considered active by WebKit/Blink */
+    .hidden-media {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: 1px;
+      height: 1px;
+      opacity: 0.001;
+      pointer-events: none;
+      z-index: -1;
+    }
   </style>
 </head>
 <body>
+
+  <!-- Hidden persistent media nodes for seamless mobile background playback & preloading -->
+  <audio id="backgroundAudio" class="hidden-media" preload="auto" playsinline webkit-playsinline x-webkit-airplay="allow"></audio>
+  <audio id="preloadAudio" class="hidden-media" preload="auto" playsinline webkit-playsinline x-webkit-airplay="allow"></audio>
+  <audio id="silentKeepAliveAudio" class="hidden-media" loop preload="auto" playsinline webkit-playsinline x-webkit-airplay="allow" src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA"></audio>
 
   <!-- Toast Container -->
   <div id="toast" class="toast-container"></div>
@@ -901,16 +918,88 @@
     let isMuted = false;
     let prevVolume = 0.8;
 
-    // Audio Instance
-    const audio = new Audio();
-    audio.id = 'backgroundAudio';
-    audio.preload = "auto";
-    audio.setAttribute('playsinline', '');
-    audio.style.display = 'none';
-    document.body.appendChild(audio);
+    // DOM Media Elements
+    const audio = document.getElementById('backgroundAudio');
+    const preloadAudio = document.getElementById('preloadAudio');
+    const silentAudio = document.getElementById('silentKeepAliveAudio');
 
-    // Keep all playback on this one native media element. This is the path
-    // browsers expose to operating-system media controls and background audio.
+    // Web Audio API Keep-Alive Engine
+    let audioCtx = null;
+    let keepAliveSource = null;
+    let keepAliveGain = null;
+    let wakeLock = null;
+
+    function initAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+          try {
+            audioCtx = new AudioContextClass();
+          } catch (e) {
+            console.warn("AudioContext initialization note:", e);
+          }
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+    }
+
+    function startKeepAlive() {
+      initAudioContext();
+      if (audioCtx && !keepAliveSource) {
+        try {
+          const buffer = audioCtx.createBuffer(1, Math.max(1, audioCtx.sampleRate), audioCtx.sampleRate);
+          const source = audioCtx.createBufferSource();
+          source.buffer = buffer;
+          source.loop = true;
+          
+          const gainNode = audioCtx.createGain();
+          gainNode.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+          
+          source.connect(gainNode);
+          gainNode.connect(audioCtx.destination);
+          source.start(0);
+          keepAliveSource = source;
+          keepAliveGain = gainNode;
+        } catch (e) {
+          console.warn("Keep-alive node start notice:", e);
+        }
+      }
+
+      if (silentAudio && silentAudio.paused) {
+        silentAudio.play().catch(() => {});
+      }
+    }
+
+    function stopKeepAlive() {
+      if (silentAudio && !silentAudio.paused) {
+        silentAudio.pause();
+      }
+    }
+
+    // Screen Wake Lock API
+    async function requestWakeLock() {
+      if ('wakeLock' in navigator && !wakeLock && isPlaying && !document.hidden) {
+        try {
+          wakeLock = await navigator.wakeLock.request('screen');
+          wakeLock.addEventListener('release', () => {
+            wakeLock = null;
+          });
+        } catch (err) {
+          // Wake lock rejected or unsupported; non-fatal
+        }
+      }
+    }
+
+    function releaseWakeLock() {
+      if (wakeLock) {
+        try {
+          wakeLock.release();
+        } catch (e) {}
+        wakeLock = null;
+      }
+    }
 
     function updateAudioGain() {
       const targetVol = isMuted ? 0 : volume;
@@ -954,14 +1043,10 @@
     // Init App
     window.addEventListener('DOMContentLoaded', () => {
       loadSavedState();
-      // Register media lifecycle handlers before the first source is loaded so
-      // cached tracks cannot win a race against listener setup.
       setupAudioListeners();
       renderSatsangs();
-      selectSatsang(currentSatsangIdx, false); // select without autoplay on load
-      // Setup UI Listeners
+      selectSatsang(currentSatsangIdx, false);
       setupUIListeners();
-      // Setup Confirmation Modal Listeners
       setupModalListeners();
     });
 
@@ -994,7 +1079,6 @@
       }
       updateAudioGain();
       
-      // We will apply savedPos once the track is loaded
       if (savedPos !== null) {
         const targetPos = parseFloat(savedPos);
         if (Number.isFinite(targetPos) && targetPos >= 0) {
@@ -1017,13 +1101,9 @@
     function safeStorageSet(key, value) {
       try {
         localStorage.setItem(key, value);
-      } catch (e) {
-        // Storage may be blocked in private/embedded browsing. Playback must
-        // remain independent from optional position persistence.
-      }
+      } catch (e) {}
     }
 
-    // Save State helper
     function saveState() {
       safeStorageSet('mooji_satsang_idx', currentSatsangIdx);
       safeStorageSet('mooji_track_idx', currentTrackIdx);
@@ -1031,7 +1111,6 @@
       safeStorageSet('mooji_volume', volume);
     }
 
-    // Throttled position saving
     let lastSaveTime = 0;
     function throttleSavePosition() {
       const now = Date.now();
@@ -1092,7 +1171,6 @@
         return;
       }
 
-      // Prompt only if currently playing or has playback progress (greater than 5 seconds)
       if (isPlaying || audio.currentTime > 5) {
         pendingSatsangIdx = idx;
         pendingTrackIdx = null;
@@ -1110,12 +1188,10 @@
       closeDrawer();
     };
 
-    // Select Satsang & Render Tracks
     function selectSatsang(idx, autoPlay = true) {
       if (idx < 0 || idx >= SATSANGS.length) return;
       currentSatsangIdx = idx;
       
-      // A quick re-render keeps active state perfect
       const activeSearch = searchInput.value || drawerSearchInput.value;
       renderSatsangs(activeSearch);
 
@@ -1123,11 +1199,8 @@
       playerDate.textContent = `${idx + 1}/${SATSANGS.length} - ${satsang.date}`;
       playerSatsangTitle.textContent = satsang.title;
 
-      // If switching satsang, reset track to 0
-      // BUT if we searched for a track, we should load that matching track first!
       if (autoPlay) {
         if (activeSearch) {
-          // Find the first track matching the search in the selected Satsang
           const matchIdx = satsang.tracks.findIndex(t => t.title.toLowerCase().includes(activeSearch.toLowerCase().trim()));
           currentTrackIdx = matchIdx !== -1 ? matchIdx : 0;
         } else {
@@ -1139,7 +1212,6 @@
       loadTrack(currentTrackIdx, autoPlay);
     }
 
-    // Render Tracklist
     function renderTracks() {
       const satsang = SATSANGS[currentSatsangIdx];
       const activeSearch = (searchInput.value || drawerSearchInput.value || '').toLowerCase().trim();
@@ -1163,7 +1235,6 @@
       }).join('');
     }
 
-    // Select specific track
     window.selectTrack = function(trackIdx) {
       if (trackIdx === currentTrackIdx) {
         togglePlay();
@@ -1192,7 +1263,6 @@
       loadTrack(currentTrackIdx, true);
     }
 
-    // Modal Events Setup
     function setupModalListeners() {
       const modal = document.getElementById('confirmModal');
       const btnCancel = document.getElementById('btnCancelSwitch');
@@ -1237,41 +1307,47 @@
       }, 4000);
     }
 
-    // Playback Retry Mechanism. It intentionally never gives up while the user
-    // still wants playback; temporary loss of connectivity must not turn into
-    // a permanent pause.
+    // Playback Recovery & Resilience Engine
     let playRetryCount = 0;
     let retryTimeoutId = null;
     let isRetrying = false;
+    let stallWatchdog = null;
+
+    function clearStallWatchdog() {
+      if (stallWatchdog) {
+        clearTimeout(stallWatchdog);
+        stallWatchdog = null;
+      }
+    }
 
     function handlePlayFailure(err) {
-      console.warn("Playback failure encountered:", err);
-      
       if (!wantsPlayback) return;
+      
+      // AbortError is normal during rapid navigation/source switches; ignore
+      if (err && (err.name === 'AbortError' || err.message?.includes('aborted'))) {
+        return;
+      }
 
-      // Browsers require a new user/media-control gesture after explicitly
-      // revoking autoplay permission. Keep the intent so a foreground return
-      // or lock-screen Play action can resume it.
+      console.warn("Playback recovery triggered:", err);
+
       if (err && err.name === 'NotAllowedError') {
         console.log("Autoplay blocked. Waiting for user interaction.");
         isRetrying = false;
-        showToast("Tap Play once to allow background playback.");
+        showToast("Tap Play to begin playback.");
         return;
       }
 
-      if (isRetrying) {
-        console.log("Retry already in progress, ignoring duplicate trigger.");
-        return;
-      }
+      if (isRetrying) return;
       isRetrying = true;
-
       playRetryCount++;
+
       const delay = navigator.onLine
-        ? Math.min(30000, Math.pow(2, Math.min(playRetryCount, 5)) * 1000)
-        : 15000;
-      showToast(navigator.onLine
-        ? `Playback interrupted. Retrying in ${delay / 1000}s...`
-        : "Connection lost. Playback will resume automatically when online.");
+        ? Math.min(8000, Math.max(1000, Math.pow(1.5, Math.min(playRetryCount, 4)) * 1000))
+        : 6000;
+
+      if (!navigator.onLine) {
+        showToast("Connection lost. Playback will resume automatically when online.");
+      }
 
       if (retryTimeoutId) clearTimeout(retryTimeoutId);
       retryTimeoutId = setTimeout(() => {
@@ -1279,7 +1355,7 @@
         isRetrying = false;
         if (!wantsPlayback) return;
 
-        console.log(`Retrying play, attempt ${playRetryCount}...`);
+        console.log(`Auto-reconnecting stream (attempt ${playRetryCount})...`);
         const currentPos = audio.currentTime;
         if (currentPos > 0) {
           audio.addEventListener('loadedmetadata', function restoreRetryPosition() {
@@ -1288,9 +1364,26 @@
             }
           }, { once: true });
         }
-        audio.load();
         playAudio();
       }, delay);
+    }
+
+    // Preload next track for zero-gap background transitions
+    function preloadUpcomingTrack() {
+      const satsang = SATSANGS[currentSatsangIdx];
+      if (!satsang) return;
+      let nextTrackObj = null;
+      if (currentTrackIdx < satsang.tracks.length - 1) {
+        nextTrackObj = satsang.tracks[currentTrackIdx + 1];
+      } else if (currentSatsangIdx < SATSANGS.length - 1) {
+        nextTrackObj = SATSANGS[currentSatsangIdx + 1].tracks[0];
+      }
+      if (nextTrackObj && preloadAudio) {
+        if (preloadAudio.src !== nextTrackObj.rel_path) {
+          preloadAudio.src = nextTrackObj.rel_path;
+          preloadAudio.preload = "auto";
+        }
+      }
     }
 
     // Load Track MP3
@@ -1298,24 +1391,22 @@
       const satsang = SATSANGS[currentSatsangIdx];
       if (trackIdx < 0 || trackIdx >= satsang.tracks.length) return;
       
-      // Clear retry state when a new track is loaded
       if (retryTimeoutId) {
         clearTimeout(retryTimeoutId);
         retryTimeoutId = null;
       }
       playRetryCount = 0;
       isRetrying = false;
+      clearStallWatchdog();
       
       const track = satsang.tracks[trackIdx];
       playerTrackTitle.textContent = track.title;
-      
-      // Update browser tab title too
       document.title = `${track.title} | Mooji 2010`;
       
-      audio.src = track.rel_path;
-      audio.load();
+      if (audio.src !== track.rel_path) {
+        audio.src = track.rel_path;
+      }
       updateMediaSessionMetadata();
-
       saveState();
 
       if (autoPlay) {
@@ -1323,15 +1414,18 @@
       } else {
         pauseAudio();
       }
+
+      preloadUpcomingTrack();
     }
 
     // Play/Pause Functions
     function playAudio() {
       wantsPlayback = true;
       const requestId = ++playbackRequestId;
-      // Keeping autoplay set after the initial user gesture lets the native
-      // media pipeline carry source changes into the next track in background.
-      audio.autoplay = true;
+      
+      startKeepAlive();
+      requestWakeLock();
+
       audio.play().then(() => {
         if (requestId !== playbackRequestId || !wantsPlayback || audio.paused) return;
         isPlaying = true;
@@ -1342,10 +1436,11 @@
           clearTimeout(retryTimeoutId);
           retryTimeoutId = null;
         }
+        clearStallWatchdog();
         updateMediaSessionPlaybackState('playing');
+        preloadUpcomingTrack();
       }).catch(err => {
         if (requestId !== playbackRequestId || !wantsPlayback) return;
-        console.log("Audio play failed / user gesture needed:", err);
         handlePlayFailure(err);
       });
     }
@@ -1353,14 +1448,16 @@
     function pauseAudio() {
       wantsPlayback = false;
       playbackRequestId++;
-      audio.autoplay = false;
       if (retryTimeoutId) {
         clearTimeout(retryTimeoutId);
         retryTimeoutId = null;
       }
       isRetrying = false;
       playRetryCount = 0;
+      clearStallWatchdog();
       audio.pause();
+      stopKeepAlive();
+      releaseWakeLock();
       isPlaying = false;
       updatePlayBtnUI();
       updateMediaSessionPlaybackState('paused');
@@ -1376,10 +1473,8 @@
 
     function updatePlayBtnUI() {
       if (isPlaying) {
-        // Pause icon
         playIcon.innerHTML = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
       } else {
-        // Play icon
         playIcon.innerHTML = `<path d="M8 5v14l11-7z"/>`;
       }
     }
@@ -1390,15 +1485,26 @@
         updateProgressBar();
         throttleSavePosition();
         updateMediaSessionPositionState();
+        if (audio.duration && (audio.duration - audio.currentTime < 30)) {
+          preloadUpcomingTrack();
+        }
       });
 
       audio.addEventListener('durationchange', () => {
         timeTotal.textContent = formatTime(audio.duration);
+        updateMediaSessionPositionState();
+      });
+
+      audio.addEventListener('playing', () => {
+        isPlaying = true;
+        updatePlayBtnUI();
+        clearStallWatchdog();
+        updateMediaSessionPlaybackState('playing');
       });
 
       audio.addEventListener('ended', () => {
-        // Keep the transition synchronous with the trusted media event. This
-        // is the path Android Chrome allows to continue behind the lock screen.
+        clearStallWatchdog();
+        startKeepAlive();
         nextTrack();
       });
 
@@ -1409,49 +1515,102 @@
       });
 
       audio.addEventListener('pause', () => {
-        // An ended track pauses just before nextTrack starts the replacement;
-        // avoid briefly advertising a stopped session in that case.
         if (audio.ended) return;
+        if (wantsPlayback) {
+          // If paused by mobile OS interrupt during screen transition, seamlessly continue
+          setTimeout(() => {
+            if (wantsPlayback && audio.paused && !audio.ended) {
+              audio.play().catch(() => {});
+            }
+          }, 100);
+          return;
+        }
         isPlaying = false;
         updatePlayBtnUI();
         updateMediaSessionPlaybackState('paused');
       });
 
+      audio.addEventListener('waiting', () => {
+        if (!wantsPlayback || audio.paused) return;
+        clearStallWatchdog();
+        stallWatchdog = setTimeout(() => {
+          stallWatchdog = null;
+          if (wantsPlayback && !audio.ended && (audio.paused || audio.readyState < 3)) {
+            console.log("Watchdog auto-kickstart for waiting stream...");
+            audio.play().catch(() => {});
+          }
+        }, 2500);
+      });
+
+      audio.addEventListener('stalled', () => {
+        if (!wantsPlayback || audio.paused) return;
+        clearStallWatchdog();
+        stallWatchdog = setTimeout(() => {
+          stallWatchdog = null;
+          if (wantsPlayback && !audio.ended && (audio.paused || audio.readyState < 3)) {
+            console.log("Watchdog auto-kickstart for stalled stream...");
+            audio.play().catch(() => {});
+          }
+        }, 2500);
+      });
+
       audio.addEventListener('error', (e) => {
         if (!audio.src) return;
         const err = audio.error;
-        console.error("Audio element error event:", err);
         handlePlayFailure(err || new Error("Audio error event"));
       });
 
       setupMediaSession();
 
-      // Persist immediately when Android backgrounds the page. Normal media
-      // playback remains native; no screen wake lock (and no battery-draining
-      // forced-on display) is required.
+      // Visibility & Lifecycle Handlers for Screen Lock & Backgrounding
       document.addEventListener('visibilitychange', () => {
         saveState();
-        if (!document.hidden && wantsPlayback && audio.paused && !audio.ended) {
-          playAudio();
+        if (document.hidden) {
+          if (wantsPlayback) {
+            startKeepAlive();
+          }
+        } else {
+          if (wantsPlayback) {
+            requestWakeLock();
+            if (audio.paused && !audio.ended) {
+              audio.play().catch(() => {});
+            }
+          }
+          updateProgressBar();
+          updatePlayBtnUI();
         }
       });
+
       window.addEventListener('pagehide', saveState);
+      window.addEventListener('pageshow', () => {
+        if (wantsPlayback && audio.paused && !audio.ended) {
+          audio.play().catch(() => {});
+        }
+      });
+
       window.addEventListener('online', () => {
-        if (!wantsPlayback || !audio.paused) return;
+        if (!wantsPlayback) return;
         if (retryTimeoutId) clearTimeout(retryTimeoutId);
         retryTimeoutId = null;
         isRetrying = false;
-        playAudio();
+        audio.play().catch(() => {});
       });
     }
+
+    // High-Resolution Lockscreen MediaSession Artwork
+    const ARTWORK_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" fill="%232b251e"/><circle cx="256" cy="256" r="210" fill="none" stroke="%23a38a6a" stroke-width="6" opacity="0.4"/><path d="M256 120 L350 330 L162 330 Z" fill="none" stroke="%23d4af37" stroke-width="8" stroke-linejoin="round"/><path d="M256 180 L310 300 L202 300 Z" fill="%23a38a6a" opacity="0.6"/><circle cx="256" cy="256" r="40" fill="%23fbf9f6" opacity="0.9"/><text x="256" y="410" font-family="system-ui,-apple-system,sans-serif" font-size="28" font-weight="700" fill="%23e8dec8" text-anchor="middle" letter-spacing="4">MOOJI</text><text x="256" y="445" font-family="system-ui,-apple-system,sans-serif" font-size="16" font-weight="500" fill="%23a38a6a" text-anchor="middle" letter-spacing="6">ARUNACHALA 2010</text></svg>`;
+
+    const MEDIA_ARTWORK = [96, 128, 192, 256, 384, 512].map(size => ({
+      src: ARTWORK_SVG,
+      sizes: `${size}x${size}`,
+      type: 'image/svg+xml'
+    }));
 
     function updateMediaSessionPlaybackState(state) {
       if ('mediaSession' in navigator) {
         try {
           navigator.mediaSession.playbackState = state;
-        } catch (e) {
-          // Partial Media Session implementations must never affect playback.
-        }
+        } catch (e) {}
       }
     }
 
@@ -1463,11 +1622,10 @@
         navigator.mediaSession.metadata = new MediaMetadata({
           title: track.title,
           artist: 'Mooji',
-          album: `${satsang.date} — ${satsang.title}`
+          album: `${satsang.date} — ${satsang.title}`,
+          artwork: MEDIA_ARTWORK
         });
-      } catch (e) {
-        // Metadata is an enhancement; native playback remains authoritative.
-      }
+      } catch (e) {}
     }
 
     function updateMediaSessionPositionState() {
@@ -1476,12 +1634,10 @@
       try {
         navigator.mediaSession.setPositionState({
           duration: audio.duration,
-          playbackRate: audio.playbackRate,
+          playbackRate: audio.playbackRate || 1.0,
           position: Math.min(audio.currentTime, audio.duration)
         });
-      } catch (e) {
-        // Some older Android WebViews expose the API only partially.
-      }
+      } catch (e) {}
     }
 
     function setupMediaSession() {
@@ -1491,23 +1647,27 @@
         pause: pauseAudio,
         previoustrack: prevTrack,
         nexttrack: nextTrack,
+        stop: pauseAudio,
         seekbackward: (details) => {
           audio.currentTime = Math.max(0, audio.currentTime - (details.seekOffset || 10));
+          updateMediaSessionPositionState();
         },
         seekforward: (details) => {
           const end = Number.isFinite(audio.duration) ? audio.duration : audio.currentTime + 10;
           audio.currentTime = Math.min(end, audio.currentTime + (details.seekOffset || 10));
+          updateMediaSessionPositionState();
         },
         seekto: (details) => {
-          if (Number.isFinite(details.seekTime)) audio.currentTime = details.seekTime;
+          if (Number.isFinite(details.seekTime)) {
+            audio.currentTime = details.seekTime;
+            updateMediaSessionPositionState();
+          }
         }
       };
       Object.entries(handlers).forEach(([action, handler]) => {
         try {
           navigator.mediaSession.setActionHandler(action, handler);
-        } catch (e) {
-          // Unsupported actions differ between Chrome and Android WebViews.
-        }
+        } catch (e) {}
       });
       updateMediaSessionMetadata();
     }
@@ -1520,11 +1680,9 @@
         renderTracks();
         loadTrack(currentTrackIdx, true);
       } else {
-        // Go to next satsang
         if (currentSatsangIdx < SATSANGS.length - 1) {
           selectSatsang(currentSatsangIdx + 1, true);
         } else {
-          // Loop to first day, first track
           selectSatsang(0, true);
         }
       }
@@ -1532,7 +1690,6 @@
 
     // Previous Track
     function prevTrack() {
-      // If current track has played more than 3 seconds, restart it
       if (audio.currentTime > 3) {
         audio.currentTime = 0;
         return;
@@ -1543,7 +1700,6 @@
         renderTracks();
         loadTrack(currentTrackIdx, true);
       } else {
-        // Go to previous day
         if (currentSatsangIdx > 0) {
           const prevSatsang = SATSANGS[currentSatsangIdx - 1];
           currentTrackIdx = prevSatsang.tracks.length - 1;
@@ -1556,12 +1712,10 @@
 
     // UI Listeners
     function setupUIListeners() {
-      // Buttons
       btnPlay.addEventListener('click', togglePlay);
       btnPrev.addEventListener('click', prevTrack);
       btnNext.addEventListener('click', nextTrack);
 
-      // Search Inputs
       searchInput.addEventListener('input', (e) => {
         renderSatsangs(e.target.value);
       });
@@ -1569,19 +1723,15 @@
         renderSatsangs(e.target.value);
       });
 
-      // Mobile Drawer toggles
       menuOpenBtn.addEventListener('click', openDrawer);
       menuCloseBtn.addEventListener('click', closeDrawer);
       drawerOverlay.addEventListener('click', closeDrawer);
 
-      // Progress Seek Click/Drag
       progressBarWrapper.addEventListener('mousedown', startScrub);
       progressBarWrapper.addEventListener('touchstart', startScrub, { passive: true });
 
-      // Volume Click
       volumeSliderWrapper.addEventListener('click', setVolumeFromClick);
       btnMute.addEventListener('click', toggleMute);
-      
     }
 
     // Drawer Helpers
@@ -1635,7 +1785,6 @@
       window.removeEventListener('touchmove', scrub);
       window.removeEventListener('touchend', endScrub);
 
-      // Seek audio
       const rect = progressBarWrapper.getBoundingClientRect();
       let clientX = e.clientX;
       if (e.changedTouches && e.changedTouches[0]) {
@@ -1654,7 +1803,6 @@
       }
     }
 
-    // Format Time Helpers
     function formatTime(secs) {
       if (isNaN(secs)) return "0:00";
       const m = Math.floor(secs / 60);
@@ -1672,7 +1820,6 @@
       timeCurrent.textContent = formatTime(audio.currentTime);
     }
 
-    // Volume helpers
     function setVolumeFromClick(e) {
       const rect = volumeSliderWrapper.getBoundingClientRect();
       let percentage = (e.clientX - rect.left) / rect.width;
@@ -1700,7 +1847,6 @@
       const displayVol = isMuted ? 0 : volume;
       volumeFill.style.width = `${displayVol * 100}%`;
       
-      // Update Volume Icon
       if (displayVol === 0) {
         volumeIcon.innerHTML = `<path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.21.05-.42.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>`;
       } else if (displayVol < 0.5) {
