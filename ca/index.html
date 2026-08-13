@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f5f7f5">
+    <meta name="color-scheme" content="light">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta
+      name="description"
+      content="Condalim Québec - Carte interactive des condamnations et infractions alimentaires (MAPAQ, salubrité, restaurants et commerces au Québec)."
+    >
+    <title>Condalim Québec — Condamnations Alimentaires & Salubrité</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    >
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <noscript>
+      <div style="padding:20px;margin:20px;background:#fff;border:1px solid #ccc;border-radius:8px;">
+        <h2>JavaScript requis</h2>
+        <p>Condalim Québec nécessite l'activation de JavaScript pour charger les données du MAPAQ et afficher la carte interactive.</p>
+      </div>
+    </noscript>
+
+    <main class="app-shell" aria-label="Condalim Québec">
+      <!-- Leaflet Map Container -->
+      <div id="map" aria-label="Carte des condamnations de restaurants au Québec"></div>
+
+      <!-- Top Header & Search Bar -->
+      <header class="topbar" aria-label="Contrôles de recherche et de filtres">
+        <div class="topbar-main-row">
+          <div class="brand-block">
+            <div class="brand-icon">⚖️</div>
+            <div class="brand-titles">
+              <h1 class="brand-title" data-i18n="brandName">Condalim Québec</h1>
+              <span class="brand-subtitle" data-i18n="brandSubtitle">Salubrité & Inspections MAPAQ</span>
+            </div>
+          </div>
+          
+          <div class="topbar-actions">
+            <button id="locateBtn" class="control-btn accent" type="button" aria-label="Localiser ma position" title="Localiser">
+              <span class="btn-icon">📍</span>
+              <span class="btn-text" data-i18n="locateLabel">Localiser</span>
+            </button>
+            <button id="postalToggleBtn" class="control-btn" type="button" aria-label="Rechercher par code postal" title="Code postal">
+              <span class="btn-icon">📮</span>
+              <span class="btn-text" data-i18n="postalBtn">Code postal</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Search Row -->
+        <div class="search-row">
+          <div class="search-input-wrap">
+            <span class="search-icon">🔍</span>
+            <input
+              id="searchInput"
+              class="search-input"
+              type="text"
+              placeholder="Rechercher un restaurant, adresse, infraction..."
+              data-i18n-placeholder="searchPlaceholder"
+              autocomplete="off"
+              autocorrect="off"
+              autocapitalize="off"
+              spellcheck="false"
+            >
+            <button id="searchClearBtn" class="search-clear" type="button" aria-label="Effacer la recherche">✕</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Postal Code Prompt -->
+      <form id="postalPrompt" class="postal-prompt is-hidden" aria-hidden="true">
+        <label class="postal-label" for="postalInput" data-i18n="postalTitle">
+          Naviguer ou estimer par code postal
+        </label>
+        <div class="postal-row">
+          <input
+            id="postalInput"
+            class="postal-input"
+            type="text"
+            inputmode="text"
+            autocomplete="postal-code"
+            maxlength="7"
+            placeholder="G1K 3X2"
+          >
+          <button class="postal-submit" type="submit" data-i18n="postalUse">Aller</button>
+        </div>
+        <p class="postal-hint" data-i18n="postalHint">
+          Exemples : G1K (Vieux-Québec), G1V (Sainte-Foy), G2E (Les Rivières), H2X (Montréal)...
+        </p>
+        <p id="postalError" class="postal-error" aria-live="polite"></p>
+      </form>
+
+      <!-- Status Bar / MAPAQ Source Link -->
+      <a
+        id="statusStrip"
+        class="status-strip"
+        href="https://www.quebec.ca/sante/alimentation/surveillance-plaintes/condamnations-etablissements-alimentaires"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Source : MAPAQ - Registre officiel des condamnations alimentaires (Ouvre dans un nouvel onglet)"
+        title="Ouvrir le registre officiel du MAPAQ"
+      >
+        <div class="status-content">
+          <span class="status-source-text">Source : <strong>MAPAQ</strong></span>
+          <span class="status-hand" aria-hidden="true">👈</span>
+          <span class="status-ext-icon" aria-hidden="true">↗</span>
+        </div>
+      </a>
+
+      <!-- Loading Overlay -->
+      <div id="loadingOverlay" class="loading-overlay" role="status" aria-live="polite">
+        <div class="loading-box">
+          <div class="loading-spinner" aria-hidden="true"></div>
+          <div class="loading-title" data-i18n="loadingTitle">Chargement des données en direct</div>
+          <div class="loading-sub" data-i18n="loadingSub">Téléchargement du CSV officiel Données Québec...</div>
+        </div>
+      </div>
+
+
+
+      <!-- Detail Drawer / Modal for Full Inspection Data -->
+      <div id="detailDrawerOverlay" class="detail-drawer-overlay" aria-hidden="true">
+        <div class="detail-drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+          <header class="drawer-header">
+            <div class="drawer-header-left">
+              <span id="drawerType" class="drawer-est-type">RESTAURANT</span>
+              <h2 id="drawerTitle" class="drawer-est-name">Nom du restaurant</h2>
+              <div id="drawerOperator" class="drawer-operator-name">Exploitant</div>
+            </div>
+            <button id="drawerCloseBtn" class="drawer-close-btn" type="button" aria-label="Fermer la fiche">✕</button>
+          </header>
+
+          <div class="drawer-content">
+            <!-- Information / Cessation alert if any -->
+            <div id="drawerInfoBanner" class="info-status-banner" style="display:none;">
+              <span>ℹ️</span> <span id="drawerInfoText"></span>
+            </div>
+
+            <!-- Address and Navigation -->
+            <div class="drawer-section">
+              <div class="drawer-section-title" data-i18n="drawerSecAddress">Adresse & Itinéraire</div>
+              <div class="address-box">
+                <div id="drawerAddress" class="address-text">Adresse complète</div>
+                <a id="drawerNavBtn" class="nav-gps-btn" href="#" target="_blank" rel="noopener">
+                  🗺️ <span data-i18n="drawerNavAction">Itinéraire GPS</span>
+                </a>
+              </div>
+            </div>
+
+            <!-- Stats Overview -->
+            <div class="drawer-section">
+              <div class="drawer-section-title" data-i18n="drawerSecStats">Bilan des condamnations</div>
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <span class="stat-label" data-i18n="drawerTotalFines">Total des amendes</span>
+                  <span id="drawerTotalFine" class="stat-value danger">0 $</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label" data-i18n="drawerOffenseCount">Nombre d'infractions</span>
+                  <span id="drawerOffenseCount" class="stat-value">0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Detailed List of Infractions -->
+            <div class="drawer-section">
+              <div class="drawer-section-title" data-i18n="drawerSecInfractions">Détails minutieux des condamnations</div>
+              <div id="drawerCondamList" class="condam-list">
+                <!-- Infractions cards dynamically injected here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Scripts -->
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="./geo-data.js"></script>
+    <script src="./app.js" defer></script>
+  </body>
+</html>
