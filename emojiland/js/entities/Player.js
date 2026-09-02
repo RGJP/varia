@@ -132,17 +132,12 @@ export class Player extends Entity {
         this.minTapAttackChargeTime = 0.045;
         this.maxAttackChargeTime = 1.0;
         this.chargeIndicatorDelay = 0.14;
-        this.standardAttackBurstCount = 0;
-        this.standardAttackBurstLimit = 5;
-        this.standardAttackCooldown = 0.5;
-        this.standardAttackCooldownTimer = 0;
-        this.standardAttackBurstResetDelay = 0.5;
-        this.standardAttackBurstResetTimer = 0;
         this.shellThrowLockoutTimer = 0;
         this.shellGrabLockoutTimer = 0;
         this.isChargingAttack = false;
         this.inSafeBubble = false;
         this.activeSafeBubble = null;
+        this.barrelBlastTimer = 0;
         this.safeZoneReentryLockedZone = null;
         this.safeZoneReentryLockTimer = 0;
 
@@ -291,19 +286,11 @@ export class Player extends Entity {
         if (this.safeZoneReentryLockTimer > 0) {
             this.safeZoneReentryLockTimer = Math.max(0, this.safeZoneReentryLockTimer - dt);
         }
+        if (this.barrelBlastTimer > 0) {
+            this.barrelBlastTimer = Math.max(0, this.barrelBlastTimer - dt);
+        }
         if (this.shellThrowLockoutTimer > 0) {
             this.shellThrowLockoutTimer = Math.max(0, this.shellThrowLockoutTimer - dt);
-        }
-        if (this.standardAttackCooldownTimer > 0) {
-            this.standardAttackCooldownTimer = Math.max(0, this.standardAttackCooldownTimer - dt);
-            if (this.standardAttackCooldownTimer <= 0) {
-                this.standardAttackBurstCount = 0;
-            }
-        } else if (this.standardAttackBurstResetTimer > 0) {
-            this.standardAttackBurstResetTimer = Math.max(0, this.standardAttackBurstResetTimer - dt);
-            if (this.standardAttackBurstResetTimer <= 0) {
-                this.standardAttackBurstCount = 0;
-            }
         }
         if (this.shellGrabLockoutTimer > 0) {
             this.shellGrabLockoutTimer = Math.max(0, this.shellGrabLockoutTimer - dt);
@@ -332,6 +319,7 @@ export class Player extends Entity {
                 if (inEntryCatch || pulledFromBelow) {
                     this.inSafeBubble = true;
                     this.activeSafeBubble = zone;
+                    this.barrelBlastTimer = 0;
                     this.isClimbing = false;
                     this.currentVine = null;
                     this.vx = 0;
@@ -557,18 +545,16 @@ export class Player extends Entity {
 
             // Seed charge on press so quick taps between frames still fire.
             // Only seed if we didn't just kick a shell and aren't carrying one.
-            const standardAttackReady = this.standardAttackCooldownTimer <= 0;
-
-            if (!shellWasKickedThisFrame && this.shellThrowLockoutTimer <= 0 && standardAttackReady && attackPressed && this.attackChargeTimer <= 0 && !this.carriedShell) {
+            if (!shellWasKickedThisFrame && this.shellThrowLockoutTimer <= 0 && attackPressed && this.attackChargeTimer <= 0 && !this.carriedShell) {
                 this.attackChargeTimer = this.minTapAttackChargeTime;
             }
 
-            if (!shellWasKickedThisFrame && this.shellThrowLockoutTimer <= 0 && standardAttackReady && attackHeld && !this.carriedShell) {
+            if (!shellWasKickedThisFrame && this.shellThrowLockoutTimer <= 0 && attackHeld && !this.carriedShell) {
                 this.isChargingAttack = true;
                 this.attackChargeTimer = Math.min(this.maxAttackChargeTime, this.attackChargeTimer + dt);
             }
 
-            if (!this.carriedShell && !game.gameOverTriggered && this.shellThrowLockoutTimer <= 0 && standardAttackReady && attackReleased && this.attackChargeTimer > 0) {
+            if (!this.carriedShell && !game.gameOverTriggered && this.shellThrowLockoutTimer <= 0 && attackReleased && this.attackChargeTimer > 0) {
                 this.isAttacking = true;
                 this.attackTimer = this.attackDuration;
 
@@ -585,18 +571,10 @@ export class Player extends Entity {
                 });
                 game.rocks.push(rock);
                 if (game.audio) game.audio.playThrow();
-                this.standardAttackBurstCount++;
-                this.standardAttackBurstResetTimer = this.standardAttackBurstResetDelay;
-                if (this.standardAttackBurstCount >= this.standardAttackBurstLimit) {
-                    this.standardAttackCooldownTimer = this.standardAttackCooldown;
-                    this.standardAttackBurstResetTimer = 0;
-                    this.attackChargeTimer = 0;
-                    this.isChargingAttack = false;
-                }
 
                 this.attackChargeTimer = 0;
                 this.isChargingAttack = false;
-            } else if ((!attackHeld && !attackPressed && !this.carriedShell) || !standardAttackReady) {
+            } else if (!attackHeld && !attackPressed && !this.carriedShell) {
                 // Defensive reset for cases where focus loss cancels a hold mid-charge.
                 this.attackChargeTimer = 0;
                 this.isChargingAttack = false;
@@ -684,14 +662,30 @@ export class Player extends Entity {
                 this.inSafeBubble = false;
                 this.activeSafeBubble = null;
                 this.safeZoneReentryLockedZone = launchedFromZone;
-                this.safeZoneReentryLockTimer = 0.42;
-                this.invulnerableTimer = Math.max(this.invulnerableTimer, 0.22);
-                this.x = targetX;
-                this.y = (targetY - this.height * 0.55) - 2;
-                this.vx = 0;
-                this.vy = this.jumpForce * Math.SQRT2;
-                this.isJumping = true;
-                this.forceFullJump = true;
+                this.safeZoneReentryLockTimer = 0.32;
+                this.invulnerableTimer = Math.max(this.invulnerableTimer, 0.35);
+
+                if (launchedFromZone.isRotator) {
+                    const angle = launchedFromZone.angle;
+                    const blastSpeed = 680;
+                    this.x = targetX + Math.cos(angle) * (launchedFromZone.width * 0.45);
+                    this.y = targetY + Math.sin(angle) * (launchedFromZone.height * 0.45);
+                    this.vx = Math.cos(angle) * blastSpeed;
+                    this.vy = Math.sin(angle) * blastSpeed;
+                    this.facingRight = Math.cos(angle) >= 0;
+                    this.barrelBlastTimer = 0.75;
+                    this.isJumping = false;
+                    this.forceFullJump = false;
+                } else {
+                    this.x = targetX;
+                    this.y = (targetY - this.height * 0.55) - 2;
+                    this.vx = 0;
+                    this.vy = this.jumpForce * Math.SQRT2;
+                    this.barrelBlastTimer = 0;
+                    this.isJumping = true;
+                    this.forceFullJump = true;
+                }
+
                 this.isSpinning = true;
                 this.spinDirection = this.facingRight ? 1 : -1;
                 this.rotation = 0;
@@ -704,9 +698,9 @@ export class Player extends Entity {
                 else if (game.audio) game.audio.playJump();
                 if (game.particles) {
                     const smokeX = launchedFromZone.centerX;
-                    const smokeY = launchedFromZone.centerY - launchedFromZone.height * 0.46;
+                    const smokeY = launchedFromZone.centerY;
                     game.particles.emitStomp(smokeX, smokeY);
-                    game.particles.emit(smokeX, smokeY, 8, 'rgba(180,180,180,0.75)', [40, 120], [0.2, 0.45], [6, 14]);
+                    game.particles.emit(smokeX, smokeY, 12, '#ffd54f', [60, 180], [0.2, 0.5], [6, 16]);
                 }
             }
         } else if (isFlying && !game.gameOverTriggered) {
@@ -752,17 +746,24 @@ export class Player extends Entity {
             if (input.isActionDown('left')) {
                 this.vx = -effectiveSpeed;
                 this.facingRight = false;
+                this.barrelBlastTimer = 0; // Immediate manual mid-air steering
             } else if (input.isActionDown('right')) {
                 this.vx = effectiveSpeed;
                 this.facingRight = true;
-            } else {
-                // Instant stop when no input is pressed, preventing sliding and feeling snappy
+                this.barrelBlastTimer = 0; // Immediate manual mid-air steering
+            } else if (this.barrelBlastTimer > 0) {
+                // Maintain barrel blast momentum while no steering key is pressed
+            } else if (this.grounded) {
+                // Instant stop when grounded and no input is pressed
                 this.vx = 0;
             }
         }
 
-        // Jump
+        // Jump / Mid-Air Jump
         if (!isPortalTraveling && !this.inSafeBubble && !isFlying && !this.isRolling && !game.gameOverTriggered && this.stunTimer <= 0 && this.tornadoTrapTimer <= 0 && this.jumpBufferTimer > 0 && !this.isClimbing) {
+            if (this.barrelBlastTimer > 0) {
+                this.barrelBlastTimer = 0; // Immediate mid-air jump control
+            }
             if (this.coyoteTimer > 0) {
                 this.vy = this.jumpForce;
                 this.grounded = false;
@@ -797,7 +798,7 @@ export class Player extends Entity {
         }
 
         // Variable Jump Height
-        if (!this.inSafeBubble && !isFlying && !input.isActionDown('jump') && this.isJumping && this.vy < 0 && !this.isClimbing && !this.forceFullJump) {
+        if (!this.inSafeBubble && this.barrelBlastTimer <= 0 && !isFlying && !input.isActionDown('jump') && this.isJumping && this.vy < 0 && !this.isClimbing && !this.forceFullJump) {
             this.vy *= 0.5; // Cut jump short
             this.isJumping = false;
         }
@@ -932,7 +933,8 @@ export class Player extends Entity {
             }
 
             // Gravity
-            this.vy += Physics.GRAVITY * dt;
+            const gravityMultiplier = this.barrelBlastTimer > 0 ? 0 : 1.0;
+            this.vy += Physics.GRAVITY * gravityMultiplier * dt;
             if (this.vy > Physics.TERMINAL_VELOCITY) {
                 this.vy = Physics.TERMINAL_VELOCITY;
             }
@@ -949,7 +951,7 @@ export class Player extends Entity {
                 if (this.isRolling) this._blockedOnXAxisThisFrame = true;
             }
 
-            this.resolveCollision(platforms, 'x', game);
+            this.resolveCollision(platforms, 'x', game, prevX, dt);
             if (this.isRolling) {
                 this.rollDistanceTraveled += Math.abs(this.x - prevX);
                 if (this._blockedOnXAxisThisFrame || this.rollDistanceTraveled >= this.rollDistance) {
@@ -958,9 +960,10 @@ export class Player extends Entity {
             }
 
             // Y Collision
+            const prevY = this.y;
             this.y += this.vy * dt;
             this.grounded = false;
-            this.resolveCollision(platforms, 'y', game);
+            this.resolveCollision(platforms, 'y', game, prevY, dt);
         }
         this._handlePortalTeleport(game);
 
@@ -1222,86 +1225,136 @@ export class Player extends Entity {
         }
     }
 
-    resolveCollision(platforms, axis, game) {
-        for (let platform of platforms) {
-            if (Physics.checkAABB(this, platform)) {
-                const overlapX = Math.min(this.x + this.width, platform.x + platform.width) - Math.max(this.x, platform.x);
-                const overlapY = Math.min(this.y + this.height, platform.y + platform.height) - Math.max(this.y, platform.y);
+    resolveCollision(platforms, axis, game, prevPos = null, dt = 0.016) {
+        for (let i = 0; i < platforms.length; i++) {
+            const platform = platforms[i];
+            if (!Physics.checkAABB(this, platform)) continue;
 
-                if (axis === 'x') {
-                    // If overlap is only a thin slice near the platform top, treat it as top contact
-                    // (not a wall). This prevents upward movers from side-launching the player
-                    // when walking/jumping from the platform surface.
-                    const playerBottom = this.y + this.height;
-                    if (overlapY < 14 && playerBottom <= platform.y + 16) continue;
+            const overlapX = Math.min(this.x + this.width, platform.x + platform.width) - Math.max(this.x, platform.x);
+            const overlapY = Math.min(this.y + this.height, platform.y + platform.height) - Math.max(this.y, platform.y);
 
-                    if (this.vx > 0) {
-                        this.x = platform.x - this.width;
-                        this.vx = 0;
-                        this.touchingWall = true;
-                        if (this.isRolling) this._blockedOnXAxisThisFrame = true;
-                    } else if (this.vx < 0) {
+            if (overlapX <= 0 || overlapY <= 0) continue;
+
+            if (axis === 'x') {
+                const prevX = (prevPos !== null) ? prevPos : (this.x - this.vx * dt);
+
+                // Ledge / Step Leniency:
+                // If overlap is only a tiny slice at the top surface of the platform and the player
+                // is jumping onto or stepping onto the platform, do not treat it as a vertical wall hit.
+                const playerBottom = this.y + this.height;
+                if (overlapY <= 12 && playerBottom <= platform.y + 14 && this.vy <= 200) {
+                    continue;
+                }
+
+                // If player was already horizontally overlapping/aligned with the platform before moving on X this frame,
+                // the collision is due to vertical movement (jumping from below or falling from above).
+                // Do NOT resolve this as a wall collision on X!
+                const wasInsideX = (prevX + this.width > platform.x + 2) && (prevX < platform.x + platform.width - 2);
+                if (wasInsideX && !platform.dx) {
+                    continue;
+                }
+
+                if (this.vx > 0 && prevX + this.width <= platform.x + 6) {
+                    this.x = platform.x - this.width;
+                    this.vx = 0;
+                    this.touchingWall = true;
+                    if (this.isRolling) this._blockedOnXAxisThisFrame = true;
+                } else if (this.vx < 0 && prevX >= platform.x + platform.width - 6) {
+                    this.x = platform.x + platform.width;
+                    this.vx = 0;
+                    this.touchingWall = true;
+                    if (this.isRolling) this._blockedOnXAxisThisFrame = true;
+                } else if (platform.isMovingPlatform && platform.dx !== 0) {
+                    if (platform.dx > 0) {
                         this.x = platform.x + platform.width;
-                        this.vx = 0;
-                        this.touchingWall = true;
-                        if (this.isRolling) this._blockedOnXAxisThisFrame = true;
                     } else {
-                        // If vx is 0 (e.g. key released mid-collision), push out based on centers
-                        if (this.x + this.width / 2 < platform.x + platform.width / 2) {
-                            this.x = platform.x - this.width;
-                        } else {
-                            this.x = platform.x + platform.width;
-                        }
-                        this.touchingWall = true;
-                        if (this.isRolling) this._blockedOnXAxisThisFrame = true;
+                        this.x = platform.x - this.width;
                     }
-                } else if (axis === 'y') {
-                    // If we are more "beside" the platform than "above/below" it, skip Y resolution.
-                    // This prevents the "violent downward push" when clipping corners from the side.
-                    if (overlapX < 16 && overlapY > overlapX) continue;
+                    this.touchingWall = true;
+                    if (this.isRolling) this._blockedOnXAxisThisFrame = true;
+                } else if (overlapX < overlapY && !wasInsideX) {
+                    const pushLeft = (this.x + this.width) - platform.x;
+                    const pushRight = (platform.x + platform.width) - this.x;
+                    if (pushLeft < pushRight) {
+                        this.x = platform.x - this.width;
+                    } else {
+                        this.x = platform.x + platform.width;
+                    }
+                    this.touchingWall = true;
+                    if (this.isRolling) this._blockedOnXAxisThisFrame = true;
+                }
+            } else if (axis === 'y') {
+                const prevY = (prevPos !== null) ? prevPos : (this.y - this.vy * dt);
+                const prevBottom = prevY + this.height;
 
-                    if (this.vy > 0) {
-                        this.y = platform.y - this.height;
-                        if (platform.isTrampoline) {
-                            // Match enemy-stomp bounce 1:1 so trampoline response feels identical.
-                            this.y -= 0.01;
-                            // Height is proportional to v^2, so sqrt(2)x speed gives ~2x apex height.
-                            this.vy = this.jumpForce * Math.SQRT2;
-                            this.grounded = false;
-                            this.isJumping = true;
-                            this.forceFullJump = true;
-                            this.airJumps = 1;
-                            this.walkOffAirJumpBonusAvailable = false;
-                            this.coyoteTimer = 0;
-                            this.jumpBufferTimer = 0;
-                            this.isSpinning = true;
-                            this.spinDirection = this.facingRight ? 1 : -1;
-                            this.spinBaseRotation = this.rotation;
-                            if (game && game.audio) game.audio.playJump();
-                            return;
-                        }
-                        this.grounded = true;
-                    } else if (this.vy < 0) {
-                        // Improved head-bonk logic: if we are already mostly above the top edge,
-                        // snap to top (land) instead of bonking (teleporting down).
-                        if (this.y + this.height * 0.5 < platform.y) {
-                            this.y = platform.y - this.height;
-                            this.grounded = true;
-                        } else if (platform.isMovingPlatform) {
-                            this.y = platform.y - this.height;
-                            this.grounded = true;
+                // Account for platform vertical movement
+                const platDy = (platform.isMovingPlatform && platform.dy) ? platform.dy : 0;
+                const oldPlatY = platform.y - platDy;
+                const oldPlatBottom = oldPlatY + platform.height;
+
+                // Determine if player came from above or below
+                const fromAbove = prevBottom <= oldPlatY + 6;
+                const fromBelow = prevY >= oldPlatBottom - 6;
+
+                if (this.vy > 0 || (fromAbove && !fromBelow)) {
+                    // Landing on top of platform
+                    this.y = platform.y - this.height;
+                    if (platform.isTrampoline) {
+                        // Match enemy-stomp bounce 1:1 so trampoline response feels identical.
+                        this.y -= 0.01;
+                        // Height is proportional to v^2, so sqrt(2)x speed gives ~2x apex height.
+                        this.vy = this.jumpForce * Math.SQRT2;
+                        this.grounded = false;
+                        this.isJumping = true;
+                        this.forceFullJump = true;
+                        this.airJumps = 1;
+                        this.walkOffAirJumpBonusAvailable = false;
+                        this.coyoteTimer = 0;
+                        this.jumpBufferTimer = 0;
+                        this.isSpinning = true;
+                        this.spinDirection = this.facingRight ? 1 : -1;
+                        this.spinBaseRotation = this.rotation;
+                        if (game && game.audio) game.audio.playJump();
+                        return;
+                    }
+                    this.vy = 0;
+                    this.grounded = true;
+                } else if (this.vy < 0 || (fromBelow && !fromAbove)) {
+                    // Jumping up into underside / ceiling of platform
+                    if (overlapX <= 12) {
+                        // Smooth corner assist
+                        const playerCenterX = this.x + this.width / 2;
+                        const platformCenterX = platform.x + platform.width / 2;
+                        if (playerCenterX < platformCenterX) {
+                            this.x = platform.x - this.width - 0.5;
                         } else {
-                            this.y = platform.y + platform.height;
+                            this.x = platform.x + platform.width + 0.5;
                         }
-                    } else if (platform.isMovingPlatform) {
-                        // vy is 0, but we collided. A moving platform hit us.
-                        if (platform.dy > 0) {
-                            this.y = platform.y - this.height;
-                            this.grounded = true;
-                        } else if (platform.dy < 0) {
-                            this.y = platform.y - this.height;
-                            this.grounded = true;
-                        }
+                        continue;
+                    } else {
+                        // Solid head-bonk on ceiling
+                        this.y = platform.y + platform.height;
+                        this.vy = 0;
+                    }
+                } else if (platform.isMovingPlatform && platDy !== 0) {
+                    if (platDy < 0) {
+                        // Moving platform moving UP into player
+                        this.y = platform.y - this.height;
+                        this.grounded = true;
+                        this.vy = 0;
+                    } else {
+                        // Moving platform moving DOWN into player
+                        this.y = platform.y + platform.height;
+                        this.vy = Math.max(0, this.vy);
+                    }
+                } else {
+                    const pushUp = (this.y + this.height) - platform.y;
+                    const pushDown = (platform.y + platform.height) - this.y;
+                    if (pushUp <= pushDown) {
+                        this.y = platform.y - this.height;
+                        this.grounded = true;
+                    } else {
+                        this.y = platform.y + platform.height;
                     }
                     this.vy = 0;
                 }

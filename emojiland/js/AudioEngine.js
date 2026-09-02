@@ -61,8 +61,30 @@ export class AudioEngine {
         this._lightningBuzzNodes = null;
         this._lightningBuzzInterval = null;
         this._resumeLightningBuzzOnUnpause = false;
+        this._sfxBuffers = {};
+        this._sfxPreloadInitiated = false;
 
         this._loadSettings();
+    }
+
+    _preloadSfx() {
+        if (this._sfxPreloadInitiated) return;
+        this._sfxPreloadInitiated = true;
+        this._loadSfxBuffer('dropsfx', 'js/sfx/dropsfx.mp3');
+        this._loadSfxBuffer('dinostomp', 'js/sfx/dinostomp.mp3');
+    }
+
+    async _loadSfxBuffer(name, url) {
+        try {
+            this._ensureContext();
+            if (!this.ctx) return;
+            const response = await fetch(url);
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await this.ctx.decodeAudioData(arrayBuffer);
+            this._sfxBuffers[name] = audioBuffer;
+        } catch (e) {
+            // Context might still be suspended or network delayed
+        }
     }
 
     _ensureContext() {
@@ -71,6 +93,7 @@ export class AudioEngine {
             this.masterGain = this.ctx.createGain();
             this.masterGain.gain.value = 0.58;
             this.masterGain.connect(this.ctx.destination);
+            this._preloadSfx();
         }
     }
 
@@ -513,6 +536,39 @@ export class AudioEngine {
 
         src.connect(hp);
         hp.connect(g);
+        g.connect(this.masterGain);
+
+        src.start(now);
+        src.stop(now + duration);
+    }
+
+    _playExplosionNoise(duration = 0.35, gain = 0.28, lowpassFreq = 900) {
+        this._ensureContext();
+        if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => { });
+
+        const now = this.ctx.currentTime;
+        const frameCount = Math.max(1, Math.floor(this.ctx.sampleRate * duration));
+        const buffer = this.ctx.createBuffer(1, frameCount, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < frameCount; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / frameCount, 1.5);
+        }
+
+        const src = this.ctx.createBufferSource();
+        src.buffer = buffer;
+
+        const lp = this.ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(lowpassFreq, now);
+        lp.frequency.exponentialRampToValueAtTime(70, now + duration);
+
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(Math.max(0.0001, gain), now + 0.0015);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+        src.connect(lp);
+        lp.connect(g);
         g.connect(this.masterGain);
 
         src.start(now);
@@ -1113,12 +1169,55 @@ export class AudioEngine {
     }
 
     playExplosion() {
-        const drop = new Audio('js/sfx/dropsfx.mp3');
-        drop.volume = 0.28;
-        drop.currentTime = 0.045;
-        const playPromise = drop.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(() => { });
+        this._ensureContext();
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => { });
+        }
+
+        const now = this.ctx ? this.ctx.currentTime : 0;
+
+        // 1. Play pre-decoded audio buffer with zero latency if available
+        let bufferPlayed = false;
+        if (this._sfxBuffers && this._sfxBuffers['dropsfx'] && this.ctx) {
+            try {
+                const src = this.ctx.createBufferSource();
+                src.buffer = this._sfxBuffers['dropsfx'];
+                const gainNode = this.ctx.createGain();
+                gainNode.gain.setValueAtTime(0.52, now);
+                src.connect(gainNode);
+                gainNode.connect(this.masterGain);
+                const offset = Math.min(0.045, Math.max(0, (src.buffer.duration || 1) - 0.1));
+                src.start(now, offset);
+                bufferPlayed = true;
+            } catch (e) {
+                console.error("Failed to play explosion audio buffer:", e);
+            }
+        }
+
+        // 2. Immediate zero-latency punch & rumble synthesis layered directly at t=0
+        // Guarantees an explosive boom on the exact frame the explosion particle appears!
+        this._playTone('sine', 160, 0.42, {
+            endFreq: 32,
+            gain: 0.58,
+            attack: 0.001
+        });
+        this._playTone('triangle', 220, 0.22, {
+            endFreq: 45,
+            gain: 0.38,
+            attack: 0.0012
+        });
+        this._playExplosionNoise(0.35, 0.28, 900);
+        this._playNoiseBurst(0.08, 0.14, 1800);
+
+        // Fallback: If buffer wasn't loaded and Web Audio couldn't play buffer yet, trigger audio element
+        if (!bufferPlayed && !this.ctx) {
+            const drop = new Audio('js/sfx/dropsfx.mp3');
+            drop.volume = 0.28;
+            drop.currentTime = 0.045;
+            const playPromise = drop.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(() => { });
+            }
         }
     }
 
@@ -1363,7 +1462,73 @@ export class AudioEngine {
         }, 30);
     }
 
+    playLightningZap() {
+        // High-impact electric zapping sound when lightning ball strikes an enemy
+        this._ensureContext();
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => { });
+        }
+
+        // 1. High-frequency electrical spark noise burst
+        this._playNoiseBurst(0.07, 0.12, 1600);
+
+        // 2. Punchy downward electrical FM laser zap
+        this._playTone('sawtooth', this._jitter(1850, 0.03), 0.09, {
+            endFreq: this._jitter(260, 0.03),
+            gain: 0.38,
+            attack: 0.0006,
+            detune: 8
+        });
+
+        // 3. Crisp square wave crackle body
+        this._playTone('square', this._jitter(1280, 0.04), 0.075, {
+            endFreq: this._jitter(190, 0.04),
+            gain: 0.28,
+            attack: 0.0007,
+            detune: -14
+        });
+
+        // 4. Low-end punchy sub-thump for impact weight
+        this._playTone('triangle', this._jitter(240, 0.02), 0.11, {
+            endFreq: 65,
+            gain: 0.44,
+            attack: 0.001
+        });
+
+        // 5. Secondary electrical aftershock sizzle
+        setTimeout(() => {
+            this._playTone('sawtooth', this._jitter(980, 0.04), 0.065, {
+                endFreq: this._jitter(360, 0.04),
+                gain: 0.22,
+                attack: 0.0008
+            });
+            this._playNoiseBurst(0.045, 0.075, 3200);
+        }, 24);
+    }
+
     playStomp() {
+        this._ensureContext();
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume().catch(() => { });
+        }
+
+        const now = this.ctx ? this.ctx.currentTime : 0;
+
+        if (this._sfxBuffers && this._sfxBuffers['dinostomp'] && this.ctx) {
+            try {
+                const src = this.ctx.createBufferSource();
+                src.buffer = this._sfxBuffers['dinostomp'];
+                const gainNode = this.ctx.createGain();
+                gainNode.gain.setValueAtTime(0.95, now);
+                src.connect(gainNode);
+                gainNode.connect(this.masterGain);
+                src.start(now);
+                return;
+            } catch (e) {
+                console.error("Failed to play stomp audio buffer:", e);
+            }
+        }
+
         const stomp = new Audio('js/sfx/dinostomp.mp3');
         stomp.volume = 0.95;
         const playPromise = stomp.play();

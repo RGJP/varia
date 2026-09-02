@@ -110,6 +110,9 @@ export class LightningOrb extends Entity {
             this._damageTarget(this.targetEnemy, game);
             this.hitEnemies.add(this.targetEnemy);
             this.chainCount++;
+            if (game && game.audio && typeof game.audio.playLightningZap === 'function') {
+                game.audio.playLightningZap();
+            }
             if (game && game.particles) {
                 // Punchy electric hit flash: bright core + wider halo so impacts feel weighty.
                 game.particles.emit(tx, ty, 18, '#fff59d', [90, 320], [0.14, 0.3], [2.4, 6.2]);

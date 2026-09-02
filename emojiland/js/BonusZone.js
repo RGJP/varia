@@ -1,4 +1,7 @@
 import { Platform } from './environment/Platform.js';
+import { TrampolinePlatform } from './environment/TrampolinePlatform.js';
+import { MovingPlatform } from './environment/MovingPlatform.js';
+import { SafeBubble } from './entities/SafeBubble.js';
 import { Collectible } from './entities/Collectible.js';
 import { Enemy } from './entities/Enemy.js';
 import { getEmojiCanvas } from './EmojiCache.js';
@@ -8,6 +11,9 @@ export const BONUS_ZONE_DURATION = 18;
 
 const BONUS_COIN_RUSH_DURATION = 16;
 const BONUS_SLAYER_DURATION = 18;
+const BONUS_BARREL_BLITZ_DURATION = 32;
+const BONUS_SKY_BOUNCE_DURATION = 28;
+
 const ARENA_WIDTH = 1500;
 const CEILING_Y = 70;
 const CEILING_HEIGHT = 70;
@@ -23,11 +29,19 @@ const SLAYER_START_BUFFER_X = 360;
 const SLAYER_START_BUFFER_Y = 180;
 
 export function createRandomBonusZone(theme) {
-    const type = Math.random() < 0.5 ? 'coin_rush' : 'slayer';
+    const types = ['coin_rush', 'slayer', 'barrel_blitz', 'sky_bounce'];
+    const type = types[Math.floor(Math.random() * types.length)];
     return createBonusZone(type, theme);
 }
 
 export function createBonusZone(type, theme) {
+    if (type === 'barrel_blitz') {
+        return createBarrelBlitzZone(theme);
+    }
+    if (type === 'sky_bounce') {
+        return createSkyBounceZone(theme);
+    }
+
     const arena = createBonusArena(theme);
     const platforms = arena.platforms;
     const collectibles = [];
@@ -49,6 +63,7 @@ export function createBonusZone(type, theme) {
 
     return {
         type,
+        objectiveType: type === 'coin_rush' ? 'collectibles' : 'enemies',
         title: type === 'coin_rush' ? 'Coin Rush' : 'Slayer',
         objectiveLabel: type === 'coin_rush' ? 'Collect all coins' : 'Neutralize all enemies',
         duration,
@@ -403,4 +418,188 @@ function isPlayableEnemyPlatform(platform) {
 
 function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
+}
+
+// ── 90s VARIATION 1: BARREL BLITZ (Donkey Kong Country inspired 360° Rotator Blast) ──
+function createBarrelBlitzZone(theme) {
+    // Pure floating barrel stage: Random 5 to 7 barrels hovering high above the pitfall line!
+    const platforms = [];
+
+    // Randomize count between 5 and 7 barrels
+    const numBarrels = Math.floor(Math.random() * 3) + 5; // 5, 6, or 7 barrels
+
+    const startX = 220;
+    const topY = 130;
+    const bottomY = 410;
+    const delta = 280; // Exact 45° diagonal (Δx = Δy = 280px)
+
+    const safeZones = [];
+    for (let i = 0; i < numBarrels; i++) {
+        const isBottom = (i % 2 === 0);
+        const bx = startX + i * delta;
+        const by = isBottom ? bottomY : topY;
+        // Start barrel points 45° Up-Right; receiving barrels start pointed straight UP
+        const initialAngle = (i === 0) ? -Math.PI / 4 : -Math.PI / 2;
+        const barrel = new SafeBubble(bx, by, 100, true, 0.3, initialAngle, true);
+        safeZones.push(barrel);
+    }
+
+    const collectibles = [];
+    const addStraightCoinLine = (x1, y1, x2, y2, count = 6) => {
+        for (let i = 1; i <= count; i++) {
+            const t = i / (count + 1);
+            const x = x1 + (x2 - x1) * t;
+            const y = y1 + (y2 - y1) * t;
+            collectibles.push(new Collectible(x - 15, y - 15, 'bonus_coin'));
+        }
+    };
+
+    // Straight 45° coin lines linking each pair of consecutive barrels
+    for (let i = 0; i < safeZones.length - 1; i++) {
+        addStraightCoinLine(
+            safeZones[i].centerX, safeZones[i].centerY,
+            safeZones[i + 1].centerX, safeZones[i + 1].centerY,
+            6
+        );
+    }
+
+    const duration = Math.round(16 + numBarrels * 2.5);
+
+    return {
+        type: 'barrel_blitz',
+        objectiveType: 'collectibles',
+        title: 'Barrel Blitz',
+        objectiveLabel: 'Blast & grab all stars',
+        duration,
+        timeRemaining: duration,
+        platforms,
+        movingPlatforms: [],
+        enemies: [],
+        collectibles,
+        safeZones,
+        vines: [],
+        swingingVines: [],
+        rocks: [],
+        lightningOrbs: [],
+        enemyProjectiles: [],
+        spawnInBarrel: true,
+        startX: safeZones[0].centerX,
+        startY: safeZones[0].centerY,
+        lowestY: 670,
+        totalCoins: collectibles.length,
+        totalEnemies: 0,
+        collectedCoins: 0,
+        completed: false,
+        returnSnapshot: null
+    };
+}
+
+// ── 90s VARIATION 2: SKY BOUNCE (Sonic / Mario Spring Yard floating open-air trampolines) ──
+function createSkyBounceZone(theme) {
+    // Pure open-air floating stage: Zero solid floor/walls! Floating trampolines suspended in the sky.
+    const tramp0 = new TrampolinePlatform(180, 480, 150, 30, theme);  // Start Trampoline
+    const tramp1 = new TrampolinePlatform(490, 360, 140, 30, theme);  // Ascending 1
+    const tramp2 = new TrampolinePlatform(820, 240, 150, 30, theme);  // High Center Peak
+    const tramp3 = new TrampolinePlatform(1170, 360, 140, 30, theme); // Mid Right
+    const tramp4 = new TrampolinePlatform(1490, 240, 150, 30, theme); // High Right Peak
+    const tramp5 = new TrampolinePlatform(1810, 400, 140, 30, theme); // Descending Right
+    const tramp6 = new TrampolinePlatform(2130, 480, 150, 30, theme); // Far Right Trampoline
+    const trampSafety = new TrampolinePlatform(980, 520, 200, 30, theme); // Low Recovery Trampoline
+
+    const platforms = [tramp0, tramp1, tramp2, tramp3, tramp4, tramp5, tramp6, trampSafety];
+    const movingPlatforms = [];
+
+    const collectibles = [];
+    const addCoin = (x, y) => collectibles.push(new Collectible(x - 15, y - 15, 'bonus_coin'));
+
+    // High vertical bounce trails above each trampoline apex
+    // 1. Tramp 0 Vertical Super-Bounce Trail
+    addCoin(255, 380);
+    addCoin(255, 280);
+    addCoin(255, 180);
+    addCoin(255, 90);
+
+    // 2. Parabolic Arc Tramp 0 -> Tramp 1
+    addCoin(330, 310);
+    addCoin(390, 250);
+    addCoin(450, 280);
+
+    // 3. Tramp 1 Vertical Apex Trail
+    addCoin(560, 260);
+    addCoin(560, 170);
+    addCoin(560, 80);
+
+    // 4. Parabolic Arc Tramp 1 -> Tramp 2
+    addCoin(640, 190);
+    addCoin(720, 140);
+    addCoin(800, 170);
+
+    // 5. High Sky Diamond Crown above Tramp 2
+    addCoin(895, 150);
+    addCoin(895, 70);
+    addCoin(850, 110);
+    addCoin(940, 110);
+
+    // 6. Parabolic Arc Tramp 2 -> Tramp 3
+    addCoin(980, 190);
+    addCoin(1050, 240);
+    addCoin(1120, 290);
+
+    // 7. Tramp 3 Vertical Apex Trail
+    addCoin(1240, 260);
+    addCoin(1240, 170);
+    addCoin(1240, 80);
+
+    // 8. Parabolic Arc Tramp 3 -> Tramp 4
+    addCoin(1320, 230);
+    addCoin(1390, 160);
+    addCoin(1450, 180);
+
+    // 9. High Sky Diamond Crown above Tramp 4
+    addCoin(1565, 150);
+    addCoin(1565, 70);
+    addCoin(1520, 110);
+    addCoin(1610, 110);
+
+    // 10. Parabolic Arc Tramp 4 -> Tramp 5 -> Tramp 6
+    addCoin(1680, 260);
+    addCoin(1740, 310);
+    addCoin(1880, 300);
+    addCoin(1960, 220);
+    addCoin(2040, 310);
+    addCoin(2205, 380);
+    addCoin(2205, 280);
+    addCoin(2205, 180);
+
+    // 11. Low Recovery Trampoline safety coins
+    addCoin(1030, 440);
+    addCoin(1130, 440);
+
+    return {
+        type: 'sky_bounce',
+        objectiveType: 'collectibles',
+        title: 'Sky Bounce',
+        objectiveLabel: 'Bounce & collect all gems',
+        duration: 28,
+        timeRemaining: 28,
+        platforms,
+        movingPlatforms,
+        enemies: [],
+        collectibles,
+        safeZones: [],
+        vines: [],
+        swingingVines: [],
+        rocks: [],
+        lightningOrbs: [],
+        enemyProjectiles: [],
+        spawnInBarrel: false,
+        startX: tramp0.x + tramp0.width / 2 - 25,
+        startY: tramp0.y - 120, // Drops directly onto Trampoline 0 for instant super-bounce!
+        lowestY: 660,
+        totalCoins: collectibles.length,
+        totalEnemies: 0,
+        collectedCoins: 0,
+        completed: false,
+        returnSnapshot: null
+    };
 }

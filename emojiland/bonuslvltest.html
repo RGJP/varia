@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>EmojiLand - Bonus Levels Test Arena</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8E%AF%3C/text%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        #dev-setup {
+            position: fixed;
+            inset: 0;
+            display: grid;
+            place-items: center;
+            background: rgba(10, 14, 22, 0.88);
+            z-index: 9999;
+            backdrop-filter: blur(8px);
+            padding: 16px;
+        }
+
+        #dev-setup.hidden {
+            display: none;
+        }
+
+        .dev-card {
+            width: min(94vw, 560px);
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid rgba(255, 224, 102, 0.35);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            padding: 24px;
+            color: #f8fafc;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .dev-card h1 {
+            margin: 0 0 6px 0;
+            font-size: 1.5rem;
+            color: #ffe066;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dev-card p {
+            margin: 0 0 18px 0;
+            color: rgba(248, 250, 252, 0.82);
+            line-height: 1.45;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #94a3b8;
+            margin-bottom: 6px;
+        }
+
+        .theme-select {
+            width: 100%;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: #090d16;
+            color: #f8fafc;
+            padding: 12px 14px;
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .theme-select:focus {
+            border-color: #ffe066;
+            box-shadow: 0 0 0 3px rgba(255, 224, 102, 0.25);
+        }
+
+        .bonus-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .bonus-chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 12px;
+            padding: 10px 12px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .bonus-chip:hover {
+            background: rgba(255, 224, 102, 0.12);
+            border-color: rgba(255, 224, 102, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .bonus-chip.active {
+            background: linear-gradient(135deg, rgba(255, 224, 102, 0.24) 0%, rgba(255, 179, 0, 0.24) 100%);
+            border-color: #ffe066;
+            box-shadow: 0 4px 14px rgba(255, 224, 102, 0.2);
+        }
+
+        .bonus-chip .chip-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .bonus-chip .chip-desc {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 4px;
+            line-height: 1.25;
+        }
+
+        .dev-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .dev-btn {
+            appearance: none;
+            border: 0;
+            border-radius: 12px;
+            font-family: inherit;
+            font-weight: 800;
+            cursor: pointer;
+            padding: 13px 20px;
+            font-size: 1rem;
+            transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+        }
+
+        .dev-btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .dev-btn:active {
+            transform: translateY(0);
+        }
+
+        #dev-start {
+            background: linear-gradient(135deg, #ffe066 0%, #ffb300 100%);
+            color: #1a1500;
+            box-shadow: 0 4px 18px rgba(255, 179, 0, 0.35);
+            flex: 1;
+            min-width: 180px;
+        }
+
+        #dev-reopen {
+            position: fixed;
+            top: 14px;
+            right: 14px;
+            z-index: 3000;
+            background: rgba(15, 23, 42, 0.85);
+            color: #ffe066;
+            border: 1px solid rgba(255, 224, 102, 0.4);
+            border-radius: 12px;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.9rem;
+            padding: 9px 16px;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            display: none;
+            transition: all 0.2s;
+        }
+
+        #dev-reopen:hover {
+            background: rgba(30, 41, 59, 0.95);
+            transform: scale(1.04);
+        }
+
+        #dev-reopen.active {
+            display: block;
+        }
+
+        .dev-note {
+            margin-top: 14px;
+            font-size: 0.8rem;
+            color: #64748b;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="mobile-ui">
+        <button id="btn-camera" class="ui-btn ui-btn-camera">🎦</button>
+        <button id="btn-pause" class="ui-btn ui-btn-pause">⏸️</button>
+        <div id="joystick-zone" class="joystick-zone">
+            <div id="joystick-knob" class="joystick-knob"></div>
+        </div>
+        <div class="action-buttons">
+            <button id="btn-charge-toggle" class="ui-btn">⬆️</button>
+            <button id="btn-attack" class="ui-btn ui-btn-large">🪨</button>
+            <button id="btn-bomb" class="ui-btn ui-btn-large">💣</button>
+            <button id="btn-jump" class="ui-btn ui-btn-large">🦘</button>
+            <button id="btn-roll" class="ui-btn ui-btn-large">🌀</button>
+            <button id="btn-portal" class="ui-btn">🕳️</button>
+        </div>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <button id="dev-reopen" type="button">🎯 Select Bonus Level</button>
+
+    <div id="dev-setup">
+        <div class="dev-card">
+            <h1>🎯 Bonus Level Test Arena</h1>
+            <p>Select any of the 90s-platformer-inspired bonus variations below to jump right into the action and test mechanics!</p>
+
+            <div class="form-group">
+                <label>Select Bonus Variation</label>
+                <div class="bonus-grid" id="bonus-grid">
+                    <div class="bonus-chip active" data-type="barrel_blitz">
+                        <div class="chip-title">🎯 Barrel Blitz</div>
+                        <div class="chip-desc">DKC style: 4 launch honeypots, trampolines & aerial star arcs.</div>
+                    </div>
+                    <div class="bonus-chip" data-type="sky_bounce">
+                        <div class="chip-title">💎 Sky Bounce</div>
+                        <div class="chip-desc">Sonic/Mario style: Floating trampolines & high sky gem arcs.</div>
+                    </div>
+                    <div class="bonus-chip" data-type="coin_rush">
+                        <div class="chip-title">🪙 Coin Rush</div>
+                        <div class="chip-desc">Classic run: Collect all 29 coins across multi-tiered platforms.</div>
+                    </div>
+                    <div class="bonus-chip" data-type="slayer">
+                        <div class="chip-title">⚔️ Slayer</div>
+                        <div class="chip-desc">Neutralize 12 patrolling & jumping critters in time.</div>
+                    </div>
+                    <div class="bonus-chip" data-type="random">
+                        <div class="chip-title">🎲 Random Bonus</div>
+                        <div class="chip-desc">Rolls a random variation on each launch.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="theme-select">Environment Theme</label>
+                <select id="theme-select" class="theme-select">
+                    <option value="random">🎲 Random Theme</option>
+                    <option value="FOREST">🌿 Forest (Enchanted)</option>
+                    <option value="SNOW">❄️ Snow / Ice Land</option>
+                    <option value="DESERT">🏜️ Desert (Sands of Time)</option>
+                    <option value="VOLCANIC">🌋 Volcanic / Inferno</option>
+                    <option value="CYBERPUNK">🌃 Cyberpunk (Neon City)</option>
+                    <option value="SKY">☁️ Sky Islands (Cloud Realm)</option>
+                    <option value="UNDERWATER">🌊 Underwater Kingdom</option>
+                    <option value="CRYSTAL">💎 Crystal Cavern</option>
+                    <option value="HAUNTED">👻 Haunted Manor</option>
+                    <option value="STEAMPUNK">⚙️ Steampunk Victorian</option>
+                    <option value="DREAMSCAPE">🌸 Dreamscape Surreal</option>
+                    <option value="PREHISTORIC">🦕 Prehistoric Dino</option>
+                </select>
+            </div>
+
+            <div class="dev-actions">
+                <button id="dev-start" class="dev-btn" type="button">🚀 Play Bonus Level</button>
+            </div>
+
+            <div class="dev-note">Press <strong>'Select Bonus Level'</strong> top-right anytime during play to switch or restart.</div>
+        </div>
+    </div>
+
+    <script type="module" src="js/bonus-test-main.js"></script>
+</body>
+
+</html>

@@ -1502,17 +1502,34 @@ export class Game {
         this._activeSpecialBarrels.length = 0;
 
         this.player.clearActivePowerUps();
-        this.player.inSafeBubble = false;
-        this.player.activeSafeBubble = null;
-        this.player.safeZoneReentryLockedZone = null;
-        this.player.safeZoneReentryLockTimer = 0;
-        this.player.isClimbing = false;
-        this.player.currentVine = null;
-        this.player.carriedShell = null;
-        this.player.x = zone.startX;
-        this.player.y = zone.startY;
-        this.player.vx = 0;
-        this.player.vy = 0;
+        if (zone.spawnInBarrel && zone.safeZones && zone.safeZones.length > 0) {
+            const startBarrel = zone.safeZones[0];
+            this.player.inSafeBubble = true;
+            this.player.activeSafeBubble = startBarrel;
+            this.player.barrelBlastTimer = 0;
+            this.player.safeZoneReentryLockedZone = null;
+            this.player.safeZoneReentryLockTimer = 0;
+            this.player.isClimbing = false;
+            this.player.currentVine = null;
+            this.player.carriedShell = null;
+            this.player.x = startBarrel.centerX - this.player.width / 2;
+            this.player.y = startBarrel.centerY - this.player.height / 2;
+            this.player.vx = 0;
+            this.player.vy = 0;
+        } else {
+            this.player.inSafeBubble = false;
+            this.player.activeSafeBubble = null;
+            this.player.barrelBlastTimer = 0;
+            this.player.safeZoneReentryLockedZone = null;
+            this.player.safeZoneReentryLockTimer = 0;
+            this.player.isClimbing = false;
+            this.player.currentVine = null;
+            this.player.carriedShell = null;
+            this.player.x = zone.startX;
+            this.player.y = zone.startY;
+            this.player.vx = 0;
+            this.player.vy = 0;
+        }
         this.player.grounded = false;
         this.player.invulnerableTimer = Math.max(this.player.invulnerableTimer, BONUS_ZONE_INTRO_DURATION + 0.5);
         if (typeof this.player._endRoll === 'function') this.player._endRoll();
@@ -1740,7 +1757,8 @@ export class Game {
         if (!zone) return false;
 
         let complete = false;
-        if (zone.type === 'coin_rush') {
+        const isCollectibleObjective = zone.objectiveType === 'collectibles' || zone.type === 'coin_rush' || zone.type === 'barrel_blitz' || zone.type === 'sky_bounce';
+        if (isCollectibleObjective) {
             complete = !this.collectibles.some(item =>
                 item && item.type === 'bonus_coin' && !item.markedForDeletion
             );
@@ -1784,7 +1802,7 @@ export class Game {
     }
 
     registerBonusCoinCollected() {
-        if (!this.bonusZone || this.bonusZone.type !== 'coin_rush') return;
+        if (!this.bonusZone) return;
         this.bonusZone.collectedCoins = (this.bonusZone.collectedCoins || 0) + 1;
     }
 
@@ -3018,10 +3036,11 @@ export class Game {
         const panelH = 92;
         const panelX = (this.viewportWidth - panelW) / 2;
         const panelY = 18;
-        const remaining = zone.type === 'coin_rush'
+        const isCollectibleObjective = zone.objectiveType === 'collectibles' || zone.type === 'coin_rush' || zone.type === 'barrel_blitz' || zone.type === 'sky_bounce';
+        const remaining = isCollectibleObjective
             ? this.collectibles.filter(item => item && item.type === 'bonus_coin' && !item.markedForDeletion).length
             : this.enemies.filter(enemy => enemy && enemy.isBonusEnemy && !enemy.markedForDeletion).length;
-        const total = zone.type === 'coin_rush' ? zone.totalCoins : zone.totalEnemies;
+        const total = isCollectibleObjective ? zone.totalCoins : zone.totalEnemies;
         const cleared = Math.max(0, total - remaining);
         const time = Math.ceil(zone.timeRemaining);
 
