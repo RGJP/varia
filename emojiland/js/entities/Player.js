@@ -750,59 +750,20 @@ export class Player extends Entity {
             const leftDown = input.isActionDown('left');
             const rightDown = input.isActionDown('right');
 
-            if (this.grounded) {
-                // Snappy, responsive ground movement
-                if (leftDown && !rightDown) {
-                    this.vx = -effectiveSpeed;
-                    this.facingRight = false;
-                    this.barrelBlastTimer = 0;
-                } else if (rightDown && !leftDown) {
-                    this.vx = effectiveSpeed;
-                    this.facingRight = true;
-                    this.barrelBlastTimer = 0;
-                } else {
-                    this.vx = 0;
-                }
+            if (leftDown && !rightDown) {
+                this.vx = -effectiveSpeed;
+                this.facingRight = false;
+                this.barrelBlastTimer = 0; // Immediate sharp abrupt reversal
+            } else if (rightDown && !leftDown) {
+                this.vx = effectiveSpeed;
+                this.facingRight = true;
+                this.barrelBlastTimer = 0; // Immediate sharp abrupt reversal
+            } else if (this.barrelBlastTimer > 0) {
+                // Maintain barrel blast momentum while no steering key is pressed
             } else {
-                // Mid-air physics: smooth trajectory correction and fine-tuned realignment
-                if (leftDown && !rightDown) {
-                    this.facingRight = false;
-                    this.barrelBlastTimer = 0;
-                    const targetVx = -effectiveSpeed;
-                    if (this.vx > 0) {
-                        // Mid-air reversal correction: smoothly decelerate opposing momentum
-                        // so taps allow fine micro-adjustments instead of a jarring instant snap
-                        const turnAccel = 1200; // px/s²
-                        this.vx = Math.max(targetVx, this.vx - turnAccel * dt);
-                    } else {
-                        // Accelerate in desired direction
-                        const airAccel = 1500; // px/s²
-                        this.vx = Math.max(targetVx, this.vx - airAccel * dt);
-                    }
-                } else if (rightDown && !leftDown) {
-                    this.facingRight = true;
-                    this.barrelBlastTimer = 0;
-                    const targetVx = effectiveSpeed;
-                    if (this.vx < 0) {
-                        // Mid-air reversal correction: smoothly decelerate opposing momentum
-                        const turnAccel = 1200; // px/s²
-                        this.vx = Math.min(targetVx, this.vx + turnAccel * dt);
-                    } else {
-                        // Accelerate in desired direction
-                        const airAccel = 1500; // px/s²
-                        this.vx = Math.min(targetVx, this.vx + airAccel * dt);
-                    }
-                } else if (this.barrelBlastTimer > 0) {
-                    // Maintain barrel blast momentum while no steering key is pressed
-                } else {
-                    // Neutral in mid-air: apply gentle air drag to allow stable landing and fine tuning
-                    const airDrag = 450; // px/s²
-                    if (this.vx > 0) {
-                        this.vx = Math.max(0, this.vx - airDrag * dt);
-                    } else if (this.vx < 0) {
-                        this.vx = Math.min(0, this.vx + airDrag * dt);
-                    }
-                }
+                // Instant stop when no steering direction is held (grounded & mid-air),
+                // eliminating molasses drift and enabling surgical precision landings
+                this.vx = 0;
             }
         }
 
@@ -1166,8 +1127,10 @@ export class Player extends Entity {
                 const centerY = collectible.y + collectible.height / 2;
                 if (collectible.type === 'health') {
                     this.health = Math.min(this.health + 1, this.maxHealth);
+                    if (!this.hasCatProtector) {
+                        this.catSpeechTimer = 3.0;
+                    }
                     this.hasCatProtector = true;
-                    this.catSpeechTimer = 3.0;
                     playPowerUpPickup('health');
                     game.particles.emit(centerX, centerY, 15, '#FF0000', [50, 150], [0.2, 0.5], [2, 4]);
                 } else if (collectible.type === 'bomb') {
@@ -1180,8 +1143,10 @@ export class Player extends Entity {
                     game.particles.emit(centerX, centerY, 20, '#888888', [50, 200], [0.2, 0.5], [3, 5]);
                 } else if (collectible.type === 'full_health') {
                     this.health = this.maxHealth;
+                    if (!this.hasCatProtector) {
+                        this.catSpeechTimer = 3.0;
+                    }
                     this.hasCatProtector = true;
-                    this.catSpeechTimer = 3.0;
                     playPowerUpPickup('full_health');
                     game.particles.emit(centerX, centerY, 30, '#FF69B4', [50, 250], [0.2, 0.6], [3, 6]);
                 } else if (collectible.type === 'fire_powerup') {
@@ -2274,17 +2239,17 @@ export class Player extends Entity {
             const catY = catCenterY - this._catProtectorEmoji.height / 2;
             ctx.drawImage(this._catProtectorEmoji.canvas, catX, catY);
 
-            // Text speech bubble: "I PROTEC 🛡️" for 3 seconds
+            // Text speech bubble: "I PROTECC" for 3 seconds
             if (this.catSpeechTimer > 0) {
                 ctx.save();
                 const alpha = Math.min(1, this.catSpeechTimer / 0.4);
                 ctx.globalAlpha = alpha;
 
-                const text = 'I PROTEC 🛡️';
+                const text = 'I PROTECC';
                 ctx.font = 'bold 14px "Outfit", system-ui, sans-serif';
                 const metrics = ctx.measureText(text);
-                const bubbleW = metrics.width + 22;
-                const bubbleH = 28;
+                const bubbleW = metrics.width + 20;
+                const bubbleH = 26;
                 const bubbleR = 8;
                 const bubbleCenterX = catCenterX;
                 const bubbleBottomY = catCenterY - this._catProtectorEmoji.height / 2 - 8;
