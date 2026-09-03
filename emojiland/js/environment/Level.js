@@ -7,6 +7,7 @@ import { Vine } from '../entities/Vine.js';
 import { SwingingVine } from '../entities/SwingingVine.js';
 import { SafeBubble } from '../entities/SafeBubble.js';
 import { SpecialBarrel } from '../entities/SpecialBarrel.js';
+import { BubbleColumn } from '../entities/BubbleColumn.js';
 import { getRandomTheme } from './ThemeManager.js';
 import { getEmojiCanvas } from '../EmojiCache.js';
 
@@ -1672,6 +1673,56 @@ export function loadLevel() {
         ? `V:${usedVariants.map(v => variantCode[v] || v).join('+')}`
         : 'V:N/A';
 
+    // ── 4. UPWARD AIR STREAMS / BUBBLE COLUMNS ──
+    // Place buoyant bubble columns across platform gaps to gently float the player and carry projectiles
+    const bubbleColumns = [];
+    const maxBubbleColumns = 4;
+    const sortedPlatforms = [...platforms].sort((a, b) => a.x - b.x);
+
+    for (let i = 0; i < sortedPlatforms.length - 1; i++) {
+        if (bubbleColumns.length >= maxBubbleColumns) break;
+
+        const p1 = sortedPlatforms[i];
+        const p2 = sortedPlatforms[i + 1];
+        if (!p1 || !p2) continue;
+
+        const gap = p2.x - (p1.x + p1.width);
+        if (gap < 110 || gap > 380) continue;
+
+        const gapLeft = p1.x + p1.width;
+        const centerX = gapLeft + gap / 2;
+
+        // Skip starter zone and boss arena area
+        if (centerX < 550 || centerX > victoryPlatform.x - 300) continue;
+
+        // Ensure well-spaced across the level (at least 850px apart)
+        const tooCloseToOther = bubbleColumns.some(bc => Math.abs((bc.x + bc.width / 2) - centerX) < 850);
+        if (tooCloseToOther) continue;
+
+        // Ensure clearance from launch barrels and special bonus barrels
+        if (isInsideBarrelBuffer(centerX, Math.min(p1.y, p2.y), 45)) continue;
+
+        // Spawn higher so the updraft reaches high into the sky above the platforms
+        const higherPlatY = Math.min(p1.y, p2.y);
+        const lowerPlatY = Math.max(p1.y, p2.y);
+
+        const colTopY = higherPlatY - 340;
+        const colBottomY = lowerPlatY + 45;
+        const colHeight = colBottomY - colTopY;
+        const colWidth = Math.min(100, Math.max(78, gap - 20));
+        const colX = centerX - colWidth / 2;
+
+        const colRect = { x: colX, y: colTopY, width: colWidth, height: colHeight };
+        const hitsMover = movingPlatforms.some(mp => overlapsRect(getSweptRect(mp), colRect, 16, 16));
+        if (hitsMover) continue;
+
+        bubbleColumns.push(new BubbleColumn(colX, colTopY, colWidth, colHeight));
+
+        // Signpost with floating coins ascending up the airstream
+        collectibles.push(new Collectible(centerX - 15, higherPlatY - 80, 'coin'));
+        collectibles.push(new Collectible(centerX - 15, higherPlatY - 200, 'coin'));
+    }
+
     return {
         platforms,
         movingPlatforms,
@@ -1680,6 +1731,7 @@ export function loadLevel() {
         collectibles,
         safeZones,
         specialBarrels,
+        bubbleColumns,
         vines: validVines,
         swingingVines,
         prisonerRescue: {

@@ -78,6 +78,7 @@ export class Game {
         this.pendingBossStarDrops = [];
         this.safeZones = [];
         this.specialBarrels = [];
+        this.bubbleColumns = [];
         this.rocks = [];
         this.lightningOrbs = [];
         this.enemyProjectiles = [];
@@ -116,6 +117,7 @@ export class Game {
         this._activeCollectibles = [];
         this._activeSafeZones = [];
         this._activeSpecialBarrels = [];
+        this._activeBubbleColumns = [];
         this._enemySpatial = new Map();
         this._enemySpatialCellSize = 220;
         this._enemySpatialQueryId = 1;
@@ -584,6 +586,7 @@ export class Game {
         this.victoryFlagEnabled = false;
         this.safeZones = levelData.safeZones || [];
         this.specialBarrels = levelData.specialBarrels || [];
+        this.bubbleColumns = levelData.bubbleColumns || [];
         this.vines = levelData.vines || [];
         this.swingingVines = levelData.swingingVines || [];
         this.movingPlatforms = levelData.movingPlatforms || [];
@@ -1283,6 +1286,16 @@ export class Game {
             }
         }
 
+        const bubbleColumns = this.bubbleColumns;
+        this._activeBubbleColumns.length = 0;
+        for (let i = 0; i < bubbleColumns.length; i++) {
+            const col = bubbleColumns[i];
+            col.update(dt, this);
+            if (this._intersectsBounds(col, cullLeft, cullRight, cullTop, cullBottom)) {
+                this._activeBubbleColumns.push(col);
+            }
+        }
+
         // Update moving platforms and include in visible platforms for collision
         for (let i = 0; i < this.movingPlatforms.length; i++) {
             const mp = this.movingPlatforms[i];
@@ -1564,6 +1577,7 @@ export class Game {
             pendingBossStarDrops: this.pendingBossStarDrops,
             safeZones: this.safeZones,
             specialBarrels: this.specialBarrels,
+            bubbleColumns: this.bubbleColumns,
             vines: this.vines,
             swingingVines: this.swingingVines,
             rocks: this.rocks,
@@ -1677,6 +1691,8 @@ export class Game {
         this.pendingBossStarDrops = snapshot.pendingBossStarDrops;
         this.safeZones = snapshot.safeZones;
         this.specialBarrels = filterInPlace(snapshot.specialBarrels);
+        this.bubbleColumns = snapshot.bubbleColumns || [];
+        this._activeBubbleColumns.length = 0;
         this.vines = snapshot.vines;
         this.swingingVines = snapshot.swingingVines;
         this.rocks = snapshot.rocks;
@@ -2412,6 +2428,11 @@ export class Game {
             }
             this._drawDeathTrapLine(this.ctx);
 
+            const bubbleColumns = this._activeBubbleColumns;
+            for (let i = 0; i < bubbleColumns.length; i++) {
+                bubbleColumns[i].draw(this.ctx);
+            }
+
             const collectibles = this._activeCollectibles;
             for (let i = 0; i < collectibles.length; i++) {
                 const collectible = collectibles[i];
@@ -2503,6 +2524,11 @@ export class Game {
             const mps = this.movingPlatforms;
             for (let i = 0; i < mps.length; i++) {
                 if (this._intersectsBounds(mps[i], pauseLeft, pauseRight, pauseTop, pauseBottom)) mps[i].draw(this.ctx);
+            }
+
+            const bubbleColumns = this.bubbleColumns;
+            for (let i = 0; i < bubbleColumns.length; i++) {
+                if (this._intersectsBounds(bubbleColumns[i], pauseLeft, pauseRight, pauseTop, pauseBottom)) bubbleColumns[i].draw(this.ctx);
             }
 
             const collectibles = this.collectibles;

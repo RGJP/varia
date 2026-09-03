@@ -22,6 +22,7 @@ export class Rock extends Entity {
 
     update(dt, game) {
         this.x += this.vx * dt;
+        this.y += this.vy * dt;
         this.rotation += (this.vx > 0 ? 10 : -10) * dt;
 
         // Check if Rock hits a nearby enemy
