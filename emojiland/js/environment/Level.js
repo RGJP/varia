@@ -1066,6 +1066,24 @@ export function loadLevel() {
         return true;
     };
 
+    // Clearance check: Moving platforms swept area vs barrels
+    const BARREL_MP_CLEARANCE_X = 75;
+    const BARREL_MP_CLEARANCE_Y = 65;
+
+    const overlapsMovingPlatformSwept = (centerX, centerY, barrelWidth = 100, barrelHeight = 100, padX = BARREL_MP_CLEARANCE_X, padY = BARREL_MP_CLEARANCE_Y) => {
+        const barrelRect = {
+            x: centerX - barrelWidth / 2,
+            y: centerY - barrelHeight / 2,
+            width: barrelWidth,
+            height: barrelHeight
+        };
+        for (let i = 0; i < movingPlatforms.length; i++) {
+            const swept = getSweptRect(movingPlatforms[i]);
+            if (overlapsRect(barrelRect, swept, padX, padY)) return true;
+        }
+        return false;
+    };
+
     // ── 1. BARREL & SPECIAL BARREL POPULATION ──
     // Spawn barrels first so we can establish generous breathing room buffer zones around them.
     const barrelCandidates = safeCoinLocations
@@ -1084,7 +1102,8 @@ export function loadLevel() {
             loc.drop >= 100 &&
             loc.drop <= 300 &&
             hasBarrelLaunchHeadroom(loc.x, loc.y) &&
-            !hasEnemyTooClose(loc.x, loc.y, 360)
+            !hasEnemyTooClose(loc.x, loc.y, 360) &&
+            !overlapsMovingPlatformSwept(loc.x, loc.y + 16, 100, 100)
         )
         .sort((a, b) => a.x - b.x);
 
@@ -1097,6 +1116,7 @@ export function loadLevel() {
             if (drop === null || drop < 90 || drop > 330) return;
             if (!hasBarrelLaunchHeadroom(x, cy)) return;
             if (hasEnemyTooClose(x, cy, enemyRadius)) return;
+            if (overlapsMovingPlatformSwept(x, cy + 16, 100, 100)) return;
             for (let i = 0; i < barrelCandidates.length; i++) {
                 if (Math.abs(barrelCandidates[i].x - x) < 180) return;
             }
@@ -1224,6 +1244,7 @@ export function loadLevel() {
                 if (tooClose) continue;
                 const inferredY = inferBarrelYAtX(x);
                 if (inferredY === null) continue;
+                if (overlapsMovingPlatformSwept(x, inferredY + 16, 100, 100)) continue;
                 selected.push({ x, y: inferredY, drop: 150 });
             }
         }
@@ -1233,6 +1254,7 @@ export function loadLevel() {
             if (!candidate) continue;
             if (!hasBarrelLaunchHeadroom(candidate.x, candidate.y)) continue;
             const centerY = candidate.y + 16;
+            if (overlapsMovingPlatformSwept(candidate.x, centerY, 100, 100)) continue;
             safeZones.push(new SafeBubble(candidate.x, centerY, 100));
         }
     }
@@ -1242,7 +1264,7 @@ export function loadLevel() {
         const pathStartX = 0;
         const pathEndX = victoryPlatform.x + victoryPlatform.width;
         const minX = pathStartX + (pathEndX - pathStartX) * 0.3;
-        const maxX = pathStartX + (pathEndX - pathStartX) * 0.9;
+        const maxX = pathEndX + (pathEndX - pathStartX) * 0.9;
 
         const findStaticSupport = (x, y, maxDrop = 290) => {
             let best = null;
@@ -1276,7 +1298,7 @@ export function loadLevel() {
                 if (overlapsRect(rect, p, 16, 18)) return false;
             }
             for (let i = 0; i < movingPlatforms.length; i++) {
-                if (overlapsRect(rect, getSweptRect(movingPlatforms[i]), 24, 24)) return false;
+                if (overlapsRect(rect, getSweptRect(movingPlatforms[i]), 70, 60)) return false;
             }
             for (let i = 0; i < enemies.length; i++) {
                 if (overlapsRect(rect, enemies[i], 72, 48)) return false;
@@ -1342,11 +1364,15 @@ export function loadLevel() {
                 const pMin = Math.max(bestPlatform.x + 24, minX);
                 const pMax = Math.min(bestPlatform.x + bestPlatform.width - 24, maxX);
                 const centerX = clamp(targetX, pMin, pMax);
-                picked = {
-                    x: clamp(centerX - size / 2, bestPlatform.x + 18, bestPlatform.x + bestPlatform.width - size - 18),
-                    y: bestPlatform.y - size - 4,
-                    support: bestPlatform
-                };
+                const candidateX = clamp(centerX - size / 2, bestPlatform.x + 18, bestPlatform.x + bestPlatform.width - size - 18);
+                const candidateY = bestPlatform.y - size - 4;
+                if (!overlapsMovingPlatformSwept(candidateX + size / 2, candidateY + size / 2, size, size, 70, 60)) {
+                    picked = {
+                        x: candidateX,
+                        y: candidateY,
+                        support: bestPlatform
+                    };
+                }
             }
         }
 
@@ -1356,11 +1382,15 @@ export function loadLevel() {
                 rescuePlatform.x + 32,
                 rescuePlatform.x + rescuePlatform.width - 32
             );
-            picked = {
-                x: clamp(centerX - size / 2, rescuePlatform.x + 18, rescuePlatform.x + rescuePlatform.width - size - 18),
-                y: rescuePlatform.y - size - 4,
-                support: rescuePlatform
-            };
+            const candidateX = clamp(centerX - size / 2, rescuePlatform.x + 18, rescuePlatform.x + rescuePlatform.width - size - 18);
+            const candidateY = rescuePlatform.y - size - 4;
+            if (!overlapsMovingPlatformSwept(candidateX + size / 2, candidateY + size / 2, size, size, 70, 60)) {
+                picked = {
+                    x: candidateX,
+                    y: candidateY,
+                    support: rescuePlatform
+                };
+            }
         }
 
         if (picked) {
@@ -1382,7 +1412,37 @@ export function loadLevel() {
             rescuePlatform.x + rescuePlatform.width - 32
         );
         const x = clamp(centerX - size / 2, rescuePlatform.x + 18, rescuePlatform.x + rescuePlatform.width - size - 18);
-        specialBarrels.push(new SpecialBarrel(x, rescuePlatform.y - size - 4, size));
+        const y = rescuePlatform.y - size - 4;
+        if (!overlapsMovingPlatformSwept(x + size / 2, y + size / 2, size, size, 70, 60)) {
+            specialBarrels.push(new SpecialBarrel(x, y, size));
+        }
+    }
+
+    // Safety verification: prune any moving platform whose swept path intersects any barrel
+    const allBarrels = [...safeZones, ...specialBarrels];
+    for (let i = movingPlatforms.length - 1; i >= 0; i--) {
+        const mp = movingPlatforms[i];
+        const swept = getSweptRect(mp);
+        let clipsBarrel = false;
+        for (let j = 0; j < allBarrels.length; j++) {
+            const b = allBarrels[j];
+            if (!b) continue;
+            const bw = b.width || b.size || 100;
+            const bh = b.height || b.size || 100;
+            const bRect = {
+                x: b.x !== undefined ? b.x : (b.centerX - bw / 2),
+                y: b.y !== undefined ? b.y : (b.centerY - bh / 2),
+                width: bw,
+                height: bh
+            };
+            if (overlapsRect(swept, bRect, 65, 55)) {
+                clipsBarrel = true;
+                break;
+            }
+        }
+        if (clipsBarrel) {
+            movingPlatforms.splice(i, 1);
+        }
     }
 
     // ── 2. BARREL BREATHING ROOM BUFFER ──

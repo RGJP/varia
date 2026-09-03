@@ -30,6 +30,7 @@ export class Player extends Entity {
         this.health = this.maxHealth;
         this.hasCatProtector = false;
         this.catProtectorBob = 0;
+        this.catSpeechTimer = 0;
         this.bombs = 3;
         this.invulnerableTimer = 0;
         this.damageGlowTimer = 0;
@@ -458,6 +459,9 @@ export class Player extends Entity {
             game.particles.emit(trailX, trailY, 3, 'rgba(255, 255, 255, 0.35)', [16, 48], [0.05, 0.12], [1.5, 3]);
         }
         this.catProtectorBob += dt;
+        if (this.catSpeechTimer > 0) {
+            this.catSpeechTimer = Math.max(0, this.catSpeechTimer - dt);
+        }
         if (this.letterCelebrationTimer > 0) {
             this.letterCelebrationTimer -= dt;
             this.letterCelebrationSpawnTimer -= dt;
@@ -743,19 +747,62 @@ export class Player extends Entity {
             }
         } else if (!this.isClimbing && !game.gameOverTriggered) {
             const effectiveSpeed = this.slowTimer > 0 ? this.speed * 0.4 : this.speed;
-            if (input.isActionDown('left')) {
-                this.vx = -effectiveSpeed;
-                this.facingRight = false;
-                this.barrelBlastTimer = 0; // Immediate manual mid-air steering
-            } else if (input.isActionDown('right')) {
-                this.vx = effectiveSpeed;
-                this.facingRight = true;
-                this.barrelBlastTimer = 0; // Immediate manual mid-air steering
-            } else if (this.barrelBlastTimer > 0) {
-                // Maintain barrel blast momentum while no steering key is pressed
-            } else if (this.grounded) {
-                // Instant stop when grounded and no input is pressed
-                this.vx = 0;
+            const leftDown = input.isActionDown('left');
+            const rightDown = input.isActionDown('right');
+
+            if (this.grounded) {
+                // Snappy, responsive ground movement
+                if (leftDown && !rightDown) {
+                    this.vx = -effectiveSpeed;
+                    this.facingRight = false;
+                    this.barrelBlastTimer = 0;
+                } else if (rightDown && !leftDown) {
+                    this.vx = effectiveSpeed;
+                    this.facingRight = true;
+                    this.barrelBlastTimer = 0;
+                } else {
+                    this.vx = 0;
+                }
+            } else {
+                // Mid-air physics: smooth trajectory correction and fine-tuned realignment
+                if (leftDown && !rightDown) {
+                    this.facingRight = false;
+                    this.barrelBlastTimer = 0;
+                    const targetVx = -effectiveSpeed;
+                    if (this.vx > 0) {
+                        // Mid-air reversal correction: smoothly decelerate opposing momentum
+                        // so taps allow fine micro-adjustments instead of a jarring instant snap
+                        const turnAccel = 1200; // px/s²
+                        this.vx = Math.max(targetVx, this.vx - turnAccel * dt);
+                    } else {
+                        // Accelerate in desired direction
+                        const airAccel = 1500; // px/s²
+                        this.vx = Math.max(targetVx, this.vx - airAccel * dt);
+                    }
+                } else if (rightDown && !leftDown) {
+                    this.facingRight = true;
+                    this.barrelBlastTimer = 0;
+                    const targetVx = effectiveSpeed;
+                    if (this.vx < 0) {
+                        // Mid-air reversal correction: smoothly decelerate opposing momentum
+                        const turnAccel = 1200; // px/s²
+                        this.vx = Math.min(targetVx, this.vx + turnAccel * dt);
+                    } else {
+                        // Accelerate in desired direction
+                        const airAccel = 1500; // px/s²
+                        this.vx = Math.min(targetVx, this.vx + airAccel * dt);
+                    }
+                } else if (this.barrelBlastTimer > 0) {
+                    // Maintain barrel blast momentum while no steering key is pressed
+                } else {
+                    // Neutral in mid-air: apply gentle air drag to allow stable landing and fine tuning
+                    const airDrag = 450; // px/s²
+                    if (this.vx > 0) {
+                        this.vx = Math.max(0, this.vx - airDrag * dt);
+                    } else if (this.vx < 0) {
+                        this.vx = Math.min(0, this.vx + airDrag * dt);
+                    }
+                }
             }
         }
 
@@ -913,7 +960,7 @@ export class Player extends Entity {
                 game.audio.playJump();
                 game.particles.emitJump(this.x + this.width / 2, this.y + this.height, game.currentTheme.particleColor);
             }
-        } else if (!isPortalTraveling) {
+        } else if (!isPortalTraveling && !this.inSafeBubble) {
             // Carry player on moving platforms BEFORE collision resolution
             // This prevents vertical movers from causing X-axis collision artifacts
             for (let platform of platforms) {
@@ -1120,6 +1167,7 @@ export class Player extends Entity {
                 if (collectible.type === 'health') {
                     this.health = Math.min(this.health + 1, this.maxHealth);
                     this.hasCatProtector = true;
+                    this.catSpeechTimer = 3.0;
                     playPowerUpPickup('health');
                     game.particles.emit(centerX, centerY, 15, '#FF0000', [50, 150], [0.2, 0.5], [2, 4]);
                 } else if (collectible.type === 'bomb') {
@@ -1133,6 +1181,7 @@ export class Player extends Entity {
                 } else if (collectible.type === 'full_health') {
                     this.health = this.maxHealth;
                     this.hasCatProtector = true;
+                    this.catSpeechTimer = 3.0;
                     playPowerUpPickup('full_health');
                     game.particles.emit(centerX, centerY, 30, '#FF69B4', [50, 250], [0.2, 0.6], [3, 6]);
                 } else if (collectible.type === 'fire_powerup') {
@@ -1226,6 +1275,7 @@ export class Player extends Entity {
     }
 
     resolveCollision(platforms, axis, game, prevPos = null, dt = 0.016) {
+        if (this.inSafeBubble) return;
         for (let i = 0; i < platforms.length; i++) {
             const platform = platforms[i];
             if (!Physics.checkAABB(this, platform)) continue;
@@ -1736,6 +1786,7 @@ export class Player extends Entity {
         if (this.isRolling) return;
         if (this.hasCatProtector) {
             this.hasCatProtector = false;
+            this.catSpeechTimer = 0;
             this.invulnerableTimer = 0.6;
             if (game) {
                 game.audio.playHit();
@@ -2217,9 +2268,70 @@ export class Player extends Entity {
             }
             const offsetX = this.facingRight ? -62 : 62;
             const bobY = Math.sin(this.catProtectorBob * 6) * 5;
-            const catX = this.x + this.width / 2 + offsetX - this._catProtectorEmoji.width / 2;
-            const catY = this.y + this.height / 2 - 8 + bobY - this._catProtectorEmoji.height / 2;
+            const catCenterX = this.x + this.width / 2 + offsetX;
+            const catCenterY = this.y + this.height / 2 - 8 + bobY;
+            const catX = catCenterX - this._catProtectorEmoji.width / 2;
+            const catY = catCenterY - this._catProtectorEmoji.height / 2;
             ctx.drawImage(this._catProtectorEmoji.canvas, catX, catY);
+
+            // Text speech bubble: "I PROTEC 🛡️" for 3 seconds
+            if (this.catSpeechTimer > 0) {
+                ctx.save();
+                const alpha = Math.min(1, this.catSpeechTimer / 0.4);
+                ctx.globalAlpha = alpha;
+
+                const text = 'I PROTEC 🛡️';
+                ctx.font = 'bold 14px "Outfit", system-ui, sans-serif';
+                const metrics = ctx.measureText(text);
+                const bubbleW = metrics.width + 22;
+                const bubbleH = 28;
+                const bubbleR = 8;
+                const bubbleCenterX = catCenterX;
+                const bubbleBottomY = catCenterY - this._catProtectorEmoji.height / 2 - 8;
+                const bubbleX = bubbleCenterX - bubbleW / 2;
+                const bubbleY = bubbleBottomY - bubbleH;
+
+                // Shadow
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+                ctx.shadowBlur = 6;
+                ctx.shadowOffsetY = 2;
+
+                // Speech bubble body
+                ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#1e293b';
+                ctx.lineWidth = 1.8;
+                ctx.beginPath();
+                if (ctx.roundRect) {
+                    ctx.roundRect(bubbleX, bubbleY, bubbleW, bubbleH, bubbleR);
+                } else {
+                    ctx.rect(bubbleX, bubbleY, bubbleW, bubbleH);
+                }
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetY = 0;
+                ctx.stroke();
+
+                // Speech bubble pointer pointing down to the cat
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.moveTo(bubbleCenterX - 5, bubbleBottomY);
+                ctx.lineTo(bubbleCenterX, bubbleBottomY + 7);
+                ctx.lineTo(bubbleCenterX + 5, bubbleBottomY);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Cover seam between body and pointer
+                ctx.fillRect(bubbleCenterX - 4, bubbleBottomY - 1.5, 8, 3);
+
+                // Speech text
+                ctx.fillStyle = '#0f172a';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(text, bubbleCenterX, bubbleY + bubbleH / 2 + 1);
+
+                ctx.restore();
+            }
         }
 
         if (!game?.gameOverTriggered && this.isChargingAttack && this.attackChargeTimer > this.chargeIndicatorDelay) {

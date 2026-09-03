@@ -107,7 +107,7 @@ export class MovingPlatform extends Platform {
         this._cache = canvas;
     }
 
-    update(dt) {
+    update(dt, game = null) {
         const prevX = this.x;
         const prevY = this.y;
 
@@ -128,6 +128,32 @@ export class MovingPlatform extends Platform {
             } else if (this.y <= this.startPos) {
                 this.y = this.startPos;
                 this.direction = 1;
+            }
+        }
+
+        // Prevent moving platform from clipping into barrels (safe barrels or special bonus barrels)
+        if (game) {
+            const barrels = [...(game.safeZones || []), ...(game.specialBarrels || [])];
+            for (let i = 0; i < barrels.length; i++) {
+                const b = barrels[i];
+                if (!b) continue;
+                const bw = b.width || b.size || 100;
+                const bh = b.height || b.size || 100;
+                const bx = b.x !== undefined ? b.x : (b.centerX - bw / 2);
+                const by = b.y !== undefined ? b.y : (b.centerY - bh / 2);
+                const pad = 24;
+                if (
+                    this.x < bx + bw + pad &&
+                    this.x + this.width > bx - pad &&
+                    this.y < by + bh + pad &&
+                    this.y + this.height > by - pad
+                ) {
+                    // Turn around safely before entering the barrel's space
+                    this.x = prevX;
+                    this.y = prevY;
+                    this.direction *= -1;
+                    break;
+                }
             }
         }
 

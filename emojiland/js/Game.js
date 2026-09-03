@@ -148,6 +148,8 @@ export class Game {
         this.enemiesDefeated = 0;
         this.totalCompletionCoins = 0;
         this.lastVictoryEmojiBonus = 0;
+        this.cumulativeScore = 0;
+        this.completedLevelsCount = 0;
         this.fpsDisplay = 60;
         this.layoutVariantLabel = 'V:N/A';
         this.performanceQuality = 1;
@@ -207,6 +209,14 @@ export class Game {
 
                 // Request fullscreen (non-blocking, won't consume gesture on most browsers)
                 this._requestFullscreenBestEffort();
+
+                if (this.state === GameState.START_MENU) {
+                    this.cumulativeScore = 0;
+                    this.completedLevelsCount = 0;
+                } else if (this.state === GameState.VICTORY) {
+                    this.cumulativeScore = (this.cumulativeScore || 0) + (this.player ? this.player.score : 0);
+                    this.completedLevelsCount = (this.completedLevelsCount || 0) + 1;
+                }
 
                 this.initLevel();
                 this.state = GameState.PLAYING;
@@ -327,6 +337,8 @@ export class Game {
                     y <= changeBtn.y + changeBtn.height
                 ) {
                     this.selectedDifficultyId = null;
+                    this.cumulativeScore = 0;
+                    this.completedLevelsCount = 0;
                     this.state = GameState.START_MENU;
                     if (e && e.cancelable) e.preventDefault();
                     return;
@@ -1274,7 +1286,7 @@ export class Game {
         // Update moving platforms and include in visible platforms for collision
         for (let i = 0; i < this.movingPlatforms.length; i++) {
             const mp = this.movingPlatforms[i];
-            mp.update(dt);
+            mp.update(dt, this);
             if (this._intersectsBounds(mp, cullLeft, cullRight, cullTop, cullBottom)) {
                 this._visiblePlatforms.push(mp);
             }
@@ -2955,12 +2967,12 @@ export class Game {
 
             // Victory Card
             const cardWidth = 620;
-            const cardHeight = 340;
+            const cardHeight = 400;
             const cardX = -cardWidth / 2;
             const cardY = -cardHeight / 2;
 
             // Glassmorphism effect for card
-            this.ctx.fillStyle = 'rgba(30, 60, 30, 0.85)';
+            this.ctx.fillStyle = 'rgba(30, 60, 30, 0.88)';
             this.ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
             this.ctx.shadowBlur = 20;
             this.ctx.beginPath();
@@ -2972,7 +2984,7 @@ export class Game {
             this.ctx.fill();
 
             // Card Border
-            this.ctx.strokeStyle = 'rgba(255, 235, 59, 0.3)';
+            this.ctx.strokeStyle = 'rgba(255, 235, 59, 0.35)';
             this.ctx.lineWidth = 2.5;
             this.ctx.stroke();
 
@@ -2980,8 +2992,8 @@ export class Game {
             const topY = -cardHeight / 2;
 
             // Level Complete Title
-            this.ctx.font = 'bold 58px "Outfit", sans-serif';
-            const gradient = this.ctx.createLinearGradient(0, topY + 24, 0, topY + 100);
+            this.ctx.font = 'bold 50px "Outfit", sans-serif';
+            const gradient = this.ctx.createLinearGradient(0, topY + 18, 0, topY + 80);
             gradient.addColorStop(0, '#ffffff');
             gradient.addColorStop(0.5, '#ffeb3b');
             gradient.addColorStop(1, '#fbc02d');
@@ -2989,26 +3001,64 @@ export class Game {
             this.ctx.fillStyle = gradient;
             this.ctx.shadowColor = 'rgba(255, 235, 59, 0.4)';
             this.ctx.shadowBlur = 15;
-            this.ctx.fillText('Level Complete!', 0, topY + 68);
+            const currentLevelNum = (this.completedLevelsCount || 0) + 1;
+            this.ctx.fillText(`Level ${currentLevelNum} Complete!`, 0, topY + 54);
 
-            // Score Section
-            const totalScore = this.player ? this.player.score : 0;
+            // Scores & Stats Calculation
+            const levelScore = this.player ? this.player.score : 0;
+            const totalScore = (this.cumulativeScore || 0) + levelScore;
             const completionPercent = this.getLevelCompletionPercent();
-            this.ctx.shadowBlur = 0;
-            this.ctx.font = 'bold 22px "Outfit", sans-serif';
-            this.ctx.fillStyle = '#ffd54f';
-            this.ctx.fillText('TOTAL SCORE', 0, topY + 132);
+            const nextMilestone = (Math.floor(totalScore / 5000) + 1) * 5000;
 
-            this.ctx.font = 'bold 44px "Outfit", sans-serif';
+            this.ctx.shadowBlur = 0;
+
+            // Current Level Stats Section
+            this.ctx.font = 'bold 16px "Outfit", sans-serif';
+            this.ctx.fillStyle = '#ffd54f';
+            this.ctx.fillText('CURRENT LEVEL SCORE', 0, topY + 104);
+
+            this.ctx.font = 'bold 30px "Outfit", sans-serif';
             this.ctx.fillStyle = '#ffffff';
-            this.ctx.fillText(`\u2B50 ${totalScore} \u2022 ${completionPercent}% \u2B50`, 0, topY + 184);
+            this.ctx.fillText(`⭐ ${levelScore.toLocaleString()} • ${completionPercent}% ⭐`, 0, topY + 138);
+
+            // Total Score Section
+            this.ctx.font = 'bold 16px "Outfit", sans-serif';
+            this.ctx.fillStyle = '#80d8ff';
+            this.ctx.fillText('TOTAL SCORE', 0, topY + 186);
+
+            this.ctx.font = 'bold 38px "Outfit", sans-serif';
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillText(`🏆 ${totalScore.toLocaleString()}`, 0, topY + 224);
+
+            // Milestone Encouragement Callout Badge
+            const encouragementText = `Can you reach ${nextMilestone.toLocaleString()}? 🙌`;
+            this.ctx.font = 'bold 20px "Outfit", sans-serif';
+            const textMetrics = this.ctx.measureText(encouragementText);
+            const pillW = textMetrics.width + 36;
+            const pillH = 34;
+            const pillY = topY + 264;
+
+            this.ctx.fillStyle = 'rgba(255, 235, 59, 0.14)';
+            this.ctx.strokeStyle = 'rgba(255, 235, 59, 0.5)';
+            this.ctx.lineWidth = 1.5;
+            this.ctx.beginPath();
+            if (this.ctx.roundRect) {
+                this.ctx.roundRect(-pillW / 2, pillY, pillW, pillH, 17);
+            } else {
+                this.ctx.rect(-pillW / 2, pillY, pillW, pillH);
+            }
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            this.ctx.fillStyle = '#fff59d';
+            this.ctx.fillText(encouragementText, 0, pillY + pillH / 2 + 1);
 
             // Separation Line
-            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
             this.ctx.lineWidth = 1;
             this.ctx.beginPath();
-            this.ctx.moveTo(-cardWidth / 2 + 96, topY + 255);
-            this.ctx.lineTo(cardWidth / 2 - 96, topY + 255);
+            this.ctx.moveTo(-cardWidth / 2 + 96, topY + 326);
+            this.ctx.lineTo(cardWidth / 2 - 96, topY + 326);
             this.ctx.stroke();
 
             // Next Level Instruction
@@ -3017,7 +3067,7 @@ export class Game {
             this.ctx.font = 'bold 24px "Outfit", sans-serif';
             this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
             const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            this.ctx.fillText(isMobile ? 'Touch to Play Next Level' : 'Press ENTER to Play Next Level', 0, topY + 302);
+            this.ctx.fillText(isMobile ? 'Touch to Play Next Level' : 'Press ENTER to Play Next Level', 0, topY + 365);
         } else if (this.state === GameState.PAUSED) {
             this.ctx.textAlign = 'center';
             this.ctx.textBaseline = 'middle';
